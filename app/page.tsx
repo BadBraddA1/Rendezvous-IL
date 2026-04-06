@@ -92,10 +92,11 @@ export default function HomePage() {
                   {isPlaying && (
                     <iframe
                       src="https://player.mux.com/Fu2mzvA8FO6sEUE01JWv8DvLgRz7K01hmvyBH01DTiDKyc?autoplay=1"
-                      className="h-full w-full"
-                      allow="autoplay; fullscreen; picture-in-picture"
-                      allowFullScreen
-                      style={{ aspectRatio: "16/9" }}
+                      className="absolute inset-0 h-full w-full"
+                      allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"
+                      allowFullScreen={true}
+                      frameBorder="0"
+                      style={{ border: "none" }}
                     />
                   )}
                   {!isPlaying && (
