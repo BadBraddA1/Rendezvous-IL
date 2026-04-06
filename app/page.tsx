@@ -1,29 +1,13 @@
-"use client"
-
-import { useState, useRef } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Calendar, MapPin, Users, Sparkles, ExternalLink, Wifi, Trophy, Play } from "lucide-react"
+import { Calendar, MapPin, Users, Sparkles, ExternalLink, Wifi, Trophy } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { Countdown } from "@/components/countdown"
 
 export default function HomePage() {
-  const [isPlaying, setIsPlaying] = useState(false)
-  const iframeRef = useRef<HTMLIFrameElement>(null)
-
-  const handlePlayClick = () => {
-    setIsPlaying(true)
-    // Trigger play after iframe mounts
-    setTimeout(() => {
-      if (iframeRef.current) {
-        iframeRef.current.contentWindow?.postMessage({ type: "play" }, "*")
-      }
-    }, 100)
-  }
-
   return (
     <div className="min-h-screen">
       <SiteHeader />
@@ -88,34 +72,15 @@ export default function HomePage() {
             <div className="mx-auto max-w-5xl">
               <h2 className="mb-8 text-center text-4xl font-bold tracking-tight">Experience Rendezvous</h2>
               <div className="overflow-hidden rounded-2xl border border-border/50 bg-card shadow-2xl">
-                <div className="relative aspect-video w-full group">
-                  {isPlaying ? (
-                    <iframe
-                      ref={iframeRef}
-                      src="https://player.mux.com/Fu2mzvA8FO6sEUE01JWv8DvLgRz7K01hmvyBH01DTiDKyc"
-                      className="absolute inset-0 h-full w-full"
-                      allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"
-                      allowFullScreen={true}
-                      frameBorder="0"
-                      style={{ border: "none" }}
-                    />
-                  ) : (
-                    <button
-                      onClick={handlePlayClick}
-                      className="group absolute inset-0 flex items-center justify-center focus:outline-none"
-                      aria-label="Play video"
-                    >
-                      <img
-                        src="https://image.mux.com/Fu2mzvA8FO6sEUE01JWv8DvLgRz7K01hmvyBH01DTiDKyc/thumbnail.jpg?width=1200&height=675&fit_mode=smartcrop"
-                        alt="Rendezvous retreat preview"
-                        className="h-full w-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-br from-secondary/80 to-primary/60 backdrop-blur-sm transition-all group-hover:from-secondary/70 group-hover:to-primary/50" />
-                      <div className="absolute flex h-24 w-24 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-2xl transition-all group-hover:scale-110 group-hover:shadow-primary/50">
-                        <Play className="ml-1 h-10 w-10" fill="currentColor" />
-                      </div>
-                    </button>
-                  )}
+                <div className="relative aspect-video w-full">
+                  <iframe
+                    src="https://player.mux.com/Fu2mzvA8FO6sEUE01JWv8DvLgRz7K01hmvyBH01DTiDKyc"
+                    className="absolute inset-0 h-full w-full"
+                    allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"
+                    allowFullScreen={true}
+                    frameBorder="0"
+                    style={{ border: "none" }}
+                  />
                 </div>
               </div>
             </div>

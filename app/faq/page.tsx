@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ExternalLink, Play } from "lucide-react"
-import { useState, useRef } from "react"
+
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 
@@ -40,19 +40,6 @@ const faqVideos = [
 ]
 
 function VideoCard({ video }: { video: (typeof faqVideos)[0] }) {
-  const [isPlaying, setIsPlaying] = useState(false)
-  const iframeRef = useRef<HTMLIFrameElement>(null)
-
-  const handlePlayClick = () => {
-    setIsPlaying(true)
-    // Trigger play after iframe mounts
-    setTimeout(() => {
-      if (iframeRef.current) {
-        iframeRef.current.contentWindow?.postMessage({ type: "play" }, "*")
-      }
-    }, 100)
-  }
-
   return (
     <Card className="overflow-hidden border-border/50 bg-card shadow-lg transition-all hover:shadow-xl">
       <CardHeader className="bg-gradient-to-r from-primary/5 to-accent/5 pb-4">
@@ -60,50 +47,14 @@ function VideoCard({ video }: { video: (typeof faqVideos)[0] }) {
       </CardHeader>
       <CardContent className="p-0">
         <div className="relative aspect-video w-full bg-muted">
-          {isPlaying ? (
-            <iframe
-              ref={iframeRef}
-              src={`https://player.mux.com/${video.id}`}
-              className="absolute inset-0 h-full w-full"
-              allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"
-              allowFullScreen={true}
-              frameBorder="0"
-              style={{ border: "none" }}
-            />
-          ) : (
-            <button
-              onClick={handlePlayClick}
-              className="group absolute inset-0 flex items-center justify-center"
-            >
-              <img
-                src={`https://image.mux.com/${video.id}/thumbnail.jpg?width=1280&height=720&fit_mode=smartcrop`}
-                alt={video.title}
-                className="h-full w-full object-cover"
-              />
-              {/* Gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent transition-opacity group-hover:from-black/70" />
-
-              {/* Rendezvous logo watermark */}
-              <div className="absolute left-4 top-4 flex items-center gap-2 rounded-full bg-white/90 px-3 py-1.5 shadow-lg backdrop-blur-sm">
-                <img src="/rendezvous-logo.png" alt="Rendezvous" className="h-6 w-auto" />
-              </div>
-
-              {/* Play button */}
-              <div className="absolute flex flex-col items-center gap-3">
-                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary shadow-2xl ring-4 ring-white/30 transition-all group-hover:scale-110 group-hover:ring-white/50">
-                  <Play className="ml-1 h-10 w-10 fill-primary-foreground text-primary-foreground" />
-                </div>
-                <span className="rounded-full bg-black/50 px-4 py-1.5 text-sm font-medium text-white backdrop-blur-sm">
-                  Watch Video
-                </span>
-              </div>
-
-              {/* Bottom bar */}
-              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-4 pt-8">
-                <p className="text-sm font-medium text-white/90">Rendezvous Homeschool Family Retreat</p>
-              </div>
-            </button>
-          )}
+          <iframe
+            src={`https://player.mux.com/${video.id}`}
+            className="absolute inset-0 h-full w-full"
+            allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"
+            allowFullScreen={true}
+            frameBorder="0"
+            style={{ border: "none" }}
+          />
         </div>
       </CardContent>
     </Card>
