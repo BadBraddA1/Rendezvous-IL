@@ -59,18 +59,41 @@ function VideoCard({ video }: { video: (typeof faqVideos)[0] }) {
                 alt={video.title}
                 className="h-full w-full object-cover"
               />
-              <div className="absolute inset-0 bg-black/20 transition-opacity group-hover:bg-black/30" />
-              <div className="absolute flex h-20 w-20 items-center justify-center rounded-full bg-primary shadow-2xl transition-transform group-hover:scale-110">
-                <Play className="ml-1 h-10 w-10 fill-primary-foreground text-primary-foreground" />
+              {/* Rendezvous branded overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent transition-opacity group-hover:from-black/70" />
+              
+              {/* Rendezvous logo watermark */}
+              <div className="absolute left-4 top-4 flex items-center gap-2 rounded-full bg-white/90 px-3 py-1.5 shadow-lg backdrop-blur-sm">
+                <img 
+                  src="/rendezvous-logo.png" 
+                  alt="Rendezvous" 
+                  className="h-6 w-auto"
+                />
+              </div>
+              
+              {/* Custom play button with Rendezvous branding */}
+              <div className="absolute flex flex-col items-center gap-3">
+                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary shadow-2xl ring-4 ring-white/30 transition-all group-hover:scale-110 group-hover:ring-white/50">
+                  <Play className="ml-1 h-10 w-10 fill-primary-foreground text-primary-foreground" />
+                </div>
+                <span className="rounded-full bg-black/50 px-4 py-1.5 text-sm font-medium text-white backdrop-blur-sm">
+                  Watch Video
+                </span>
+              </div>
+              
+              {/* Bottom title bar */}
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-4 pt-8">
+                <p className="text-sm font-medium text-white/90">Rendezvous Homeschool Family Retreat</p>
               </div>
             </button>
           ) : (
             <iframe
-              src={`https://stream.mux.com/${video.id}?autoplay=1`}
-              className="h-full w-full"
-              allow="autoplay; fullscreen; picture-in-picture"
-              allowFullScreen
-              style={{ aspectRatio: "16/9" }}
+              src={`https://player.mux.com/${video.id}?autoplay=1`}
+              className="absolute inset-0 h-full w-full"
+              allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"
+              allowFullScreen={true}
+              frameBorder="0"
+              style={{ border: "none" }}
             />
           )}
         </div>
