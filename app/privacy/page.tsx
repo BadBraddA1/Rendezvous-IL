@@ -2,8 +2,8 @@ import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 
 export const metadata = {
-  title: "Privacy Policy | Rendezvous 2026",
-  description: "Privacy policy for Rendezvous 2026 registration and website.",
+  title: "Privacy Policy | Rendezvous IL",
+  description: "Privacy policy for Rendezvous IL registration and website.",
 }
 
 export default function PrivacyPage() {
@@ -18,7 +18,7 @@ export default function PrivacyPage() {
           <section>
             <h2 className="mb-3 text-xl font-semibold">Overview</h2>
             <p className="leading-relaxed text-muted-foreground">
-              Rendezvous 2026 is a family reunion event organized by Stephen and Ranae Bradd. This privacy policy
+              Rendezvous IL is a family reunion event organized by Stephen and Ranae Bradd. This privacy policy
               explains what personal information we collect during registration, how we use it, and how we protect it.
               We take your privacy seriously and will never sell or share your data with third parties for marketing
               purposes.
@@ -45,7 +45,7 @@ export default function PrivacyPage() {
             <h2 className="mb-3 text-xl font-semibold">How We Use Your Information</h2>
             <p className="mb-3 leading-relaxed text-muted-foreground">Your information is used solely to:</p>
             <ul className="ml-6 list-disc space-y-2 text-muted-foreground">
-              <li>Process and confirm your registration for Rendezvous 2026</li>
+              <li>Process and confirm your registration for Rendezvous IL</li>
               <li>Send you event-related communications and updates</li>
               <li>Coordinate lodging, meals, and activities</li>
               <li>Display your family&apos;s location on the attendee map (last name and city/state only)</li>
