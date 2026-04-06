@@ -78,35 +78,31 @@ export default function HomePage() {
               <h2 className="mb-8 text-center text-4xl font-bold tracking-tight">Experience Rendezvous</h2>
               <div className="overflow-hidden rounded-2xl border border-border/50 bg-card shadow-2xl">
                 <div className="relative aspect-video w-full group">
-                  {/* iframe always loaded — src never changes so no reload on click */}
-                  <iframe
-                    src="https://player.mux.com/Fu2mzvA8FO6sEUE01JWv8DvLgRz7K01hmvyBH01DTiDKyc?autoplay=1"
-                    className="absolute inset-0 h-full w-full"
-                    allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"
-                    allowFullScreen={true}
-                    frameBorder="0"
-                    style={{ border: "none", opacity: isPlaying ? 1 : 0, pointerEvents: isPlaying ? "auto" : "none" }}
-                  />
-
-                  {/* Branded overlay — hidden once playing */}
-                  {!isPlaying && (
-                    <>
+                  {isPlaying ? (
+                    <iframe
+                      src="https://player.mux.com/Fu2mzvA8FO6sEUE01JWv8DvLgRz7K01hmvyBH01DTiDKyc?autoplay=1"
+                      className="absolute inset-0 h-full w-full"
+                      allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"
+                      allowFullScreen={true}
+                      frameBorder="0"
+                      style={{ border: "none" }}
+                    />
+                  ) : (
+                    <button
+                      onClick={() => setIsPlaying(true)}
+                      className="group absolute inset-0 flex items-center justify-center focus:outline-none"
+                      aria-label="Play video"
+                    >
                       <img
                         src="https://image.mux.com/Fu2mzvA8FO6sEUE01JWv8DvLgRz7K01hmvyBH01DTiDKyc/thumbnail.jpg?width=1200&height=675&fit_mode=smartcrop"
                         alt="Rendezvous retreat preview"
                         className="h-full w-full object-cover"
                       />
                       <div className="absolute inset-0 bg-gradient-to-br from-secondary/80 to-primary/60 backdrop-blur-sm transition-all group-hover:from-secondary/70 group-hover:to-primary/50" />
-                      <button
-                        onClick={() => setIsPlaying(true)}
-                        className="absolute inset-0 flex items-center justify-center focus:outline-none focus:ring-4 focus:ring-primary/50"
-                        aria-label="Play video"
-                      >
-                        <div className="flex h-24 w-24 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-2xl transition-all hover:scale-110 hover:shadow-primary/50">
-                          <Play className="ml-1 h-10 w-10" fill="currentColor" />
-                        </div>
-                      </button>
-                    </>
+                      <div className="absolute flex h-24 w-24 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-2xl transition-all group-hover:scale-110 group-hover:shadow-primary/50">
+                        <Play className="ml-1 h-10 w-10" fill="currentColor" />
+                      </div>
+                    </button>
                   )}
                 </div>
               </div>

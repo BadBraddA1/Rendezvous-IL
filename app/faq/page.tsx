@@ -49,18 +49,16 @@ function VideoCard({ video }: { video: (typeof faqVideos)[0] }) {
       </CardHeader>
       <CardContent className="p-0">
         <div className="relative aspect-video w-full bg-muted">
-          {/* iframe always loaded — src never changes so no reload on click */}
-          <iframe
-            src={`https://player.mux.com/${video.id}?autoplay=1`}
-            className="absolute inset-0 h-full w-full"
-            allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"
-            allowFullScreen={true}
-            frameBorder="0"
-            style={{ border: "none", opacity: isPlaying ? 1 : 0, pointerEvents: isPlaying ? "auto" : "none" }}
-          />
-
-          {/* Custom branded overlay — hidden once playing */}
-          {!isPlaying && (
+          {isPlaying ? (
+            <iframe
+              src={`https://player.mux.com/${video.id}?autoplay=1`}
+              className="absolute inset-0 h-full w-full"
+              allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"
+              allowFullScreen={true}
+              frameBorder="0"
+              style={{ border: "none" }}
+            />
+          ) : (
             <button
               onClick={() => setIsPlaying(true)}
               className="group absolute inset-0 flex items-center justify-center"
