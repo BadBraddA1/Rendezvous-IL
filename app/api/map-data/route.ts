@@ -7,8 +7,8 @@ export async function GET() {
       SELECT 
         r.id,
         r.family_last_name,
-        r.contact_first_name,
-        r.contact_last_name,
+        r.father_signature,
+        r.mother_signature,
         r.email,
         r.address,
         r.city,
@@ -26,7 +26,7 @@ export async function GET() {
       WHERE r.address IS NOT NULL 
         AND r.city IS NOT NULL 
         AND r.state IS NOT NULL
-      GROUP BY r.id, r.family_last_name, r.contact_first_name, r.contact_last_name, r.email, r.address, r.city, r.state, r.zip
+      GROUP BY r.id, r.family_last_name, r.father_signature, r.mother_signature, r.email, r.address, r.city, r.state, r.zip
       ORDER BY r.created_at DESC
     `
 
@@ -45,7 +45,7 @@ export async function GET() {
             return {
               id: reg.id,
               lastName: reg.family_last_name,
-              contactName: `${reg.contact_first_name} ${reg.contact_last_name}`,
+              contactName: reg.father_signature || reg.mother_signature || reg.family_last_name,
               email: reg.email,
               address: `${reg.address}, ${reg.city}, ${reg.state} ${reg.zip}`,
               cityState: `${reg.city}, ${reg.state}`,
