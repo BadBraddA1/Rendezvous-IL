@@ -74,7 +74,7 @@ export default function HomePage() {
               <div className="overflow-hidden rounded-2xl border border-border/50 bg-card shadow-2xl">
                 <div className="relative aspect-video w-full">
                   <iframe
-                    src="https://player.mux.com/Fu2mzvA8FO6sEUE01JWv8DvLgRz7K01hmvyBH01DTiDKyc"
+                    src="https://player.mux.com/Fu2mzvA8FO6sEUE01JWv8DvLgRz7K01hmvyBH01DTiDKyc?accent-color=%23f97316&primary-color=%23ffffff"
                     className="absolute inset-0 h-full w-full"
                     allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"
                     allowFullScreen={true}

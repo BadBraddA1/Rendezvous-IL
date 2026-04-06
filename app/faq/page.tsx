@@ -48,7 +48,7 @@ function VideoCard({ video }: { video: (typeof faqVideos)[0] }) {
       <CardContent className="p-0">
         <div className="relative aspect-video w-full bg-muted">
           <iframe
-            src={`https://player.mux.com/${video.id}`}
+            src={`https://player.mux.com/${video.id}?accent-color=%23f97316&primary-color=%23ffffff`}
             className="absolute inset-0 h-full w-full"
             allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"
             allowFullScreen={true}
