@@ -1,30 +1,32 @@
 # Rendezvous IL Website
 
-A fast, mobile-first static site for the Rendezvous Christian Homeschool Family Retreat, built with Vue 3, Vite, and Mint UI.
+A modern, mobile-first website for the Rendezvous Christian Homeschool Family Retreat, built with Next.js 16, React 19, and Tailwind CSS.
 
 ## Features
 
 - Mobile-first responsive design
-- Vue 3 with Composition API
-- Vite for fast development and builds
-- Mint UI component library for mobile UI
-- Vue Router with smooth scrolling and hash navigation
-- Accessible (WCAG AA compliant)
-- Light/dark mode support via `prefers-color-scheme`
-- Lightweight CSS (< 20KB unminified custom styles)
+- Next.js 16 App Router
+- React 19 with Server Components
+- Tailwind CSS v4 for styling
+- shadcn/ui component library
+- Full registration system with database backend
+- Admin dashboard for managing registrations
+- Email notifications via Resend
 
 ## Tech Stack
 
-- **Vue 3** - Progressive JavaScript framework
-- **Vite** - Next generation frontend tooling
-- **Mint UI** - Mobile UI component library
-- **Vue Router** - Official router for Vue.js
+- **Next.js 16** - React framework with App Router
+- **React 19** - Latest React with Server Components
+- **Tailwind CSS v4** - Utility-first CSS framework
+- **shadcn/ui** - Accessible component library
+- **Neon** - Serverless PostgreSQL database
+- **Resend** - Email delivery service
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js 16+ and npm
+- Node.js 18+ and npm/pnpm
 
 ### Installation
 
@@ -43,7 +45,7 @@ Start the development server:
 npm run dev
 ```
 
-The site will be available at `http://localhost:5173`
+The site will be available at `http://localhost:3000`
 
 ### Build for Production
 
@@ -53,92 +55,44 @@ Create an optimized production build:
 npm run build
 ```
 
-The built files will be in the `dist` directory.
-
-### Preview Production Build
-
-Preview the production build locally:
+### Start Production Server
 
 ```bash
-npm run preview
+npm run start
 ```
 
 ## Project Structure
 
 ```
 rendezvous-il/
-├── index.html              # Entry HTML file
-├── vite.config.js          # Vite configuration
-├── package.json            # Dependencies and scripts
-├── src/
-│   ├── main.js            # Vue app bootstrap
-│   ├── router.js          # Vue Router configuration
-│   ├── App.vue            # Root component
-│   ├── styles/
-│   │   ├── base.css       # Base styles and CSS variables
-│   │   └── mint-overrides.css  # Mint UI theme overrides
-│   ├── views/
-│   │   ├── HomeView.vue       # Home page
-│   │   ├── ScheduleView.vue   # Schedule page
-│   │   └── AboutView.vue      # About page
-│   └── components/
-│       ├── DaySection.vue     # Collapsible day section
-│       ├── StickySubnav.vue   # Day navigation
-│       └── FactCard.vue       # Quick facts card
-└── README.md
+├── app/                    # Next.js App Router pages
+│   ├── page.tsx           # Home page
+│   ├── layout.tsx         # Root layout
+│   ├── globals.css        # Global styles
+│   ├── about/             # About page
+│   ├── schedule/          # Schedule page
+│   ├── registration/      # Registration page
+│   ├── admin/             # Admin dashboard
+│   └── api/               # API routes
+├── components/            # React components
+│   ├── ui/               # shadcn/ui components
+│   ├── admin/            # Admin components
+│   └── registration/     # Registration form components
+├── lib/                   # Utility functions
+├── scripts/               # Database migration scripts
+├── public/                # Static assets
+└── docs/                  # Documentation
 ```
 
 ## Pages
 
-- **Home** (`/`) - Event overview, quick facts, and call-to-action
-- **Schedule** (`/schedule`) - Complete 5-day event schedule with collapsible sections
+- **Home** (`/`) - Event overview, countdown, and call-to-action
+- **Schedule** (`/schedule`) - Complete 5-day event schedule
 - **About** (`/about`) - Introduction and history of Rendezvous
-
-## Customization
-
-### Colors
-
-Edit CSS variables in `src/styles/base.css`:
-
-```css
-:root {
-  --color-primary: #4a7c59;
-  --color-secondary: #8b6f47;
-  --color-accent: #c9a961;
-  /* ... */
-}
-```
-
-### Typography
-
-The site uses the system font stack for optimal performance. To change fonts, edit the `--font-family` variable in `base.css`.
-
-### Mint UI Overrides
-
-Customize Mint UI components in `src/styles/mint-overrides.css` while maintaining WCAG AA compliance.
-
-## Accessibility
-
-- Semantic HTML elements
-- ARIA labels and roles
-- Keyboard navigation support
-- High contrast focus states
-- WCAG AA color contrast ratios
-- Screen reader friendly
-- Respects `prefers-reduced-motion`
-
-## Performance
-
-- Minimal JavaScript bundle
-- System fonts (no webfont downloads)
-- Lazy loading where applicable
-- Optimized images with width/height attributes
-- CSS code splitting
-
-## Browser Support
-
-- Modern browsers (Chrome, Firefox, Safari, Edge)
-- Mobile browsers (iOS Safari, Chrome Mobile)
+- **Registration** (`/registration`) - Multi-step registration form
+- **FAQ** (`/faq`) - Frequently asked questions
+- **Calculator** (`/calculator`) - Registration cost calculator
+- **Admin** (`/admin`) - Admin dashboard (protected)
 
 ## License
 
@@ -147,7 +101,7 @@ Customize Mint UI components in `src/styles/mint-overrides.css` while maintainin
 ## Contact
 
 Stephen & Ranae Bradd  
-824 W. Main St.  
+8754 Sunset Rd  
 Clinton, IL 61727  
 (217)935-5058  
 Stephen@Bradd.us

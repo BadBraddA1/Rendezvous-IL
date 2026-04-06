@@ -43,8 +43,8 @@ export function SiteHeader() {
           <Link href="/calculator" className="text-sm font-medium transition-colors hover:text-primary">
             Calculator
           </Link>
-          <Button size="sm" className="ml-4" asChild>
-            <Link href="/registration">Register Now</Link>
+          <Button size="sm" className="ml-4" variant="outline" asChild>
+            <Link href="/registration">Registration Closed</Link>
           </Button>
         </div>
 
@@ -98,8 +98,8 @@ export function SiteHeader() {
               >
                 Calculator
               </Link>
-              <Button size="lg" className="mt-8 w-full max-w-[250px]" asChild onClick={() => setOpen(false)}>
-                <Link href="/registration">Register Now</Link>
+              <Button size="lg" className="mt-8 w-full max-w-[250px]" variant="outline" asChild onClick={() => setOpen(false)}>
+                <Link href="/registration">Registration Closed</Link>
               </Button>
             </nav>
           </SheetContent>

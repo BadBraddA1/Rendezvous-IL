@@ -1,6 +1,9 @@
-import { ExternalLink, Users, Building, Calendar } from "lucide-react"
+import Link from "next/link"
+import { ExternalLink, Users, Building, Calendar, Calculator, CheckCircle2, Clock, DollarSign } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 
 export default function AboutPage() {
   return (
@@ -15,7 +18,7 @@ export default function AboutPage() {
                 About Rendezvous
               </h1>
               <p className="text-balance text-lg text-secondary-foreground/70">
-                A Christian homeschool family retreat built on fellowship, worship, recreation, & encouragement.
+                A Christian homeschool family retreat built on fellowship, worship, recreation, &amp; encouragement.
               </p>
             </div>
           </div>
@@ -24,18 +27,21 @@ export default function AboutPage() {
         <section className="py-20">
           <div className="container mx-auto max-w-4xl px-6">
             <div className="prose prose-lg max-w-none space-y-8 leading-relaxed">
+
+              {/* Origin Story */}
               <div className="rounded-xl border bg-gradient-to-br from-primary/5 to-accent/5 p-8">
                 <p className="text-lg leading-relaxed">
                   Greetings brethren! Our family has enjoyed Roundhouse for 20 years now and plans to continue attending
                   indefinitely, Lord willing. We appreciate the fellowship so much and look forward to it annually,
-                  despite the lengthy drive. We became aware of an alternative gathering for members of the Lord's
+                  despite the lengthy drive. We became aware of an alternative gathering for members of the Lord&apos;s
                   church who home educate (e.g., Roundup). We contemplated attending it but decided instead to launch an
-                  alternative here in Illinois near St. Louis. {/* Updated to "5 Days / 4 Nights" */}Our goal is to
-                  provide a 5 Days / 4 Nights retreat filled with fellowship, worship, recreation, and encouragement for
-                  Christian families who educate their children at home.
+                  alternative here in Illinois near St. Louis. Our goal is to provide a 5 Days / 4 Nights retreat filled
+                  with fellowship, worship, recreation, and encouragement for Christian families who educate their
+                  children at home.
                 </p>
               </div>
 
+              {/* Map */}
               <div className="my-12 overflow-hidden rounded-xl border bg-card shadow-sm">
                 <img
                   src="/images/preview-202025-11-25-2022.png"
@@ -46,7 +52,7 @@ export default function AboutPage() {
 
               <p className="text-lg leading-relaxed text-muted-foreground">
                 The first Rendezvous was in 2015 at Lake Williamson Christian Center (LWCC) in Carlinville, IL. The week
-                went smoothly & was so much fun for young and old alike! We decided to make Rendezvous an annual event
+                went smoothly &amp; was so much fun for young and old alike! We decided to make Rendezvous an annual event
                 (always starting the first Monday in May).
               </p>
 
@@ -70,8 +76,8 @@ export default function AboutPage() {
                 are offered with each meal, along with a full salad bar, desserts, and drinks). Not having to prepare
                 meals or clean-up afterward is a real treat; it simplifies things and allows more time for visiting and
                 activities. There are several lodging options: motel, RV, or tent camping. Each motel room can sleep up
-                to 6 people (either 2 queen beds plus 1 bunk bed or 1 queen bed plus 2 bunk beds—your choice). The motel
-                rooms are basic but provide all linens and a private bathroom. The RVers & tent campers use the shower
+                to 6 people (either 2 queen beds plus 1 bunk bed or 1 queen bed plus 2 bunk beds&mdash;your choice). The motel
+                rooms are basic but provide all linens and a private bathroom. The RVers &amp; tent campers use the shower
                 rooms at the indoor pool as needed (about 100 yards away).
               </p>
 
@@ -81,13 +87,107 @@ export default function AboutPage() {
 
               <p className="text-lg leading-relaxed text-muted-foreground">
                 If you know of others who may be interested in attending, please direct them to our website and Facebook
-                group. The Facebook group is "closed" for privacy, but you are encouraged to invite and add anyone to it
+                group. The Facebook group is &ldquo;closed&rdquo; for privacy, but you are encouraged to invite and add anyone to it
                 you think may be interested.
               </p>
 
-              <div className="my-12 grid gap-4 md:grid-cols-2">
-                
+              {/* How Registration Works */}
+              <div className="my-12">
+                <h2 className="mb-2 text-3xl font-bold">How Registration Works</h2>
+                <p className="mb-8 text-muted-foreground leading-relaxed">
+                  Registration for Rendezvous opens each year in the fall for the following May event. Here is a typical
+                  timeline of how it works:
+                </p>
 
+                {/* Timeline */}
+                <div className="relative space-y-0">
+                  {[
+                    {
+                      icon: Clock,
+                      color: "bg-primary",
+                      title: "Registration Opens",
+                      timing: "Fall (typically October–November)",
+                      description:
+                        "Registration opens several months before the event. An announcement goes out via the website and Facebook group.",
+                    },
+                    {
+                      icon: DollarSign,
+                      color: "bg-chart-4",
+                      title: "Discounted Registration Period",
+                      timing: "Through early March",
+                      description:
+                        "Families who register early receive a discounted registration fee. This is the best time to lock in your spot and save money.",
+                    },
+                    {
+                      icon: CheckCircle2,
+                      color: "bg-chart-2",
+                      title: "Regular Registration Period",
+                      timing: "Early March through mid-April",
+                      description:
+                        "Registration remains open at the standard fee. Lodging assignments are made on a first-come, first-served basis, so earlier is better for motel room availability.",
+                    },
+                    {
+                      icon: Calendar,
+                      color: "bg-destructive",
+                      title: "Registration Closes",
+                      timing: "Mid-April (typically April 15)",
+                      description:
+                        "Registration closes approximately two weeks before the event begins. No registrations are accepted after the deadline.",
+                    },
+                    {
+                      icon: Users,
+                      color: "bg-secondary",
+                      title: "Event Weekend",
+                      timing: "First Monday in May · 5 Days / 4 Nights",
+                      description:
+                        "Rendezvous kicks off! Check-in begins Monday afternoon and the event runs through Friday.",
+                    },
+                  ].map((step, i, arr) => (
+                    <div key={step.title} className="flex gap-4">
+                      <div className="flex flex-col items-center">
+                        <div
+                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white ${step.color}`}
+                        >
+                          <step.icon className="h-5 w-5" />
+                        </div>
+                        {i < arr.length - 1 && (
+                          <div className="my-1 w-0.5 flex-1 bg-border" />
+                        )}
+                      </div>
+                      <div className={`pb-8 ${i === arr.length - 1 ? "pb-0" : ""}`}>
+                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-0.5">
+                          {step.timing}
+                        </p>
+                        <h3 className="font-semibold text-base mb-1">{step.title}</h3>
+                        <p className="text-sm text-muted-foreground leading-relaxed">{step.description}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Calculator CTA */}
+                <div className="mt-10 rounded-xl border border-primary/20 bg-gradient-to-br from-primary/5 to-accent/5 p-6 flex flex-col sm:flex-row items-center gap-6">
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                    <Calculator className="h-7 w-7" />
+                  </div>
+                  <div className="flex-1 text-center sm:text-left">
+                    <h3 className="font-bold text-lg mb-1">Estimate Your Cost</h3>
+                    <p className="text-muted-foreground text-sm leading-relaxed">
+                      Wondering what Rendezvous will cost for your family? Use our Cost Calculator to get an estimate
+                      based on your family size, ages, and lodging choice.
+                    </p>
+                  </div>
+                  <Button size="lg" className="shrink-0" asChild>
+                    <Link href="/calculator">
+                      <Calculator className="mr-2 h-4 w-4" />
+                      Open Calculator
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+
+              {/* Links */}
+              <div className="my-12 grid gap-4 md:grid-cols-2">
                 <a
                   href="http://www.facebook.com/groups/RendezvousIL"
                   target="_blank"
@@ -98,15 +198,34 @@ export default function AboutPage() {
                     <div className="flex h-12 w-12 items-center justify-center rounded-full bg-accent text-accent-foreground">
                       <Users className="h-6 w-6" />
                     </div>
-                    <div>
+                    <div className="text-left">
                       <p className="font-semibold">Facebook Group</p>
                       <p className="text-sm text-muted-foreground">Join our community</p>
                     </div>
                   </div>
                   <ExternalLink className="h-5 w-5 text-primary transition-transform group-hover:translate-x-1" />
                 </a>
+
+                <a
+                  href="http://www.LakeWilliamson.org"
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="group rounded-xl border border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10 p-6 transition-all hover:border-primary/40 hover:shadow-lg text-center"
+                >
+                  <div className="mb-3 flex items-center gap-3">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                      <Building className="h-6 w-6" />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-semibold">Lake Williamson Christian Center</p>
+                      <p className="text-sm text-muted-foreground">View the venue</p>
+                    </div>
+                  </div>
+                  <ExternalLink className="h-5 w-5 text-primary transition-transform group-hover:translate-x-1" />
+                </a>
               </div>
 
+              {/* Attendance History */}
               <div className="my-12">
                 <div className="mb-6 flex items-center gap-3">
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-secondary text-secondary-foreground">
@@ -137,7 +256,7 @@ export default function AboutPage() {
                         { year: 2024, attendees: 124, theme: "Joshua" },
                         { year: 2025, attendees: 118, theme: "Judges" },
                         { year: 2026, attendees: "?", theme: "Galatians & Ephesians" },
-                      ].map((row, idx) => (
+                      ].map((row) => (
                         <tr
                           key={row.year}
                           className={`border-b transition-colors hover:bg-muted/50 ${
@@ -154,12 +273,13 @@ export default function AboutPage() {
                 </div>
               </div>
 
+              {/* Contact */}
               <div className="my-12 rounded-xl border border-primary/20 bg-gradient-to-br from-primary/5 via-card to-accent/5 p-8">
                 <h2 className="mb-6 text-2xl font-bold">Get in Touch</h2>
                 <p className="mb-6 leading-relaxed text-muted-foreground">
                   If you have any questions or concerns, please contact us.
                 </p>
-                <p className="mb-6 italic text-muted-foreground">Grace & peace,</p>
+                <p className="mb-6 italic text-muted-foreground">Grace &amp; peace,</p>
                 <div className="mb-6 flex justify-center">
                   <img
                     src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/20230901_114325-HCoWy8blcIb1Z5en7hOCTvO04ZoxJN.jpeg"
@@ -168,10 +288,11 @@ export default function AboutPage() {
                   />
                 </div>
                 <div className="space-y-2 text-center">
-                  <p className="font-handwriting text-3xl text-primary">Stephen & Ranae Bradd</p>
-                  <p className="text-sm font-semibold text-muted-foreground"> Retreat Organizers</p>
+                  <p className="font-handwriting text-3xl text-primary">Stephen &amp; Ranae Bradd</p>
+                  <p className="text-sm font-semibold text-muted-foreground">Retreat Organizers</p>
                 </div>
               </div>
+
             </div>
           </div>
         </section>

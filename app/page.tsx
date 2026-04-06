@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Calendar, MapPin, Users, Sparkles, ExternalLink, Wifi, Trophy, Play } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
-import { RegistrationCountdown } from "@/components/registration-countdown"
+import { Countdown } from "@/components/countdown"
 
 export default function HomePage() {
   const [isPlaying, setIsPlaying] = useState(false)
@@ -18,6 +18,7 @@ export default function HomePage() {
       <SiteHeader />
 
       <main>
+        {/* Hero */}
         <section className="relative overflow-hidden border-b bg-secondary py-20 md:py-32">
           <div className="absolute inset-0 z-0">
             <Image
@@ -29,7 +30,6 @@ export default function HomePage() {
             />
             <div className="absolute inset-0 bg-gradient-to-b from-secondary/60 via-secondary/70 to-secondary/90" />
           </div>
-          {/* </CHANGE> */}
           <div className="container relative z-10 mx-auto px-6">
             <div className="mx-auto max-w-4xl text-center">
               <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-secondary-foreground/20 bg-secondary-foreground/10 backdrop-blur-sm px-4 py-2 text-sm font-medium text-secondary-foreground">
@@ -39,13 +39,13 @@ export default function HomePage() {
               <h1 className="mb-6 text-balance text-5xl font-bold leading-[1.1] tracking-tight text-secondary-foreground md:text-7xl">
                 Rendezvous 2026
               </h1>
-              <p className="mb-4 text-balance text-2xl text-secondary-foreground/80 md:text-3xl">May 4-8, 2026</p>
+              <p className="mb-4 text-balance text-2xl text-secondary-foreground/80 md:text-3xl">May 4–8, 2026</p>
               <p className="mb-8 text-balance text-lg text-secondary-foreground/70 md:text-xl">
                 Lake Williamson Christian Center, Carlinville, IL
               </p>
               <div className="flex flex-wrap items-center justify-center gap-4">
                 <Button size="lg" className="h-14 px-8 text-base" asChild>
-                  <Link href="/registration">Register Now</Link>
+                  <Link href="/schedule">View Full Schedule</Link>
                 </Button>
                 <Button
                   size="lg"
@@ -53,55 +53,25 @@ export default function HomePage() {
                   asChild
                   className="h-14 px-8 text-base border-secondary-foreground/20 bg-secondary-foreground/5 backdrop-blur-sm text-secondary-foreground hover:bg-secondary-foreground/10"
                 >
-                  <Link href="/schedule">View Full Schedule</Link>
+                  <Link href="/about">About Rendezvous</Link>
                 </Button>
               </div>
             </div>
           </div>
         </section>
 
+        {/* Event Countdown */}
         <section className="border-b py-16 bg-gradient-to-br from-primary/5 to-accent/5">
           <div className="container mx-auto px-6">
-            <div className="mx-auto max-w-3xl">
-              <RegistrationCountdown />
-              <div className="my-8 flex items-center gap-4">
-                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent" />
-                <span className="text-sm font-medium text-muted-foreground">Registration Deadlines</span>
-                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent" />
-              </div>
-              <div className="text-center space-y-4">
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  <Card className="border-border/50 backdrop-blur bg-chart-4">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-card">Discounted Registration</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <CardDescription className="text-card">By midnight March 2, 2026 - $25 fee</CardDescription>
-                    </CardContent>
-                  </Card>
-                  <Card className="border-border/50 backdrop-blur bg-chart-2">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-card">Regular Registration</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <CardDescription className="text-card">March 2 - April 15, 2026 - $50 fee</CardDescription>
-                    </CardContent>
-                  </Card>
-                  <Card className="border-border/50 backdrop-blur bg-chart-1">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-card">Final Registration Deadline</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <CardDescription className="text-card">April 15, 2026</CardDescription>
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
-              {/* </CHANGE> */}
+            <div className="mx-auto max-w-3xl text-center">
+              <h2 className="mb-2 text-2xl font-bold tracking-tight">The Event Starts In</h2>
+              <p className="mb-8 text-muted-foreground">Monday, May 4, 2026 · Lake Williamson Christian Center</p>
+              <Countdown />
             </div>
           </div>
         </section>
 
+        {/* Video */}
         <section className="border-b py-20 bg-gradient-to-br from-background to-muted/20">
           <div className="container mx-auto px-6">
             <div className="mx-auto max-w-5xl">
@@ -121,7 +91,7 @@ export default function HomePage() {
                   )}
                   {isPlaying && (
                     <iframe
-                      src="https://stream.mux.com/Fu2mzvA8FO6sEUE01JWv8DvLgRz7K01hmvyBH01DTiDKyc.m3u8?autoplay=1"
+                      src="https://player.mux.com/Fu2mzvA8FO6sEUE01JWv8DvLgRz7K01hmvyBH01DTiDKyc?autoplay=1"
                       className="h-full w-full"
                       allow="autoplay; fullscreen; picture-in-picture"
                       allowFullScreen
@@ -141,6 +111,7 @@ export default function HomePage() {
           </div>
         </section>
 
+        {/* At-a-glance */}
         <section className="border-b py-16">
           <div className="container mx-auto px-6">
             <div className="grid gap-6 md:grid-cols-4">
@@ -151,7 +122,7 @@ export default function HomePage() {
                 </CardHeader>
                 <CardContent>
                   <CardDescription className="leading-relaxed">
-                    Lots of time for fellowship, worship, recreation, & encouragement!
+                    Lots of time for fellowship, worship, recreation, &amp; encouragement!
                   </CardDescription>
                 </CardContent>
               </Card>
@@ -195,21 +166,21 @@ export default function HomePage() {
           </div>
         </section>
 
+        {/* Learn More */}
         <section className="border-b py-20">
           <div className="container mx-auto max-w-4xl px-6">
             <h2 className="mb-8 text-balance text-4xl font-bold tracking-tight text-center">
-              Join Us for Fellowship & Fun
+              Join Us for Fellowship &amp; Fun
             </h2>
-            <div className="space-y-6 text-lg leading-relaxed text-muted-foreground">
-              <div className="flex flex-wrap justify-center gap-4 pt-4">
-                <Button variant="default" size="lg" asChild>
-                  <Link href="/about">Learn More About Rendezvous</Link>
-                </Button>
-              </div>
+            <div className="flex flex-wrap justify-center gap-4 pt-4">
+              <Button variant="default" size="lg" asChild>
+                <Link href="/about">Learn More About Rendezvous</Link>
+              </Button>
             </div>
           </div>
         </section>
 
+        {/* What to Expect */}
         <section className="py-20">
           <div className="container mx-auto px-6">
             <h2 className="mb-12 text-center text-4xl font-bold tracking-tight">What to Expect</h2>
@@ -253,9 +224,9 @@ export default function HomePage() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <p className="leading-relaxed text-muted-foreground">
-                    11 meals are buffet style in the Lakeside Dining Room plus 1 cookout by the lake (weather
-                    permitting). LWCC handles all cooking and cleanup. Gluten-free foods are labeled. Refrigerator space
-                    is available to store food for those with special dietary needs.
+                    11 meals buffet style in the Lakeside Dining Room plus 1 cookout by the lake (weather permitting).
+                    LWCC handles all cooking and cleanup. Gluten-free foods are labeled. Refrigerator space available for
+                    special dietary needs.
                   </p>
                 </CardContent>
               </Card>
@@ -269,7 +240,7 @@ export default function HomePage() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <p className="leading-relaxed text-muted-foreground">
-                    Everyone is encouraged to participate in the Bible Bowl on Thursday morning (children & adults).
+                    Everyone is encouraged to participate in the Bible Bowl on Thursday morning (children &amp; adults).
                     This is a great study opportunity for families!
                   </p>
                   <a
@@ -306,17 +277,18 @@ export default function HomePage() {
           </div>
         </section>
 
+        {/* Bottom CTA */}
         <section className="border-t bg-secondary py-20">
           <div className="container mx-auto px-6 text-center">
             <h2 className="mb-4 text-balance text-4xl font-bold tracking-tight text-secondary-foreground">
-              Ready to Join Us?
+              See You at Rendezvous 2026!
             </h2>
             <p className="mb-8 text-balance text-lg text-secondary-foreground/70">
-              Register for Rendezvous 2026 and be part of this amazing fellowship
+              May 4–8 · Lake Williamson Christian Center · Carlinville, IL
             </p>
             <div className="flex flex-wrap items-center justify-center gap-4">
               <Button size="lg" className="h-14 px-8 text-base" asChild>
-                <Link href="/registration">Register Now</Link>
+                <Link href="/schedule">View the Schedule</Link>
               </Button>
               <Button
                 size="lg"

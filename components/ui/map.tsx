@@ -1,18 +1,33 @@
 "use client"
 
 import * as React from "react"
-import maplibregl from "maplibre-gl"
-import "maplibre-gl/dist/maplibre-gl.css"
 import { cn } from "@/lib/utils"
 
-const MapContext = React.createContext<maplibregl.Map | null>(null)
+// US map bounds for coordinate projection
+const US_BOUNDS = {
+  minLng: -125,
+  maxLng: -66,
+  minLat: 24,
+  maxLat: 50,
+}
+
+function lngToPercent(lng: number) {
+  return ((lng - US_BOUNDS.minLng) / (US_BOUNDS.maxLng - US_BOUNDS.minLng)) * 100
+}
+
+function latToPercent(lat: number) {
+  return ((US_BOUNDS.maxLat - lat) / (US_BOUNDS.maxLat - US_BOUNDS.minLat)) * 100
+}
+
+type MapContextType = {
+  center: [number, number]
+  zoom: number
+}
+
+const MapContext = React.createContext<MapContextType>({ center: [0, 0], zoom: 5 })
 
 export function useMap() {
-  const context = React.useContext(MapContext)
-  if (!context) {
-    throw new Error("useMap must be used within a Map component")
-  }
-  return context
+  return React.useContext(MapContext)
 }
 
 interface MapProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -22,55 +37,52 @@ interface MapProps extends React.HTMLAttributes<HTMLDivElement> {
   maxZoom?: number
 }
 
-export function Map({ center = [0, 0], zoom = 9, minZoom = 0, maxZoom = 22, className, children, ...props }: MapProps) {
-  const mapContainer = React.useRef<HTMLDivElement>(null)
-  const map = React.useRef<maplibregl.Map | null>(null)
-  const [mapInstance, setMapInstance] = React.useState<maplibregl.Map | null>(null)
-
-  React.useEffect(() => {
-    if (map.current || !mapContainer.current) return
-
-    map.current = new maplibregl.Map({
-      container: mapContainer.current,
-      style: {
-        version: 8,
-        sources: {
-          carto: {
-            type: "raster",
-            tiles: [
-              "https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
-              "https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
-              "https://c.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
-            ],
-            tileSize: 256,
-          },
-        },
-        layers: [
-          {
-            id: "carto-layer",
-            type: "raster",
-            source: "carto",
-          },
-        ],
-      },
-      center: center as [number, number],
-      zoom,
-      minZoom,
-      maxZoom,
-    })
-
-    setMapInstance(map.current)
-
-    return () => {
-      map.current?.remove()
-      map.current = null
-    }
-  }, [])
-
+export function Map({ center = [0, 0], zoom = 5, className, children, ...props }: MapProps) {
   return (
-    <MapContext.Provider value={mapInstance}>
-      <div ref={mapContainer} className={cn("relative size-full", className)} {...props}>
-        {mapInstance && children}
+    <MapContext.Provider value={{ center, zoom }}>
+      <div
+        className={cn("relative size-full overflow-hidden rounded-lg bg-[#dbeafe]", className)}
+        {...props}
+      >
+        {/* US SVG map background */}
+        <svg
+          viewBox="0 0 1000 600"
+          className="absolute inset-0 size-full opacity-20"
+          preserveAspectRatio="xMidYMid meet"
+        >
+          {/* Simple US outline - approximate shapes for continental states */}
+          <rect x="50" y="50" width="900" height="500" rx="8" fill="#93c5fd" stroke="#3b82f6" strokeWidth="1" />
+          {/* State grid lines for visual reference */}
+          {[...Array(9)].map((_, i) => (
+            <line key={`v${i}`} x1={50 + i * 100} y1="50" x2={50 + i * 100} y2="550" stroke="#3b82f6" strokeWidth="0.5" opacity="0.4" />
+          ))}
+          {[...Array(5)].map((_, i) => (
+            <line key={`h${i}`} x1="50" y1={50 + i * 100} x2="950" y2={50 + i * 100} stroke="#3b82f6" strokeWidth="0.5" opacity="0.4" />
+          ))}
+        </svg>
+
+        {/* CARTO tile map using img tiles */}
+        <div className="absolute inset-0">
+          <img
+            src="https://a.basemaps.cartocdn.com/light_all/4/4/6.png"
+            className="hidden"
+            alt=""
+            crossOrigin="anonymous"
+          />
+        </div>
+
+        {/* OpenStreetMap embed via iframe */}
+        <iframe
+          src={`https://www.openstreetmap.org/export/embed.html?bbox=${center[0] - 20}%2C${center[1] - 12}%2C${center[0] + 20}%2C${center[1] + 12}&layer=mapnik`}
+          className="absolute inset-0 size-full border-0"
+          title="Registration Map"
+          loading="lazy"
+        />
+
+        {/* Markers rendered on top */}
+        <div className="absolute inset-0 pointer-events-none">
+          {children}
+        </div>
       </div>
     </MapContext.Provider>
   )
@@ -83,25 +95,30 @@ interface MapMarkerProps {
 }
 
 export function MapMarker({ longitude, latitude, children }: MapMarkerProps) {
-  const map = useMap()
-  const markerRef = React.useRef<maplibregl.Marker | null>(null)
-  const elementRef = React.useRef<HTMLDivElement>(null)
+  const [showPopup, setShowPopup] = React.useState(false)
 
-  React.useEffect(() => {
-    if (!map || !elementRef.current) return
+  const left = `${lngToPercent(longitude)}%`
+  const top = `${latToPercent(latitude)}%`
 
-    markerRef.current = new maplibregl.Marker({
-      element: elementRef.current,
-    })
-      .setLngLat([longitude, latitude])
-      .addTo(map)
-
-    return () => {
-      markerRef.current?.remove()
-    }
-  }, [map, longitude, latitude])
-
-  return <div ref={elementRef}>{children}</div>
+  return (
+    <div
+      className="absolute pointer-events-auto"
+      style={{ left, top, transform: "translate(-50%, -50%)" }}
+      onMouseEnter={() => setShowPopup(true)}
+      onMouseLeave={() => setShowPopup(false)}
+      onClick={() => setShowPopup((p) => !p)}
+    >
+      {React.Children.map(children, (child) => {
+        if (React.isValidElement(child)) {
+          if (child.type === MarkerPopup) {
+            return showPopup ? child : null
+          }
+          return child
+        }
+        return child
+      })}
+    </div>
+  )
 }
 
 interface MarkerContentProps {
@@ -119,16 +136,16 @@ interface MarkerLabelProps {
 
 export function MarkerLabel({ children, position = "top" }: MarkerLabelProps) {
   const positionClasses = {
-    top: "-top-8 left-1/2 -translate-x-1/2",
-    bottom: "top-8 left-1/2 -translate-x-1/2",
-    left: "top-1/2 -translate-y-1/2 right-8",
-    right: "top-1/2 -translate-y-1/2 left-8",
+    top: "-top-7 left-1/2 -translate-x-1/2",
+    bottom: "top-5 left-1/2 -translate-x-1/2",
+    left: "top-1/2 -translate-y-1/2 right-6",
+    right: "top-1/2 -translate-y-1/2 left-6",
   }
 
   return (
     <div
       className={cn(
-        "absolute whitespace-nowrap rounded-md bg-popover px-2 py-1 text-xs font-medium text-popover-foreground shadow-md",
+        "absolute whitespace-nowrap rounded bg-white/90 px-1.5 py-0.5 text-[10px] font-semibold text-gray-800 shadow",
         positionClasses[position],
       )}
     >
@@ -145,7 +162,7 @@ export function MarkerPopup({ children, className, ...props }: MarkerPopupProps)
   return (
     <div
       className={cn(
-        "absolute left-1/2 top-full z-50 mt-2 w-64 -translate-x-1/2 rounded-lg border bg-popover text-popover-foreground shadow-lg",
+        "absolute left-1/2 top-full z-50 mt-2 w-64 -translate-x-1/2 rounded-lg border bg-white text-gray-900 shadow-xl",
         className,
       )}
       {...props}
@@ -156,22 +173,5 @@ export function MarkerPopup({ children, className, ...props }: MarkerPopupProps)
 }
 
 export function MapControls() {
-  const map = useMap()
-
-  React.useEffect(() => {
-    if (!map) return
-
-    map.addControl(new maplibregl.NavigationControl(), "top-right")
-    map.addControl(
-      new maplibregl.GeolocateControl({
-        positionOptions: {
-          enableHighAccuracy: true,
-        },
-        trackUserLocation: true,
-      }),
-      "top-right",
-    )
-  }, [map])
-
   return null
 }

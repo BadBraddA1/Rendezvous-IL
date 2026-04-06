@@ -3,62 +3,65 @@ import { sql } from "@/lib/db"
 
 export async function GET() {
   try {
-    console.log("[v0] Fetching registrations for map...")
-
     const registrations = await sql`
       SELECT 
-        id,
-        family_last_name,
-        address,
-        city,
-        state,
-        zip
-      FROM registrations
-      WHERE address IS NOT NULL 
-        AND city IS NOT NULL 
-        AND state IS NOT NULL
-      ORDER BY created_at DESC
+        r.id,
+        r.family_last_name,
+        r.contact_first_name,
+        r.contact_last_name,
+        r.email,
+        r.address,
+        r.city,
+        r.state,
+        r.zip,
+        COALESCE(
+          json_agg(
+            json_build_object('firstName', fm.first_name, 'lastName', fm.last_name)
+            ORDER BY fm.id
+          ) FILTER (WHERE fm.id IS NOT NULL),
+          '[]'
+        ) AS family_members
+      FROM registrations r
+      LEFT JOIN family_members fm ON fm.registration_id = r.id
+      WHERE r.address IS NOT NULL 
+        AND r.city IS NOT NULL 
+        AND r.state IS NOT NULL
+      GROUP BY r.id, r.family_last_name, r.contact_first_name, r.contact_last_name, r.email, r.address, r.city, r.state, r.zip
+      ORDER BY r.created_at DESC
     `
-
-    console.log(`[v0] Found ${registrations.length} registrations with addresses`)
 
     const geocodedData = await Promise.all(
       registrations.map(async (reg: any) => {
         try {
           const fullAddress = `${reg.address}, ${reg.city}, ${reg.state} ${reg.zip}, USA`
-          console.log(`[v0] Geocoding: ${fullAddress}`)
-
-          // Use Nominatim (OpenStreetMap) free geocoding service
           const geocodeUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}&limit=1`
 
           const response = await fetch(geocodeUrl, {
-            headers: {
-              "User-Agent": "Rendezvous2026-Map/1.0",
-            },
+            headers: { "User-Agent": "Rendezvous2026-Map/1.0" },
           })
           const data = await response.json()
 
           if (data && data[0]) {
-            console.log(`[v0] Successfully geocoded ${reg.family_last_name}`)
             return {
               id: reg.id,
               lastName: reg.family_last_name,
-              address: `${reg.city}, ${reg.state}`,
+              contactName: `${reg.contact_first_name} ${reg.contact_last_name}`,
+              email: reg.email,
+              address: `${reg.address}, ${reg.city}, ${reg.state} ${reg.zip}`,
+              cityState: `${reg.city}, ${reg.state}`,
+              familyMembers: reg.family_members || [],
               lat: Number.parseFloat(data[0].lat),
               lng: Number.parseFloat(data[0].lon),
             }
           }
-          console.log(`[v0] No geocoding result for ${reg.family_last_name}`)
           return null
-        } catch (error) {
-          console.error(`[v0] Failed to geocode address for ${reg.family_last_name}:`, error)
+        } catch {
           return null
         }
       }),
     )
 
     const validData = geocodedData.filter((item) => item !== null)
-    console.log(`[v0] Successfully geocoded ${validData.length} registrations`)
 
     return NextResponse.json({
       center: {
