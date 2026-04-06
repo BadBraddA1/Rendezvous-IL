@@ -121,11 +121,10 @@ export default function HomePage() {
                   )}
                   {isPlaying && (
                     <iframe
-                      src="https://stream.mux.com/Fu2mzvA8FO6sEUE01JWv8DvLgRz7K01hmvyBH01DTiDKyc.m3u8?autoplay=1"
+                      src="https://player.mux.com/Fu2mzvA8FO6sEUE01JWv8DvLgRz7K01hmvyBH01DTiDKyc?autoplay=1&muted=0"
                       className="h-full w-full"
                       allow="autoplay; fullscreen; picture-in-picture"
                       allowFullScreen
-                      style={{ aspectRatio: "16/9" }}
                     />
                   )}
                   {!isPlaying && (
