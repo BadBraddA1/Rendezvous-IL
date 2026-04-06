@@ -1,0 +1,51 @@
+/* Mint UI Theme Overrides for WCAG AA Compliance */
+
+/* Ensure proper contrast ratios */
+.mint-button-primary {
+  background-color: var(--color-primary);
+}
+
+.mint-button-primary:active {
+  background-color: var(--color-primary-dark);
+}
+
+/* Tab/Segmented Control */
+.mint-navbar {
+  background-color: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.mint-tab-item {
+  color: var(--color-text);
+}
+
+.mint-tab-item.is-selected {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+/* Cards */
+.mint-cell {
+  background-color: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* Focus states for accessibility */
+.mint-button:focus-visible,
+.mint-tab-item:focus-visible,
+.mint-cell:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Collapse/Accordion */
+.mint-collapse-item {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.mint-collapse-title {
+  padding: var(--space-md);
+  background-color: var(--color-bg-alt);
+  font-weight: 600;
+}

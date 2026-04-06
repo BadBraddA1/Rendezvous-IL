@@ -1,0 +1,516 @@
+"use client"
+
+import type React from "react"
+import { Users } from "lucide-react"
+import { SiteHeader } from "@/components/site-header"
+import { SiteFooter } from "@/components/site-footer"
+import { useState } from "react"
+import { Countdown } from "@/components/countdown"
+
+export default function SchedulePage() {
+  const [activeDay, setActiveDay] = useState<string>("")
+
+  const handleDayClick = (e: React.MouseEvent<HTMLAnchorElement>, day: string) => {
+    e.preventDefault()
+    setActiveDay(day)
+
+    setTimeout(() => {
+      const element = document.getElementById(day)
+      if (element) {
+        const offset = 100
+        const elementPosition = element.getBoundingClientRect().top
+        const offsetPosition = elementPosition + window.pageYOffset - offset
+
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: "smooth",
+        })
+      }
+    }, 100)
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      <SiteHeader />
+
+      <main className="container mx-auto px-4 py-8 md:py-12">
+        <div className="mb-8">
+          <Countdown />
+        </div>
+
+        <div className="mb-8 text-center md:mb-12">
+          <h1 className="mb-3 text-balance text-3xl font-bold tracking-tight text-foreground md:mb-4 md:text-5xl">
+            Rendezvous 2026 Schedule
+          </h1>
+          <p className="text-balance text-base text-muted-foreground md:text-lg">May 4-8, 2026</p>
+          <p className="text-balance text-sm text-muted-foreground md:text-base">
+            Lake Williamson Christian Center, Carlinville, IL
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
+          <aside className="lg:sticky lg:top-24 lg:w-64 shrink-0">
+            <nav className="grid grid-cols-2 gap-2 rounded-xl border bg-card p-3 md:grid-cols-5 lg:flex lg:flex-col lg:gap-2 lg:p-4 justify-items-center">
+              <a
+                href="#monday"
+                onClick={(e) => handleDayClick(e, "monday")}
+                className={`flex flex-col items-center gap-2 rounded-lg p-3 transition-all hover:bg-secondary/10 lg:flex-row lg:gap-3 ${
+                  activeDay === "monday" ? "bg-secondary/20 ring-2 ring-secondary" : ""
+                }`}
+              >
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-secondary text-base font-bold text-secondary-foreground lg:h-10 lg:w-10 lg:text-sm">
+                  M
+                </div>
+                <span className="text-xs font-medium lg:text-sm lg:whitespace-nowrap">Monday</span>
+              </a>
+              <a
+                href="#tuesday"
+                onClick={(e) => handleDayClick(e, "tuesday")}
+                className={`flex flex-col items-center gap-2 rounded-lg p-3 transition-all hover:bg-primary/10 lg:flex-row lg:gap-3 ${
+                  activeDay === "tuesday" ? "bg-primary/20 ring-2 ring-primary" : ""
+                }`}
+              >
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-base font-bold text-primary-foreground lg:h-10 lg:w-10 lg:text-sm bg-[rgba(18,27,41,1)]">
+                  T
+                </div>
+                <span className="text-xs font-medium lg:text-sm lg:whitespace-nowrap">Tuesday</span>
+              </a>
+              <a
+                href="#wednesday"
+                onClick={(e) => handleDayClick(e, "wednesday")}
+                className={`flex flex-col items-center gap-2 rounded-lg p-3 transition-all hover:bg-foreground/10 lg:flex-row lg:gap-3 ${
+                  activeDay === "wednesday" ? "bg-foreground/20 ring-2 ring-foreground" : ""
+                }`}
+              >
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-foreground text-base font-bold text-background lg:h-10 lg:w-10 lg:text-sm">
+                  W
+                </div>
+                <span className="text-xs font-medium lg:text-sm lg:whitespace-nowrap">Wednesday</span>
+              </a>
+              <a
+                href="#thursday"
+                onClick={(e) => handleDayClick(e, "thursday")}
+                className={`flex flex-col items-center gap-2 rounded-lg p-3 transition-all hover:bg-primary/10 lg:flex-row lg:gap-3 ${
+                  activeDay === "thursday" ? "bg-primary/20 ring-2 ring-primary" : ""
+                }`}
+              >
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-base font-bold text-primary-foreground lg:h-10 lg:w-10 lg:text-sm bg-[rgba(18,27,41,1)]">
+                  T
+                </div>
+                <span className="text-xs font-medium lg:text-sm lg:whitespace-nowrap">Thursday</span>
+              </a>
+              <a
+                href="#friday"
+                onClick={(e) => handleDayClick(e, "friday")}
+                className={`flex flex-col items-center gap-2 rounded-lg p-3 transition-all hover:bg-secondary/10 lg:flex-row lg:gap-3 ${
+                  activeDay === "friday" ? "bg-secondary/20 ring-2 ring-secondary" : ""
+                }`}
+              >
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-secondary text-base font-bold text-secondary-foreground lg:h-10 lg:w-10 lg:text-sm">
+                  F
+                </div>
+                <span className="text-xs font-medium lg:text-sm lg:whitespace-nowrap">Friday</span>
+              </a>
+            </nav>
+          </aside>
+
+          <div className="flex-1 space-y-6 lg:space-y-8">
+            {/* Monday */}
+            <section
+              id="monday"
+              className="scroll-mt-24 rounded-xl border-2 border-secondary/20 bg-card p-4 shadow-sm md:p-6"
+            >
+              <div className="mb-4 flex items-center gap-2 md:mb-6 md:gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-base font-bold text-secondary-foreground md:h-12 md:w-12 md:text-lg">
+                  M
+                </div>
+                <h2 className="text-xl font-bold md:text-2xl">May 4 (Monday)</h2>
+              </div>
+              <dl className="space-y-4 md:space-y-6">
+                <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
+                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">1:00 – 5:15 PM</dt>
+                  <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
+                    Check-in at Activity Center (AC) [upstairs outside Room 207] [mini-fridge available in AC Room 205]
+                    <br />
+                    [Use this time for setting up RVs & tents, settling into motel rooms, and for visiting]
+                  </dd>
+                </div>
+                <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
+                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">4:00 – 5:00 PM</dt>
+                  <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
+                    Ice Breaker (Take-A-Hike Game or something else?) in AC Room 205/206
+                  </dd>
+                </div>
+                <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
+                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">5:30 PM</dt>
+                  <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
+                    Dinner at the Lakeside Dining Room (please gather outside for a prayer prior to each designated meal
+                    time)
+                  </dd>
+                </div>
+                <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
+                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">7:00 PM</dt>
+                  <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
+                    Evening assembly, welcome, family introductions, & announcements in AC Room 207
+                  </dd>
+                </div>
+                <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
+                  <dt className="mb-3 text-sm font-semibold text-primary md:text-base">
+                    Evening activities or free time at the Activity Center:
+                  </dt>
+                  <dd className="ml-4 space-y-2 text-sm leading-relaxed text-muted-foreground md:space-y-3 md:text-base">
+                    <p>
+                      <span className="font-semibold text-foreground">8:00 PM</span> Black-light* Dodgeball,
+                      Bombardment, & Steal the Bacon
+                    </p>
+                    <p>
+                      <span className="font-semibold text-foreground">9:00 PM</span> Nine Square & Knockout
+                    </p>
+                    <p className="text-xs italic md:text-sm">
+                      *It is recommended small children (under age 10) wear light colored clothing to be easily seen
+                      (and not "run over" by teens and adults)
+                    </p>
+                  </dd>
+                </div>
+              </dl>
+            </section>
+
+            {/* Tuesday */}
+            <section
+              id="tuesday"
+              className="scroll-mt-24 rounded-xl border-2 border-primary/20 bg-card p-4 shadow-sm md:p-6"
+            >
+              <div className="mb-4 flex items-center gap-2 md:mb-6 md:gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full text-base font-bold text-primary-foreground md:h-12 md:w-12 md:text-lg bg-[rgba(18,27,41,1)]">
+                  T
+                </div>
+                <h2 className="text-xl font-bold md:text-2xl">May 5 (Tuesday)</h2>
+              </div>
+              <dl className="space-y-4 md:space-y-6">
+                <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
+                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">7:30 AM</dt>
+                  <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
+                    Breakfast at the Lakeside Dining Room
+                  </dd>
+                </div>
+                <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
+                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">9:00 AM</dt>
+                  <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
+                    Morning assembly & announcements in AC Room 207
+                  </dd>
+                </div>
+                <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
+                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">10:00 AM</dt>
+                  <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
+                    Young Adult session at the Activity Center (non-parent graduates; meet in Ping Pong Room)
+                    <br />
+                    Mom's session in AC Room 207 (free time for everyone else; black-light activities & nine square)
+                  </dd>
+                </div>
+                <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
+                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">12:00 PM</dt>
+                  <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
+                    Lunch at the Lakeside Dining Room
+                  </dd>
+                </div>
+                <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
+                  <dt className="mb-3 text-sm font-semibold text-primary md:text-base">
+                    Outside afternoon activities (weather permitting) or free time:
+                  </dt>
+                  <dd className="ml-4 space-y-2 text-sm leading-relaxed text-muted-foreground md:space-y-3 md:text-base">
+                    <p>
+                      <span className="font-semibold text-foreground">1:30 PM</span> Archery, Obstacle course, & rope
+                      games (Tug of War / Kajabe Cancan / Hoosker Doosker)
+                    </p>
+                    <p>
+                      <span className="font-semibold text-foreground">3:30 PM</span> Kids' movie in AC Room 207
+                    </p>
+                    <p>
+                      <span className="font-semibold text-foreground">3:30 PM</span> Human Foosball
+                    </p>
+                  </dd>
+                </div>
+                <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
+                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">5:30 PM</dt>
+                  <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
+                    Dinner at the Lakeside Dining Room
+                  </dd>
+                </div>
+                <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
+                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">7:00 PM</dt>
+                  <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
+                    Evening assembly & announcements in AC Room 207
+                  </dd>
+                </div>
+                <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
+                  <dt className="mb-3 text-sm font-semibold text-primary md:text-base">
+                    Evening activities or free time at the Activity Center:
+                  </dt>
+                  <dd className="ml-4 space-y-2 text-sm leading-relaxed text-muted-foreground md:space-y-3 md:text-base">
+                    <p>
+                      <span className="font-semibold text-foreground">8:00 PM</span> Main gym time & table games
+                    </p>
+                    <p>
+                      <span className="font-semibold text-foreground">8:00 – 10:00 PM</span> Indoor pool time for
+                      females (with female lifeguard) – bring your own towel from home
+                    </p>
+                  </dd>
+                </div>
+              </dl>
+            </section>
+
+            {/* Wednesday */}
+            <section
+              id="wednesday"
+              className="scroll-mt-24 rounded-xl border-2 border-accent/20 bg-card p-4 shadow-sm md:p-6"
+            >
+              <div className="mb-4 flex items-center gap-2 md:mb-6 md:gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-foreground text-base font-bold text-background md:h-12 md:w-12 md:text-lg">
+                  W
+                </div>
+                <h2 className="text-xl font-bold md:text-2xl">May 6 (Wednesday)</h2>
+              </div>
+              <dl className="space-y-4 md:space-y-6">
+                <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
+                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">7:30 AM</dt>
+                  <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
+                    Breakfast at the Lakeside Dining Room
+                  </dd>
+                </div>
+                <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
+                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">9:00 AM</dt>
+                  <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
+                    Morning assembly, group picture, & announcements in AC Room 207
+                  </dd>
+                </div>
+                <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
+                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">10:00 AM</dt>
+                  <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
+                    Dad's session in AC Room 207 (free time for everyone else; black-light activities & nine square)
+                  </dd>
+                </div>
+                <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
+                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">12:00 PM</dt>
+                  <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
+                    Lunch at the Lakeside Dining Room
+                  </dd>
+                </div>
+                <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
+                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">2:30 PM</dt>
+                  <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
+                    <a
+                      href="https://docs.google.com/document/d/1_lCl-SAWgHRITnPfoYP-U1l074Z6PxBO8h6M2f4w-k4/edit?usp=drivesdk"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline"
+                    >
+                      Scrabble Tournament
+                    </a>{" "}
+                    in AC Room 205/206
+                  </dd>
+                </div>
+                <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
+                  <dt className="mb-3 text-sm font-semibold text-primary md:text-base">
+                    Outside afternoon activities (weather permitting) or free time:
+                  </dt>
+                  <dd className="ml-4 space-y-2 text-sm leading-relaxed text-muted-foreground md:space-y-3 md:text-base">
+                    <p>
+                      <span className="font-semibold text-foreground">1:30 PM</span> Kickball
+                    </p>
+                    <p>
+                      <span className="font-semibold text-foreground">2:30 PM</span> Gaga Ball Tournament
+                    </p>
+                    <p>
+                      <span className="font-semibold text-foreground">3:30 PM</span> Kids' movie & craft in AC Room 207
+                    </p>
+                    <p>
+                      <span className="font-semibold text-foreground">3:30 PM</span> Disc golf (begins behind Activity
+                      Center)
+                    </p>
+                  </dd>
+                </div>
+                <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
+                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">5:30 PM</dt>
+                  <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
+                    Dinner at the Lakeside Dining Room
+                  </dd>
+                </div>
+                <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
+                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">7:00 PM</dt>
+                  <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
+                    Evening assembly & announcements in Room 207 at the Activity Center
+                  </dd>
+                </div>
+                <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
+                  <dt className="mb-3 text-sm font-semibold text-primary md:text-base">
+                    Evening activities or free time at the Activity Center:
+                  </dt>
+                  <dd className="ml-4 space-y-2 text-sm leading-relaxed text-muted-foreground md:space-y-3 md:text-base">
+                    <p>
+                      <span className="font-semibold text-foreground">8:00 PM</span> Main gym time & table games
+                    </p>
+                    <p>
+                      <span className="font-semibold text-foreground">8:00 – 10:00 PM</span> Indoor pool time for males
+                      (with male lifeguard) – bring your own towel from home
+                    </p>
+                  </dd>
+                </div>
+              </dl>
+            </section>
+
+            {/* Thursday */}
+            <section
+              id="thursday"
+              className="scroll-mt-24 rounded-xl border-2 border-primary/20 bg-card p-4 shadow-sm md:p-6"
+            >
+              <div className="mb-4 flex items-center gap-2 md:mb-6 md:gap-3">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-base font-bold text-primary-foreground lg:h-10 lg:w-10 lg:text-sm bg-[rgba(18,27,41,1)]">
+                  T
+                </div>
+                <h2 className="text-xl font-bold md:text-2xl">May 7 (Thursday)</h2>
+              </div>
+              <dl className="space-y-4 md:space-y-6">
+                <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
+                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">7:30 AM</dt>
+                  <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
+                    Breakfast at the Lakeside Dining Room
+                  </dd>
+                </div>
+                <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
+                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">9:00 AM</dt>
+                  <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
+                    Morning assembly & announcements in AC Room 207
+                  </dd>
+                </div>
+                <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
+                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">10:00 AM</dt>
+                  <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
+                    Bible bowl (everyone is encouraged to participate:{" "}
+                    <a href="/biblebowl" className="inline-flex items-center gap-1 text-primary hover:underline">
+                      Bible Bowl Info
+                      <Users className="h-3 w-3" />
+                    </a>
+                    )
+                  </dd>
+                </div>
+                <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
+                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">10:20 AM</dt>
+                  <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
+                    Ping Pong tournament at the Activity Center
+                  </dd>
+                </div>
+                <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
+                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">12:00 PM</dt>
+                  <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
+                    Lunch at the Lakeside Dining Room
+                  </dd>
+                </div>
+                <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
+                  <dt className="mb-3 text-sm font-semibold text-primary md:text-base">
+                    Outside afternoon activities (weather permitting) or free time:
+                  </dt>
+                  <dd className="ml-4 space-y-2 text-sm leading-relaxed text-muted-foreground md:space-y-3 md:text-base">
+                    <p>
+                      <span className="font-semibold text-foreground">1:30 – 3:30 PM</span> Paddle boats & canoes at the
+                      beachfront
+                    </p>
+
+                    <p>
+                      <span className="font-semibold text-foreground">3:30 PM</span> Kids' movie in AC Room 207
+                    </p>
+                    <p>
+                      <span className="font-semibold text-foreground">3:30 PM</span> Billiards & air hockey tournaments
+                      at the Activity Center [if needed, finish up any other tourneys]
+                    </p>
+                  </dd>
+                </div>
+                <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
+                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">5:30 PM</dt>
+                  <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
+                    Cookout by the lake (weather permitting)
+                  </dd>
+                </div>
+                <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
+                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">6:30 PM</dt>
+                  <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
+                    Hayrides (starting by the lake)
+                  </dd>
+                </div>
+                <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
+                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">7:00 PM</dt>
+                  <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
+                    Evening assembly & announcements at the bonfire [no song books or projector]
+                  </dd>
+                </div>
+                <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
+                  <dt className="mb-3 text-sm font-semibold text-primary md:text-base">
+                    Evening activities or free time at the Activity Center:
+                  </dt>
+                  <dd className="ml-4 space-y-2 text-sm leading-relaxed text-muted-foreground md:space-y-3 md:text-base">
+                    <p>
+                      <span className="font-semibold text-foreground">8:00 PM</span> Glow-in-the-Dark Capture the Flag
+                      [2 simultaneous games]
+                    </p>
+                    <p>
+                      <span className="font-semibold text-foreground">9:00 PM</span> Adult/Teen Volleyball
+                    </p>
+                  </dd>
+                </div>
+              </dl>
+            </section>
+
+            {/* Friday */}
+            <section
+              id="friday"
+              className="scroll-mt-24 rounded-xl border-2 border-secondary/20 bg-card p-4 shadow-sm md:p-6"
+            >
+              <div className="mb-4 flex items-center gap-2 md:mb-6 md:gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-base font-bold text-secondary-foreground md:h-12 md:w-12 md:text-lg">
+                  F
+                </div>
+                <h2 className="text-xl font-bold md:text-2xl">May 8 (Friday)</h2>
+              </div>
+              <dl className="space-y-4 md:space-y-6">
+                <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
+                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">7:30 AM</dt>
+                  <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
+                    Breakfast at the Lakeside Dining Room
+                  </dd>
+                </div>
+                <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
+                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">9:00 AM</dt>
+                  <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
+                    Morning assembly, Bible bowl awards, & brainstorming for next year in AC Room 207
+                  </dd>
+                </div>
+                <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
+                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">10:30 AM</dt>
+                  <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
+                    Pack up & clean up lodging areas (return motel keys to our meeting room by 11:30 AM)
+                  </dd>
+                </div>
+                <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
+                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">12:00 PM</dt>
+                  <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
+                    Lunch at the Lakeside Dining Room & then depart for home
+                  </dd>
+                </div>
+                <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
+                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">1:30 PM</dt>
+                  <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
+                    Add-on Activity: Indoor Climbing Tower [$10 per person; pre-registration by April 15th required]
+                  </dd>
+                </div>
+              </dl>
+            </section>
+
+            {/* Plan B */}
+          </div>
+        </div>
+      </main>
+
+      {/* Footer */}
+      <SiteFooter />
+    </div>
+  )
+}

@@ -1,0 +1,67 @@
+"use client"
+
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { LayoutDashboard, Users, Settings, FileText, LogOut, MapPin } from "lucide-react"
+
+interface AdminNavProps {
+  currentPage: string
+  admin: { email: string; role: string }
+}
+
+export function AdminNav({ currentPage, admin }: AdminNavProps) {
+  const router = useRouter()
+
+  const handleLogout = async () => {
+    await fetch("/api/admin/logout", { method: "POST" })
+    router.push("/admin/login")
+    router.refresh()
+  }
+
+  const navItems = [
+    { href: "/admin", label: "Dashboard", icon: LayoutDashboard, page: "dashboard" },
+    { href: "/admin/registrations", label: "Registrations", icon: Users, page: "registrations" },
+    { href: "/admin/map", label: "Map", icon: MapPin, page: "map" },
+    { href: "/admin/settings", label: "Settings", icon: Settings, page: "settings", requireAdmin: true },
+    { href: "/admin/audit", label: "Audit Logs", icon: FileText, page: "audit", requireAdmin: true },
+  ]
+
+  return (
+    <header className="border-b bg-card">
+      <div className="container flex h-16 items-center justify-between px-4">
+        <div className="flex items-center gap-6">
+          <h1 className="text-lg font-semibold">Rendezvous Admin</h1>
+          <nav className="flex gap-1">
+            {navItems.map((item) => {
+              if (item.requireAdmin && admin.role === "viewer") return null
+
+              const Icon = item.icon
+              const isActive = currentPage === item.page || (currentPage === "" && item.page === "dashboard")
+
+              return (
+                <Link key={item.href} href={item.href}>
+                  <Button variant={isActive ? "secondary" : "ghost"} size="sm" className="gap-2">
+                    <Icon className="h-4 w-4" />
+                    {item.label}
+                  </Button>
+                </Link>
+              )
+            })}
+          </nav>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <div className="text-right">
+            <p className="text-sm font-medium">{admin.email}</p>
+            <p className="text-xs text-muted-foreground capitalize">{admin.role}</p>
+          </div>
+          <Button variant="outline" size="sm" onClick={handleLogout} className="gap-2 bg-transparent">
+            <LogOut className="h-4 w-4" />
+            Logout
+          </Button>
+        </div>
+      </div>
+    </header>
+  )
+}
