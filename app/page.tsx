@@ -107,7 +107,7 @@ export default function HomePage() {
             <div className="mx-auto max-w-5xl">
               <h2 className="mb-8 text-center text-4xl font-bold tracking-tight">Experience Rendezvous</h2>
               <div className="overflow-hidden rounded-2xl border border-border/50 bg-card shadow-2xl">
-                <div className="relative aspect-video w-full group cursor-pointer" onClick={() => !isPlaying && setIsPlaying(true)}>
+                <div className="relative aspect-video w-full">
                   {isPlaying ? (
                     <iframe
                       src="https://player.mux.com/Fu2mzvA8FO6sEUE01JWv8DvLgRz7K01hmvyBH01DTiDKyc?autoplay=1&muted=0"
@@ -116,7 +116,11 @@ export default function HomePage() {
                       allowFullScreen
                     />
                   ) : (
-                    <>
+                    <button
+                      onClick={() => setIsPlaying(true)}
+                      className="group absolute inset-0 flex items-center justify-center"
+                      aria-label="Play video"
+                    >
                       <img
                         src="https://image.mux.com/Fu2mzvA8FO6sEUE01JWv8DvLgRz7K01hmvyBH01DTiDKyc/thumbnail.jpg?width=1200&height=675&fit_mode=smartcrop"
                         alt="Rendezvous retreat preview"
@@ -127,7 +131,7 @@ export default function HomePage() {
                           <Play className="h-10 w-10 ml-1" fill="currentColor" />
                         </div>
                       </div>
-                    </>
+                    </button>
                   )}
                 </div>
               </div>
