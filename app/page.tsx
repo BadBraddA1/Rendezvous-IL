@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
@@ -12,6 +12,17 @@ import { Countdown } from "@/components/countdown"
 
 export default function HomePage() {
   const [isPlaying, setIsPlaying] = useState(false)
+  const iframeRef = useRef<HTMLIFrameElement>(null)
+
+  const handlePlayClick = () => {
+    setIsPlaying(true)
+    // Trigger play after iframe mounts
+    setTimeout(() => {
+      if (iframeRef.current) {
+        iframeRef.current.contentWindow?.postMessage({ type: "play" }, "*")
+      }
+    }, 100)
+  }
 
   return (
     <div className="min-h-screen">
@@ -80,7 +91,8 @@ export default function HomePage() {
                 <div className="relative aspect-video w-full group">
                   {isPlaying ? (
                     <iframe
-                      src="https://player.mux.com/Fu2mzvA8FO6sEUE01JWv8DvLgRz7K01hmvyBH01DTiDKyc?autoplay=1"
+                      ref={iframeRef}
+                      src="https://player.mux.com/Fu2mzvA8FO6sEUE01JWv8DvLgRz7K01hmvyBH01DTiDKyc"
                       className="absolute inset-0 h-full w-full"
                       allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"
                       allowFullScreen={true}
@@ -89,7 +101,7 @@ export default function HomePage() {
                     />
                   ) : (
                     <button
-                      onClick={() => setIsPlaying(true)}
+                      onClick={handlePlayClick}
                       className="group absolute inset-0 flex items-center justify-center focus:outline-none"
                       aria-label="Play video"
                     >

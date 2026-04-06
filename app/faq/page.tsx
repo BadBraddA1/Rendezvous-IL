@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ExternalLink, Play } from "lucide-react"
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 
@@ -41,6 +41,17 @@ const faqVideos = [
 
 function VideoCard({ video }: { video: (typeof faqVideos)[0] }) {
   const [isPlaying, setIsPlaying] = useState(false)
+  const iframeRef = useRef<HTMLIFrameElement>(null)
+
+  const handlePlayClick = () => {
+    setIsPlaying(true)
+    // Trigger play after iframe mounts
+    setTimeout(() => {
+      if (iframeRef.current) {
+        iframeRef.current.contentWindow?.postMessage({ type: "play" }, "*")
+      }
+    }, 100)
+  }
 
   return (
     <Card className="overflow-hidden border-border/50 bg-card shadow-lg transition-all hover:shadow-xl">
@@ -51,7 +62,8 @@ function VideoCard({ video }: { video: (typeof faqVideos)[0] }) {
         <div className="relative aspect-video w-full bg-muted">
           {isPlaying ? (
             <iframe
-              src={`https://player.mux.com/${video.id}?autoplay=1`}
+              ref={iframeRef}
+              src={`https://player.mux.com/${video.id}`}
               className="absolute inset-0 h-full w-full"
               allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"
               allowFullScreen={true}
@@ -60,7 +72,7 @@ function VideoCard({ video }: { video: (typeof faqVideos)[0] }) {
             />
           ) : (
             <button
-              onClick={() => setIsPlaying(true)}
+              onClick={handlePlayClick}
               className="group absolute inset-0 flex items-center justify-center"
             >
               <img
