@@ -78,9 +78,9 @@ export default function HomePage() {
               <h2 className="mb-8 text-center text-4xl font-bold tracking-tight">Experience Rendezvous</h2>
               <div className="overflow-hidden rounded-2xl border border-border/50 bg-card shadow-2xl">
                 <div className="relative aspect-video w-full group">
-                  {/* iframe pre-loads in background, plays instantly on click */}
+                  {/* iframe always loaded — src never changes so no reload on click */}
                   <iframe
-                    src={`https://player.mux.com/Fu2mzvA8FO6sEUE01JWv8DvLgRz7K01hmvyBH01DTiDKyc${isPlaying ? "?autoplay=1" : ""}`}
+                    src="https://player.mux.com/Fu2mzvA8FO6sEUE01JWv8DvLgRz7K01hmvyBH01DTiDKyc?autoplay=1"
                     className="absolute inset-0 h-full w-full"
                     allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"
                     allowFullScreen={true}

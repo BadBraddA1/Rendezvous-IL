@@ -49,9 +49,9 @@ function VideoCard({ video }: { video: (typeof faqVideos)[0] }) {
       </CardHeader>
       <CardContent className="p-0">
         <div className="relative aspect-video w-full bg-muted">
-          {/* iframe pre-loads in background, shown instantly on click */}
+          {/* iframe always loaded — src never changes so no reload on click */}
           <iframe
-            src={`https://player.mux.com/${video.id}${isPlaying ? "?autoplay=1" : ""}`}
+            src={`https://player.mux.com/${video.id}?autoplay=1`}
             className="absolute inset-0 h-full w-full"
             allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"
             allowFullScreen={true}
