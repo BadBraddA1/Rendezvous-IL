@@ -5,7 +5,7 @@ import { Users } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { useState } from "react"
-import { Countdown } from "@/components/countdown"
+import { LiveTracker } from "@/components/live-tracker"
 
 export default function SchedulePage() {
   const [activeDay, setActiveDay] = useState<string>("")
@@ -35,7 +35,7 @@ export default function SchedulePage() {
 
       <main className="container mx-auto px-4 py-8 md:py-12">
         <div className="mb-8">
-          <Countdown />
+          <LiveTracker />
         </div>
 
         <div className="mb-8 text-center md:mb-12">
