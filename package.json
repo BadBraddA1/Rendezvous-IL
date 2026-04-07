@@ -33,6 +33,7 @@
     "date-fns": "^4.1.0",
     "jose": "^5.0.0",
     "lucide-react": "0.454.0",
+    "maplibre-gl": "^5.22.0",
     "recharts": "2.15.0",
     "resend": "^4.0.1",
     "tailwind-merge": "^3.3.1",
