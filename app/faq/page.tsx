@@ -65,12 +65,11 @@ function VideoCard({ video }: { video: (typeof faqVideos)[0] }) {
               </div>
             </button>
           ) : (
-            <iframe
-              src={`https://stream.mux.com/${video.id}?autoplay=1`}
+          <iframe
+              src={`https://player.mux.com/${video.id}?autoplay=1`}
               className="h-full w-full"
               allow="autoplay; fullscreen; picture-in-picture"
               allowFullScreen
-              style={{ aspectRatio: "16/9" }}
             />
           )}
         </div>

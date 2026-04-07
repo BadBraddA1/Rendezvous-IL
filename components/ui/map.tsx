@@ -1,107 +1,73 @@
 "use client"
 
 import * as React from "react"
-import maplibregl from "maplibre-gl"
-import "maplibre-gl/dist/maplibre-gl.css"
 import { cn } from "@/lib/utils"
-
-const MapContext = React.createContext<maplibregl.Map | null>(null)
-
-export function useMap() {
-  const context = React.useContext(MapContext)
-  if (!context) {
-    throw new Error("useMap must be used within a Map component")
-  }
-  return context
-}
 
 interface MapProps extends React.HTMLAttributes<HTMLDivElement> {
   center?: [number, number]
   zoom?: number
-  minZoom?: number
-  maxZoom?: number
 }
 
-export function Map({ center = [0, 0], zoom = 9, minZoom = 0, maxZoom = 22, className, children, ...props }: MapProps) {
-  const mapContainer = React.useRef<HTMLDivElement>(null)
-  const map = React.useRef<maplibregl.Map | null>(null)
-  const [mapInstance, setMapInstance] = React.useState<maplibregl.Map | null>(null)
-
-  React.useEffect(() => {
-    if (map.current || !mapContainer.current) return
-
-    map.current = new maplibregl.Map({
-      container: mapContainer.current,
-      style: {
-        version: 8,
-        sources: {
-          carto: {
-            type: "raster",
-            tiles: [
-              "https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
-              "https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
-              "https://c.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
-            ],
-            tileSize: 256,
-          },
-        },
-        layers: [
-          {
-            id: "carto-layer",
-            type: "raster",
-            source: "carto",
-          },
-        ],
-      },
-      center: center as [number, number],
-      zoom,
-      minZoom,
-      maxZoom,
-    })
-
-    setMapInstance(map.current)
-
-    return () => {
-      map.current?.remove()
-      map.current = null
-    }
-  }, [])
+export function Map({ center = [-89.8815, 39.2794], zoom = 5, className, children, ...props }: MapProps) {
+  const [selectedMarker, setSelectedMarker] = React.useState<string | null>(null)
 
   return (
-    <MapContext.Provider value={mapInstance}>
-      <div ref={mapContainer} className={cn("relative size-full", className)} {...props}>
-        {mapInstance && children}
+    <MapContext.Provider value={{ selectedMarker, setSelectedMarker }}>
+      <div className={cn("relative size-full overflow-hidden", className)} {...props}>
+        {/* OpenStreetMap iframe as base layer */}
+        <iframe
+          src={`https://www.openstreetmap.org/export/embed.html?bbox=${center[0] - 15}%2C${center[1] - 10}%2C${center[0] + 15}%2C${center[1] + 10}&layer=mapnik`}
+          className="absolute inset-0 h-full w-full border-0"
+          style={{ filter: "saturate(0.9)" }}
+        />
+        {/* Overlay for markers */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="relative h-full w-full pointer-events-auto">
+            {children}
+          </div>
+        </div>
       </div>
     </MapContext.Provider>
   )
 }
 
+const MapContext = React.createContext<{
+  selectedMarker: string | null
+  setSelectedMarker: (id: string | null) => void
+}>({
+  selectedMarker: null,
+  setSelectedMarker: () => {},
+})
+
 interface MapMarkerProps {
   longitude: number
   latitude: number
   children?: React.ReactNode
+  id?: string
 }
 
-export function MapMarker({ longitude, latitude, children }: MapMarkerProps) {
-  const map = useMap()
-  const markerRef = React.useRef<maplibregl.Marker | null>(null)
-  const elementRef = React.useRef<HTMLDivElement>(null)
+export function MapMarker({ longitude, latitude, children, id }: MapMarkerProps) {
+  // Simple projection for US-centric map (approximate)
+  // This converts lat/lng to percentage positions on the map
+  const centerLng = -89.8815
+  const centerLat = 39.2794
+  const lngRange = 30 // degrees of longitude shown
+  const latRange = 20 // degrees of latitude shown
 
-  React.useEffect(() => {
-    if (!map || !elementRef.current) return
+  const x = ((longitude - (centerLng - lngRange / 2)) / lngRange) * 100
+  const y = (((centerLat + latRange / 2) - latitude) / latRange) * 100
 
-    markerRef.current = new maplibregl.Marker({
-      element: elementRef.current,
-    })
-      .setLngLat([longitude, latitude])
-      .addTo(map)
+  // Only render if within bounds
+  if (x < 0 || x > 100 || y < 0 || y > 100) return null
 
-    return () => {
-      markerRef.current?.remove()
-    }
-  }, [map, longitude, latitude])
-
-  return <div ref={elementRef}>{children}</div>
+  return (
+    <div
+      className="absolute transform -translate-x-1/2 -translate-y-1/2"
+      style={{ left: `${x}%`, top: `${y}%` }}
+    >
+      {children}
+    </div>
+  )
 }
 
 interface MarkerContentProps {
@@ -109,7 +75,7 @@ interface MarkerContentProps {
 }
 
 export function MarkerContent({ children }: MarkerContentProps) {
-  return <div className="relative">{children}</div>
+  return <div className="relative cursor-pointer">{children}</div>
 }
 
 interface MarkerLabelProps {
@@ -128,7 +94,7 @@ export function MarkerLabel({ children, position = "top" }: MarkerLabelProps) {
   return (
     <div
       className={cn(
-        "absolute whitespace-nowrap rounded-md bg-popover px-2 py-1 text-xs font-medium text-popover-foreground shadow-md",
+        "absolute whitespace-nowrap rounded-md bg-popover px-2 py-1 text-xs font-medium text-popover-foreground shadow-md hidden group-hover:block",
         positionClasses[position],
       )}
     >
@@ -142,36 +108,29 @@ interface MarkerPopupProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 export function MarkerPopup({ children, className, ...props }: MarkerPopupProps) {
+  const [isOpen, setIsOpen] = React.useState(false)
+
   return (
-    <div
-      className={cn(
-        "absolute left-1/2 top-full z-50 mt-2 w-64 -translate-x-1/2 rounded-lg border bg-popover text-popover-foreground shadow-lg",
-        className,
+    <div className="group" onClick={() => setIsOpen(!isOpen)}>
+      {isOpen && (
+        <div
+          className={cn(
+            "absolute left-1/2 top-full z-50 mt-2 min-w-[200px] -translate-x-1/2 rounded-lg border bg-popover text-popover-foreground shadow-lg",
+            className,
+          )}
+          {...props}
+        >
+          {children}
+        </div>
       )}
-      {...props}
-    >
-      {children}
     </div>
   )
 }
 
 export function MapControls() {
-  const map = useMap()
+  return null
+}
 
-  React.useEffect(() => {
-    if (!map) return
-
-    map.addControl(new maplibregl.NavigationControl(), "top-right")
-    map.addControl(
-      new maplibregl.GeolocateControl({
-        positionOptions: {
-          enableHighAccuracy: true,
-        },
-        trackUserLocation: true,
-      }),
-      "top-right",
-    )
-  }, [map])
-
+export function useMap() {
   return null
 }

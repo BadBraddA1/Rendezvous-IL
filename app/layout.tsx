@@ -1,7 +1,7 @@
 import type React from "react"
 import type { Metadata } from "next"
 import { Geist, Geist_Mono, Dancing_Script } from "next/font/google"
-import { Analytics } from "@vercel/analytics/next"
+import { Analytics } from "@vercel/analytics/react"
 import { ScrollToTop } from "@/components/scroll-to-top"
 import { BackToTop } from "@/components/back-to-top"
 import { RegistrationPopup } from "@/components/registration-popup"
@@ -12,6 +12,7 @@ const _geistMono = Geist_Mono({ subsets: ["latin"] })
 const _dancingScript = Dancing_Script({ subsets: ["latin"], variable: "--font-handwriting" })
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://rendezvousil.com"),
   title: "Rendezvous 2026 — Christian Homeschool Family Retreat",
   description:
     "A 5 day / 4 night retreat filled with fellowship, worship, recreation, and encouragement for Christian families who educate their children at home. May 5-9, 2026 at Lake Williamson Christian Center, Carlinville, IL.",

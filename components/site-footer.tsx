@@ -1,3 +1,5 @@
+import Link from "next/link"
+
 export function SiteFooter() {
   return (
     <footer className="border-t py-12">
@@ -14,6 +16,11 @@ export function SiteFooter() {
           </div>
           <div className="border-t pt-8 text-center text-sm text-muted-foreground space-y-2">
             <p>© 2025 RendezvousIL. All rights reserved.</p>
+            <p>
+              <Link href="/privacy" className="hover:text-primary hover:underline">
+                Privacy Policy
+              </Link>
+            </p>
             <p>
               Powered by{" "}
               <a
