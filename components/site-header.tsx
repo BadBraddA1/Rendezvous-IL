@@ -8,14 +8,13 @@ import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Badge } from "@/components/ui/badge"
 
-const REGISTRATION_DEADLINE = Date.UTC(2026, 3, 15, 16, 59, 0)
-const EVENT_START = Date.UTC(2026, 4, 4, 18, 0, 0)
-const EVENT_END = Date.UTC(2026, 4, 8, 17, 0, 0)
+// Registration is closed — only event start/end matter now.
+const EVENT_START = Date.UTC(2026, 4, 4, 18, 0, 0) // May 4, 2026 1:00 PM CT
+const EVENT_END = Date.UTC(2026, 4, 8, 17, 0, 0)   // May 8, 2026 12:00 PM CT
 
-type HeaderPhase = "open" | "closed" | "live" | "done"
+type HeaderPhase = "closed" | "live" | "done"
 
 function getHeaderPhase(now: number): HeaderPhase {
-  if (now < REGISTRATION_DEADLINE) return "open"
   if (now < EVENT_START) return "closed"
   if (now < EVENT_END) return "live"
   return "done"
@@ -32,11 +31,7 @@ export function SiteHeader() {
   }, [])
 
   const headerCta =
-    phase === "open" ? (
-      <Button size="sm" className="ml-4" asChild>
-        <Link href="/registration">Register Now</Link>
-      </Button>
-    ) : phase === "live" ? (
+    phase === "live" ? (
       <Badge className="ml-4 flex items-center gap-1.5 rounded-full bg-green-500 px-3 py-1 text-xs font-bold text-white">
         <Radio className="h-3 w-3 animate-pulse" />
         Live Now
@@ -52,16 +47,23 @@ export function SiteHeader() {
     )
 
   const mobileCta =
-    phase === "open" ? (
-      <Button size="lg" className="mt-8 w-full max-w-[250px]" asChild onClick={() => setOpen(false)}>
-        <Link href="/registration">Register Now</Link>
-      </Button>
-    ) : phase === "live" ? (
-      <Button size="lg" className="mt-8 w-full max-w-[250px] bg-green-500 hover:bg-green-600" asChild onClick={() => setOpen(false)}>
+    phase === "live" ? (
+      <Button
+        size="lg"
+        className="mt-8 w-full max-w-[250px] bg-green-500 hover:bg-green-600"
+        asChild
+        onClick={() => setOpen(false)}
+      >
         <Link href="/schedule">View Schedule</Link>
       </Button>
     ) : (
-      <Button size="lg" variant="outline" className="mt-8 w-full max-w-[250px]" asChild onClick={() => setOpen(false)}>
+      <Button
+        size="lg"
+        variant="outline"
+        className="mt-8 w-full max-w-[250px]"
+        asChild
+        onClick={() => setOpen(false)}
+      >
         <Link href="/schedule">View Schedule</Link>
       </Button>
     )
@@ -110,22 +112,46 @@ export function SiteHeader() {
           </SheetTrigger>
           <SheetContent side="right" className="w-[300px] sm:w-[400px]">
             <nav className="flex flex-col items-center gap-8 pt-16">
-              <Link href="/" className="text-xl font-medium text-center transition-colors hover:text-primary" onClick={() => setOpen(false)}>
+              <Link
+                href="/"
+                className="text-xl font-medium text-center transition-colors hover:text-primary"
+                onClick={() => setOpen(false)}
+              >
                 Home
               </Link>
-              <Link href="/schedule" className="text-xl font-medium text-center transition-colors hover:text-primary" onClick={() => setOpen(false)}>
+              <Link
+                href="/schedule"
+                className="text-xl font-medium text-center transition-colors hover:text-primary"
+                onClick={() => setOpen(false)}
+              >
                 Schedule
               </Link>
-              <Link href="/about" className="text-xl font-medium text-center transition-colors hover:text-primary" onClick={() => setOpen(false)}>
+              <Link
+                href="/about"
+                className="text-xl font-medium text-center transition-colors hover:text-primary"
+                onClick={() => setOpen(false)}
+              >
                 About
               </Link>
-              <Link href="/biblebowl" className="text-xl font-medium text-center transition-colors hover:text-primary" onClick={() => setOpen(false)}>
+              <Link
+                href="/biblebowl"
+                className="text-xl font-medium text-center transition-colors hover:text-primary"
+                onClick={() => setOpen(false)}
+              >
                 Bible Bowl
               </Link>
-              <Link href="/faq" className="text-xl font-medium text-center transition-colors hover:text-primary" onClick={() => setOpen(false)}>
+              <Link
+                href="/faq"
+                className="text-xl font-medium text-center transition-colors hover:text-primary"
+                onClick={() => setOpen(false)}
+              >
                 FAQ
               </Link>
-              <Link href="/calculator" className="text-xl font-medium text-center transition-colors hover:text-primary" onClick={() => setOpen(false)}>
+              <Link
+                href="/calculator"
+                className="text-xl font-medium text-center transition-colors hover:text-primary"
+                onClick={() => setOpen(false)}
+              >
                 Calculator
               </Link>
               {mobileCta}

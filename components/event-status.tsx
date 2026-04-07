@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Clock, MapPin, Radio, CalendarX, ArrowRight } from "lucide-react"
+import { Clock, MapPin, Radio, CalendarX } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 
@@ -12,15 +12,13 @@ interface TimeLeft {
   seconds: number
 }
 
-type EventPhase = "registration-open" | "registration-closed" | "event-live" | "post-event"
+// Registration is closed. Only two future phases remain: event-live and post-event.
+type EventPhase = "registration-closed" | "event-live" | "post-event"
 
-// Key dates (all in UTC, offset for Central Time = UTC-5 in May)
-const REGISTRATION_DEADLINE = Date.UTC(2026, 3, 15, 16, 59, 0) // Apr 15, 2026 11:59 PM CT
-const EVENT_START = Date.UTC(2026, 4, 4, 18, 0, 0)             // May 4, 2026 1:00 PM CT
-const EVENT_END = Date.UTC(2026, 4, 8, 17, 0, 0)               // May 8, 2026 12:00 PM CT
+const EVENT_START = Date.UTC(2026, 4, 4, 18, 0, 0) // May 4, 2026 1:00 PM CT
+const EVENT_END = Date.UTC(2026, 4, 8, 17, 0, 0)   // May 8, 2026 12:00 PM CT
 
 function getPhase(now: number): EventPhase {
-  if (now < REGISTRATION_DEADLINE) return "registration-open"
   if (now < EVENT_START) return "registration-closed"
   if (now < EVENT_END) return "event-live"
   return "post-event"
@@ -63,9 +61,7 @@ export function EventStatus() {
       const currentPhase = getPhase(now)
       setPhase(currentPhase)
 
-      if (currentPhase === "registration-open") {
-        setTimeLeft(calculateTimeLeft(REGISTRATION_DEADLINE, now))
-      } else if (currentPhase === "registration-closed") {
+      if (currentPhase === "registration-closed") {
         setTimeLeft(calculateTimeLeft(EVENT_START, now))
       } else {
         setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 })
@@ -131,44 +127,16 @@ export function EventStatus() {
     )
   }
 
-  // ----- REGISTRATION OPEN -----
-  if (phase === "registration-open") {
-    return (
-      <div className="flex flex-col items-center gap-6 text-center">
-        <div className="flex items-center gap-2 rounded-full bg-primary/10 px-5 py-2 text-sm font-semibold text-primary uppercase tracking-widest">
-          <Clock className="h-4 w-4" />
-          Registration closes in
-        </div>
-        <div className="flex flex-wrap justify-center gap-4">
-          <CountdownUnit value={timeLeft.days} label="Days" />
-          <CountdownUnit value={timeLeft.hours} label="Hours" />
-          <CountdownUnit value={timeLeft.minutes} label="Minutes" />
-          <CountdownUnit value={timeLeft.seconds} label="Seconds" />
-        </div>
-        <p className="text-sm text-muted-foreground">Deadline: April 15, 2026 at 11:59 PM Central Time</p>
-        <Button size="lg" asChild>
-          <Link href="/registration">
-            Register Now
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Link>
-        </Button>
-      </div>
-    )
-  }
-
   // ----- REGISTRATION CLOSED — countdown to event -----
   return (
     <div className="flex flex-col items-center gap-6 text-center">
-      {/* Status pill */}
       <div className="flex items-center gap-2 rounded-full bg-amber-500/15 px-5 py-2 text-sm font-semibold text-amber-700 uppercase tracking-widest dark:text-amber-400">
         <CalendarX className="h-4 w-4" />
         Registration Closed
       </div>
 
-      {/* Label */}
       <p className="text-lg font-semibold text-muted-foreground">Event starts in</p>
 
-      {/* Countdown tiles */}
       <div className="flex flex-wrap justify-center gap-4">
         <CountdownUnit value={timeLeft.days} label="Days" />
         <CountdownUnit value={timeLeft.hours} label="Hours" />
@@ -176,7 +144,6 @@ export function EventStatus() {
         <CountdownUnit value={timeLeft.seconds} label="Seconds" />
       </div>
 
-      {/* Date + location */}
       <div className="flex flex-col items-center gap-1.5 text-sm text-muted-foreground">
         <span className="font-medium text-foreground">May 4–8, 2026</span>
         <span className="flex items-center gap-1.5">
@@ -185,7 +152,6 @@ export function EventStatus() {
         </span>
       </div>
 
-      {/* Secondary CTAs */}
       <div className="flex flex-wrap justify-center gap-3">
         <Button size="lg" variant="outline" asChild>
           <Link href="/schedule">View Schedule</Link>
