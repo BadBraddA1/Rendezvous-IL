@@ -55,7 +55,7 @@ export default async function DevlogPage() {
             <div className="mx-auto max-w-4xl text-center">
               <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-secondary-foreground/20 bg-secondary-foreground/10 backdrop-blur-sm px-4 py-2 text-sm font-medium text-secondary-foreground">
                 <GitPullRequest className="h-4 w-4" />
-                Powered by GitHub
+                Powered By BraddCorp
               </div>
               <h1 className="mb-4 text-balance text-5xl font-bold tracking-tight text-secondary-foreground md:text-6xl">
                 Dev Log
