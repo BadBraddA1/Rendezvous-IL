@@ -20,6 +20,10 @@ export function SiteFooter() {
               <Link href="/privacy" className="hover:text-primary hover:underline">
                 Privacy Policy
               </Link>
+              {" | "}
+              <Link href="/devlog" className="hover:text-primary hover:underline">
+                Dev Log
+              </Link>
             </p>
             <p>
               Powered by{" "}
