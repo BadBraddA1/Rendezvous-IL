@@ -26,6 +26,8 @@ export interface PullRequest {
 
 type Filter = "all" | "merged" | "open" | "closed"
 
+const MAX_SUMMARY_LENGTH = 200
+
 function prStatus(pr: PullRequest): "merged" | "open" | "closed" {
   if (pr.merged_at) return "merged"
   if (pr.state === "open") return "open"
@@ -60,7 +62,7 @@ function StatusBadge({ status }: { status: "merged" | "open" | "closed" }) {
 function PRCard({ pr }: { pr: PullRequest }) {
   const status = prStatus(pr)
   const date = pr.merged_at ?? pr.updated_at
-  const summary = pr.body?.trim().split("\n")[0]?.slice(0, 200) ?? null
+  const summary = pr.body?.trim().split("\n")[0]?.slice(0, MAX_SUMMARY_LENGTH) ?? null
 
   return (
     <Card className="border-border/50 bg-card/50 backdrop-blur transition-all hover:border-primary/40 hover:shadow-md">

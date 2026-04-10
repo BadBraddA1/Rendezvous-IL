@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 
-const GITHUB_OWNER = "BadBraddA1"
-const GITHUB_REPO = "Rendezvous-IL"
+const GITHUB_OWNER = process.env.GITHUB_OWNER ?? "BadBraddA1"
+const GITHUB_REPO = process.env.GITHUB_REPO ?? "Rendezvous-IL"
 
 export async function GET() {
   const token = process.env.GITHUB_TOKEN

@@ -3,8 +3,8 @@ import { SiteFooter } from "@/components/site-footer"
 import { DevlogClient, type PullRequest } from "./DevlogClient"
 import { GitPullRequest } from "lucide-react"
 
-const GITHUB_OWNER = "BadBraddA1"
-const GITHUB_REPO = "Rendezvous-IL"
+const GITHUB_OWNER = process.env.GITHUB_OWNER ?? "BadBraddA1"
+const GITHUB_REPO = process.env.GITHUB_REPO ?? "Rendezvous-IL"
 
 async function fetchPullRequests(): Promise<PullRequest[]> {
   const token = process.env.GITHUB_TOKEN
