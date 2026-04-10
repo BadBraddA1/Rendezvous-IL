@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Calendar, MapPin, Users, Sparkles, ExternalLink, Wifi, Trophy, Play } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
-import { RegistrationCountdown } from "@/components/registration-countdown"
+import { EventCountdown } from "@/components/event-countdown"
 
 export default function HomePage() {
   const [isPlaying, setIsPlaying] = useState(false)
@@ -45,7 +45,7 @@ export default function HomePage() {
               </p>
               <div className="flex flex-wrap items-center justify-center gap-4">
                 <Button size="lg" className="h-14 px-8 text-base" asChild>
-                  <Link href="/registration">Register Now</Link>
+                  <Link href="/schedule">View Full Schedule</Link>
                 </Button>
                 <Button
                   size="lg"
@@ -53,7 +53,7 @@ export default function HomePage() {
                   asChild
                   className="h-14 px-8 text-base border-secondary-foreground/20 bg-secondary-foreground/5 backdrop-blur-sm text-secondary-foreground hover:bg-secondary-foreground/10"
                 >
-                  <Link href="/schedule">View Full Schedule</Link>
+                  <Link href="/about">Learn More</Link>
                 </Button>
               </div>
             </div>
@@ -62,42 +62,8 @@ export default function HomePage() {
 
         <section className="border-b py-16 bg-gradient-to-br from-primary/5 to-accent/5">
           <div className="container mx-auto px-6">
-            <div className="mx-auto max-w-3xl">
-              <RegistrationCountdown />
-              <div className="my-8 flex items-center gap-4">
-                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent" />
-                <span className="text-sm font-medium text-muted-foreground">Registration Deadlines</span>
-                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent" />
-              </div>
-              <div className="text-center space-y-4">
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  <Card className="border-border/50 backdrop-blur bg-chart-4">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-card">Discounted Registration</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <CardDescription className="text-card">By midnight March 2, 2026 - $25 fee</CardDescription>
-                    </CardContent>
-                  </Card>
-                  <Card className="border-border/50 backdrop-blur bg-chart-2">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-card">Regular Registration</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <CardDescription className="text-card">March 2 - April 15, 2026 - $50 fee</CardDescription>
-                    </CardContent>
-                  </Card>
-                  <Card className="border-border/50 backdrop-blur bg-chart-1">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-card">Final Registration Deadline</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <CardDescription className="text-card">April 15, 2026</CardDescription>
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
-              {/* </CHANGE> */}
+            <div className="mx-auto max-w-4xl">
+              <EventCountdown />
             </div>
           </div>
         </section>
@@ -307,14 +273,14 @@ export default function HomePage() {
         <section className="border-t bg-secondary py-20">
           <div className="container mx-auto px-6 text-center">
             <h2 className="mb-4 text-balance text-4xl font-bold tracking-tight text-secondary-foreground">
-              Ready to Join Us?
+              See You Soon!
             </h2>
             <p className="mb-8 text-balance text-lg text-secondary-foreground/70">
-              Register for Rendezvous 2026 and be part of this amazing fellowship
+              We are excited to welcome all registered families to Rendezvous 2026
             </p>
             <div className="flex flex-wrap items-center justify-center gap-4">
               <Button size="lg" className="h-14 px-8 text-base" asChild>
-                <Link href="/registration">Register Now</Link>
+                <Link href="/schedule">View Schedule</Link>
               </Button>
               <Button
                 size="lg"

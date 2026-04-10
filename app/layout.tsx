@@ -4,7 +4,7 @@ import { Geist, Geist_Mono, Dancing_Script } from "next/font/google"
 import { Analytics } from "@vercel/analytics/react"
 import { ScrollToTop } from "@/components/scroll-to-top"
 import { BackToTop } from "@/components/back-to-top"
-import { RegistrationPopup } from "@/components/registration-popup"
+
 import "./globals.css"
 
 const _geist = Geist({ subsets: ["latin"] })
@@ -58,7 +58,6 @@ export default function RootLayout({
         <ScrollToTop />
         {children}
         <BackToTop />
-        <RegistrationPopup />
         <Analytics />
       </body>
     </html>
