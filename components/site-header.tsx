@@ -44,7 +44,7 @@ export function SiteHeader() {
             Calculator
           </Link>
           <Button size="sm" className="ml-4" asChild>
-            <Link href="/registration">Register Now</Link>
+            <Link href="/schedule">View Schedule</Link>
           </Button>
         </div>
 
@@ -99,7 +99,7 @@ export function SiteHeader() {
                 Calculator
               </Link>
               <Button size="lg" className="mt-8 w-full max-w-[250px]" asChild onClick={() => setOpen(false)}>
-                <Link href="/registration">Register Now</Link>
+                <Link href="/schedule">View Schedule</Link>
               </Button>
             </nav>
           </SheetContent>
