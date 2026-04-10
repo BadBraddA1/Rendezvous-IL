@@ -22,6 +22,11 @@ export function SiteFooter() {
               </Link>
             </p>
             <p>
+              <Link href="/devlog" className="hover:text-primary hover:underline">
+                Dev Log
+              </Link>
+            </p>
+            <p>
               Powered by{" "}
               <a
                 href="https://braddcorp.com"
