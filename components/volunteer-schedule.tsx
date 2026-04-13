@@ -28,15 +28,11 @@ export function VolunteerSchedule({ date, timeSlot }: VolunteerScheduleProps) {
       try {
         setIsLoading(true)
         const url = `/api/volunteer-schedule?date=${date}&timeSlot=${encodeURIComponent(timeSlot)}`
-        console.log("[v0] Fetching volunteer schedule:", url)
         const res = await fetch(url)
-        console.log("[v0] Response status:", res.status)
         if (!res.ok) throw new Error("Failed to fetch schedule")
         const data = await res.json()
-        console.log("[v0] Schedule data:", data)
         setSchedule(data.schedule)
       } catch (err) {
-        console.error("[v0] Error fetching schedule:", err)
         setError(err instanceof Error ? err : new Error("Unknown error"))
       } finally {
         setIsLoading(false)
@@ -55,19 +51,9 @@ export function VolunteerSchedule({ date, timeSlot }: VolunteerScheduleProps) {
     )
   }
 
-  if (error) {
-    console.error("[v0] Error state:", error)
-    return <div className="mt-3 text-xs text-red-500">Error: {error.message}</div>
+  if (error || !schedule) {
+    return null
   }
-
-  if (!schedule) {
-    console.log("[v0] No schedule data returned")
-    return <div className="mt-3 text-xs text-yellow-500">No schedule data</div>
-  }
-
-  // Check if there's any volunteer data
-  const hasData = Object.values(schedule).some((v) => v !== null)
-  console.log("[v0] Schedule values:", schedule, "hasData:", hasData)
 
   const scheduleItems = [
     { label: "Opening Prayer", value: schedule.openingPrayer },

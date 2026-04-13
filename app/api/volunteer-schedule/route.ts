@@ -14,22 +14,20 @@ export async function GET(request: Request) {
   }
 
   try {
-    console.log("[v0] API called with date:", date, "timeSlot:", timeSlot)
-    
     // Fetch volunteer schedule for the given date and time slot (show all regardless of status)
     const volunteers = await sql`
       SELECT 
-        volunteer_name,
-        volunteer_type,
-        prayer_type,
-        schedule_status
-      FROM volunteer_signups
-      WHERE assigned_date = ${date}::date
-        AND time_slot = ${timeSlot}
-      ORDER BY volunteer_type, prayer_type
+        vs.volunteer_name,
+        vs.volunteer_type,
+        vs.prayer_type,
+        vs.schedule_status,
+        r.family_last_name
+      FROM volunteer_signups vs
+      LEFT JOIN registrations r ON vs.registration_id = r.id
+      WHERE vs.assigned_date = ${date}::date
+        AND vs.time_slot = ${timeSlot}
+      ORDER BY vs.volunteer_type, vs.prayer_type
     `
-
-    console.log("[v0] Query returned volunteers:", volunteers.length, volunteers)
 
     // Organize data into the specified order
     const schedule = {
@@ -44,7 +42,10 @@ export async function GET(request: Request) {
     }
 
     for (const v of volunteers) {
-      const name = v.volunteer_name
+      // Combine first name with last name if available
+      const firstName = v.volunteer_name || ""
+      const lastName = v.family_last_name || ""
+      const name = lastName ? `${firstName} ${lastName}` : firstName
       const type = v.volunteer_type
       const prayerType = v.prayer_type
 
@@ -75,7 +76,6 @@ export async function GET(request: Request) {
       }
     }
 
-    console.log("[v0] Final schedule:", JSON.stringify(schedule))
     return NextResponse.json({ schedule })
   } catch (error) {
     console.error("[v0] Volunteer schedule error:", error)
