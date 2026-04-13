@@ -14,7 +14,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    // Fetch volunteer schedule for the given date and time slot
+    // Fetch volunteer schedule for the given date and time slot (show all regardless of status)
     const volunteers = await sql`
       SELECT 
         volunteer_name,
@@ -24,7 +24,6 @@ export async function GET(request: Request) {
       FROM volunteer_signups
       WHERE assigned_date = ${date}::date
         AND time_slot = ${timeSlot}
-        AND schedule_status IN ('approved', 'scheduled')
       ORDER BY volunteer_type, prayer_type
     `
 
