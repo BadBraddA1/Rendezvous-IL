@@ -67,28 +67,24 @@ export default function SchedulePage() {
 
         {/* Map Modal */}
         {showMap && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-            <div className="relative w-full max-w-4xl h-[80vh] bg-background rounded-xl overflow-hidden shadow-2xl">
-              <div className="absolute top-0 left-0 right-0 z-30 flex items-center justify-between p-3 bg-background/95 border-b">
-                <h2 className="font-semibold">Lake Williamson Venue Map</h2>
+          <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/60 p-3 md:p-6">
+            <div className="relative w-full max-w-4xl flex flex-col bg-background rounded-xl overflow-hidden shadow-2xl" style={{ height: "min(85vh, 600px)" }}>
+              {/* Thin title bar */}
+              <div className="flex items-center justify-between px-4 py-2.5 border-b shrink-0">
+                <h2 className="font-semibold text-sm">Lake Williamson Venue Map</h2>
                 <button
-                  onClick={() => {
-                    setShowMap(false)
-                    setHighlightedLocation(null)
-                  }}
-                  className="p-2 hover:bg-muted rounded-md transition-colors"
+                  onClick={() => { setShowMap(false); setHighlightedLocation(null) }}
+                  className="p-2 hover:bg-muted rounded-md transition-colors touch-manipulation"
                   aria-label="Close map"
                 >
-                  <X className="h-5 w-5" />
+                  <X className="h-4 w-4" />
                 </button>
               </div>
-              <div className="pt-14 h-full">
+              {/* Map fills remaining space exactly */}
+              <div className="flex-1 min-h-0">
                 <ScheduleMap
                   highlightedLocationId={highlightedLocation}
-                  onClose={() => {
-                    setShowMap(false)
-                    setHighlightedLocation(null)
-                  }}
+                  onClose={() => { setShowMap(false); setHighlightedLocation(null) }}
                 />
               </div>
             </div>

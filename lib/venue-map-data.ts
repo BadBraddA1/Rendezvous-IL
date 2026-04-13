@@ -89,14 +89,6 @@ export const mapLocations: MapLocation[] = [
     y: 26.6, 
     category: "recreation" 
   },
-  { 
-    id: "beachfront", 
-    name: "Beachfront", 
-    description: "Lake beach area for free time", 
-    x: 15.5, 
-    y: 30.4, 
-    category: "recreation" 
-  },
 ]
 
 // Schedule events matching the actual Rendezvous 2026 schedule
