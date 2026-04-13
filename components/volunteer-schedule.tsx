@@ -13,8 +13,10 @@ interface Schedule {
   leadingSingingB: string | null
   readingScriptureA: string | null
   presentingLessonA: string | null
+  lessonTitleA: string | null
   readingScriptureB: string | null
   presentingLessonB: string | null
+  lessonTitleB: string | null
   closingPrayer: string | null
 }
 
@@ -60,22 +62,34 @@ export function VolunteerSchedule({ date, timeSlot }: VolunteerScheduleProps) {
     { label: "[A] Leading singing", value: schedule.leadingSingingA },
     { label: "[B] Leading singing", value: schedule.leadingSingingB },
     { label: "[A] Reading scripture", value: schedule.readingScriptureA },
-    { label: "[A] Presenting a lesson", value: schedule.presentingLessonA },
+    { label: "[A] Presenting a lesson", value: schedule.presentingLessonA, lessonTitle: schedule.lessonTitleA },
     { label: "[B] Reading scripture", value: schedule.readingScriptureB },
-    { label: "[B] Presenting a lesson", value: schedule.presentingLessonB },
+    { label: "[B] Presenting a lesson", value: schedule.presentingLessonB, lessonTitle: schedule.lessonTitleB },
     { label: "Closing Prayer", value: schedule.closingPrayer },
   ]
+
+  // Filter out items that don't have a value assigned (hide TBD entries)
+  const filledItems = scheduleItems.filter((item) => item.value)
+
+  // Don't show the schedule section if no items are filled
+  if (filledItems.length === 0) {
+    return null
+  }
 
   return (
     <div className="mt-3 rounded-md border border-primary/20 bg-primary/5 p-3">
       <p className="text-xs font-semibold text-primary mb-2">Volunteer Schedule</p>
       <ul className="space-y-1 text-xs md:text-sm text-muted-foreground">
-        {scheduleItems.map((item) => (
+        {filledItems.map((item) => (
           <li key={item.label} className="flex justify-between gap-2">
-            <span className="text-foreground/70">{item.label}:</span>
-            <span className="font-medium text-foreground">
-              {item.value || <span className="italic text-muted-foreground">TBD</span>}
+            <span className="text-foreground/70">
+              {item.label}
+              {item.lessonTitle && (
+                <span className="italic text-muted-foreground"> - {item.lessonTitle}</span>
+              )}
+              :
             </span>
+            <span className="font-medium text-foreground">{item.value}</span>
           </li>
         ))}
       </ul>

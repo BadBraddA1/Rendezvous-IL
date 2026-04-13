@@ -21,9 +21,11 @@ export async function GET(request: Request) {
         vs.volunteer_type,
         vs.prayer_type,
         vs.schedule_status,
-        r.family_last_name
+        r.family_last_name,
+        lt.title as lesson_title
       FROM volunteer_signups vs
       LEFT JOIN registrations r ON vs.registration_id = r.id
+      LEFT JOIN lesson_topics lt ON vs.claimed_lesson_id = lt.id
       WHERE vs.assigned_date = ${date}::date
         AND vs.time_slot = ${timeSlot}
       ORDER BY vs.volunteer_type, vs.prayer_type
@@ -36,8 +38,10 @@ export async function GET(request: Request) {
       leadingSingingB: null as string | null,
       readingScriptureA: null as string | null,
       presentingLessonA: null as string | null,
+      lessonTitleA: null as string | null,
       readingScriptureB: null as string | null,
       presentingLessonB: null as string | null,
+      lessonTitleB: null as string | null,
       closingPrayer: null as string | null,
     }
 
@@ -70,8 +74,10 @@ export async function GET(request: Request) {
       } else if (type === "Presenting a lesson") {
         if (prayerType === "A") {
           schedule.presentingLessonA = name
+          schedule.lessonTitleA = v.lesson_title || null
         } else if (prayerType === "B") {
           schedule.presentingLessonB = name
+          schedule.lessonTitleB = v.lesson_title || null
         }
       }
     }
