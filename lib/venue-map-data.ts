@@ -25,26 +25,26 @@ export const mapLocations: MapLocation[] = [
   // Main venue locations used in schedule
   { 
     id: "activities-center", 
-    name: "Activities Center", 
+    name: "Activities Center (Room 207)", 
     description: "Check-In, Room 207, Room 205/206, Main Gym, Indoor Pool, Ping Pong Room", 
-    x: 58, 
-    y: 21, 
+    x: 70.7, 
+    y: 24.8, 
     category: "meeting" 
   },
   { 
     id: "lakeside-dining", 
     name: "Lakeside Dining Room", 
     description: "All meals - Breakfast, Lunch, Dinner", 
-    x: 51, 
-    y: 60, 
+    x: 65.3, 
+    y: 57.6, 
     category: "dining" 
   },
   { 
     id: "bonfire-site", 
     name: "Pavilions & Bonfire Site", 
     description: "Thursday evening assembly location", 
-    x: 14, 
-    y: 17, 
+    x: 16, 
+    y: 19.1, 
     category: "recreation" 
   },
   
@@ -53,56 +53,56 @@ export const mapLocations: MapLocation[] = [
     id: "archery", 
     name: "Archery", 
     description: "Tuesday afternoon activity", 
-    x: 66, 
-    y: 7, 
+    x: 72.8, 
+    y: 3.7, 
     category: "recreation" 
   },
   { 
     id: "human-foosball", 
     name: "Human Foosball", 
     description: "Tuesday afternoon activity", 
-    x: 35, 
-    y: 21, 
+    x: 37.8, 
+    y: 23, 
     category: "recreation" 
   },
   { 
     id: "gaga-ball", 
     name: "GaGa Ball / 9 Square", 
     description: "Wednesday Gaga Ball Tournament", 
-    x: 51, 
-    y: 12, 
+    x: 58.3, 
+    y: 12.9, 
     category: "recreation" 
   },
   { 
     id: "disc-golf", 
-    name: "Disc Golf Course Start", 
+    name: "Disc Golf", 
     description: "Wednesday afternoon - begins behind Activity Center", 
-    x: 80, 
-    y: 12, 
+    x: 82.5, 
+    y: 13.5, 
     category: "recreation" 
   },
   { 
     id: "rec-field-kickball", 
-    name: "Recreation Field", 
+    name: "Recreation Field #5", 
     description: "Kickball, Capture the Flag, and rope games", 
-    x: 80, 
-    y: 45, 
+    x: 46.6, 
+    y: 26.6, 
     category: "recreation" 
   },
   { 
     id: "outdoor-pool", 
     name: "Outdoor Pool", 
     description: "Outdoor swimming pool", 
-    x: 14, 
-    y: 13, 
+    x: 16.2, 
+    y: 11, 
     category: "recreation" 
   },
   { 
     id: "beachfront", 
     name: "Beachfront", 
     description: "Lake beach area for free time", 
-    x: 11, 
-    y: 35, 
+    x: 15.5, 
+    y: 30.4, 
     category: "recreation" 
   },
 ]
