@@ -1,15 +1,18 @@
 "use client"
 
 import type React from "react"
-import { Users } from "lucide-react"
+import { Users, Map, X } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { useState } from "react"
 import { Countdown } from "@/components/countdown"
 import { VolunteerSchedule } from "@/components/volunteer-schedule"
+import { ScheduleMap } from "@/components/schedule-map"
 
 export default function SchedulePage() {
   const [activeDay, setActiveDay] = useState<string>("")
+  const [showMap, setShowMap] = useState(false)
+  const [highlightedLocation, setHighlightedLocation] = useState<string | null>(null)
 
   const handleDayClick = (e: React.MouseEvent<HTMLAnchorElement>, day: string) => {
     e.preventDefault()
@@ -47,7 +50,44 @@ export default function SchedulePage() {
           <p className="text-balance text-sm text-muted-foreground md:text-base">
             Lake Williamson Christian Center, Carlinville, IL
           </p>
+          <button
+            onClick={() => setShowMap(true)}
+            className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+          >
+            <Map className="h-4 w-4" />
+            View Venue Map
+          </button>
         </div>
+
+        {/* Map Modal */}
+        {showMap && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+            <div className="relative w-full max-w-4xl h-[80vh] bg-background rounded-xl overflow-hidden shadow-2xl">
+              <div className="absolute top-0 left-0 right-0 z-30 flex items-center justify-between p-3 bg-background/95 border-b">
+                <h2 className="font-semibold">Lake Williamson Venue Map</h2>
+                <button
+                  onClick={() => {
+                    setShowMap(false)
+                    setHighlightedLocation(null)
+                  }}
+                  className="p-2 hover:bg-muted rounded-md transition-colors"
+                  aria-label="Close map"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="pt-14 h-full">
+                <ScheduleMap
+                  highlightedLocationId={highlightedLocation}
+                  onClose={() => {
+                    setShowMap(false)
+                    setHighlightedLocation(null)
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
           <aside className="lg:sticky lg:top-24 lg:w-64 shrink-0">
