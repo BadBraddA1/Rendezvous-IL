@@ -14,6 +14,8 @@ export async function GET(request: Request) {
   }
 
   try {
+    console.log("[v0] API called with date:", date, "timeSlot:", timeSlot)
+    
     // Fetch volunteer schedule for the given date and time slot (show all regardless of status)
     const volunteers = await sql`
       SELECT 
@@ -26,6 +28,8 @@ export async function GET(request: Request) {
         AND time_slot = ${timeSlot}
       ORDER BY volunteer_type, prayer_type
     `
+
+    console.log("[v0] Query returned volunteers:", volunteers.length, volunteers)
 
     // Organize data into the specified order
     const schedule = {
@@ -71,6 +75,7 @@ export async function GET(request: Request) {
       }
     }
 
+    console.log("[v0] Final schedule:", JSON.stringify(schedule))
     return NextResponse.json({ schedule })
   } catch (error) {
     console.error("[v0] Volunteer schedule error:", error)
