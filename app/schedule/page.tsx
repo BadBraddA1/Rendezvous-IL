@@ -8,11 +8,17 @@ import { useState } from "react"
 import { Countdown } from "@/components/countdown"
 import { VolunteerSchedule } from "@/components/volunteer-schedule"
 import { ScheduleMap } from "@/components/schedule-map"
+import { LocationLink } from "@/components/location-link"
 
 export default function SchedulePage() {
   const [activeDay, setActiveDay] = useState<string>("")
   const [showMap, setShowMap] = useState(false)
   const [highlightedLocation, setHighlightedLocation] = useState<string | null>(null)
+
+  const showMapWithLocation = (locationId: string) => {
+    setHighlightedLocation(locationId)
+    setShowMap(true)
+  }
 
   const handleDayClick = (e: React.MouseEvent<HTMLAnchorElement>, day: string) => {
     e.preventDefault()
@@ -171,7 +177,7 @@ export default function SchedulePage() {
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base">1:00 – 5:15 PM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
-                    Check-in at Activity Center (AC) [upstairs outside Room 207] [mini-fridge available in AC Room 205]
+                    Check-in at <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>Activity Center (AC)</LocationLink> [upstairs outside Room 207] [mini-fridge available in AC Room 205]
                     <br />
                     [Use this time for setting up RVs & tents, settling into motel rooms, and for visiting]
                   </dd>
@@ -179,26 +185,26 @@ export default function SchedulePage() {
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base">4:00 – 5:00 PM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
-                    Ice Breaker (Take-A-Hike Game or something else?) in AC Room 205/206
+                    Ice Breaker (Take-A-Hike Game or something else?) in <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>AC Room 205/206</LocationLink>
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base">5:30 PM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
-                    Dinner at the Lakeside Dining Room (please gather outside for a prayer prior to each designated meal
+                    Dinner at the <LocationLink locationId="lakeside-dining" onShowMap={showMapWithLocation}>Lakeside Dining Room</LocationLink> (please gather outside for a prayer prior to each designated meal
                     time)
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base">7:00 PM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
-                    Evening assembly, welcome, family introductions, & announcements in AC Room 207
+                    Evening assembly, welcome, family introductions, & announcements in <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>AC Room 207</LocationLink>
                     <VolunteerSchedule date="2026-05-04" timeSlot="Evening Devotion" />
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
                   <dt className="mb-3 text-sm font-semibold text-primary md:text-base">
-                    Evening activities or free time at the Activity Center:
+                    Evening activities or free time at the <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>Activity Center</LocationLink>:
                   </dt>
                   <dd className="ml-4 space-y-2 text-sm leading-relaxed text-muted-foreground md:space-y-3 md:text-base">
                     <p>
@@ -206,7 +212,7 @@ export default function SchedulePage() {
                       Bombardment, & Steal the Bacon
                     </p>
                     <p>
-                      <span className="font-semibold text-foreground">9:00 PM</span> Nine Square & Knockout
+                      <span className="font-semibold text-foreground">9:00 PM</span> <LocationLink locationId="gaga-ball" onShowMap={showMapWithLocation}>Nine Square</LocationLink> & Knockout
                     </p>
                     <p className="text-xs italic md:text-sm">
                       *It is recommended small children (under age 10) wear light colored clothing to be easily seen
@@ -232,28 +238,28 @@ export default function SchedulePage() {
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base">7:30 AM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
-                    Breakfast at the Lakeside Dining Room
+                    Breakfast at the <LocationLink locationId="lakeside-dining" onShowMap={showMapWithLocation}>Lakeside Dining Room</LocationLink>
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base">9:00 AM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
-                    Morning assembly & announcements in AC Room 207
+                    Morning assembly & announcements in <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>AC Room 207</LocationLink>
                     <VolunteerSchedule date="2026-05-05" timeSlot="Morning Devotion" />
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base">10:00 AM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
-                    Young Adult session at the Activity Center (non-parent graduates; meet in Ping Pong Room)
+                    Young Adult session at the <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>Activity Center</LocationLink> (non-parent graduates; meet in Ping Pong Room)
                     <br />
-                    Mom's session in AC Room 207 (free time for everyone else; black-light activities & nine square)
+                    Mom&apos;s session in <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>AC Room 207</LocationLink> (free time for everyone else; black-light activities & nine square)
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base">12:00 PM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
-                    Lunch at the Lakeside Dining Room
+                    Lunch at the <LocationLink locationId="lakeside-dining" onShowMap={showMapWithLocation}>Lakeside Dining Room</LocationLink>
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
@@ -262,33 +268,33 @@ export default function SchedulePage() {
                   </dt>
                   <dd className="ml-4 space-y-2 text-sm leading-relaxed text-muted-foreground md:space-y-3 md:text-base">
                     <p>
-                      <span className="font-semibold text-foreground">1:30 PM</span> Archery, Obstacle course, & rope
+                      <span className="font-semibold text-foreground">1:30 PM</span> <LocationLink locationId="archery" onShowMap={showMapWithLocation}>Archery</LocationLink>, Obstacle course, & rope
                       games (Tug of War / Kajabe Cancan / Hoosker Doosker)
                     </p>
                     <p>
-                      <span className="font-semibold text-foreground">3:30 PM</span> Kids' movie in AC Room 207
+                      <span className="font-semibold text-foreground">3:30 PM</span> Kids&apos; movie in <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>AC Room 207</LocationLink>
                     </p>
                     <p>
-                      <span className="font-semibold text-foreground">3:30 PM</span> Human Foosball
+                      <span className="font-semibold text-foreground">3:30 PM</span> <LocationLink locationId="human-foosball" onShowMap={showMapWithLocation}>Human Foosball</LocationLink>
                     </p>
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base">5:30 PM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
-                    Dinner at the Lakeside Dining Room
+                    Dinner at the <LocationLink locationId="lakeside-dining" onShowMap={showMapWithLocation}>Lakeside Dining Room</LocationLink>
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base">7:00 PM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
-                    Evening assembly & announcements in AC Room 207
+                    Evening assembly & announcements in <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>AC Room 207</LocationLink>
                     <VolunteerSchedule date="2026-05-05" timeSlot="Evening Devotion" />
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
                   <dt className="mb-3 text-sm font-semibold text-primary md:text-base">
-                    Evening activities or free time at the Activity Center:
+                    Evening activities or free time at the <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>Activity Center</LocationLink>:
                   </dt>
                   <dd className="ml-4 space-y-2 text-sm leading-relaxed text-muted-foreground md:space-y-3 md:text-base">
                     <p>
@@ -318,26 +324,26 @@ export default function SchedulePage() {
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base">7:30 AM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
-                    Breakfast at the Lakeside Dining Room
+                    Breakfast at the <LocationLink locationId="lakeside-dining" onShowMap={showMapWithLocation}>Lakeside Dining Room</LocationLink>
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base">9:00 AM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
-                    Morning assembly, group picture, & announcements in AC Room 207
+                    Morning assembly, group picture, & announcements in <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>AC Room 207</LocationLink>
                     <VolunteerSchedule date="2026-05-06" timeSlot="Morning Devotion" />
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base">10:00 AM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
-                    Dad's session in AC Room 207 (free time for everyone else; black-light activities & nine square)
+                    Dad&apos;s session in <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>AC Room 207</LocationLink> (free time for everyone else; black-light activities & nine square)
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base">12:00 PM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
-                    Lunch at the Lakeside Dining Room
+                    Lunch at the <LocationLink locationId="lakeside-dining" onShowMap={showMapWithLocation}>Lakeside Dining Room</LocationLink>
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
@@ -351,7 +357,7 @@ export default function SchedulePage() {
                     >
                       Scrabble Tournament
                     </a>{" "}
-                    in AC Room 205/206
+                    in <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>AC Room 205/206</LocationLink>
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
@@ -360,36 +366,35 @@ export default function SchedulePage() {
                   </dt>
                   <dd className="ml-4 space-y-2 text-sm leading-relaxed text-muted-foreground md:space-y-3 md:text-base">
                     <p>
-                      <span className="font-semibold text-foreground">1:30 PM</span> Kickball
+                      <span className="font-semibold text-foreground">1:30 PM</span> <LocationLink locationId="rec-field-kickball" onShowMap={showMapWithLocation}>Kickball</LocationLink>
                     </p>
                     <p>
-                      <span className="font-semibold text-foreground">2:30 PM</span> Gaga Ball Tournament
+                      <span className="font-semibold text-foreground">2:30 PM</span> <LocationLink locationId="gaga-ball" onShowMap={showMapWithLocation}>Gaga Ball Tournament</LocationLink>
                     </p>
                     <p>
-                      <span className="font-semibold text-foreground">3:30 PM</span> Kids' movie & craft in AC Room 207
+                      <span className="font-semibold text-foreground">3:30 PM</span> Kids&apos; movie & craft in <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>AC Room 207</LocationLink>
                     </p>
                     <p>
-                      <span className="font-semibold text-foreground">3:30 PM</span> Disc golf (begins behind Activity
-                      Center)
+                      <span className="font-semibold text-foreground">3:30 PM</span> <LocationLink locationId="disc-golf" onShowMap={showMapWithLocation}>Disc golf</LocationLink> (begins behind <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>Activity Center</LocationLink>)
                     </p>
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base">5:30 PM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
-                    Dinner at the Lakeside Dining Room
+                    Dinner at the <LocationLink locationId="lakeside-dining" onShowMap={showMapWithLocation}>Lakeside Dining Room</LocationLink>
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base">7:00 PM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
-                    Evening assembly & announcements in Room 207 at the Activity Center
+                    Evening assembly & announcements in <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>Room 207 at the Activity Center</LocationLink>
                     <VolunteerSchedule date="2026-05-06" timeSlot="Evening Devotion" />
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
                   <dt className="mb-3 text-sm font-semibold text-primary md:text-base">
-                    Evening activities or free time at the Activity Center:
+                    Evening activities or free time at the <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>Activity Center</LocationLink>:
                   </dt>
                   <dd className="ml-4 space-y-2 text-sm leading-relaxed text-muted-foreground md:space-y-3 md:text-base">
                     <p>
@@ -419,13 +424,13 @@ export default function SchedulePage() {
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base">7:30 AM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
-                    Breakfast at the Lakeside Dining Room
+                    Breakfast at the <LocationLink locationId="lakeside-dining" onShowMap={showMapWithLocation}>Lakeside Dining Room</LocationLink>
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base">9:00 AM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
-                    Morning assembly & announcements in AC Room 207
+                    Morning assembly & announcements in <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>AC Room 207</LocationLink>
                     <VolunteerSchedule date="2026-05-07" timeSlot="Morning Devotion" />
                   </dd>
                 </div>
@@ -443,13 +448,13 @@ export default function SchedulePage() {
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base">10:20 AM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
-                    Ping Pong tournament at the Activity Center
+                    Ping Pong tournament at the <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>Activity Center</LocationLink>
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base">12:00 PM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
-                    Lunch at the Lakeside Dining Room
+                    Lunch at the <LocationLink locationId="lakeside-dining" onShowMap={showMapWithLocation}>Lakeside Dining Room</LocationLink>
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
@@ -458,16 +463,15 @@ export default function SchedulePage() {
                   </dt>
                   <dd className="ml-4 space-y-2 text-sm leading-relaxed text-muted-foreground md:space-y-3 md:text-base">
                     <p>
-                      <span className="font-semibold text-foreground">1:30 – 3:30 PM</span> Paddle boats & canoes at the
-                      beachfront
+                      <span className="font-semibold text-foreground">1:30 – 3:30 PM</span> Paddle boats & canoes at the <LocationLink locationId="beachfront" onShowMap={showMapWithLocation}>beachfront</LocationLink>
                     </p>
 
                     <p>
-                      <span className="font-semibold text-foreground">3:30 PM</span> Kids' movie in AC Room 207
+                      <span className="font-semibold text-foreground">3:30 PM</span> Kids&apos; movie in <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>AC Room 207</LocationLink>
                     </p>
                     <p>
                       <span className="font-semibold text-foreground">3:30 PM</span> Billiards & air hockey tournaments
-                      at the Activity Center [if needed, finish up any other tourneys]
+                      at the <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>Activity Center</LocationLink> [if needed, finish up any other tourneys]
                     </p>
                   </dd>
                 </div>
@@ -486,17 +490,17 @@ export default function SchedulePage() {
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base">7:00 PM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
-                    Evening assembly & announcements at the bonfire [no song books or projector]
+                    Evening assembly & announcements at the <LocationLink locationId="bonfire-site" onShowMap={showMapWithLocation}>bonfire</LocationLink> [no song books or projector]
                     <VolunteerSchedule date="2026-05-07" timeSlot="Evening Devotion" />
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
                   <dt className="mb-3 text-sm font-semibold text-primary md:text-base">
-                    Evening activities or free time at the Activity Center:
+                    Evening activities or free time at the <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>Activity Center</LocationLink>:
                   </dt>
                   <dd className="ml-4 space-y-2 text-sm leading-relaxed text-muted-foreground md:space-y-3 md:text-base">
                     <p>
-                      <span className="font-semibold text-foreground">8:00 PM</span> Glow-in-the-Dark Capture the Flag
+                      <span className="font-semibold text-foreground">8:00 PM</span> Glow-in-the-Dark <LocationLink locationId="rec-field-kickball" onShowMap={showMapWithLocation}>Capture the Flag</LocationLink>
                       [2 simultaneous games]
                     </p>
                     <p>
@@ -522,13 +526,13 @@ export default function SchedulePage() {
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base">7:30 AM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
-                    Breakfast at the Lakeside Dining Room
+                    Breakfast at the <LocationLink locationId="lakeside-dining" onShowMap={showMapWithLocation}>Lakeside Dining Room</LocationLink>
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base">9:00 AM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
-                    Morning assembly, Bible bowl awards, & brainstorming for next year in AC Room 207
+                    Morning assembly, Bible bowl awards, & brainstorming for next year in <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>AC Room 207</LocationLink>
                     <VolunteerSchedule date="2026-05-08" timeSlot="Morning Devotion" />
                   </dd>
                 </div>

@@ -90,14 +90,6 @@ export const mapLocations: MapLocation[] = [
     category: "recreation" 
   },
   { 
-    id: "outdoor-pool", 
-    name: "Outdoor Pool", 
-    description: "Outdoor swimming pool", 
-    x: 16.2, 
-    y: 11, 
-    category: "recreation" 
-  },
-  { 
     id: "beachfront", 
     name: "Beachfront", 
     description: "Lake beach area for free time", 
