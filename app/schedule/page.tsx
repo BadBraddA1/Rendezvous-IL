@@ -6,6 +6,7 @@ import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { useState } from "react"
 import { Countdown } from "@/components/countdown"
+import { VolunteerSchedule } from "@/components/volunteer-schedule"
 
 export default function SchedulePage() {
   const [activeDay, setActiveDay] = useState<string>("")
@@ -152,6 +153,7 @@ export default function SchedulePage() {
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base">7:00 PM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Evening assembly, welcome, family introductions, & announcements in AC Room 207
+                    <VolunteerSchedule date="2026-05-04" timeSlot="Evening Devotion" />
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
@@ -197,6 +199,7 @@ export default function SchedulePage() {
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base">9:00 AM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Morning assembly & announcements in AC Room 207
+                    <VolunteerSchedule date="2026-05-05" timeSlot="Morning Devotion" />
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
@@ -240,6 +243,7 @@ export default function SchedulePage() {
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base">7:00 PM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Evening assembly & announcements in AC Room 207
+                    <VolunteerSchedule date="2026-05-05" timeSlot="Evening Devotion" />
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
@@ -281,6 +285,7 @@ export default function SchedulePage() {
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base">9:00 AM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Morning assembly, group picture, & announcements in AC Room 207
+                    <VolunteerSchedule date="2026-05-06" timeSlot="Morning Devotion" />
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
@@ -339,6 +344,7 @@ export default function SchedulePage() {
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base">7:00 PM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Evening assembly & announcements in Room 207 at the Activity Center
+                    <VolunteerSchedule date="2026-05-06" timeSlot="Evening Devotion" />
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
@@ -380,6 +386,7 @@ export default function SchedulePage() {
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base">9:00 AM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Morning assembly & announcements in AC Room 207
+                    <VolunteerSchedule date="2026-05-07" timeSlot="Morning Devotion" />
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
@@ -440,6 +447,7 @@ export default function SchedulePage() {
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base">7:00 PM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Evening assembly & announcements at the bonfire [no song books or projector]
+                    <VolunteerSchedule date="2026-05-07" timeSlot="Evening Devotion" />
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
@@ -481,6 +489,7 @@ export default function SchedulePage() {
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base">9:00 AM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Morning assembly, Bible bowl awards, & brainstorming for next year in AC Room 207
+                    <VolunteerSchedule date="2026-05-08" timeSlot="Morning Devotion" />
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
