@@ -194,6 +194,8 @@ export default function EndOfEventFeedbackPage() {
   const [currentStep, setCurrentStep] = useState(0)
   const [data, setData] = useState<FeedbackData>(initialData)
   const [isSubmitted, setIsSubmitted] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   const updateData = (updates: Partial<FeedbackData>) => {
     setData((prev) => ({ ...prev, ...updates }))
@@ -222,11 +224,30 @@ export default function EndOfEventFeedbackPage() {
     }
   }
 
-  const handleSubmit = () => {
-    // For now, just log the data - you can connect this to your backend later
-    console.log("[v0] Feedback submitted:", data)
-    setIsSubmitted(true)
-    window.scrollTo({ top: 0, behavior: "smooth" })
+  const handleSubmit = async () => {
+    setIsSubmitting(true)
+    setSubmitError(null)
+
+    try {
+      const response = await fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Failed to submit feedback")
+      }
+
+      setIsSubmitted(true)
+      window.scrollTo({ top: 0, behavior: "smooth" })
+    } catch (error: any) {
+      console.error("[v0] Feedback submission error:", error)
+      setSubmitError(error.message || "Something went wrong. Please try again.")
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   if (isSubmitted) {
@@ -847,9 +868,9 @@ export default function EndOfEventFeedbackPage() {
               </Button>
 
               {currentStep === STEPS.length - 1 ? (
-                <Button onClick={handleSubmit} className="gap-2">
-                  Submit Feedback
-                  <CheckCircle2 className="h-4 w-4" />
+                <Button onClick={handleSubmit} disabled={isSubmitting} className="gap-2">
+                  {isSubmitting ? "Submitting..." : "Submit Feedback"}
+                  {!isSubmitting && <CheckCircle2 className="h-4 w-4" />}
                 </Button>
               ) : (
                 <Button onClick={nextStep} className="gap-2">
@@ -858,6 +879,12 @@ export default function EndOfEventFeedbackPage() {
                 </Button>
               )}
             </div>
+
+            {submitError && (
+              <div className="mt-4 rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-center text-sm text-destructive">
+                {submitError}
+              </div>
+            )}
           </CardContent>
         </Card>
       </main>
