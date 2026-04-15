@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useCallback, useEffect } from "react"
-import { MapPin, Plus, Trash2, Save, X, Move, ArrowRight, RotateCcw, Download, Upload, Eye, EyeOff, Check, CircleDot } from "lucide-react"
+import { MapPin, Plus, Trash2, Save, X, Move, ArrowRight, RotateCcw, Download, Upload, Eye, EyeOff, Check, CircleDot, Copy } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -50,6 +50,8 @@ export default function MapEditorPage() {
   const [currentPath, setCurrentPath] = useState<PathPoint[]>([])
   const [isDrawingPath, setIsDrawingPath] = useState(false)
   const [showPaths, setShowPaths] = useState(true)
+  const [showExportCode, setShowExportCode] = useState(false)
+  const [exportCode, setExportCode] = useState("")
   const [isDragging, setIsDragging] = useState(false)
   const [selectedPathId, setSelectedPathId] = useState<string | null>(null)
   const mapRef = useRef<HTMLDivElement>(null)
@@ -249,16 +251,8 @@ export default function MapEditorPage() {
       paths,
     }
     const jsonString = JSON.stringify(data, null, 2)
-    const blob = new Blob([jsonString], { type: "application/json" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = "map-data.json"
-    a.style.display = "none"
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    setTimeout(() => URL.revokeObjectURL(url), 100)
+    setExportCode(jsonString)
+    setShowExportCode(true)
   }
 
   const importData = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -589,6 +583,33 @@ export default function MapEditorPage() {
             <RotateCcw className="h-4 w-4 mr-1" />
             Reset to Default
           </Button>
+
+          {/* Export Code Panel */}
+          {showExportCode && (
+            <div className="mt-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Export Code</span>
+                <Button variant="ghost" size="sm" onClick={() => setShowExportCode(false)}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              <textarea
+                readOnly
+                value={exportCode}
+                className="w-full h-48 p-2 text-xs font-mono bg-muted border rounded resize-none"
+              />
+              <Button 
+                size="sm" 
+                className="w-full"
+                onClick={() => {
+                  navigator.clipboard.writeText(exportCode)
+                }}
+              >
+                <Copy className="h-4 w-4 mr-1" />
+                Copy to Clipboard
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
