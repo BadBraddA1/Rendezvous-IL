@@ -39,7 +39,7 @@ export function ScheduleMap({ highlightedLocationId, onClose }: ScheduleMapProps
   const [scale, setScale] = useState(1)
   const [position, setPosition] = useState({ x: 0, y: 0 })
   const [popup, setPopup] = useState<PopupPos | null>(null)
-  const [showPaths, setShowPaths] = useState(true)
+  const [showPaths, setShowPaths] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const mapLayerRef = useRef<HTMLDivElement>(null)
 
@@ -95,25 +95,14 @@ export function ScheduleMap({ highlightedLocationId, onClose }: ScheduleMapProps
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scale, position])
 
-  // Center on highlighted location
+  // Center on highlighted location - no zoom, just open popup
   useEffect(() => {
     if (!highlightedLocationId) return
     const location = mapLocations.find(l => l.id === highlightedLocationId)
-    if (!location || !containerRef.current) return
-    const el = containerRef.current
-    const newScale = 2.2
-    const cw = el.clientWidth
-    const ch = el.clientHeight
-    const mapW = cw * newScale
-    const mapH = mapW / 1.35
-    const rawX = cw / 2 - (location.x / 100) * mapW
-    const rawY = ch / 2 - (location.y / 100) * mapH
-    const clamped = clamp(rawX, rawY, newScale)
-    setScale(newScale)
-    setPosition(clamped)
-    // Open popup after state settles
+    if (!location) return
+    // Just open the popup without zooming
     setTimeout(() => openPopup(location), 50)
-  }, [highlightedLocationId, clamp, openPopup])
+  }, [highlightedLocationId, openPopup])
 
   const zoomAround = useCallback((newScale: number, pivotX: number, pivotY: number) => {
     newScale = Math.min(4, Math.max(0.75, newScale))
@@ -228,19 +217,22 @@ export function ScheduleMap({ highlightedLocationId, onClose }: ScheduleMapProps
     }
   }, [clamp, zoomAround])
 
-  // Smart popup position — keeps it inside the container
+  // Smart popup position — always below the pin so it doesn't cover it
   const getPopupStyle = (px: number, py: number): React.CSSProperties => {
     const el = containerRef.current
     if (!el) return { left: px, top: py }
     const cw = el.clientWidth
+    const ch = el.clientHeight
     const popupW = 200
     const popupH = 110
-    const pinOffset = 28 // px above pin tip
+    const pinOffset = 12 // px below pin tip
     let left = px - popupW / 2
-    let top = py - pinOffset - popupH
+    let top = py + pinOffset // Always position below the pin
 
-    // Flip below pin if would go off top
-    if (top < 8) top = py + pinOffset
+    // If popup would go off bottom, flip to above
+    if (top + popupH > ch - 8) {
+      top = py - pinOffset - popupH - 24
+    }
 
     // Clamp horizontally
     left = Math.max(8, Math.min(cw - popupW - 8, left))
