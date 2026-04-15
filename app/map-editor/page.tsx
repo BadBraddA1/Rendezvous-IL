@@ -248,13 +248,17 @@ export default function MapEditorPage() {
       })),
       paths,
     }
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" })
+    const jsonString = JSON.stringify(data, null, 2)
+    const blob = new Blob([jsonString], { type: "application/json" })
     const url = URL.createObjectURL(blob)
     const a = document.createElement("a")
     a.href = url
     a.download = "map-data.json"
+    a.style.display = "none"
+    document.body.appendChild(a)
     a.click()
-    URL.revokeObjectURL(url)
+    document.body.removeChild(a)
+    setTimeout(() => URL.revokeObjectURL(url), 100)
   }
 
   const importData = (e: React.ChangeEvent<HTMLInputElement>) => {
