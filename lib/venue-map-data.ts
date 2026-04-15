@@ -9,6 +9,21 @@ export interface MapLocation {
   x: number // percentage from left
   y: number // percentage from top
   category: "lodging" | "dining" | "activities" | "recreation" | "meeting"
+  color?: "red" | "orange" | "yellow" | "green" | "blue" | "purple" | "pink"
+}
+
+export interface PathPoint {
+  x: number
+  y: number
+  pinId?: string
+  isWaypoint?: boolean
+}
+
+export interface MapPath {
+  id: string
+  points: PathPoint[]
+  color: string
+  label: string
 }
 
 export interface ScheduleEvent {
@@ -22,40 +37,41 @@ export interface ScheduleEvent {
 
 // Only locations referenced in the actual schedule
 export const mapLocations: MapLocation[] = [
-  // Main venue locations used in schedule
   { 
     id: "activities-center", 
-    name: "Activities Center (Room 207)", 
-    description: "Check-In, Room 207, Room 205/206, Main Gym, Indoor Pool, Ping Pong Room", 
-    x: 70.7, 
-    y: 24.8, 
-    category: "meeting" 
+    name: "Activities Center", 
+    description: "Check-In, Room 207, Room 205/206, Main Gym, Indoor Pool, Ping Pong Room, 9 Square", 
+    x: 70.8, 
+    y: 23, 
+    category: "meeting",
+    color: "red"
   },
   { 
     id: "lakeside-dining", 
     name: "Lakeside Dining Room", 
     description: "All meals - Breakfast, Lunch, Dinner", 
-    x: 65.3, 
-    y: 57.6, 
-    category: "dining" 
+    x: 66, 
+    y: 63, 
+    category: "dining",
+    color: "orange"
   },
   { 
     id: "bonfire-site", 
     name: "Pavilions & Bonfire Site", 
     description: "Thursday evening assembly location", 
-    x: 16, 
-    y: 19.1, 
-    category: "recreation" 
+    x: 16.9, 
+    y: 19.6, 
+    category: "recreation",
+    color: "purple"
   },
-  
-  // Outdoor activity locations
   { 
     id: "archery", 
     name: "Archery", 
     description: "Tuesday afternoon activity", 
-    x: 72.8, 
-    y: 3.7, 
-    category: "recreation" 
+    x: 73.7, 
+    y: 5.1, 
+    category: "recreation",
+    color: "purple"
   },
   { 
     id: "human-foosball", 
@@ -63,32 +79,98 @@ export const mapLocations: MapLocation[] = [
     description: "Tuesday afternoon activity", 
     x: 37.8, 
     y: 23, 
-    category: "recreation" 
-  },
-  { 
-    id: "gaga-ball", 
-    name: "GaGa Ball / 9 Square", 
-    description: "Wednesday Gaga Ball Tournament", 
-    x: 58.3, 
-    y: 12.9, 
-    category: "recreation" 
+    category: "recreation",
+    color: "purple"
   },
   { 
     id: "disc-golf", 
     name: "Disc Golf", 
     description: "Wednesday afternoon - begins behind Activity Center", 
     x: 82.5, 
-    y: 13.5, 
-    category: "recreation" 
+    y: 15.1, 
+    category: "recreation",
+    color: "purple"
   },
   { 
     id: "rec-field-kickball", 
-    name: "Recreation Field #5", 
+    name: "Recreation Field", 
     description: "Kickball, Capture the Flag, and rope games", 
-    x: 46.6, 
-    y: 26.6, 
-    category: "recreation" 
+    x: 75.8, 
+    y: 10.5, 
+    category: "recreation",
+    color: "purple"
   },
+  { 
+    id: "location-1776272179875", 
+    name: "Motel", 
+    description: "Ice Machine", 
+    x: 63.3, 
+    y: 28.5, 
+    category: "lodging",
+    color: "blue"
+  },
+  { 
+    id: "location-1776272356027", 
+    name: "RV & Tent Sites", 
+    description: "RV & Tent Sites", 
+    x: 58.2, 
+    y: 3.1, 
+    category: "lodging",
+    color: "blue"
+  },
+  { 
+    id: "location-1776272406151", 
+    name: "Ice Machine", 
+    description: "", 
+    x: 56.3, 
+    y: 28.7, 
+    category: "lodging",
+    color: "blue"
+  },
+]
+
+// Paths between locations
+export const mapPaths: MapPath[] = [
+  {
+    id: "path-1776276034606",
+    points: [
+      { x: 70.8, y: 23, pinId: "activities-center" },
+      { x: 69.3, y: 25.7, isWaypoint: true },
+      { x: 69.2, y: 28.3, isWaypoint: true },
+      { x: 68.8, y: 31, isWaypoint: true },
+      { x: 67.6, y: 34.6, isWaypoint: true },
+      { x: 65.3, y: 41.8, isWaypoint: true },
+      { x: 69.8, y: 45.4, isWaypoint: true },
+      { x: 73.6, y: 48.2, isWaypoint: true },
+      { x: 68.8, y: 56.8, isWaypoint: true },
+      { x: 66, y: 63, pinId: "lakeside-dining" }
+    ],
+    color: "orange",
+    label: "To Lakeside Dining Room"
+  },
+  {
+    id: "path-1776276109262",
+    points: [
+      { x: 70.8, y: 23, pinId: "activities-center" },
+      { x: 68, y: 26.6, isWaypoint: true },
+      { x: 65.4, y: 26.2, isWaypoint: true },
+      { x: 64.6, y: 24.1, isWaypoint: true },
+      { x: 52.7, y: 23.2, isWaypoint: true },
+      { x: 40.4, y: 19.8, isWaypoint: true },
+      { x: 34.9, y: 14.4, isWaypoint: true },
+      { x: 34, y: 11.4, isWaypoint: true },
+      { x: 31.4, y: 9.8, isWaypoint: true },
+      { x: 27.3, y: 8.6, isWaypoint: true },
+      { x: 23, y: 8, isWaypoint: true },
+      { x: 21.7, y: 8.2, isWaypoint: true },
+      { x: 20.8, y: 17.2, isWaypoint: true },
+      { x: 19.5, y: 22.9, isWaypoint: true },
+      { x: 16.6, y: 23.4, isWaypoint: true },
+      { x: 16.9, y: 19.6, pinId: "bonfire-site" }
+    ],
+    color: "purple",
+    label: "To Pavilions & Bonfire Site"
+  }
 ]
 
 // Schedule events matching the actual Rendezvous 2026 schedule
@@ -117,7 +199,7 @@ export const scheduleEvents: ScheduleEvent[] = [
   { id: "wed-3", time: "10:00 AM", title: "Dad's session in AC Room 207", locationId: "activities-center", day: "wednesday", date: "May 6" },
   { id: "wed-4", time: "12:00 PM", title: "Lunch", locationId: "lakeside-dining", day: "wednesday", date: "May 6" },
   { id: "wed-5", time: "1:30 PM", title: "Kickball", locationId: "rec-field-kickball", day: "wednesday", date: "May 6" },
-  { id: "wed-6", time: "2:30 PM", title: "Gaga Ball Tournament", locationId: "gaga-ball", day: "wednesday", date: "May 6" },
+  { id: "wed-6", time: "2:30 PM", title: "Gaga Ball Tournament", locationId: "activities-center", day: "wednesday", date: "May 6" },
   { id: "wed-7", time: "2:30 PM", title: "Scrabble Tournament in AC Room 205/206", locationId: "activities-center", day: "wednesday", date: "May 6" },
   { id: "wed-8", time: "3:30 PM", title: "Disc golf", locationId: "disc-golf", day: "wednesday", date: "May 6" },
   { id: "wed-9", time: "5:30 PM", title: "Dinner", locationId: "lakeside-dining", day: "wednesday", date: "May 6" },
@@ -139,6 +221,16 @@ export const scheduleEvents: ScheduleEvent[] = [
   { id: "fri-2", time: "9:00 AM", title: "Morning assembly & Bible bowl awards", locationId: "activities-center", day: "friday", date: "May 8" },
   { id: "fri-3", time: "10:30 AM", title: "Check out & depart", locationId: "activities-center", day: "friday", date: "May 8" },
 ]
+
+export const pinColors: Record<string, string> = {
+  red: "bg-red-500",
+  orange: "bg-orange-500",
+  yellow: "bg-yellow-500",
+  green: "bg-green-500",
+  blue: "bg-blue-500",
+  purple: "bg-purple-500",
+  pink: "bg-pink-500",
+}
 
 export const categoryColors: Record<MapLocation["category"], string> = {
   lodging: "bg-blue-500",

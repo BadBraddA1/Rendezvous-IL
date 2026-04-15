@@ -208,7 +208,7 @@ export default function SchedulePage() {
                       Bombardment, & Steal the Bacon
                     </p>
                     <p>
-                      <span className="font-semibold text-foreground">9:00 PM</span> <LocationLink locationId="gaga-ball" onShowMap={showMapWithLocation}>Nine Square</LocationLink> & Knockout
+                      <span className="font-semibold text-foreground">9:00 PM</span> Nine Square & Knockout
                     </p>
                     <p className="text-xs italic md:text-sm">
                       *It is recommended small children (under age 10) wear light colored clothing to be easily seen
@@ -365,7 +365,7 @@ export default function SchedulePage() {
                       <span className="font-semibold text-foreground">1:30 PM</span> <LocationLink locationId="rec-field-kickball" onShowMap={showMapWithLocation}>Kickball</LocationLink>
                     </p>
                     <p>
-                      <span className="font-semibold text-foreground">2:30 PM</span> <LocationLink locationId="gaga-ball" onShowMap={showMapWithLocation}>Gaga Ball Tournament</LocationLink>
+                      <span className="font-semibold text-foreground">2:30 PM</span> Gaga Ball Tournament
                     </p>
                     <p>
                       <span className="font-semibold text-foreground">3:30 PM</span> Kids&apos; movie & craft in <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>AC Room 207</LocationLink>
@@ -459,7 +459,7 @@ export default function SchedulePage() {
                   </dt>
                   <dd className="ml-4 space-y-2 text-sm leading-relaxed text-muted-foreground md:space-y-3 md:text-base">
                     <p>
-                      <span className="font-semibold text-foreground">1:30 – 3:30 PM</span> Paddle boats & canoes at the <LocationLink locationId="beachfront" onShowMap={showMapWithLocation}>beachfront</LocationLink>
+                      <span className="font-semibold text-foreground">1:30 – 3:30 PM</span> Paddle boats & canoes at the beachfront
                     </p>
 
                     <p>
