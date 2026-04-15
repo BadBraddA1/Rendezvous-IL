@@ -62,7 +62,7 @@ export const mapLocations: MapLocation[] = [
     x: 16.9, 
     y: 19.6, 
     category: "recreation",
-    color: "pink"
+    color: "purple"
   },
   { 
     id: "archery", 
@@ -107,7 +107,7 @@ export const mapLocations: MapLocation[] = [
     x: 63.3, 
     y: 28.5, 
     category: "lodging",
-    color: "green"
+    color: "blue"
   },
   { 
     id: "location-1776272356027", 
@@ -116,7 +116,7 @@ export const mapLocations: MapLocation[] = [
     x: 58.2, 
     y: 3.1, 
     category: "lodging",
-    color: "green"
+    color: "blue"
   },
   { 
     id: "location-1776272406151", 
@@ -125,26 +125,51 @@ export const mapLocations: MapLocation[] = [
     x: 56.3, 
     y: 28.7, 
     category: "lodging",
-    color: "green"
+    color: "blue"
   },
 ]
 
 // Paths between locations
 export const mapPaths: MapPath[] = [
   {
-    id: "path-1776272496217",
+    id: "path-1776276034606",
     points: [
       { x: 70.8, y: 23, pinId: "activities-center" },
-      { x: 71, y: 28.8, isWaypoint: true },
-      { x: 68, y: 33.5, isWaypoint: true },
-      { x: 65.2, y: 41.9, isWaypoint: true },
-      { x: 69.8, y: 45.2, isWaypoint: true },
-      { x: 64.5, y: 56, isWaypoint: true },
-      { x: 65.8, y: 58.7, isWaypoint: true },
+      { x: 69.3, y: 25.7, isWaypoint: true },
+      { x: 69.2, y: 28.3, isWaypoint: true },
+      { x: 68.8, y: 31, isWaypoint: true },
+      { x: 67.6, y: 34.6, isWaypoint: true },
+      { x: 65.3, y: 41.8, isWaypoint: true },
+      { x: 69.8, y: 45.4, isWaypoint: true },
+      { x: 73.6, y: 48.2, isWaypoint: true },
+      { x: 68.8, y: 56.8, isWaypoint: true },
       { x: 66, y: 63, pinId: "lakeside-dining" }
     ],
     color: "orange",
     label: "To Lakeside Dining Room"
+  },
+  {
+    id: "path-1776276109262",
+    points: [
+      { x: 70.8, y: 23, pinId: "activities-center" },
+      { x: 68, y: 26.6, isWaypoint: true },
+      { x: 65.4, y: 26.2, isWaypoint: true },
+      { x: 64.6, y: 24.1, isWaypoint: true },
+      { x: 52.7, y: 23.2, isWaypoint: true },
+      { x: 40.4, y: 19.8, isWaypoint: true },
+      { x: 34.9, y: 14.4, isWaypoint: true },
+      { x: 34, y: 11.4, isWaypoint: true },
+      { x: 31.4, y: 9.8, isWaypoint: true },
+      { x: 27.3, y: 8.6, isWaypoint: true },
+      { x: 23, y: 8, isWaypoint: true },
+      { x: 21.7, y: 8.2, isWaypoint: true },
+      { x: 20.8, y: 17.2, isWaypoint: true },
+      { x: 19.5, y: 22.9, isWaypoint: true },
+      { x: 16.6, y: 23.4, isWaypoint: true },
+      { x: 16.9, y: 19.6, pinId: "bonfire-site" }
+    ],
+    color: "purple",
+    label: "To Pavilions & Bonfire Site"
   }
 ]
 
