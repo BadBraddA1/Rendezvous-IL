@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react"
 import { X, ZoomIn, ZoomOut, MapPin } from "lucide-react"
-import { mapLocations, type MapLocation } from "@/lib/venue-map-data"
+import { mapLocations, mapPaths, type MapLocation } from "@/lib/venue-map-data"
 
 interface ScheduleMapProps {
   highlightedLocationId?: string | null
@@ -15,10 +15,31 @@ interface PopupPos {
   location: MapLocation
 }
 
+const colorToClass: Record<string, string> = {
+  red: "text-red-500",
+  orange: "text-orange-500",
+  yellow: "text-yellow-500",
+  green: "text-green-500",
+  blue: "text-blue-500",
+  purple: "text-purple-500",
+  pink: "text-pink-500",
+}
+
+const colorToHex: Record<string, string> = {
+  red: "#ef4444",
+  orange: "#f97316",
+  yellow: "#eab308",
+  green: "#22c55e",
+  blue: "#3b82f6",
+  purple: "#a855f7",
+  pink: "#ec4899",
+}
+
 export function ScheduleMap({ highlightedLocationId, onClose }: ScheduleMapProps) {
   const [scale, setScale] = useState(1)
   const [position, setPosition] = useState({ x: 0, y: 0 })
   const [popup, setPopup] = useState<PopupPos | null>(null)
+  const [showPaths, setShowPaths] = useState(true)
   const containerRef = useRef<HTMLDivElement>(null)
   const mapLayerRef = useRef<HTMLDivElement>(null)
 
@@ -227,15 +248,31 @@ export function ScheduleMap({ highlightedLocationId, onClose }: ScheduleMapProps
     return { left, top, width: popupW }
   }
 
-  const pinColor = (cat: MapLocation["category"]) =>
-    cat === "dining" ? "text-orange-500" : cat === "meeting" ? "text-red-500" : "text-purple-500"
+  const getPinColor = (location: MapLocation) => {
+    if (location.color) {
+      return colorToClass[location.color] || "text-purple-500"
+    }
+    // Fallback to category-based colors
+    return location.category === "dining" ? "text-orange-500" 
+      : location.category === "meeting" ? "text-red-500" 
+      : location.category === "lodging" ? "text-green-500"
+      : "text-purple-500"
+  }
 
   const badgeClass = (cat: MapLocation["category"]) =>
     cat === "dining"
       ? "bg-orange-100 text-orange-700"
       : cat === "meeting"
         ? "bg-red-100 text-red-700"
-        : "bg-purple-100 text-purple-700"
+        : cat === "lodging"
+          ? "bg-green-100 text-green-700"
+          : "bg-purple-100 text-purple-700"
+
+  // Generate SVG path string from path points
+  const getPathD = (points: { x: number; y: number }[]) => {
+    if (points.length < 2) return ""
+    return points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ")
+  }
 
   return (
     <div className="relative w-full h-full bg-muted/30 overflow-hidden select-none">
@@ -251,6 +288,14 @@ export function ScheduleMap({ highlightedLocationId, onClose }: ScheduleMapProps
         <button onClick={handleReset} className="px-3 py-2 bg-background/95 rounded-lg shadow border border-border/40 text-xs font-medium touch-manipulation active:scale-95 transition-transform">
           Reset
         </button>
+        {mapPaths.length > 0 && (
+          <button 
+            onClick={() => setShowPaths(!showPaths)} 
+            className={`px-3 py-2 rounded-lg shadow border text-xs font-medium touch-manipulation active:scale-95 transition-transform ${showPaths ? 'bg-orange-500 text-white border-orange-500' : 'bg-background/95 border-border/40'}`}
+          >
+            Paths
+          </button>
+        )}
       </div>
 
       {/* Pannable / zoomable map layer */}
@@ -279,6 +324,30 @@ export function ScheduleMap({ highlightedLocationId, onClose }: ScheduleMapProps
             draggable={false}
           />
 
+          {/* Paths SVG overlay */}
+          {showPaths && mapPaths.length > 0 && (
+            <svg 
+              className="absolute inset-0 w-full h-full pointer-events-none"
+              viewBox="0 0 100 100"
+              preserveAspectRatio="none"
+            >
+              {mapPaths.map((path) => (
+                <g key={path.id}>
+                  <path
+                    d={getPathD(path.points)}
+                    fill="none"
+                    stroke={colorToHex[path.color] || "#f97316"}
+                    strokeWidth={0.5}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeDasharray="1 0.5"
+                    opacity={0.9}
+                  />
+                </g>
+              ))}
+            </svg>
+          )}
+
           {/* Pins */}
           {mapLocations.map((location) => {
             const isHighlighted = location.id === highlightedLocationId
@@ -302,7 +371,7 @@ export function ScheduleMap({ highlightedLocationId, onClose }: ScheduleMapProps
                 aria-label={location.name}
               >
                 <MapPin
-                  className={`drop-shadow-md transition-all duration-150 ${pinColor(location.category)} ${
+                  className={`drop-shadow-md transition-all duration-150 ${getPinColor(location)} ${
                     isHighlighted || isSelected ? "h-9 w-9 scale-110" : "h-6 w-6"
                   }`}
                   fill={isHighlighted || isSelected ? "currentColor" : "white"}
@@ -327,7 +396,7 @@ export function ScheduleMap({ highlightedLocationId, onClose }: ScheduleMapProps
             <X className="h-3 w-3" />
           </button>
           <div className="flex items-start gap-2 pr-5">
-            <MapPin className={`h-4 w-4 mt-0.5 shrink-0 ${pinColor(popup.location.category)}`} />
+            <MapPin className={`h-4 w-4 mt-0.5 shrink-0 ${getPinColor(popup.location)}`} />
             <div className="min-w-0">
               <p className="font-semibold text-xs leading-snug">{popup.location.name}</p>
               <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">{popup.location.description}</p>
@@ -340,10 +409,11 @@ export function ScheduleMap({ highlightedLocationId, onClose }: ScheduleMapProps
       )}
 
       {/* Legend */}
-      <div className="absolute bottom-2 left-2 z-30 flex gap-3 text-xs bg-background/90 rounded-lg px-2.5 py-1.5 shadow border border-border/40">
+      <div className="absolute bottom-2 left-2 z-30 flex flex-wrap gap-2 text-xs bg-background/90 rounded-lg px-2.5 py-1.5 shadow border border-border/40">
         <div className="flex items-center gap-1"><MapPin className="h-3 w-3 text-red-500" fill="white" /><span>Meeting</span></div>
         <div className="flex items-center gap-1"><MapPin className="h-3 w-3 text-orange-500" fill="white" /><span>Dining</span></div>
         <div className="flex items-center gap-1"><MapPin className="h-3 w-3 text-purple-500" fill="white" /><span>Activity</span></div>
+        <div className="flex items-center gap-1"><MapPin className="h-3 w-3 text-green-500" fill="white" /><span>Lodging</span></div>
       </div>
 
       <p className="absolute bottom-2 right-2 z-30 text-[10px] text-muted-foreground/70">
