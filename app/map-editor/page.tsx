@@ -1,11 +1,11 @@
 "use client"
 
 import { useState, useRef, useCallback, useEffect } from "react"
-import { MapPin, Plus, Trash2, Save, X, Move, Pencil, ArrowRight, RotateCcw, Download, Upload, Eye, EyeOff } from "lucide-react"
+import { MapPin, Plus, Trash2, Save, X, Move, ArrowRight, RotateCcw, Download, Upload, Eye, EyeOff, Check, CircleDot } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
@@ -14,22 +14,28 @@ import { mapLocations as defaultLocations, type MapLocation } from "@/lib/venue-
 
 type EditorMode = "select" | "add" | "path"
 
+interface PathPoint {
+  x: number
+  y: number
+  isWaypoint?: boolean // true for waypoints, false/undefined for pin connections
+  pinId?: string // if connected to a pin
+}
+
 interface MapPath {
   id: string
-  from: string
-  to: string
+  points: PathPoint[]
   color: string
   label?: string
 }
 
 const PIN_COLORS = [
-  { value: "red", label: "Red", class: "text-red-500", bg: "bg-red-500" },
-  { value: "orange", label: "Orange", class: "text-orange-500", bg: "bg-orange-500" },
-  { value: "yellow", label: "Yellow", class: "text-yellow-500", bg: "bg-yellow-500" },
-  { value: "green", label: "Green", class: "text-green-500", bg: "bg-green-500" },
-  { value: "blue", label: "Blue", class: "text-blue-500", bg: "bg-blue-500" },
-  { value: "purple", label: "Purple", class: "text-purple-500", bg: "bg-purple-500" },
-  { value: "pink", label: "Pink", class: "text-pink-500", bg: "bg-pink-500" },
+  { value: "red", label: "Red", class: "text-red-500", bg: "bg-red-500", hex: "#ef4444" },
+  { value: "orange", label: "Orange", class: "text-orange-500", bg: "bg-orange-500", hex: "#f97316" },
+  { value: "yellow", label: "Yellow", class: "text-yellow-500", bg: "bg-yellow-500", hex: "#eab308" },
+  { value: "green", label: "Green", class: "text-green-500", bg: "bg-green-500", hex: "#22c55e" },
+  { value: "blue", label: "Blue", class: "text-blue-500", bg: "bg-blue-500", hex: "#3b82f6" },
+  { value: "purple", label: "Purple", class: "text-purple-500", bg: "bg-purple-500", hex: "#a855f7" },
+  { value: "pink", label: "Pink", class: "text-pink-500", bg: "bg-pink-500", hex: "#ec4899" },
 ]
 
 const CATEGORIES: MapLocation["category"][] = ["lodging", "dining", "activities", "recreation", "meeting"]
@@ -41,9 +47,11 @@ export default function MapEditorPage() {
   const [paths, setPaths] = useState<MapPath[]>([])
   const [selectedPin, setSelectedPin] = useState<string | null>(null)
   const [mode, setMode] = useState<EditorMode>("select")
-  const [pathStart, setPathStart] = useState<string | null>(null)
+  const [currentPath, setCurrentPath] = useState<PathPoint[]>([])
+  const [isDrawingPath, setIsDrawingPath] = useState(false)
   const [showPaths, setShowPaths] = useState(true)
   const [isDragging, setIsDragging] = useState(false)
+  const [selectedPathId, setSelectedPathId] = useState<string | null>(null)
   const mapRef = useRef<HTMLDivElement>(null)
   const [editForm, setEditForm] = useState<{
     name: string
@@ -65,6 +73,10 @@ export default function MapEditorPage() {
 
   const getColorClass = (color: string) => {
     return PIN_COLORS.find(c => c.value === color)?.class || "text-blue-500"
+  }
+
+  const getColorHex = (color: string) => {
+    return PIN_COLORS.find(c => c.value === color)?.hex || "#3b82f6"
   }
 
   const selectedLocation = locations.find(l => l.id === selectedPin)
@@ -103,30 +115,40 @@ export default function MapEditorPage() {
       setLocations(prev => [...prev, newLocation])
       setSelectedPin(newId)
       setMode("select")
+    } else if (mode === "path" && isDrawingPath) {
+      // Add waypoint to current path
+      setCurrentPath(prev => [...prev, { x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10, isWaypoint: true }])
     } else if (mode === "select") {
       setSelectedPin(null)
+      setSelectedPathId(null)
     }
-  }, [mode, isDragging])
+  }, [mode, isDragging, isDrawingPath])
 
   const handlePinClick = (e: React.MouseEvent, locationId: string) => {
     e.stopPropagation()
     
     if (mode === "path") {
-      if (!pathStart) {
-        setPathStart(locationId)
-      } else if (pathStart !== locationId) {
-        // Create path
+      const loc = locations.find(l => l.id === locationId)
+      if (!loc) return
+
+      if (!isDrawingPath) {
+        // Start a new path from this pin
+        setCurrentPath([{ x: loc.x, y: loc.y, pinId: locationId }])
+        setIsDrawingPath(true)
+      } else {
+        // End path at this pin
         const newPath: MapPath = {
           id: `path-${Date.now()}`,
-          from: pathStart,
-          to: locationId,
+          points: [...currentPath, { x: loc.x, y: loc.y, pinId: locationId }],
           color: "blue",
         }
         setPaths(prev => [...prev, newPath])
-        setPathStart(null)
+        setCurrentPath([])
+        setIsDrawingPath(false)
       }
     } else {
       setSelectedPin(locationId)
+      setSelectedPathId(null)
     }
   }
 
@@ -148,6 +170,16 @@ export default function MapEditorPage() {
           ? { ...loc, x: Math.max(0, Math.min(100, Math.round(x * 10) / 10)), y: Math.max(0, Math.min(100, Math.round(y * 10) / 10)) }
           : loc
       ))
+
+      // Update any paths that reference this pin
+      setPaths(prev => prev.map(path => ({
+        ...path,
+        points: path.points.map(point => 
+          point.pinId === locationId 
+            ? { ...point, x: Math.max(0, Math.min(100, Math.round(x * 10) / 10)), y: Math.max(0, Math.min(100, Math.round(y * 10) / 10)) }
+            : point
+        )
+      })))
     }
     
     const onMouseUp = () => {
@@ -159,6 +191,17 @@ export default function MapEditorPage() {
     document.addEventListener("mousemove", onMouseMove)
     document.addEventListener("mouseup", onMouseUp)
   }, [mode])
+
+  const cancelPath = () => {
+    setCurrentPath([])
+    setIsDrawingPath(false)
+  }
+
+  const undoLastPoint = () => {
+    if (currentPath.length > 1) {
+      setCurrentPath(prev => prev.slice(0, -1))
+    }
+  }
 
   const updateLocation = () => {
     if (!selectedPin || !editForm) return
@@ -173,12 +216,13 @@ export default function MapEditorPage() {
   const deleteLocation = () => {
     if (!selectedPin) return
     setLocations(prev => prev.filter(loc => loc.id !== selectedPin))
-    setPaths(prev => prev.filter(p => p.from !== selectedPin && p.to !== selectedPin))
+    setPaths(prev => prev.filter(p => !p.points.some(pt => pt.pinId === selectedPin)))
     setSelectedPin(null)
   }
 
   const deletePath = (pathId: string) => {
     setPaths(prev => prev.filter(p => p.id !== pathId))
+    if (selectedPathId === pathId) setSelectedPathId(null)
   }
 
   const updatePathColor = (pathId: string, color: string) => {
@@ -193,6 +237,8 @@ export default function MapEditorPage() {
     setLocations(defaultLocations.map(loc => ({ ...loc, color: getCategoryColor(loc.category) })))
     setPaths([])
     setSelectedPin(null)
+    setCurrentPath([])
+    setIsDrawingPath(false)
   }
 
   const exportData = () => {
@@ -229,12 +275,25 @@ export default function MapEditorPage() {
     e.target.value = ""
   }
 
-  // Calculate path line coordinates
-  const getPathCoords = (path: MapPath) => {
-    const from = locations.find(l => l.id === path.from)
-    const to = locations.find(l => l.id === path.to)
-    if (!from || !to) return null
-    return { x1: from.x, y1: from.y, x2: to.x, y2: to.y }
+  // Generate SVG path string from points
+  const getPathD = (points: PathPoint[]) => {
+    if (points.length < 2) return ""
+    return points.map((point, i) => 
+      `${i === 0 ? 'M' : 'L'} ${point.x}% ${point.y}%`
+    ).join(' ')
+  }
+
+  // Get path label position (midpoint)
+  const getPathLabelPosition = (points: PathPoint[]) => {
+    if (points.length < 2) return { x: 0, y: 0 }
+    const midIndex = Math.floor(points.length / 2)
+    return { x: points[midIndex].x, y: points[midIndex].y }
+  }
+
+  const getStartEndPins = (path: MapPath) => {
+    const startPin = path.points[0]?.pinId ? locations.find(l => l.id === path.points[0].pinId) : null
+    const endPin = path.points[path.points.length - 1]?.pinId ? locations.find(l => l.id === path.points[path.points.length - 1].pinId) : null
+    return { startPin, endPin }
   }
 
   return (
@@ -258,7 +317,7 @@ export default function MapEditorPage() {
               <Button
                 variant={mode === "select" ? "default" : "outline"}
                 size="sm"
-                onClick={() => { setMode("select"); setPathStart(null) }}
+                onClick={() => { setMode("select"); cancelPath() }}
                 className="flex-1"
               >
                 <Move className="h-4 w-4 mr-1" />
@@ -267,7 +326,7 @@ export default function MapEditorPage() {
               <Button
                 variant={mode === "add" ? "default" : "outline"}
                 size="sm"
-                onClick={() => { setMode("add"); setPathStart(null) }}
+                onClick={() => { setMode("add"); cancelPath() }}
                 className="flex-1"
               >
                 <Plus className="h-4 w-4 mr-1" />
@@ -410,18 +469,29 @@ export default function MapEditorPage() {
 
             {mode === "path" && (
               <Card className="bg-primary/5 border-primary/20">
-                <CardContent className="p-3 text-sm text-center">
-                  {pathStart ? (
-                    <>
-                      <span className="font-medium">Start selected!</span>
-                      <br />
-                      Click another pin to create path
-                      <Button variant="ghost" size="sm" className="ml-2" onClick={() => setPathStart(null)}>
-                        Cancel
-                      </Button>
-                    </>
+                <CardContent className="p-3 text-sm space-y-2">
+                  {!isDrawingPath ? (
+                    <div className="text-center">
+                      <p className="font-medium">Click a pin to start drawing</p>
+                      <p className="text-xs text-muted-foreground mt-1">Your path will begin from that location</p>
+                    </div>
                   ) : (
-                    "Click a pin to start a path"
+                    <>
+                      <div className="text-center">
+                        <p className="font-medium">Drawing path ({currentPath.length} points)</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Click on the map to add waypoints, or click a pin to end the path
+                        </p>
+                      </div>
+                      <div className="flex gap-2 justify-center">
+                        <Button size="sm" variant="outline" onClick={undoLastPoint} disabled={currentPath.length <= 1}>
+                          Undo Point
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={cancelPath}>
+                          Cancel
+                        </Button>
+                      </div>
+                    </>
                   )}
                 </CardContent>
               </Card>
@@ -437,14 +507,23 @@ export default function MapEditorPage() {
               ) : (
                 <div className="space-y-2">
                   {paths.map(path => {
-                    const from = locations.find(l => l.id === path.from)
-                    const to = locations.find(l => l.id === path.to)
+                    const { startPin, endPin } = getStartEndPins(path)
+                    const waypointCount = path.points.filter(p => p.isWaypoint).length
                     return (
-                      <Card key={path.id} className="p-3">
+                      <Card 
+                        key={path.id} 
+                        className={`p-3 cursor-pointer transition-colors ${selectedPathId === path.id ? "border-primary" : ""}`}
+                        onClick={() => setSelectedPathId(path.id)}
+                      >
                         <div className="flex items-center gap-2 text-sm mb-2">
-                          <span className="truncate">{from?.name || "?"}</span>
+                          <span className="truncate">{startPin?.name || "?"}</span>
                           <ArrowRight className="h-3 w-3 shrink-0" />
-                          <span className="truncate">{to?.name || "?"}</span>
+                          <span className="truncate">{endPin?.name || "?"}</span>
+                          {waypointCount > 0 && (
+                            <Badge variant="secondary" className="text-[10px] h-5 ml-auto">
+                              {waypointCount} waypoint{waypointCount > 1 ? "s" : ""}
+                            </Badge>
+                          )}
                         </div>
                         <div className="flex gap-2">
                           <Select
@@ -469,9 +548,10 @@ export default function MapEditorPage() {
                             placeholder="Label"
                             value={path.label || ""}
                             onChange={(e) => updatePathLabel(path.id, e.target.value)}
+                            onClick={(e) => e.stopPropagation()}
                             className="h-7 text-xs flex-1"
                           />
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deletePath(path.id)}>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); deletePath(path.id) }}>
                             <Trash2 className="h-3 w-3" />
                           </Button>
                         </div>
@@ -512,7 +592,7 @@ export default function MapEditorPage() {
       <div className="flex-1 p-6 overflow-auto bg-muted/30">
         <div
           ref={mapRef}
-          className="relative w-full max-w-5xl mx-auto cursor-crosshair"
+          className={`relative w-full max-w-5xl mx-auto ${mode === "add" || (mode === "path" && isDrawingPath) ? "cursor-crosshair" : "cursor-default"}`}
           onClick={handleMapClick}
         >
           <img
@@ -523,70 +603,100 @@ export default function MapEditorPage() {
           />
 
           {/* SVG for paths */}
-          {showPaths && paths.length > 0 && (
-            <svg className="absolute inset-0 w-full h-full pointer-events-none">
-              {paths.map(path => {
-                const coords = getPathCoords(path)
-                if (!coords) return null
-                const colorClass = PIN_COLORS.find(c => c.value === path.color)?.value || "blue"
-                const strokeColor = colorClass === "red" ? "#ef4444" :
-                  colorClass === "orange" ? "#f97316" :
-                  colorClass === "yellow" ? "#eab308" :
-                  colorClass === "green" ? "#22c55e" :
-                  colorClass === "blue" ? "#3b82f6" :
-                  colorClass === "purple" ? "#a855f7" :
-                  colorClass === "pink" ? "#ec4899" : "#3b82f6"
-                return (
-                  <g key={path.id}>
-                    <line
-                      x1={`${coords.x1}%`}
-                      y1={`${coords.y1}%`}
-                      x2={`${coords.x2}%`}
-                      y2={`${coords.y2}%`}
-                      stroke={strokeColor}
-                      strokeWidth="3"
-                      strokeDasharray="8,4"
-                      opacity="0.8"
-                    />
-                    {path.label && (
-                      <text
-                        x={`${(coords.x1 + coords.x2) / 2}%`}
-                        y={`${(coords.y1 + coords.y2) / 2}%`}
+          <svg className="absolute inset-0 w-full h-full pointer-events-none">
+            {/* Existing paths */}
+            {showPaths && paths.map(path => {
+              const strokeColor = getColorHex(path.color)
+              const isSelected = selectedPathId === path.id
+              const labelPos = getPathLabelPosition(path.points)
+              return (
+                <g key={path.id}>
+                  <path
+                    d={getPathD(path.points)}
+                    stroke={strokeColor}
+                    strokeWidth={isSelected ? "5" : "3"}
+                    strokeDasharray="8,4"
+                    fill="none"
+                    opacity={isSelected ? "1" : "0.7"}
+                  />
+                  {/* Waypoint dots */}
+                  {path.points.map((point, i) => (
+                    point.isWaypoint && (
+                      <circle
+                        key={i}
+                        cx={`${point.x}%`}
+                        cy={`${point.y}%`}
+                        r={isSelected ? "6" : "4"}
                         fill={strokeColor}
-                        fontSize="12"
-                        fontWeight="600"
-                        textAnchor="middle"
-                        dy="-5"
-                        className="drop-shadow-sm"
-                      >
-                        {path.label}
-                      </text>
-                    )}
-                  </g>
-                )
-              })}
-            </svg>
-          )}
+                        opacity={isSelected ? "1" : "0.7"}
+                      />
+                    )
+                  ))}
+                  {/* Path label */}
+                  {path.label && (
+                    <text
+                      x={`${labelPos.x}%`}
+                      y={`${labelPos.y}%`}
+                      fill={strokeColor}
+                      fontSize="12"
+                      fontWeight="600"
+                      textAnchor="middle"
+                      dy="-8"
+                      className="drop-shadow-sm"
+                      style={{ textShadow: "0 0 3px white, 0 0 3px white" }}
+                    >
+                      {path.label}
+                    </text>
+                  )}
+                </g>
+              )
+            })}
+
+            {/* Current path being drawn */}
+            {isDrawingPath && currentPath.length > 0 && (
+              <g>
+                <path
+                  d={getPathD(currentPath)}
+                  stroke="#3b82f6"
+                  strokeWidth="3"
+                  strokeDasharray="4,4"
+                  fill="none"
+                  opacity="0.8"
+                />
+                {currentPath.map((point, i) => (
+                  <circle
+                    key={i}
+                    cx={`${point.x}%`}
+                    cy={`${point.y}%`}
+                    r={point.isWaypoint ? "5" : "7"}
+                    fill={point.isWaypoint ? "#3b82f6" : "#22c55e"}
+                    stroke="white"
+                    strokeWidth="2"
+                  />
+                ))}
+              </g>
+            )}
+          </svg>
 
           {/* Pins */}
           {locations.map(loc => {
             const isSelected = selectedPin === loc.id
-            const isPathStart = pathStart === loc.id
+            const isPathPoint = mode === "path" && currentPath.some(p => p.pinId === loc.id)
             const colorClass = getColorClass(loc.color || getCategoryColor(loc.category))
             
             return (
               <div
                 key={loc.id}
                 className={`absolute -translate-x-1/2 -translate-y-full cursor-pointer transition-transform ${
-                  isSelected || isPathStart ? "z-20 scale-125" : "z-10 hover:scale-110"
+                  isSelected || isPathPoint ? "z-20 scale-125" : "z-10 hover:scale-110"
                 }`}
                 style={{ left: `${loc.x}%`, top: `${loc.y}%` }}
                 onClick={(e) => handlePinClick(e, loc.id)}
                 onMouseDown={(e) => handlePinDrag(e, loc.id)}
               >
                 <MapPin
-                  className={`h-8 w-8 drop-shadow-lg ${colorClass} ${isPathStart ? "animate-pulse" : ""}`}
-                  fill={isSelected || isPathStart ? "currentColor" : "white"}
+                  className={`h-8 w-8 drop-shadow-lg ${colorClass} ${isPathPoint ? "animate-pulse" : ""}`}
+                  fill={isSelected || isPathPoint ? "currentColor" : "white"}
                 />
                 {(isSelected || mode === "select") && (
                   <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 whitespace-nowrap bg-background/95 rounded px-2 py-0.5 text-xs font-medium shadow border">
@@ -601,6 +711,11 @@ export default function MapEditorPage() {
           {mode === "add" && (
             <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-background/95 rounded-lg px-4 py-2 shadow-lg border text-sm font-medium">
               Click anywhere on the map to add a pin
+            </div>
+          )}
+          {mode === "path" && isDrawingPath && (
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-background/95 rounded-lg px-4 py-2 shadow-lg border text-sm font-medium">
+              Click to add waypoints, or click a pin to finish
             </div>
           )}
         </div>
