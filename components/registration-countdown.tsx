@@ -18,7 +18,8 @@ export function RegistrationCountdown() {
     setMounted(true)
 
     const calculateTimeLeft = (): TimeLeft => {
-      const targetDate = Date.UTC(2026, 3, 15, 16, 59, 0)
+      // April 15, 2026 at 11:59 PM Central Time (CDT = UTC-5, so 4:59 AM UTC next day)
+      const targetDate = new Date("2026-04-15T23:59:00").getTime() + (5 * 60 * 60 * 1000)
       const now = Date.now()
       const difference = targetDate - now
 
@@ -60,7 +61,7 @@ export function RegistrationCountdown() {
           ))}
         </div>
         <div className="mt-4 text-center">
-          <p className="text-ring">April 15, 2026 at 11:59 AM Central Time</p>
+          <p className="text-ring">April 15, 2026 at 11:59 PM Central Time</p>
         </div>
       </div>
     )
@@ -89,7 +90,7 @@ export function RegistrationCountdown() {
         ))}
       </div>
       <div className="mt-4 text-center">
-        <p className="text-ring">April 15, 2026 at 11:59 AM Central Time</p>
+        <p className="text-ring">April 15, 2026 at 11:59 PM Central Time</p>
       </div>
     </div>
   )
