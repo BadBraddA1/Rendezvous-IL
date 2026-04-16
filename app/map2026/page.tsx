@@ -4,7 +4,7 @@ import { useState, useMemo, useCallback, useEffect } from "react"
 import dynamic from "next/dynamic"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
+import { Badge } from "@/components/ui/badge" // still used in search results badge
 import { MapPin, Search, Mail, Phone, Church, Home, User, Users, X, Sparkles, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { SiteHeader } from "@/components/site-header"
@@ -579,18 +579,8 @@ export default function Map2026Page() {
                         ) : (
                           <div className="pl-6 space-y-1.5">
                             {familyMembers.map((member) => (
-                              <div key={member.id} className="flex items-center justify-between gap-2 rounded-md bg-muted/50 px-3 py-1.5">
-                                <span className="font-medium text-xs">
-                                  {member.first_name} {member.last_name}
-                                </span>
-                                <div className="flex items-center gap-2 shrink-0">
-                                  {member.age !== null && (
-                                    <span className="text-xs text-muted-foreground">Age {member.age}</span>
-                                  )}
-                                  {member.is_baptized && (
-                                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">Baptized</Badge>
-                                  )}
-                                </div>
+                              <div key={member.id} className="rounded-md bg-muted/50 px-3 py-1.5 text-xs font-medium">
+                                {member.first_name} {member.last_name}
                               </div>
                             ))}
                           </div>
