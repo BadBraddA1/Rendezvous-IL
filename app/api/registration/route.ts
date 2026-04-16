@@ -6,6 +6,14 @@ import { generateRegistrationConfirmationEmail, generateAdminNotificationEmail }
 const resend = new Resend(process.env.Resend_API)
 
 export async function POST(request: Request) {
+  // Registration is closed as of April 15, 2026
+  return NextResponse.json(
+    { error: "Registration for Rendezvous 2026 has closed. If you have any questions, please contact the event organizers." },
+    { status: 403 }
+  )
+
+  // Original registration logic (disabled)
+  /*
   try {
     const data = await request.json()
     const sql = neon(process.env.NEON_DATABASE_URL!)
@@ -145,4 +153,5 @@ export async function POST(request: Request) {
     const errorMessage = error?.detail || error?.message || "Failed to submit registration"
     return NextResponse.json({ error: errorMessage }, { status: 500 })
   }
+  */
 }
