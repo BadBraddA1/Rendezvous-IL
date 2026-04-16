@@ -60,23 +60,6 @@ export default function HomePage() {
           <div className="container mx-auto px-6">
             <div className="mx-auto max-w-3xl">
               <Countdown />
-              <div className="my-8 flex items-center gap-4">
-                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent" />
-                <span className="text-sm font-medium text-muted-foreground">Registration Status</span>
-                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent" />
-              </div>
-              <div className="text-center space-y-4">
-                <Card className="border-border/50 backdrop-blur bg-chart-1">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-card">Registration Closed</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <CardDescription className="text-card">
-                      Registration for Rendezvous 2026 has closed. See you at the event!
-                    </CardDescription>
-                  </CardContent>
-                </Card>
-              </div>
             </div>
           </div>
         </section>
