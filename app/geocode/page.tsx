@@ -6,7 +6,8 @@ import { SiteFooter } from "@/components/site-footer"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { MapPin, Play, CheckCircle, XCircle, Clock, Copy, RefreshCw } from "lucide-react"
+import { MapPin, Play, CheckCircle, XCircle, Clock, Copy, RefreshCw, Pencil, X, Check } from "lucide-react"
+import { Input } from "@/components/ui/input"
 
 type Registration = {
   id: number
@@ -67,6 +68,9 @@ export default function GeocodeAdminPage() {
   const [isRunningAll, setIsRunningAll] = useState(false)
   const [currentIndex, setCurrentIndex] = useState<number | null>(null)
   const [outputCode, setOutputCode] = useState<string>("")
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [manualLat, setManualLat] = useState("")
+  const [manualLng, setManualLng] = useState("")
 
   const geocodeFamily = async (reg: Registration): Promise<GeoResult> => {
     try {
@@ -101,6 +105,36 @@ export default function GeocodeAdminPage() {
     const result = await geocodeFamily(reg)
     
     setResults(prev => new Map(prev).set(reg.id, result))
+  }
+
+  const startManualEdit = (reg: Registration) => {
+    const existingResult = results.get(reg.id)
+    setEditingId(reg.id)
+    setManualLat(existingResult?.newLat?.toString() || reg.lat.toString())
+    setManualLng(existingResult?.newLng?.toString() || reg.lng.toString())
+  }
+
+  const saveManualCoords = (regId: number) => {
+    const lat = parseFloat(manualLat)
+    const lng = parseFloat(manualLng)
+    
+    if (!isNaN(lat) && !isNaN(lng)) {
+      setResults(prev => new Map(prev).set(regId, {
+        status: "success",
+        newLat: lat,
+        newLng: lng,
+      }))
+    }
+    
+    setEditingId(null)
+    setManualLat("")
+    setManualLng("")
+  }
+
+  const cancelManualEdit = () => {
+    setEditingId(null)
+    setManualLat("")
+    setManualLng("")
   }
 
   const runAllGeocode = async () => {
@@ -302,19 +336,82 @@ export default function GeocodeAdminPage() {
                               {result?.error && (
                                 <p className="text-xs text-red-500 mt-1">{result.error}</p>
                               )}
-                            </div>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => runSingleGeocode(reg)}
-                              disabled={isRunningAll || result?.status === "running"}
-                            >
-                              {result?.status === "running" ? (
-                                <RefreshCw className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <MapPin className="h-4 w-4" />
+                              {/* Manual coordinate input */}
+                              {editingId === reg.id && (
+                                <div className="mt-3 p-3 bg-muted rounded-lg border border-primary/30">
+                                  <p className="text-xs font-medium text-primary mb-2">
+                                    Enter coordinates from Google Maps:
+                                  </p>
+                                  <div className="flex gap-2 items-center">
+                                    <div className="flex-1">
+                                      <label className="text-xs text-muted-foreground">Latitude</label>
+                                      <Input
+                                        type="text"
+                                        placeholder="e.g. 38.4178"
+                                        value={manualLat}
+                                        onChange={(e) => setManualLat(e.target.value)}
+                                        className="h-8 text-sm"
+                                      />
+                                    </div>
+                                    <div className="flex-1">
+                                      <label className="text-xs text-muted-foreground">Longitude</label>
+                                      <Input
+                                        type="text"
+                                        placeholder="e.g. -90.4012"
+                                        value={manualLng}
+                                        onChange={(e) => setManualLng(e.target.value)}
+                                        className="h-8 text-sm"
+                                      />
+                                    </div>
+                                    <div className="flex gap-1 pt-4">
+                                      <Button
+                                        size="sm"
+                                        variant="default"
+                                        onClick={() => saveManualCoords(reg.id)}
+                                        className="h-8 w-8 p-0"
+                                      >
+                                        <Check className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={cancelManualEdit}
+                                        className="h-8 w-8 p-0"
+                                      >
+                                        <X className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                  <p className="text-xs text-muted-foreground mt-2">
+                                    Tip: Right-click the location in Google Maps and click the coordinates to copy them
+                                  </p>
+                                </div>
                               )}
-                            </Button>
+                            </div>
+                            <div className="flex gap-1 flex-shrink-0">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => runSingleGeocode(reg)}
+                                disabled={isRunningAll || result?.status === "running" || editingId === reg.id}
+                                title="Auto-geocode"
+                              >
+                                {result?.status === "running" ? (
+                                  <RefreshCw className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <MapPin className="h-4 w-4" />
+                                )}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => startManualEdit(reg)}
+                                disabled={isRunningAll || editingId === reg.id}
+                                title="Manual entry"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       )
