@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useCallback } from "react"
+import { useState, useMemo, useCallback, useEffect } from "react"
 import dynamic from "next/dynamic"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -56,8 +56,8 @@ const ALL_REGISTRATIONS: Registration[] = [
     homeCongregation: "Arnold COC",
     fullAddress: "3820 Treebrook Dr, Imperial, MO 63052",
     address: "Imperial, MO",
-    lat: 38.3606,
-    lng: -90.3779,
+    lat: 38.4178,
+    lng: -90.4012,
   },
   {
     id: 44,
@@ -236,8 +236,8 @@ const ALL_REGISTRATIONS: Registration[] = [
     homeCongregation: "Arnold COC",
     fullAddress: "1544 Prehistoric Hill Dr, Imperial, MO 63052",
     address: "Imperial, MO",
-    lat: 38.3580,
-    lng: -90.3810,
+    lat: 38.3649,
+    lng: -90.3888,
   },
   {
     id: 49,
@@ -364,11 +364,39 @@ const ALL_REGISTRATIONS: Registration[] = [
 export default function Map2026Page() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedRegistration, setSelectedRegistration] = useState<Registration | null>(null)
+  const [registrations, setRegistrations] = useState<Registration[]>(ALL_REGISTRATIONS)
+  const [isGeocoding, setIsGeocoding] = useState(true)
+
+  // Geocode addresses on mount for precise coordinates
+  useEffect(() => {
+    const geocodeAddresses = async () => {
+      setIsGeocoding(true)
+      const updated = await Promise.all(
+        ALL_REGISTRATIONS.map(async (reg) => {
+          try {
+            const response = await fetch(`/api/geocode?address=${encodeURIComponent(reg.fullAddress)}`)
+            if (response.ok) {
+              const coords = await response.json()
+              if (coords.lat && coords.lng) {
+                return { ...reg, lat: coords.lat, lng: coords.lng }
+              }
+            }
+          } catch {
+            // Use fallback coordinates
+          }
+          return reg
+        })
+      )
+      setRegistrations(updated)
+      setIsGeocoding(false)
+    }
+    geocodeAddresses()
+  }, [])
 
   const filteredRegistrations = useMemo(() => {
-    if (!searchQuery.trim()) return ALL_REGISTRATIONS
+    if (!searchQuery.trim()) return registrations
     const query = searchQuery.toLowerCase().trim()
-    return ALL_REGISTRATIONS.filter((reg) =>
+    return registrations.filter((reg) =>
       reg.lastName?.toLowerCase().includes(query) ||
       reg.email?.toLowerCase().includes(query) ||
       reg.husbandPhone?.replace(/\D/g, "").includes(query.replace(/\D/g, "")) ||
@@ -377,7 +405,7 @@ export default function Map2026Page() {
       reg.fullAddress?.toLowerCase().includes(query) ||
       reg.address?.toLowerCase().includes(query)
     )
-  }, [searchQuery])
+  }, [searchQuery, registrations])
 
   const handleSelectRegistration = useCallback((reg: Registration) => {
     setSelectedRegistration(reg)
@@ -391,7 +419,7 @@ export default function Map2026Page() {
           <div>
             <h1 className="text-2xl font-bold text-foreground md:text-3xl">Rendezvous 2026 Attendee Map</h1>
             <p className="text-sm text-muted-foreground">
-              {ALL_REGISTRATIONS.length} families registered from across the country
+              {registrations.length} families registered from across the country{isGeocoding && " (loading precise locations...)"}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
@@ -429,7 +457,7 @@ export default function Map2026Page() {
           </div>
           {searchQuery && (
             <Badge variant="secondary" className="whitespace-nowrap">
-              {filteredRegistrations.length} of {ALL_REGISTRATIONS.length} families
+              {filteredRegistrations.length} of {registrations.length} families
             </Badge>
           )}
         </div>
