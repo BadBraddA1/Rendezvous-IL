@@ -1,11 +1,11 @@
 "use client"
 
-import { useState, useMemo, useCallback } from "react"
+import { useState, useMemo, useCallback, useEffect } from "react"
 import dynamic from "next/dynamic"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { MapPin, Search, Mail, Phone, Church, Home, User, X, Sparkles } from "lucide-react"
+import { Badge } from "@/components/ui/badge" // still used in search results badge
+import { MapPin, Search, Mail, Phone, Church, Home, User, Users, X, Sparkles, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
@@ -14,6 +14,15 @@ const LeafletMap = dynamic(
   () => import("@/components/ui/leaflet-map").then((mod) => mod.LeafletMap),
   { ssr: false }
 )
+
+type FamilyMember = {
+  id: number
+  first_name: string
+  last_name: string
+  age: number | null
+  date_of_birth: string | null
+  is_baptized: boolean
+}
 
 type Registration = {
   id: number
@@ -366,6 +375,21 @@ const ALL_REGISTRATIONS: Registration[] = [
 export default function Map2026Page() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedRegistration, setSelectedRegistration] = useState<Registration | null>(null)
+  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([])
+  const [loadingMembers, setLoadingMembers] = useState(false)
+
+  useEffect(() => {
+    if (!selectedRegistration) {
+      setFamilyMembers([])
+      return
+    }
+    setLoadingMembers(true)
+    fetch(`/api/family-members?registrationId=${selectedRegistration.id}`)
+      .then(res => res.json())
+      .then(data => setFamilyMembers(Array.isArray(data) ? data : []))
+      .catch(() => setFamilyMembers([]))
+      .finally(() => setLoadingMembers(false))
+  }, [selectedRegistration])
 
   const filteredRegistrations = useMemo(() => {
     if (!searchQuery.trim()) return ALL_REGISTRATIONS
@@ -538,6 +562,30 @@ export default function Map2026Page() {
                           </div>
                         </div>
                       )}
+
+                      {/* Family Members */}
+                      <div className="pt-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Users className="h-4 w-4 text-primary shrink-0" />
+                          <p className="text-xs text-muted-foreground font-medium">Family Members</p>
+                        </div>
+                        {loadingMembers ? (
+                          <div className="flex items-center gap-2 pl-6 text-xs text-muted-foreground">
+                            <RefreshCw className="h-3 w-3 animate-spin" />
+                            Loading...
+                          </div>
+                        ) : familyMembers.length === 0 ? (
+                          <p className="pl-6 text-xs text-muted-foreground">No members found</p>
+                        ) : (
+                          <div className="pl-6 space-y-1.5">
+                            {familyMembers.map((member) => (
+                              <div key={member.id} className="rounded-md bg-muted/50 px-3 py-1.5 text-xs font-medium">
+                                {member.first_name} {member.last_name}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </CardContent>
                   </Card>
                 )}
