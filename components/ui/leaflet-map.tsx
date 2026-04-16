@@ -147,23 +147,28 @@ export function LeafletMap({ center, registrations, selectedId, onSelectRegistra
     })
   }, [registrations, selectedId, isMapReady, onSelectRegistration])
 
-  // Pan to selected marker - use registrations as dependency to catch geocoded updates
+  // Pan to selected marker when selectedId changes
   useEffect(() => {
-    if (!mapRef.current || !selectedId || !isMapReady) return
+    if (!mapRef.current || selectedId === null || !isMapReady) return
 
-    // Find the registration to get the latest coordinates
+    const map = mapRef.current
+
+    // Find the registration to get coordinates
     const selectedReg = registrations.find(r => r.id === selectedId)
     if (selectedReg) {
-      // Use the coordinates from the registration data (may have been updated by geocoding)
-      mapRef.current.setView([selectedReg.lat, selectedReg.lng], 10, { animate: true })
+      // Fly to the selected location with animation
+      map.flyTo([selectedReg.lat, selectedReg.lng], 10, {
+        animate: true,
+        duration: 0.8
+      })
       
-      // Open the popup on the marker
-      const marker = markersRef.current.get(selectedId)
-      if (marker) {
-        // Update marker position in case coordinates changed
-        marker.setLatLng([selectedReg.lat, selectedReg.lng])
-        marker.openPopup()
-      }
+      // Open the popup on the marker after a short delay to let the animation complete
+      setTimeout(() => {
+        const marker = markersRef.current.get(selectedId)
+        if (marker) {
+          marker.openPopup()
+        }
+      }, 300)
     }
   }, [selectedId, isMapReady, registrations])
 
