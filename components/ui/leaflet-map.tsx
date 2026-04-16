@@ -5,9 +5,9 @@ import L from "leaflet"
 import "leaflet/dist/leaflet.css"
 
 // Fix default marker icons for Leaflet in Next.js
-const defaultIcon = L.icon({
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+// Using orange to match the Rendezvous coral/orange primary color
+const orangeIcon = L.icon({
+  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png",
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
   iconSize: [25, 41],
   iconAnchor: [12, 41],
@@ -118,11 +118,11 @@ export function LeafletMap({ center, registrations, selectedId, onSelectRegistra
 
       if (existingMarker) {
         // Update existing marker icon if selection changed
-        const icon = selectedId === reg.id ? greenIcon : defaultIcon
+        const icon = selectedId === reg.id ? greenIcon : orangeIcon
         existingMarker.setIcon(icon)
       } else {
         // Create new marker
-        const icon = selectedId === reg.id ? greenIcon : defaultIcon
+        const icon = selectedId === reg.id ? greenIcon : orangeIcon
         const marker = L.marker([reg.lat, reg.lng], { icon })
 
         const popupContent = `

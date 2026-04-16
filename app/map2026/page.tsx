@@ -5,8 +5,10 @@ import dynamic from "next/dynamic"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { MapPin, Search, Mail, Phone, Church, Home, User, X } from "lucide-react"
+import { MapPin, Search, Mail, Phone, Church, Home, User, X, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { SiteHeader } from "@/components/site-header"
+import { SiteFooter } from "@/components/site-footer"
 
 const LeafletMap = dynamic(
   () => import("@/components/ui/leaflet-map").then((mod) => mod.LeafletMap),
@@ -413,181 +415,212 @@ export default function Map2026Page() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto space-y-4 p-4 md:p-6">
-        {/* Header */}
-        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground md:text-3xl">Rendezvous 2026 Attendee Map</h1>
-            <p className="text-sm text-muted-foreground">
-              {registrations.length} families registered from across the country{isGeocoding && " (loading precise locations...)"}
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-1.5">
-              <MapPin className="h-4 w-4 text-red-600" />
-              <span className="text-sm">Lake Williamson</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <MapPin className="h-4 w-4 text-blue-600" />
-              <span className="text-sm">Registered Families</span>
-            </div>
-          </div>
-        </div>
+      <SiteHeader />
 
-        {/* Search */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div className="relative flex-1 max-w-lg">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Search by name, email, phone, congregation, or city..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-10"
-            />
-            {searchQuery && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 p-0"
-                onClick={() => setSearchQuery("")}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
-          {searchQuery && (
-            <Badge variant="secondary" className="whitespace-nowrap">
-              {filteredRegistrations.length} of {registrations.length} families
-            </Badge>
-          )}
-        </div>
-
-        <div className="flex flex-col gap-4 lg:flex-row">
-          {/* Map */}
-          <Card className="flex-1 overflow-hidden">
-            <CardContent className="p-0">
-              <div className="h-[50vh] min-h-[400px] lg:h-[calc(100vh-280px)]">
-                <LeafletMap
-                  center={EVENT_CENTER}
-                  registrations={filteredRegistrations}
-                  selectedId={selectedRegistration?.id ?? null}
-                  onSelectRegistration={handleSelectRegistration}
-                />
+      <main>
+        {/* Hero Section */}
+        <section className="border-b bg-secondary py-12 md:py-16">
+          <div className="container mx-auto px-6">
+            <div className="mx-auto max-w-4xl text-center">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-secondary-foreground/20 bg-secondary-foreground/10 backdrop-blur-sm px-4 py-2 text-sm font-medium text-secondary-foreground">
+                <Sparkles className="h-4 w-4" />
+                {registrations.length} Families Registered
               </div>
-            </CardContent>
-          </Card>
+              <h1 className="mb-4 text-balance text-4xl font-bold tracking-tight text-secondary-foreground md:text-5xl">
+                Attendee Map
+              </h1>
+              <p className="text-balance text-lg text-secondary-foreground/70">
+                See where Rendezvous 2026 families are coming from across the country
+                {isGeocoding && " — loading precise locations..."}
+              </p>
+            </div>
+          </div>
+        </section>
 
-          {/* Side Panel */}
-          <div className="w-full lg:w-80 xl:w-96 flex flex-col gap-4">
-            {/* Selected Family Details */}
-            {selectedRegistration && (
-              <Card className="border-2 border-green-500">
-                <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <User className="h-4 w-4 shrink-0" />
-                      {selectedRegistration.lastName} Family
-                    </CardTitle>
-                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 -mt-1 -mr-1" onClick={() => setSelectedRegistration(null)}>
-                      <X className="h-4 w-4" />
-                    </Button>
+        {/* Map Legend */}
+        <section className="border-b py-4 bg-gradient-to-br from-primary/5 to-accent/5">
+          <div className="container mx-auto px-6">
+            <div className="flex flex-wrap items-center justify-center gap-6">
+              <div className="flex items-center gap-2">
+                <div className="h-4 w-4 rounded-full bg-red-600" />
+                <span className="text-sm font-medium">Lake Williamson (Event Center)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="h-4 w-4 rounded-full bg-primary" />
+                <span className="text-sm font-medium">Registered Families</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="h-4 w-4 rounded-full bg-green-600" />
+                <span className="text-sm font-medium">Selected Family</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Main Content */}
+        <section className="py-8">
+          <div className="container mx-auto px-6">
+            {/* Search */}
+            <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="relative flex-1 max-w-lg">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Search by name, email, phone, congregation, or city..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 pr-10 h-12"
+                />
+                {searchQuery && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-1 top-1/2 h-8 w-8 -translate-y-1/2 p-0"
+                    onClick={() => setSearchQuery("")}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+              {searchQuery && (
+                <Badge variant="secondary" className="whitespace-nowrap text-sm px-4 py-2">
+                  Showing {filteredRegistrations.length} of {registrations.length} families
+                </Badge>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-6 lg:flex-row">
+              {/* Map */}
+              <Card className="flex-1 overflow-hidden border-border/50 bg-card shadow-xl">
+                <CardContent className="p-0">
+                  <div className="h-[50vh] min-h-[400px] lg:h-[calc(100vh-420px)]">
+                    <LeafletMap
+                      center={EVENT_CENTER}
+                      registrations={filteredRegistrations}
+                      selectedId={selectedRegistration?.id ?? null}
+                      onSelectRegistration={handleSelectRegistration}
+                    />
                   </div>
-                </CardHeader>
-                <CardContent className="space-y-2.5 text-sm">
-                  {selectedRegistration.email && (
-                    <div className="flex items-start gap-2">
-                      <Mail className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                      <div>
-                        <p className="text-xs text-muted-foreground">Email</p>
-                        <a href={`mailto:${selectedRegistration.email}`} className="text-blue-600 hover:underline break-all">
-                          {selectedRegistration.email}
-                        </a>
-                      </div>
-                    </div>
-                  )}
-                  {(selectedRegistration.husbandPhone || selectedRegistration.wifePhone) && (
-                    <div className="flex items-start gap-2">
-                      <Phone className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                      <div>
-                        <p className="text-xs text-muted-foreground">Phone</p>
-                        {selectedRegistration.husbandPhone && (
-                          <a href={`tel:${selectedRegistration.husbandPhone}`} className="text-blue-600 hover:underline block">
-                            Husband: {selectedRegistration.husbandPhone}
-                          </a>
-                        )}
-                        {selectedRegistration.wifePhone && selectedRegistration.wifePhone !== selectedRegistration.husbandPhone && (
-                          <a href={`tel:${selectedRegistration.wifePhone}`} className="text-blue-600 hover:underline block">
-                            Wife: {selectedRegistration.wifePhone}
-                          </a>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  {selectedRegistration.homeCongregation && (
-                    <div className="flex items-start gap-2">
-                      <Church className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                      <div>
-                        <p className="text-xs text-muted-foreground">Congregation</p>
-                        <p>{selectedRegistration.homeCongregation}</p>
-                      </div>
-                    </div>
-                  )}
-                  {selectedRegistration.fullAddress && (
-                    <div className="flex items-start gap-2">
-                      <Home className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                      <div>
-                        <p className="text-xs text-muted-foreground">Address</p>
-                        <p>{selectedRegistration.fullAddress}</p>
-                      </div>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
-            )}
 
-            {/* Attendee List */}
-            <Card className="flex-1">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">All Attendees</CardTitle>
-                <CardDescription>
-                  {filteredRegistrations.length} {filteredRegistrations.length === 1 ? "family" : "families"} — click to view details
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="max-h-[40vh] overflow-y-auto lg:max-h-[calc(100vh-600px)] lg:min-h-[200px]">
-                  {filteredRegistrations.length === 0 ? (
-                    <div className="p-6 text-center text-sm text-muted-foreground">
-                      No families match your search
-                    </div>
-                  ) : (
-                    <div className="divide-y">
-                      {filteredRegistrations.map((reg) => (
-                        <button
-                          key={reg.id}
-                          className={`w-full px-4 py-3 text-left transition-colors hover:bg-muted/50 ${
-                            selectedRegistration?.id === reg.id ? "bg-muted" : ""
-                          }`}
-                          onClick={() => setSelectedRegistration(reg)}
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="min-w-0">
-                              <p className="font-medium text-foreground truncate">
-                                {reg.lastName} Family
-                              </p>
-                              <p className="text-xs text-muted-foreground truncate">{reg.address}</p>
-                            </div>
-                            <MapPin className={`h-4 w-4 shrink-0 ${selectedRegistration?.id === reg.id ? "text-green-600" : "text-blue-600"}`} />
+              {/* Side Panel */}
+              <div className="w-full lg:w-80 xl:w-96 flex flex-col gap-4">
+                {/* Selected Family Details */}
+                {selectedRegistration && (
+                  <Card className="border-2 border-primary bg-gradient-to-br from-card to-primary/5 shadow-lg">
+                    <CardHeader className="pb-2">
+                      <div className="flex items-start justify-between">
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <User className="h-5 w-5 text-primary shrink-0" />
+                          {selectedRegistration.lastName} Family
+                        </CardTitle>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 -mt-1 -mr-1" onClick={() => setSelectedRegistration(null)}>
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3 text-sm">
+                      {selectedRegistration.email && (
+                        <div className="flex items-start gap-3">
+                          <Mail className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                          <div>
+                            <p className="text-xs text-muted-foreground font-medium">Email</p>
+                            <a href={`mailto:${selectedRegistration.email}`} className="text-primary hover:underline break-all">
+                              {selectedRegistration.email}
+                            </a>
                           </div>
-                        </button>
-                      ))}
+                        </div>
+                      )}
+                      {(selectedRegistration.husbandPhone || selectedRegistration.wifePhone) && (
+                        <div className="flex items-start gap-3">
+                          <Phone className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                          <div>
+                            <p className="text-xs text-muted-foreground font-medium">Phone</p>
+                            {selectedRegistration.husbandPhone && (
+                              <a href={`tel:${selectedRegistration.husbandPhone}`} className="text-primary hover:underline block">
+                                Husband: {selectedRegistration.husbandPhone}
+                              </a>
+                            )}
+                            {selectedRegistration.wifePhone && selectedRegistration.wifePhone !== selectedRegistration.husbandPhone && (
+                              <a href={`tel:${selectedRegistration.wifePhone}`} className="text-primary hover:underline block">
+                                Wife: {selectedRegistration.wifePhone}
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      {selectedRegistration.homeCongregation && (
+                        <div className="flex items-start gap-3">
+                          <Church className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                          <div>
+                            <p className="text-xs text-muted-foreground font-medium">Congregation</p>
+                            <p>{selectedRegistration.homeCongregation}</p>
+                          </div>
+                        </div>
+                      )}
+                      {selectedRegistration.fullAddress && (
+                        <div className="flex items-start gap-3">
+                          <Home className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                          <div>
+                            <p className="text-xs text-muted-foreground font-medium">Address</p>
+                            <p>{selectedRegistration.fullAddress}</p>
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Attendee List */}
+                <Card className="flex-1 border-border/50 bg-gradient-to-br from-card to-muted/30 transition-all hover:shadow-xl">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <MapPin className="h-5 w-5 text-primary" />
+                      All Attendees
+                    </CardTitle>
+                    <CardDescription>
+                      {filteredRegistrations.length} {filteredRegistrations.length === 1 ? "family" : "families"} — click to view details
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <div className="max-h-[40vh] overflow-y-auto lg:max-h-[calc(100vh-600px)] lg:min-h-[200px]">
+                      {filteredRegistrations.length === 0 ? (
+                        <div className="p-6 text-center text-sm text-muted-foreground">
+                          No families match your search
+                        </div>
+                      ) : (
+                        <div className="divide-y divide-border/50">
+                          {filteredRegistrations.map((reg) => (
+                            <button
+                              key={reg.id}
+                              className={`w-full px-4 py-3 text-left transition-all hover:bg-primary/5 ${
+                                selectedRegistration?.id === reg.id ? "bg-primary/10 border-l-4 border-l-primary" : ""
+                              }`}
+                              onClick={() => setSelectedRegistration(reg)}
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="min-w-0">
+                                  <p className="font-medium text-foreground truncate">
+                                    {reg.lastName} Family
+                                  </p>
+                                  <p className="text-xs text-muted-foreground truncate">{reg.address}</p>
+                                </div>
+                                <MapPin className={`h-4 w-4 shrink-0 ${selectedRegistration?.id === reg.id ? "text-primary" : "text-muted-foreground"}`} />
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+        </section>
+      </main>
+
+      <SiteFooter />
     </div>
   )
 }
