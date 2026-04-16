@@ -1,8 +1,9 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Construction, ArrowLeft, Calendar } from "lucide-react"
+import { Construction, ArrowLeft } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
+import { EmailSignupForm } from "@/components/email-signup-form"
 import Link from "next/link"
 
 export default function CalculatorPage() {
@@ -28,16 +29,11 @@ export default function CalculatorPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="text-center space-y-6">
-              <div className="rounded-lg bg-muted/50 p-6">
-                <div className="flex items-center justify-center gap-2 mb-3">
-                  <Calendar className="h-5 w-5 text-muted-foreground" />
-                  <span className="font-medium">Coming Soon</span>
-                </div>
-                <p className="text-muted-foreground">
-                  The lodging cost calculator is currently being updated with new pricing and options for Rendezvous 2027. 
-                  Please check back later for the updated calculator.
-                </p>
-              </div>
+              <p className="text-muted-foreground">
+                The lodging cost calculator is currently being updated with new pricing and options for Rendezvous 2027.
+              </p>
+
+              <EmailSignupForm />
 
               <p className="text-sm text-muted-foreground">
                 For questions about pricing or registration for future events, please contact the event organizers through our Facebook group.
