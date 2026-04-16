@@ -9,10 +9,16 @@ export async function GET() {
       SELECT 
         id,
         family_last_name,
+        father_signature,
+        email,
+        husband_phone,
+        wife_phone,
         address,
         city,
         state,
-        zip
+        zip,
+        home_congregation,
+        checkin_qr_code
       FROM registrations
       WHERE address IS NOT NULL 
         AND city IS NOT NULL 
@@ -43,9 +49,16 @@ export async function GET() {
             return {
               id: reg.id,
               lastName: reg.family_last_name,
+              fatherName: reg.father_signature,
+              email: reg.email,
+              husbandPhone: reg.husband_phone,
+              wifePhone: reg.wife_phone,
+              homeCongregation: reg.home_congregation,
+              fullAddress: `${reg.address}, ${reg.city}, ${reg.state} ${reg.zip}`,
               address: `${reg.city}, ${reg.state}`,
               lat: Number.parseFloat(data[0].lat),
               lng: Number.parseFloat(data[0].lon),
+              checkinQrCode: reg.checkin_qr_code,
             }
           }
           console.log(`[v0] No geocoding result for ${reg.family_last_name}`)
