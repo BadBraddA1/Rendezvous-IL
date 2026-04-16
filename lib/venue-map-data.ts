@@ -37,95 +37,104 @@ export interface ScheduleEvent {
 
 // Only locations referenced in the actual schedule
 export const mapLocations: MapLocation[] = [
-  { 
-    id: "activities-center", 
-    name: "Activities Center", 
-    description: "Check-In, Room 207, Room 205/206, Main Gym, Indoor Pool, Ping Pong Room, 9 Square", 
-    x: 70.8, 
-    y: 23, 
+  {
+    id: "activities-center",
+    name: "Activities Center",
+    description: "Check-In, Room 207, Room 205/206, Main Gym, Indoor Pool, Ping Pong Room, 9 Square",
+    x: 70.8,
+    y: 23,
     category: "meeting",
     color: "red"
   },
-  { 
-    id: "lakeside-dining", 
-    name: "Lakeside Dining Room", 
-    description: "All meals - Breakfast, Lunch, Dinner", 
-    x: 66, 
-    y: 63, 
+  {
+    id: "lakeside-dining",
+    name: "Lakeside Dining Room",
+    description: "All meals - Breakfast, Lunch, Dinner",
+    x: 66,
+    y: 63,
     category: "dining",
     color: "orange"
   },
-  { 
-    id: "bonfire-site", 
-    name: "Pavilions & Bonfire Site", 
-    description: "Thursday evening assembly location", 
-    x: 16.9, 
-    y: 19.6, 
+  {
+    id: "bonfire-site",
+    name: "Pavilions & Bonfire Site",
+    description: "Thursday evening assembly location",
+    x: 16.9,
+    y: 19.6,
     category: "recreation",
     color: "purple"
   },
-  { 
-    id: "archery", 
-    name: "Archery", 
-    description: "Tuesday afternoon activity", 
-    x: 73.7, 
-    y: 5.1, 
+  {
+    id: "archery",
+    name: "Archery",
+    description: "Tuesday afternoon activity",
+    x: 73.7,
+    y: 5.1,
     category: "recreation",
     color: "purple"
   },
-  { 
-    id: "human-foosball", 
-    name: "Human Foosball", 
-    description: "Tuesday afternoon activity", 
-    x: 37.8, 
-    y: 23, 
+  {
+    id: "human-foosball",
+    name: "Human Foosball",
+    description: "Tuesday afternoon activity",
+    x: 37.8,
+    y: 23,
     category: "recreation",
     color: "purple"
   },
-  { 
-    id: "disc-golf", 
-    name: "Disc Golf", 
-    description: "Wednesday afternoon - begins behind Activity Center", 
-    x: 82.5, 
-    y: 15.1, 
+  {
+    id: "disc-golf",
+    name: "Disc Golf",
+    description: "Wednesday afternoon - begins behind Activity Center",
+    x: 82.5,
+    y: 15.1,
     category: "recreation",
     color: "purple"
   },
-  { 
-    id: "rec-field-kickball", 
-    name: "Recreation Field", 
-    description: "Kickball, Capture the Flag, and rope games", 
-    x: 75.8, 
-    y: 10.5, 
+  {
+    id: "rec-field-kickball",
+    name: "Recreation Field",
+    description: "Kickball, Capture the Flag, and rope games",
+    x: 75.8,
+    y: 10.5,
     category: "recreation",
     color: "purple"
   },
-  { 
-    id: "location-1776272179875", 
-    name: "Motel", 
-    description: "Ice Machine", 
-    x: 63.3, 
-    y: 28.5, 
+  {
+    id: "location-1776272179875",
+    name: "Motel",
+    description: "Ice Machine",
+    x: 63.3,
+    y: 28.5,
     category: "lodging",
     color: "blue"
   },
-  { 
-    id: "location-1776272356027", 
-    name: "RV & Tent Sites", 
-    description: "RV & Tent Sites", 
-    x: 58.2, 
-    y: 3.1, 
+  {
+    id: "location-1776272356027",
+    name: "RV & Tent Sites",
+    description: "RV & Tent Sites",
+    x: 58.2,
+    y: 3.1,
     category: "lodging",
     color: "blue"
   },
-  { 
-    id: "location-1776272406151", 
-    name: "Ice Machine", 
-    description: "", 
-    x: 56.3, 
-    y: 28.7, 
+  {
+    id: "location-1776272406151",
+    name: "Ice Machine",
+    description: "",
+    x: 56.3,
+    y: 28.7,
     category: "lodging",
     color: "blue"
+  },
+  {
+    id: "location-1776347433668",
+    name: "Kickball",
+    description: "Kickball Damond",
+    x: 53.3,
+    y: 19.9,
+    category: "activities",
+    color: "purple"
   },
 ]
 
@@ -181,7 +190,7 @@ export const scheduleEvents: ScheduleEvent[] = [
   { id: "mon-3", time: "5:30 PM", title: "Dinner", locationId: "lakeside-dining", day: "monday", date: "May 4" },
   { id: "mon-4", time: "7:00 PM", title: "Evening assembly in AC Room 207", locationId: "activities-center", day: "monday", date: "May 4" },
   { id: "mon-5", time: "8:00 PM", title: "Black-light Dodgeball & games", locationId: "activities-center", day: "monday", date: "May 4" },
-  
+
   // Tuesday, May 5
   { id: "tue-1", time: "7:30 AM", title: "Breakfast", locationId: "lakeside-dining", day: "tuesday", date: "May 5" },
   { id: "tue-2", time: "9:00 AM", title: "Morning assembly in AC Room 207", locationId: "activities-center", day: "tuesday", date: "May 5" },
@@ -192,7 +201,7 @@ export const scheduleEvents: ScheduleEvent[] = [
   { id: "tue-7", time: "5:30 PM", title: "Dinner", locationId: "lakeside-dining", day: "tuesday", date: "May 5" },
   { id: "tue-8", time: "7:00 PM", title: "Evening assembly in AC Room 207", locationId: "activities-center", day: "tuesday", date: "May 5" },
   { id: "tue-9", time: "8:00 - 10:00 PM", title: "Indoor pool (females)", locationId: "activities-center", day: "tuesday", date: "May 5" },
-  
+
   // Wednesday, May 6
   { id: "wed-1", time: "7:30 AM", title: "Breakfast", locationId: "lakeside-dining", day: "wednesday", date: "May 6" },
   { id: "wed-2", time: "9:00 AM", title: "Morning assembly & group picture", locationId: "activities-center", day: "wednesday", date: "May 6" },
@@ -205,7 +214,7 @@ export const scheduleEvents: ScheduleEvent[] = [
   { id: "wed-9", time: "5:30 PM", title: "Dinner", locationId: "lakeside-dining", day: "wednesday", date: "May 6" },
   { id: "wed-10", time: "7:00 PM", title: "Evening assembly in AC Room 207", locationId: "activities-center", day: "wednesday", date: "May 6" },
   { id: "wed-11", time: "8:00 - 10:00 PM", title: "Indoor pool (males)", locationId: "activities-center", day: "wednesday", date: "May 6" },
-  
+
   // Thursday, May 7
   { id: "thu-1", time: "7:30 AM", title: "Breakfast", locationId: "lakeside-dining", day: "thursday", date: "May 7" },
   { id: "thu-2", time: "9:00 AM", title: "Morning assembly in AC Room 207", locationId: "activities-center", day: "thursday", date: "May 7" },
@@ -215,7 +224,7 @@ export const scheduleEvents: ScheduleEvent[] = [
   { id: "thu-6", time: "7:00 PM", title: "Evening assembly at bonfire", locationId: "bonfire-site", day: "thursday", date: "May 7" },
   { id: "thu-7", time: "8:00 PM", title: "Glow-in-the-Dark Capture the Flag", locationId: "rec-field-kickball", day: "thursday", date: "May 7" },
   { id: "thu-8", time: "8:00 - 10:00 PM", title: "Indoor pool (males)", locationId: "activities-center", day: "thursday", date: "May 7" },
-  
+
   // Friday, May 8
   { id: "fri-1", time: "7:30 AM", title: "Breakfast", locationId: "lakeside-dining", day: "friday", date: "May 8" },
   { id: "fri-2", time: "9:00 AM", title: "Morning assembly & Bible bowl awards", locationId: "activities-center", day: "friday", date: "May 8" },
