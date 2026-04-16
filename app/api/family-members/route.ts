@@ -5,11 +5,23 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const registrationId = searchParams.get("registrationId")
 
-  if (!registrationId) {
-    return NextResponse.json({ error: "registrationId is required" }, { status: 400 })
-  }
+  const fetchAll = searchParams.get("all") === "true"
 
   try {
+    if (fetchAll) {
+      // Return all members with registration_id for search indexing
+      const members = await sql`
+        SELECT id, registration_id, first_name, last_name
+        FROM family_members
+        ORDER BY registration_id, last_name, first_name
+      `
+      return NextResponse.json(members)
+    }
+
+    if (!registrationId) {
+      return NextResponse.json({ error: "registrationId is required" }, { status: 400 })
+    }
+
     const members = await sql`
       SELECT
         id,

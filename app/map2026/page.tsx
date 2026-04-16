@@ -377,6 +377,25 @@ export default function Map2026Page() {
   const [selectedRegistration, setSelectedRegistration] = useState<Registration | null>(null)
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([])
   const [loadingMembers, setLoadingMembers] = useState(false)
+  // Map of registrationId -> member names string for searching
+  const [allMemberNames, setAllMemberNames] = useState<Map<number, string>>(new Map())
+
+  // Fetch all family members once on mount for search purposes
+  useEffect(() => {
+    fetch("/api/family-members?all=true")
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          const map = new Map<number, string>()
+          data.forEach((m: FamilyMember & { registration_id: number }) => {
+            const existing = map.get(m.registration_id) || ""
+            map.set(m.registration_id, `${existing} ${m.first_name} ${m.last_name}`.toLowerCase())
+          })
+          setAllMemberNames(map)
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   useEffect(() => {
     if (!selectedRegistration) {
@@ -394,16 +413,18 @@ export default function Map2026Page() {
   const filteredRegistrations = useMemo(() => {
     if (!searchQuery.trim()) return ALL_REGISTRATIONS
     const query = searchQuery.toLowerCase().trim()
+    const numericQuery = query.replace(/\D/g, "")
     return ALL_REGISTRATIONS.filter((reg) =>
       reg.lastName?.toLowerCase().includes(query) ||
       reg.email?.toLowerCase().includes(query) ||
-      reg.husbandPhone?.replace(/\D/g, "").includes(query.replace(/\D/g, "")) ||
-      reg.wifePhone?.replace(/\D/g, "").includes(query.replace(/\D/g, "")) ||
+      (numericQuery && reg.husbandPhone?.replace(/\D/g, "").includes(numericQuery)) ||
+      (numericQuery && reg.wifePhone?.replace(/\D/g, "").includes(numericQuery)) ||
       reg.homeCongregation?.toLowerCase().includes(query) ||
       reg.fullAddress?.toLowerCase().includes(query) ||
-      reg.address?.toLowerCase().includes(query)
+      reg.address?.toLowerCase().includes(query) ||
+      allMemberNames.get(reg.id)?.includes(query)
     )
-  }, [searchQuery])
+  }, [searchQuery, allMemberNames])
 
   const handleSelectRegistration = useCallback((reg: Registration) => {
     setSelectedRegistration(reg)
