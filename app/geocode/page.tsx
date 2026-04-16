@@ -28,6 +28,7 @@ type GeoResult = {
   error?: string
   matchedQuery?: string
   wasExact?: boolean
+  accuracyType?: string
 }
 
 // All registrations - same data as map2026
@@ -88,8 +89,8 @@ export default function GeocodeAdminPage() {
           status: "success", 
           newLat: data.lat, 
           newLng: data.lng,
-          matchedQuery: data.matchedQuery,
-          wasExact: data.wasExact
+          wasExact: data.wasExact,
+          accuracyType: data.accuracyType
         }
       }
       
@@ -328,9 +329,15 @@ export default function GeocodeAdminPage() {
                                   </span>
                                 )}
                               </div>
-                              {result?.matchedQuery && !result?.wasExact && (
-                                <p className="text-xs text-amber-600 mt-1">
-                                  Matched via: &quot;{result.matchedQuery}&quot;
+                              {result?.accuracyType && (
+                                <p className={`text-xs mt-1 ${
+                                  result.accuracyType === "rooftop" || result.accuracyType === "point" 
+                                    ? "text-green-600" 
+                                    : result.accuracyType === "range_interpolation" || result.accuracyType === "nearest_rooftop_match"
+                                    ? "text-amber-600"
+                                    : "text-red-500"
+                                }`}>
+                                  Accuracy: {result.accuracyType.replace(/_/g, " ")}
                                 </p>
                               )}
                               {result?.error && (

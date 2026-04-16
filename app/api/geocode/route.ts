@@ -3,85 +3,43 @@ import { NextResponse } from "next/server"
 // Cache geocoded results in memory to avoid repeated API calls
 const geocodeCache = new Map<string, { lat: number; lng: number }>()
 
-// Helper to search Nominatim
-async function searchNominatim(query: string): Promise<{ lat: number; lng: number } | null> {
-  const encodedAddress = encodeURIComponent(query)
+const GEOCODIO_API_KEY = process.env.Geocodio
+
+// Search using Geocodio API
+async function searchGeocodio(address: string): Promise<{ lat: number; lng: number; accuracy: number; accuracy_type: string } | null> {
+  if (!GEOCODIO_API_KEY) {
+    console.error("Geocodio API key not configured")
+    return null
+  }
+
+  const encodedAddress = encodeURIComponent(address)
   const response = await fetch(
-    `https://nominatim.openstreetmap.org/search?format=json&q=${encodedAddress}&limit=1&countrycodes=us`,
+    `https://api.geocod.io/v1.7/geocode?q=${encodedAddress}&api_key=${GEOCODIO_API_KEY}`,
     {
       headers: {
-        "User-Agent": "Rendezvous2026Map/1.0",
+        "Content-Type": "application/json",
       },
     }
   )
 
-  if (!response.ok) return null
+  if (!response.ok) {
+    console.error("Geocodio API error:", response.status, await response.text())
+    return null
+  }
 
   const data = await response.json()
-  if (data && data[0]) {
-    return {
-      lat: parseFloat(data[0].lat),
-      lng: parseFloat(data[0].lon),
-    }
-  }
-  return null
-}
-
-// Generate fallback search queries from an address
-function generateSearchQueries(address: string): string[] {
-  const queries: string[] = [address]
   
-  // Try cleaning up the address - remove unit/apt numbers
-  const cleanedAddress = address
-    .replace(/\b(apt|unit|suite|ste|#)\s*\w+/gi, "")
-    .replace(/\s+/g, " ")
-    .trim()
-  if (cleanedAddress !== address) {
-    queries.push(cleanedAddress)
-  }
-
-  // Try replacing common abbreviations
-  const expandedAddress = address
-    .replace(/\bRd\b/gi, "Road")
-    .replace(/\bDr\b/gi, "Drive")
-    .replace(/\bSt\b/gi, "Street")
-    .replace(/\bLn\b/gi, "Lane")
-    .replace(/\bCt\b/gi, "Court")
-    .replace(/\bAve\b/gi, "Avenue")
-    .replace(/\bBlvd\b/gi, "Boulevard")
-    .replace(/\bHwy\b/gi, "Highway")
-    .replace(/\bN\b/gi, "North")
-    .replace(/\bS\b/gi, "South")
-    .replace(/\bE\b/gi, "East")
-    .replace(/\bW\b/gi, "West")
-  if (expandedAddress !== address) {
-    queries.push(expandedAddress)
-  }
-
-  // Parse city, state, zip from address
-  const parts = address.split(",").map(p => p.trim())
-  if (parts.length >= 2) {
-    // Try without street number
-    const streetPart = parts[0]
-    const streetWords = streetPart.split(" ")
-    if (streetWords.length > 2 && /^\d+$/.test(streetWords[0])) {
-      // Remove house number, keep street name
-      const streetOnly = streetWords.slice(1).join(" ")
-      queries.push(`${streetOnly}, ${parts.slice(1).join(", ")}`)
-    }
-    
-    // Try just city and state (last resort)
-    const lastPart = parts[parts.length - 1]
-    const stateZipMatch = lastPart.match(/([A-Z]{2})\s*(\d{5})?/)
-    if (stateZipMatch) {
-      const state = stateZipMatch[1]
-      const city = parts.length >= 2 ? parts[parts.length - 2] : parts[0]
-      queries.push(`${city}, ${state}`)
+  if (data.results && data.results.length > 0) {
+    const result = data.results[0]
+    return {
+      lat: result.location.lat,
+      lng: result.location.lng,
+      accuracy: result.accuracy,
+      accuracy_type: result.accuracy_type,
     }
   }
-
-  // Remove duplicates while preserving order
-  return [...new Set(queries)]
+  
+  return null
 }
 
 export async function GET(request: Request) {
@@ -98,22 +56,18 @@ export async function GET(request: Request) {
   }
 
   try {
-    // Generate multiple search queries to try
-    const queries = generateSearchQueries(address)
+    const result = await searchGeocodio(address)
     
-    for (const query of queries) {
-      const result = await searchNominatim(query)
-      if (result) {
-        // Cache the result under the original address
-        geocodeCache.set(address, result)
-        return NextResponse.json({ 
-          ...result, 
-          matchedQuery: query,
-          wasExact: query === address 
-        })
-      }
-      // Small delay between attempts to be nice to the API
-      await new Promise(resolve => setTimeout(resolve, 200))
+    if (result) {
+      // Cache the result
+      geocodeCache.set(address, { lat: result.lat, lng: result.lng })
+      return NextResponse.json({ 
+        lat: result.lat,
+        lng: result.lng,
+        accuracy: result.accuracy,
+        accuracyType: result.accuracy_type,
+        wasExact: result.accuracy_type === "rooftop" || result.accuracy_type === "point",
+      })
     }
 
     return NextResponse.json({ error: "Address not found" }, { status: 404 })
