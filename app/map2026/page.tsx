@@ -403,7 +403,6 @@ export default function Map2026Page() {
               </h1>
               <p className="text-balance text-lg text-secondary-foreground/70">
                 See where Rendezvous 2026 families are coming from across the country
-                {isGeocoding && " — loading precise locations..."}
               </p>
             </div>
           </div>
