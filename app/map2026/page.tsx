@@ -1,9 +1,27 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { Map, MapMarker, MarkerContent, MarkerLabel, MarkerPopup } from "@/components/ui/map"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Loader2, MapPin } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
+import { Loader2, MapPin, Search, Mail, Phone, Church, Home, User, X } from "lucide-react"
+import { Button } from "@/components/ui/button"
+
+type Registration = {
+  id: number
+  lastName: string
+  fatherName: string
+  email: string
+  husbandPhone: string
+  wifePhone: string
+  homeCongregation: string
+  fullAddress: string
+  address: string
+  lat: number
+  lng: number
+  checkinQrCode: string
+}
 
 type MapData = {
   center: {
@@ -12,19 +30,15 @@ type MapData = {
     lat: number
     lng: number
   }
-  registrations: Array<{
-    id: number
-    lastName: string
-    address: string
-    lat: number
-    lng: number
-  }>
+  registrations: Registration[]
 }
 
 export default function Map2026Page() {
   const [mapData, setMapData] = useState<MapData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [selectedRegistration, setSelectedRegistration] = useState<Registration | null>(null)
 
   useEffect(() => {
     loadMapData()
@@ -50,9 +64,8 @@ export default function Map2026Page() {
       }
 
       const data = await response.json()
-      console.log("[v0] Map data loaded:", data)
       setMapData(data)
-      setError(null) // Clear any previous errors on successful load
+      setError(null)
     } catch (err) {
       console.error("[v0] Failed to load map data:", err)
       setError("Failed to load registration map data")
@@ -60,6 +73,26 @@ export default function Map2026Page() {
       setLoading(false)
     }
   }
+
+  // Filter registrations based on search query
+  const filteredRegistrations = useMemo(() => {
+    if (!mapData) return []
+    if (!searchQuery.trim()) return mapData.registrations
+
+    const query = searchQuery.toLowerCase()
+    return mapData.registrations.filter((reg) => {
+      return (
+        reg.lastName?.toLowerCase().includes(query) ||
+        reg.fatherName?.toLowerCase().includes(query) ||
+        reg.email?.toLowerCase().includes(query) ||
+        reg.husbandPhone?.includes(query) ||
+        reg.wifePhone?.includes(query) ||
+        reg.homeCongregation?.toLowerCase().includes(query) ||
+        reg.address?.toLowerCase().includes(query) ||
+        reg.fullAddress?.toLowerCase().includes(query)
+      )
+    })
+  }, [mapData, searchQuery])
 
   if (loading) {
     return (
@@ -106,39 +139,191 @@ export default function Map2026Page() {
         </div>
       </div>
 
-      <Card className="overflow-hidden">
-        <CardContent className="p-0">
-          <div className="h-[calc(100vh-250px)] min-h-[600px]">
-            <Map center={[mapData.center.lng, mapData.center.lat]} zoom={5}>
-              {/* Center marker - Lake Williamson Christian Center */}
-              <MapMarker longitude={mapData.center.lng} latitude={mapData.center.lat}>
-                <MarkerContent>
-                  <div className="size-6 rounded-full bg-red-600 border-3 border-white shadow-lg cursor-pointer hover:scale-110 transition-transform" />
-                  <MarkerLabel position="top">{mapData.center.name}</MarkerLabel>
-                </MarkerContent>
-                <MarkerPopup className="p-3">
-                  <h3 className="font-semibold text-foreground">{mapData.center.name}</h3>
-                  <p className="text-sm text-muted-foreground mt-1">{mapData.center.address}</p>
-                </MarkerPopup>
-              </MapMarker>
+      {/* Search Bar */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-center">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Search by name, email, phone, congregation, or location..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 pr-10"
+          />
+          {searchQuery && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 p-0"
+              onClick={() => setSearchQuery("")}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+        {searchQuery && (
+          <Badge variant="secondary" className="whitespace-nowrap">
+            Showing {filteredRegistrations.length} of {mapData.registrations.length} families
+          </Badge>
+        )}
+      </div>
 
-              {/* Family markers */}
-              {mapData.registrations.map((registration) => (
-                <MapMarker key={registration.id} longitude={registration.lng} latitude={registration.lat}>
+      <div className="flex flex-col gap-6 lg:flex-row">
+        {/* Map */}
+        <Card className="flex-1 overflow-hidden">
+          <CardContent className="p-0">
+            <div className="h-[calc(100vh-350px)] min-h-[500px]">
+              <Map center={[mapData.center.lng, mapData.center.lat]} zoom={5}>
+                {/* Center marker - Lake Williamson Christian Center */}
+                <MapMarker longitude={mapData.center.lng} latitude={mapData.center.lat}>
                   <MarkerContent>
-                    <div className="size-4 rounded-full bg-blue-600 border-2 border-white shadow-md cursor-pointer hover:scale-110 transition-transform" />
-                    <MarkerLabel position="top">{registration.lastName}</MarkerLabel>
+                    <div className="size-6 rounded-full bg-red-600 border-3 border-white shadow-lg cursor-pointer hover:scale-110 transition-transform" />
+                    <MarkerLabel position="top">{mapData.center.name}</MarkerLabel>
                   </MarkerContent>
                   <MarkerPopup className="p-3">
-                    <h3 className="font-semibold text-foreground">{registration.lastName} Family</h3>
-                    <p className="text-sm text-muted-foreground mt-1">{registration.address}</p>
+                    <h3 className="font-semibold text-foreground">{mapData.center.name}</h3>
+                    <p className="text-sm text-muted-foreground mt-1">{mapData.center.address}</p>
                   </MarkerPopup>
                 </MapMarker>
-              ))}
-            </Map>
-          </div>
-        </CardContent>
-      </Card>
+
+                {/* Family markers */}
+                {filteredRegistrations.map((registration) => (
+                  <MapMarker key={registration.id} longitude={registration.lng} latitude={registration.lat}>
+                    <MarkerContent>
+                      <div
+                        className={`size-4 rounded-full border-2 border-white shadow-md cursor-pointer hover:scale-125 transition-transform ${
+                          selectedRegistration?.id === registration.id ? "bg-green-500 scale-125" : "bg-blue-600"
+                        }`}
+                        onClick={() => setSelectedRegistration(registration)}
+                      />
+                      <MarkerLabel position="top">{registration.lastName}</MarkerLabel>
+                    </MarkerContent>
+                  </MapMarker>
+                ))}
+              </Map>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Registration List & Details Panel */}
+        <div className="w-full lg:w-96 flex flex-col gap-4">
+          {/* Selected Registration Details */}
+          {selectedRegistration && (
+            <Card className="border-green-500 border-2">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <User className="h-5 w-5" />
+                    {selectedRegistration.lastName} Family
+                  </CardTitle>
+                  <Button variant="ghost" size="sm" onClick={() => setSelectedRegistration(null)}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                {selectedRegistration.fatherName && (
+                  <CardDescription>Father: {selectedRegistration.fatherName}</CardDescription>
+                )}
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {selectedRegistration.email && (
+                  <div className="flex items-start gap-3">
+                    <Mail className="h-4 w-4 text-muted-foreground mt-0.5" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Email</p>
+                      <a
+                        href={`mailto:${selectedRegistration.email}`}
+                        className="text-sm text-blue-600 hover:underline"
+                      >
+                        {selectedRegistration.email}
+                      </a>
+                    </div>
+                  </div>
+                )}
+                {(selectedRegistration.husbandPhone || selectedRegistration.wifePhone) && (
+                  <div className="flex items-start gap-3">
+                    <Phone className="h-4 w-4 text-muted-foreground mt-0.5" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Phone</p>
+                      {selectedRegistration.husbandPhone && (
+                        <a
+                          href={`tel:${selectedRegistration.husbandPhone}`}
+                          className="text-sm text-blue-600 hover:underline block"
+                        >
+                          Husband: {selectedRegistration.husbandPhone}
+                        </a>
+                      )}
+                      {selectedRegistration.wifePhone && (
+                        <a
+                          href={`tel:${selectedRegistration.wifePhone}`}
+                          className="text-sm text-blue-600 hover:underline block"
+                        >
+                          Wife: {selectedRegistration.wifePhone}
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {selectedRegistration.homeCongregation && (
+                  <div className="flex items-start gap-3">
+                    <Church className="h-4 w-4 text-muted-foreground mt-0.5" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Home Congregation</p>
+                      <p className="text-sm">{selectedRegistration.homeCongregation}</p>
+                    </div>
+                  </div>
+                )}
+                {selectedRegistration.fullAddress && (
+                  <div className="flex items-start gap-3">
+                    <Home className="h-4 w-4 text-muted-foreground mt-0.5" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Address</p>
+                      <p className="text-sm">{selectedRegistration.fullAddress}</p>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Registration List */}
+          <Card className="flex-1">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Attendees</CardTitle>
+              <CardDescription>
+                Click on a family to view their details
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="max-h-[400px] overflow-y-auto">
+                {filteredRegistrations.length === 0 ? (
+                  <div className="p-6 text-center text-muted-foreground">
+                    No families match your search
+                  </div>
+                ) : (
+                  <div className="divide-y">
+                    {filteredRegistrations.map((reg) => (
+                      <button
+                        key={reg.id}
+                        className={`w-full px-4 py-3 text-left hover:bg-muted/50 transition-colors ${
+                          selectedRegistration?.id === reg.id ? "bg-muted" : ""
+                        }`}
+                        onClick={() => setSelectedRegistration(reg)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium">{reg.lastName} Family</p>
+                            <p className="text-xs text-muted-foreground">{reg.address}</p>
+                          </div>
+                          <MapPin className="h-4 w-4 text-blue-600" />
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   )
 }
