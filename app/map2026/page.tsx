@@ -491,8 +491,8 @@ export default function Map2026Page() {
             <div className="flex flex-col gap-6 lg:flex-row">
               {/* Map */}
               <Card className="flex-1 overflow-hidden border-border/50 bg-card shadow-xl">
-                <CardContent className="p-0">
-                  <div className="h-[50vh] min-h-[400px] lg:h-[calc(100vh-420px)]">
+                <CardContent className="p-0 h-full">
+                  <div className="h-[600px] lg:h-[calc(100vh-350px)]">
                     <LeafletMap
                       center={EVENT_CENTER}
                       registrations={filteredRegistrations}
