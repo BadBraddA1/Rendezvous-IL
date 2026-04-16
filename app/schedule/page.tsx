@@ -6,6 +6,7 @@ import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { useState } from "react"
 import { Countdown } from "@/components/countdown"
+import { NowNextSchedule } from "@/components/now-next-schedule"
 import { VolunteerSchedule } from "@/components/volunteer-schedule"
 import { ScheduleMap } from "@/components/schedule-map"
 import { LocationLink } from "@/components/location-link"
@@ -44,6 +45,10 @@ export default function SchedulePage() {
       <SiteHeader />
 
       <main className="container mx-auto px-4 py-8 md:py-12">
+        <div className="mb-8">
+          <NowNextSchedule />
+        </div>
+
         <div className="mb-8">
           <Countdown />
         </div>
