@@ -16,7 +16,6 @@ const LeafletMap = dynamic(
 type Registration = {
   id: number
   lastName: string
-  fatherName: string
   email: string
   husbandPhone: string
   wifePhone: string
@@ -39,7 +38,7 @@ const ALL_REGISTRATIONS: Registration[] = [
   {
     id: 20,
     lastName: "Bradd",
-    fatherName: "Stephen R Bradd",
+ "Stephen R Bradd",
     email: "stephenrbradd@gmail.com",
     husbandPhone: "2179355058",
     wifePhone: "3092517969",
@@ -52,7 +51,7 @@ const ALL_REGISTRATIONS: Registration[] = [
   {
     id: 22,
     lastName: "Bradd",
-    fatherName: "Adin Bradd",
+ "Adin Bradd",
     email: "badbradda1@gmail.com",
     husbandPhone: "6362221841",
     wifePhone: "6362221841",
@@ -65,7 +64,7 @@ const ALL_REGISTRATIONS: Registration[] = [
   {
     id: 44,
     lastName: "Bradd",
-    fatherName: "Abel N. Bradd",
+ "Abel N. Bradd",
     email: "abelbradd@yahoo.com",
     husbandPhone: "8723480946",
     wifePhone: "5012304490",
@@ -78,7 +77,7 @@ const ALL_REGISTRATIONS: Registration[] = [
   {
     id: 39,
     lastName: "Bryan",
-    fatherName: "Mark Bryan",
+ "Mark Bryan",
     email: "patriciambryan@gmail.com",
     husbandPhone: "4059195489",
     wifePhone: "4059195253",
@@ -91,7 +90,7 @@ const ALL_REGISTRATIONS: Registration[] = [
   {
     id: 28,
     lastName: "Collins",
-    fatherName: "Brian Collins",
+ "Brian Collins",
     email: "collins4family@yahoo.com",
     husbandPhone: "3048514106",
     wifePhone: "3048510907",
@@ -104,7 +103,7 @@ const ALL_REGISTRATIONS: Registration[] = [
   {
     id: 41,
     lastName: "Cozort",
-    fatherName: "Adam Borden Cozort",
+ "Adam Borden Cozort",
     email: "abcozort@gmail.com",
     husbandPhone: "2174948806",
     wifePhone: "2172202329",
@@ -117,7 +116,7 @@ const ALL_REGISTRATIONS: Registration[] = [
   {
     id: 30,
     lastName: "Cozort",
-    fatherName: "Aaron J Cozort",
+ "Aaron J Cozort",
     email: "edycozort@gmail.com",
     husbandPhone: "9014848753",
     wifePhone: "2529558002",
@@ -130,7 +129,7 @@ const ALL_REGISTRATIONS: Registration[] = [
   {
     id: 27,
     lastName: "Cozort",
-    fatherName: "Nathan Cozort",
+ "Nathan Cozort",
     email: "ncozort1491@gmail.com",
     husbandPhone: "(816) 832-4181",
     wifePhone: "(816) 832-4361",
@@ -143,7 +142,7 @@ const ALL_REGISTRATIONS: Registration[] = [
   {
     id: 35,
     lastName: "English",
-    fatherName: "Patrick English",
+ "Patrick English",
     email: "family@poekee.com",
     husbandPhone: "3098382819",
     wifePhone: "3098385346",
@@ -156,7 +155,7 @@ const ALL_REGISTRATIONS: Registration[] = [
   {
     id: 42,
     lastName: "Fahrenwald",
-    fatherName: "Michael Fahrenwald",
+ "Michael Fahrenwald",
     email: "kristyfah@gmail.com",
     husbandPhone: "501-388-6004",
     wifePhone: "501-322-0423",
@@ -169,7 +168,7 @@ const ALL_REGISTRATIONS: Registration[] = [
   {
     id: 29,
     lastName: "Ferrell",
-    fatherName: "Jeffrey Ferrell",
+ "Jeffrey Ferrell",
     email: "amandaferrell@gmail.com",
     husbandPhone: "6622886302",
     wifePhone: "9014388370",
@@ -182,7 +181,7 @@ const ALL_REGISTRATIONS: Registration[] = [
   {
     id: 38,
     lastName: "Floyd",
-    fatherName: "Jason Floyd",
+ "Jason Floyd",
     email: "jason_floyd32@yahoo.com",
     husbandPhone: "7318796747",
     wifePhone: "7318796657",
@@ -195,7 +194,7 @@ const ALL_REGISTRATIONS: Registration[] = [
   {
     id: 48,
     lastName: "Green",
-    fatherName: "Timothy E. Green",
+ "Timothy E. Green",
     email: "timandamygreen@yahoo.com",
     husbandPhone: "6124694986",
     wifePhone: "3042102307",
@@ -208,7 +207,7 @@ const ALL_REGISTRATIONS: Registration[] = [
   {
     id: 50,
     lastName: "Haley",
-    fatherName: "Josh Haley",
+ "Josh Haley",
     email: "melzsong75@gmail.com",
     husbandPhone: "6149151005",
     wifePhone: "6149151020",
@@ -221,7 +220,7 @@ const ALL_REGISTRATIONS: Registration[] = [
   {
     id: 43,
     lastName: "Hanes",
-    fatherName: "Andrew Hanes",
+ "Andrew Hanes",
     email: "andrew.hanes@gmail.com",
     husbandPhone: "3093062158",
     wifePhone: "3093062157",
@@ -234,7 +233,7 @@ const ALL_REGISTRATIONS: Registration[] = [
   {
     id: 34,
     lastName: "Manning",
-    fatherName: "Ryan Philip Manning",
+ "Ryan Philip Manning",
     email: "rebeccamanning81@yahoo.com",
     husbandPhone: "7702311527",
     wifePhone: "7706580402",
@@ -247,7 +246,7 @@ const ALL_REGISTRATIONS: Registration[] = [
   {
     id: 33,
     lastName: "Meacham",
-    fatherName: "Paul Meacham",
+ "Paul Meacham",
     email: "paul3swife@gmail.com",
     husbandPhone: "6362224527",
     wifePhone: "9015816351",
@@ -260,7 +259,7 @@ const ALL_REGISTRATIONS: Registration[] = [
   {
     id: 49,
     lastName: "Middlebrooks",
-    fatherName: "Josh Middlebrooks",
+ "Josh Middlebrooks",
     email: "dee.middlebrooks@yahoo.com",
     husbandPhone: "4237622847",
     wifePhone: "4237104781",
@@ -273,7 +272,7 @@ const ALL_REGISTRATIONS: Registration[] = [
   {
     id: 45,
     lastName: "Morris",
-    fatherName: "Andrew Morris",
+ "Andrew Morris",
     email: "morrisfamilyeducation@gmail.com",
     husbandPhone: "6155683877",
     wifePhone: "6154975789",
@@ -286,7 +285,7 @@ const ALL_REGISTRATIONS: Registration[] = [
   {
     id: 36,
     lastName: "Nix",
-    fatherName: "Michael Nix",
+ "Michael Nix",
     email: "ahnix@hotmail.com",
     husbandPhone: "9374704703",
     wifePhone: "5733009248",
@@ -299,7 +298,7 @@ const ALL_REGISTRATIONS: Registration[] = [
   {
     id: 32,
     lastName: "Parish",
-    fatherName: "Lee Parish",
+ "Lee Parish",
     email: "leefparish@gmail.com",
     husbandPhone: "5807219027",
     wifePhone: "5807219007",
@@ -312,7 +311,7 @@ const ALL_REGISTRATIONS: Registration[] = [
   {
     id: 46,
     lastName: "Pasley",
-    fatherName: "James Pasley",
+ "James Pasley",
     email: "teacherdawn1011@gmail.com",
     husbandPhone: "6016860178",
     wifePhone: "6628720481",
@@ -325,7 +324,7 @@ const ALL_REGISTRATIONS: Registration[] = [
   {
     id: 26,
     lastName: "Smith",
-    fatherName: "Derrick Smith",
+ "Derrick Smith",
     email: "aprilandderrick@gmail.com",
     husbandPhone: "5029194874",
     wifePhone: "5023969165",
@@ -338,7 +337,7 @@ const ALL_REGISTRATIONS: Registration[] = [
   {
     id: 40,
     lastName: "Steele",
-    fatherName: "Chase Steele",
+ "Chase Steele",
     email: "molcat88@gmail.com",
     husbandPhone: "419-203-4755",
     wifePhone: "217-502-1362",
@@ -351,7 +350,7 @@ const ALL_REGISTRATIONS: Registration[] = [
   {
     id: 25,
     lastName: "Valentin",
-    fatherName: "Ryne Valentin",
+ "Ryne Valentin",
     email: "rachel.valentin37@gmail.com",
     husbandPhone: "8154517138",
     wifePhone: "6302728366",
@@ -364,7 +363,7 @@ const ALL_REGISTRATIONS: Registration[] = [
   {
     id: 37,
     lastName: "Watson",
-    fatherName: "Deyrl Watson",
+ "Deyrl Watson",
     email: "deyrl@mac.com",
     husbandPhone: "(217) 553-9938",
     wifePhone: "2174142168",
@@ -377,7 +376,7 @@ const ALL_REGISTRATIONS: Registration[] = [
   {
     id: 31,
     lastName: "Zamfir",
-    fatherName: "Daniel Zamfir",
+ "Daniel Zamfir",
     email: "daniel.zamfir@live.com",
     husbandPhone: "2243581981",
     wifePhone: "",
@@ -398,7 +397,6 @@ export default function Map2026Page() {
     const query = searchQuery.toLowerCase().trim()
     return ALL_REGISTRATIONS.filter((reg) =>
       reg.lastName?.toLowerCase().includes(query) ||
-      reg.fatherName?.toLowerCase().includes(query) ||
       reg.email?.toLowerCase().includes(query) ||
       reg.husbandPhone?.replace(/\D/g, "").includes(query.replace(/\D/g, "")) ||
       reg.wifePhone?.replace(/\D/g, "").includes(query.replace(/\D/g, "")) ||
@@ -493,9 +491,6 @@ export default function Map2026Page() {
                       <X className="h-4 w-4" />
                     </Button>
                   </div>
-                  {selectedRegistration.fatherName && (
-                    <CardDescription>{selectedRegistration.fatherName}</CardDescription>
-                  )}
                 </CardHeader>
                 <CardContent className="space-y-2.5 text-sm">
                   {selectedRegistration.email && (
@@ -576,7 +571,7 @@ export default function Map2026Page() {
                           <div className="flex items-center justify-between gap-2">
                             <div className="min-w-0">
                               <p className="font-medium text-foreground truncate">
-                                {reg.fatherName || reg.lastName}
+                                {reg.lastName} Family
                               </p>
                               <p className="text-xs text-muted-foreground truncate">{reg.address}</p>
                             </div>
