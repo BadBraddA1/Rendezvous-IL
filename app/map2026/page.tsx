@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useCallback, useEffect } from "react"
+import { useState, useMemo, useCallback } from "react"
 import dynamic from "next/dynamic"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -35,7 +35,7 @@ const EVENT_CENTER = {
   lng: -89.8807,
 }
 
-// All registrations with pre-resolved coordinates
+// All registrations with Geocodio-verified coordinates
 const ALL_REGISTRATIONS: Registration[] = [
   {
     id: 20,
@@ -46,8 +46,8 @@ const ALL_REGISTRATIONS: Registration[] = [
     homeCongregation: "Clinton COC",
     fullAddress: "8754 Sunset Rd, Clinton, IL 61727",
     address: "Clinton, IL",
-    lat: 40.1531,
-    lng: -88.9642,
+    lat: 40.157346,
+    lng: -88.981508,
   },
   {
     id: 22,
@@ -58,8 +58,8 @@ const ALL_REGISTRATIONS: Registration[] = [
     homeCongregation: "Arnold COC",
     fullAddress: "3820 Treebrook Dr, Imperial, MO 63052",
     address: "Imperial, MO",
-    lat: 38.4178,
-    lng: -90.4012,
+    lat: 38.427198,
+    lng: -90.479615,
   },
   {
     id: 44,
@@ -70,8 +70,8 @@ const ALL_REGISTRATIONS: Registration[] = [
     homeCongregation: "Holly Springs Church",
     fullAddress: "1139 Highway 367 N, Judsonia, AR 72081",
     address: "Judsonia, AR",
-    lat: 35.2717,
-    lng: -91.6382,
+    lat: 35.292804,
+    lng: -91.609314,
   },
   {
     id: 39,
@@ -82,8 +82,8 @@ const ALL_REGISTRATIONS: Registration[] = [
     homeCongregation: "West Metro Church of Christ",
     fullAddress: "12829 Torre Pines Ln, Yukon, OK 73099",
     address: "Yukon, OK",
-    lat: 35.5067,
-    lng: -97.7625,
+    lat: 35.455367,
+    lng: -97.757887,
   },
   {
     id: 28,
@@ -94,8 +94,8 @@ const ALL_REGISTRATIONS: Registration[] = [
     homeCongregation: "Moorefield COC",
     fullAddress: "42 Bogart Drive, Petersburg, WV 26847",
     address: "Petersburg, WV",
-    lat: 38.9923,
-    lng: -79.1259,
+    lat: 39.014072,
+    lng: -79.097852,
   },
   {
     id: 41,
@@ -106,8 +106,8 @@ const ALL_REGISTRATIONS: Registration[] = [
     homeCongregation: "Wetumpka Church of Christ",
     fullAddress: "246 Funderburk Ln, Tallassee, AL 36078",
     address: "Tallassee, AL",
-    lat: 32.5357,
-    lng: -85.8958,
+    lat: 32.529822,
+    lng: -85.960917,
   },
   {
     id: 30,
@@ -118,8 +118,8 @@ const ALL_REGISTRATIONS: Registration[] = [
     homeCongregation: "Collierville Church of Christ",
     fullAddress: "315 Southwick Drive, Southaven, MS 38671",
     address: "Southaven, MS",
-    lat: 34.9892,
-    lng: -89.9873,
+    lat: 34.983314,
+    lng: -89.983915,
   },
   {
     id: 27,
@@ -130,8 +130,8 @@ const ALL_REGISTRATIONS: Registration[] = [
     homeCongregation: "Oak Grove Church of Christ",
     fullAddress: "31303 E Colburn Rd, Grain Valley, MO 64029",
     address: "Grain Valley, MO",
-    lat: 39.0142,
-    lng: -94.1988,
+    lat: 38.942319,
+    lng: -94.219315,
   },
   {
     id: 35,
@@ -142,8 +142,8 @@ const ALL_REGISTRATIONS: Registration[] = [
     homeCongregation: "Clinton COC",
     fullAddress: "406 Cedar Dr, Clinton, IL 61727",
     address: "Clinton, IL",
-    lat: 40.1509,
-    lng: -88.9601,
+    lat: 40.142916,
+    lng: -88.964249,
   },
   {
     id: 42,
@@ -154,8 +154,8 @@ const ALL_REGISTRATIONS: Registration[] = [
     homeCongregation: "Holly Springs Church of Christ",
     fullAddress: "1139 Hwy 367N, Judsonia, AR 72081",
     address: "Judsonia, AR",
-    lat: 35.2750,
-    lng: -91.6330,
+    lat: 35.292804,
+    lng: -91.609314,
   },
   {
     id: 29,
@@ -166,8 +166,8 @@ const ALL_REGISTRATIONS: Registration[] = [
     homeCongregation: "Coldwater Church of Christ",
     fullAddress: "4934 Rowsey Crossing Dr, Hernando, MS 38632",
     address: "Hernando, MS",
-    lat: 34.8237,
-    lng: -89.9934,
+    lat: 34.811831,
+    lng: -90.077142,
   },
   {
     id: 38,
@@ -178,8 +178,8 @@ const ALL_REGISTRATIONS: Registration[] = [
     homeCongregation: "Bennington Church of Christ",
     fullAddress: "1138 Shaftsbury Hollow Rd, North Bennington, VT 05257",
     address: "North Bennington, VT",
-    lat: 42.9284,
-    lng: -73.2454,
+    lat: 43.005524,
+    lng: -73.247254,
   },
   {
     id: 48,
@@ -190,8 +190,8 @@ const ALL_REGISTRATIONS: Registration[] = [
     homeCongregation: "Virginia Church of Christ",
     fullAddress: "4524 Vermilion Trail, Gilbert, MN 55741",
     address: "Gilbert, MN",
-    lat: 47.4911,
-    lng: -92.4657,
+    lat: 47.445939,
+    lng: -92.340277,
   },
   {
     id: 50,
@@ -202,8 +202,8 @@ const ALL_REGISTRATIONS: Registration[] = [
     homeCongregation: "Rager Road Church of Christ",
     fullAddress: "258 W Main St, Alexandria, OH 43001",
     address: "Alexandria, OH",
-    lat: 40.0931,
-    lng: -82.6224,
+    lat: 40.092369,
+    lng: -82.617656,
   },
   {
     id: 43,
@@ -214,8 +214,8 @@ const ALL_REGISTRATIONS: Registration[] = [
     homeCongregation: "Clinton Church of Christ",
     fullAddress: "303 N Sycamore St, Maroa, IL 61756",
     address: "Maroa, IL",
-    lat: 40.0367,
-    lng: -88.9573,
+    lat: 40.039302,
+    lng: -88.963555,
   },
   {
     id: 34,
@@ -226,8 +226,8 @@ const ALL_REGISTRATIONS: Registration[] = [
     homeCongregation: "Somerville Church of Christ",
     fullAddress: "422 N West St, Somerville, TN 38068",
     address: "Somerville, TN",
-    lat: 35.2448,
-    lng: -89.3537,
+    lat: 35.248214,
+    lng: -89.351025,
   },
   {
     id: 33,
@@ -238,8 +238,8 @@ const ALL_REGISTRATIONS: Registration[] = [
     homeCongregation: "Arnold COC",
     fullAddress: "1544 Prehistoric Hill Dr, Imperial, MO 63052",
     address: "Imperial, MO",
-    lat: 38.3649,
-    lng: -90.3888,
+    lat: 38.365176,
+    lng: -90.390082,
   },
   {
     id: 49,
@@ -250,8 +250,8 @@ const ALL_REGISTRATIONS: Registration[] = [
     homeCongregation: "Ooltewah Church of Christ",
     fullAddress: "122 Mattie Ln, Flintstone, GA 30725",
     address: "Flintstone, GA",
-    lat: 34.9407,
-    lng: -85.3274,
+    lat: 34.934449,
+    lng: -85.359338,
   },
   {
     id: 45,
@@ -262,8 +262,8 @@ const ALL_REGISTRATIONS: Registration[] = [
     homeCongregation: "West End Church of Christ",
     fullAddress: "431 Union Academy Rd, Livingston, TN 38570",
     address: "Livingston, TN",
-    lat: 36.3834,
-    lng: -85.3233,
+    lat: 36.282166,
+    lng: -85.285947,
   },
   {
     id: 36,
@@ -274,8 +274,8 @@ const ALL_REGISTRATIONS: Registration[] = [
     homeCongregation: "Mid-County Church of Christ",
     fullAddress: "10770 US-36, Bradford, OH 45308",
     address: "Bradford, OH",
-    lat: 40.1295,
-    lng: -84.4358,
+    lat: 40.119369,
+    lng: -84.408199,
   },
   {
     id: 32,
@@ -286,8 +286,8 @@ const ALL_REGISTRATIONS: Registration[] = [
     homeCongregation: "Marlow Church of Christ",
     fullAddress: "211 N 5th St, Marlow, OK 73055",
     address: "Marlow, OK",
-    lat: 34.6478,
-    lng: -97.9575,
+    lat: 34.648947,
+    lng: -97.960835,
   },
   {
     id: 46,
@@ -298,8 +298,8 @@ const ALL_REGISTRATIONS: Registration[] = [
     homeCongregation: "Pisgah Church of Christ",
     fullAddress: "361 Huckleberry Lane, Mineral Bluff, GA 30559",
     address: "Mineral Bluff, GA",
-    lat: 34.9326,
-    lng: -84.2774,
+    lat: 34.935505,
+    lng: -84.291767,
   },
   {
     id: 26,
@@ -310,8 +310,8 @@ const ALL_REGISTRATIONS: Registration[] = [
     homeCongregation: "Mid County Church of Christ",
     fullAddress: "45 Carrousel Dr, Troy, OH 45373",
     address: "Troy, OH",
-    lat: 40.0395,
-    lng: -84.2030,
+    lat: 40.004840,
+    lng: -84.203273,
   },
   {
     id: 40,
@@ -322,8 +322,8 @@ const ALL_REGISTRATIONS: Registration[] = [
     homeCongregation: "Paulding Church of Christ",
     fullAddress: "203 W Wayne St, Paulding, OH 45879",
     address: "Paulding, OH",
-    lat: 41.1395,
-    lng: -84.5841,
+    lat: 41.135258,
+    lng: -84.582264,
   },
   {
     id: 25,
@@ -334,8 +334,8 @@ const ALL_REGISTRATIONS: Registration[] = [
     homeCongregation: "Crystal Lake Church of Christ",
     fullAddress: "3306 Christopher Lane, Johnsburg, IL 60051",
     address: "Johnsburg, IL",
-    lat: 42.3817,
-    lng: -88.2420,
+    lat: 42.369569,
+    lng: -88.262358,
   },
   {
     id: 37,
@@ -346,8 +346,8 @@ const ALL_REGISTRATIONS: Registration[] = [
     homeCongregation: "Clinton COC",
     fullAddress: "1260 N 1600 East Rd, Taylorville, IL 62568",
     address: "Taylorville, IL",
-    lat: 39.5481,
-    lng: -89.2945,
+    lat: 39.534783,
+    lng: -89.229293,
   },
   {
     id: 31,
@@ -358,47 +358,19 @@ const ALL_REGISTRATIONS: Registration[] = [
     homeCongregation: "Wetumpka Church of Christ",
     fullAddress: "2060 Ware Rd, Tallassee, AL 36078",
     address: "Tallassee, AL",
-    lat: 32.5280,
-    lng: -85.9010,
+    lat: 32.482025,
+    lng: -86.061850,
   },
 ]
 
 export default function Map2026Page() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedRegistration, setSelectedRegistration] = useState<Registration | null>(null)
-  const [registrations, setRegistrations] = useState<Registration[]>(ALL_REGISTRATIONS)
-  const [isGeocoding, setIsGeocoding] = useState(true)
-
-  // Geocode addresses on mount for precise coordinates
-  useEffect(() => {
-    const geocodeAddresses = async () => {
-      setIsGeocoding(true)
-      const updated = await Promise.all(
-        ALL_REGISTRATIONS.map(async (reg) => {
-          try {
-            const response = await fetch(`/api/geocode?address=${encodeURIComponent(reg.fullAddress)}`)
-            if (response.ok) {
-              const coords = await response.json()
-              if (coords.lat && coords.lng) {
-                return { ...reg, lat: coords.lat, lng: coords.lng }
-              }
-            }
-          } catch {
-            // Use fallback coordinates
-          }
-          return reg
-        })
-      )
-      setRegistrations(updated)
-      setIsGeocoding(false)
-    }
-    geocodeAddresses()
-  }, [])
 
   const filteredRegistrations = useMemo(() => {
-    if (!searchQuery.trim()) return registrations
+    if (!searchQuery.trim()) return ALL_REGISTRATIONS
     const query = searchQuery.toLowerCase().trim()
-    return registrations.filter((reg) =>
+    return ALL_REGISTRATIONS.filter((reg) =>
       reg.lastName?.toLowerCase().includes(query) ||
       reg.email?.toLowerCase().includes(query) ||
       reg.husbandPhone?.replace(/\D/g, "").includes(query.replace(/\D/g, "")) ||
@@ -407,7 +379,7 @@ export default function Map2026Page() {
       reg.fullAddress?.toLowerCase().includes(query) ||
       reg.address?.toLowerCase().includes(query)
     )
-  }, [searchQuery, registrations])
+  }, [searchQuery])
 
   const handleSelectRegistration = useCallback((reg: Registration) => {
     setSelectedRegistration(reg)
@@ -424,7 +396,7 @@ export default function Map2026Page() {
             <div className="mx-auto max-w-4xl text-center">
               <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-secondary-foreground/20 bg-secondary-foreground/10 backdrop-blur-sm px-4 py-2 text-sm font-medium text-secondary-foreground">
                 <Sparkles className="h-4 w-4" />
-                {registrations.length} Families Registered
+                {ALL_REGISTRATIONS.length} Families Registered
               </div>
               <h1 className="mb-4 text-balance text-4xl font-bold tracking-tight text-secondary-foreground md:text-5xl">
                 Attendee Map
@@ -483,7 +455,7 @@ export default function Map2026Page() {
               </div>
               {searchQuery && (
                 <Badge variant="secondary" className="whitespace-nowrap text-sm px-4 py-2">
-                  Showing {filteredRegistrations.length} of {registrations.length} families
+                  Showing {filteredRegistrations.length} of {ALL_REGISTRATIONS.length} families
                 </Badge>
               )}
             </div>
