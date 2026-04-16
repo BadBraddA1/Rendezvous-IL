@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Clock, ChevronRight } from 'lucide-react'
+import { Clock, ChevronRight, ArrowDown } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 interface TimeLeft {
   days: number
@@ -26,6 +27,39 @@ interface ScheduleItem {
 // Helper to get current time in Central Time
 function getCentralTime(): Date {
   return new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' }))
+}
+
+// Helper to get the day anchor ID from a date
+function getDayAnchorId(dateStr: string): string {
+  const dayMap: Record<string, string> = {
+    '2026-05-04': 'monday',
+    '2026-05-05': 'tuesday',
+    '2026-05-06': 'wednesday',
+    '2026-05-07': 'thursday',
+    '2026-05-08': 'friday',
+  }
+  return dayMap[dateStr] || 'monday'
+}
+
+// Scroll to the current activity on the schedule
+function scrollToNow(currentItem: ScheduleItem | null, nextItem: ScheduleItem | null) {
+  // Determine which day to scroll to
+  const item = currentItem || nextItem
+  if (!item) return
+
+  const dayId = getDayAnchorId(item.date)
+  const element = document.getElementById(dayId)
+  
+  if (element) {
+    const offset = 100
+    const elementPosition = element.getBoundingClientRect().top
+    const offsetPosition = elementPosition + window.pageYOffset - offset
+
+    window.scrollTo({
+      top: offsetPosition,
+      behavior: 'smooth',
+    })
+  }
 }
 
 // Helper to create a Central Time date for comparison
@@ -288,8 +322,17 @@ export function NowNextSchedule() {
   // During event - show now & next
   return (
     <div className="w-full space-y-4">
-      <div className="text-center mb-4">
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-4">
         <h3 className="text-2xl font-bold text-ring">Live Schedule</h3>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => scrollToNow(nowItem, nextItem)}
+          className="flex items-center gap-2"
+        >
+          <ArrowDown className="h-4 w-4" />
+          Jump to Now
+        </Button>
       </div>
       <div className="grid gap-4 md:grid-cols-2">
         {/* Now Playing */}
