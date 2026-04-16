@@ -25,6 +25,8 @@ type GeoResult = {
   newLat?: number
   newLng?: number
   error?: string
+  matchedQuery?: string
+  wasExact?: boolean
 }
 
 // All registrations - same data as map2026
@@ -81,7 +83,9 @@ export default function GeocodeAdminPage() {
         return { 
           status: "success", 
           newLat: data.lat, 
-          newLng: data.lng 
+          newLng: data.lng,
+          matchedQuery: data.matchedQuery,
+          wasExact: data.wasExact
         }
       }
       
@@ -290,6 +294,11 @@ export default function GeocodeAdminPage() {
                                   </span>
                                 )}
                               </div>
+                              {result?.matchedQuery && !result?.wasExact && (
+                                <p className="text-xs text-amber-600 mt-1">
+                                  Matched via: &quot;{result.matchedQuery}&quot;
+                                </p>
+                              )}
                               {result?.error && (
                                 <p className="text-xs text-red-500 mt-1">{result.error}</p>
                               )}
