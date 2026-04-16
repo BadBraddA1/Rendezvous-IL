@@ -36,7 +36,6 @@ const greenIcon = L.icon({
 type Registration = {
   id: number
   lastName: string
-  fatherName: string
   email: string
   husbandPhone: string
   wifePhone: string
@@ -129,7 +128,6 @@ export function LeafletMap({ center, registrations, selectedId, onSelectRegistra
         const popupContent = `
           <div style="min-width: 200px;">
             <strong>${reg.lastName} Family</strong>
-            ${reg.fatherName ? `<br/><span style="color: #666;">Father: ${reg.fatherName}</span>` : ""}
             ${reg.email ? `<br/><a href="mailto:${reg.email}">${reg.email}</a>` : ""}
             ${reg.husbandPhone ? `<br/>Husband: <a href="tel:${reg.husbandPhone}">${reg.husbandPhone}</a>` : ""}
             ${reg.wifePhone ? `<br/>Wife: <a href="tel:${reg.wifePhone}">${reg.wifePhone}</a>` : ""}
