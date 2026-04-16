@@ -15,54 +15,72 @@ interface ScheduleItem {
   date: string
   day: string
   time: string
-  startTime: Date
+  startHour: number
+  startMinute: number
+  endHour?: number
+  endMinute?: number
   title: string
   location?: string
 }
 
+// Helper to get current time in Central Time
+function getCentralTime(): Date {
+  return new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' }))
+}
+
+// Helper to create a Central Time date for comparison
+function createCentralDate(year: number, month: number, day: number, hour: number, minute: number): Date {
+  // Create a date string in Central Time format
+  const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00`
+  // Parse in Central timezone
+  const centralDate = new Date(new Date(dateStr).toLocaleString('en-US', { timeZone: 'America/Chicago' }))
+  // Return a date object that represents this Central time
+  return new Date(dateStr)
+}
+
 const SCHEDULE_ITEMS: ScheduleItem[] = [
   // Monday May 4
-  { date: '2026-05-04', day: 'Monday', time: '1:00 PM - 5:15 PM', startTime: new Date('2026-05-04T13:00:00'), title: 'Check-in at Activity Center', location: 'Activity Center' },
-  { date: '2026-05-04', day: 'Monday', time: '4:00 PM - 5:00 PM', startTime: new Date('2026-05-04T16:00:00'), title: 'Ice Breaker Game', location: 'AC Room 205/206' },
-  { date: '2026-05-04', day: 'Monday', time: '5:30 PM', startTime: new Date('2026-05-04T17:30:00'), title: 'Dinner', location: 'Lakeside Dining Room' },
-  { date: '2026-05-04', day: 'Monday', time: '7:00 PM', startTime: new Date('2026-05-04T19:00:00'), title: 'Evening Assembly & Introductions', location: 'AC Room 207' },
-  { date: '2026-05-04', day: 'Monday', time: '8:00 PM', startTime: new Date('2026-05-04T20:00:00'), title: 'Black-light Dodgeball & Games', location: 'Activity Center' },
-  { date: '2026-05-04', day: 'Monday', time: '9:00 PM', startTime: new Date('2026-05-04T21:00:00'), title: 'Nine Square & Knockout', location: 'Activity Center' },
+  { date: '2026-05-04', day: 'Monday', time: '1:00 PM - 5:15 PM', startHour: 13, startMinute: 0, endHour: 17, endMinute: 15, title: 'Check-in at Activity Center', location: 'Activity Center' },
+  { date: '2026-05-04', day: 'Monday', time: '4:00 PM - 5:00 PM', startHour: 16, startMinute: 0, endHour: 17, endMinute: 0, title: 'Ice Breaker Game', location: 'AC Room 205/206' },
+  { date: '2026-05-04', day: 'Monday', time: '5:30 PM', startHour: 17, startMinute: 30, title: 'Dinner', location: 'Lakeside Dining Room' },
+  { date: '2026-05-04', day: 'Monday', time: '7:00 PM', startHour: 19, startMinute: 0, title: 'Evening Assembly & Introductions', location: 'AC Room 207' },
+  { date: '2026-05-04', day: 'Monday', time: '8:00 PM', startHour: 20, startMinute: 0, title: 'Black-light Dodgeball & Games', location: 'Activity Center' },
+  { date: '2026-05-04', day: 'Monday', time: '9:00 PM', startHour: 21, startMinute: 0, title: 'Nine Square & Knockout', location: 'Activity Center' },
 
   // Tuesday May 5
-  { date: '2026-05-05', day: 'Tuesday', time: '7:30 AM', startTime: new Date('2026-05-05T07:30:00'), title: 'Breakfast', location: 'Lakeside Dining Room' },
-  { date: '2026-05-05', day: 'Tuesday', time: '9:00 AM', startTime: new Date('2026-05-05T09:00:00'), title: 'Morning Assembly & Announcements', location: 'AC Room 207' },
-  { date: '2026-05-05', day: 'Tuesday', time: '10:00 AM', startTime: new Date('2026-05-05T10:00:00'), title: 'Young Adult & Mom\'s Session', location: 'Activity Center' },
-  { date: '2026-05-05', day: 'Tuesday', time: '12:00 PM', startTime: new Date('2026-05-05T12:00:00'), title: 'Lunch', location: 'Lakeside Dining Room' },
-  { date: '2026-05-05', day: 'Tuesday', time: '1:30 PM', startTime: new Date('2026-05-05T13:30:00'), title: 'Archery, Obstacle Course & Rope Games', location: 'Various' },
-  { date: '2026-05-05', day: 'Tuesday', time: '5:30 PM', startTime: new Date('2026-05-05T17:30:00'), title: 'Dinner', location: 'Lakeside Dining Room' },
-  { date: '2026-05-05', day: 'Tuesday', time: '7:00 PM', startTime: new Date('2026-05-05T19:00:00'), title: 'Evening Assembly & Announcements', location: 'AC Room 207' },
-  { date: '2026-05-05', day: 'Tuesday', time: '8:00 PM', startTime: new Date('2026-05-05T20:00:00'), title: 'Gym Time & Table Games', location: 'Activity Center' },
+  { date: '2026-05-05', day: 'Tuesday', time: '7:30 AM', startHour: 7, startMinute: 30, title: 'Breakfast', location: 'Lakeside Dining Room' },
+  { date: '2026-05-05', day: 'Tuesday', time: '9:00 AM', startHour: 9, startMinute: 0, title: 'Morning Assembly & Announcements', location: 'AC Room 207' },
+  { date: '2026-05-05', day: 'Tuesday', time: '10:00 AM', startHour: 10, startMinute: 0, title: 'Young Adult & Mom\'s Session', location: 'Activity Center' },
+  { date: '2026-05-05', day: 'Tuesday', time: '12:00 PM', startHour: 12, startMinute: 0, title: 'Lunch', location: 'Lakeside Dining Room' },
+  { date: '2026-05-05', day: 'Tuesday', time: '1:30 PM', startHour: 13, startMinute: 30, title: 'Archery, Obstacle Course & Rope Games', location: 'Various' },
+  { date: '2026-05-05', day: 'Tuesday', time: '5:30 PM', startHour: 17, startMinute: 30, title: 'Dinner', location: 'Lakeside Dining Room' },
+  { date: '2026-05-05', day: 'Tuesday', time: '7:00 PM', startHour: 19, startMinute: 0, title: 'Evening Assembly & Announcements', location: 'AC Room 207' },
+  { date: '2026-05-05', day: 'Tuesday', time: '8:00 PM', startHour: 20, startMinute: 0, title: 'Gym Time & Table Games', location: 'Activity Center' },
 
   // Wednesday May 6
-  { date: '2026-05-06', day: 'Wednesday', time: '7:30 AM', startTime: new Date('2026-05-06T07:30:00'), title: 'Breakfast', location: 'Lakeside Dining Room' },
-  { date: '2026-05-06', day: 'Wednesday', time: '9:00 AM', startTime: new Date('2026-05-06T09:00:00'), title: 'Morning Assembly & Group Picture', location: 'AC Room 207' },
-  { date: '2026-05-06', day: 'Wednesday', time: '10:00 AM', startTime: new Date('2026-05-06T10:00:00'), title: 'General / Family Session', location: 'Activity Center' },
-  { date: '2026-05-06', day: 'Wednesday', time: '12:00 PM', startTime: new Date('2026-05-06T12:00:00'), title: 'Lunch', location: 'Lakeside Dining Room' },
-  { date: '2026-05-06', day: 'Wednesday', time: '1:30 PM', startTime: new Date('2026-05-06T13:30:00'), title: 'Afternoon Activities', location: 'Various' },
-  { date: '2026-05-06', day: 'Wednesday', time: '5:30 PM', startTime: new Date('2026-05-06T17:30:00'), title: 'Dinner', location: 'Lakeside Dining Room' },
-  { date: '2026-05-06', day: 'Wednesday', time: '7:00 PM', startTime: new Date('2026-05-06T19:00:00'), title: 'Evening Assembly & Announcements', location: 'AC Room 207' },
-  { date: '2026-05-06', day: 'Wednesday', time: '8:00 PM', startTime: new Date('2026-05-06T20:00:00'), title: 'Game Night & Bonfire', location: 'Activity Center' },
+  { date: '2026-05-06', day: 'Wednesday', time: '7:30 AM', startHour: 7, startMinute: 30, title: 'Breakfast', location: 'Lakeside Dining Room' },
+  { date: '2026-05-06', day: 'Wednesday', time: '9:00 AM', startHour: 9, startMinute: 0, title: 'Morning Assembly & Group Picture', location: 'AC Room 207' },
+  { date: '2026-05-06', day: 'Wednesday', time: '10:00 AM', startHour: 10, startMinute: 0, title: 'General / Family Session', location: 'Activity Center' },
+  { date: '2026-05-06', day: 'Wednesday', time: '12:00 PM', startHour: 12, startMinute: 0, title: 'Lunch', location: 'Lakeside Dining Room' },
+  { date: '2026-05-06', day: 'Wednesday', time: '1:30 PM', startHour: 13, startMinute: 30, title: 'Afternoon Activities', location: 'Various' },
+  { date: '2026-05-06', day: 'Wednesday', time: '5:30 PM', startHour: 17, startMinute: 30, title: 'Dinner', location: 'Lakeside Dining Room' },
+  { date: '2026-05-06', day: 'Wednesday', time: '7:00 PM', startHour: 19, startMinute: 0, title: 'Evening Assembly & Announcements', location: 'AC Room 207' },
+  { date: '2026-05-06', day: 'Wednesday', time: '8:00 PM', startHour: 20, startMinute: 0, title: 'Game Night & Bonfire', location: 'Activity Center' },
 
   // Thursday May 7
-  { date: '2026-05-07', day: 'Thursday', time: '7:30 AM', startTime: new Date('2026-05-07T07:30:00'), title: 'Breakfast', location: 'Lakeside Dining Room' },
-  { date: '2026-05-07', day: 'Thursday', time: '9:00 AM', startTime: new Date('2026-05-07T09:00:00'), title: 'Morning Assembly & Announcements', location: 'AC Room 207' },
-  { date: '2026-05-07', day: 'Thursday', time: '10:00 AM', startTime: new Date('2026-05-07T10:00:00'), title: 'Session Time', location: 'Activity Center' },
-  { date: '2026-05-07', day: 'Thursday', time: '12:00 PM', startTime: new Date('2026-05-07T12:00:00'), title: 'Lunch', location: 'Lakeside Dining Room' },
-  { date: '2026-05-07', day: 'Thursday', time: '1:30 PM', startTime: new Date('2026-05-07T13:30:00'), title: 'Afternoon Activities', location: 'Various' },
-  { date: '2026-05-07', day: 'Thursday', time: '5:30 PM', startTime: new Date('2026-05-07T17:30:00'), title: 'Dinner & Awards Ceremony', location: 'Lakeside Dining Room' },
-  { date: '2026-05-07', day: 'Thursday', time: '7:00 PM', startTime: new Date('2026-05-07T19:00:00'), title: 'Evening Assembly', location: 'AC Room 207' },
-  { date: '2026-05-07', day: 'Thursday', time: '8:00 PM', startTime: new Date('2026-05-07T20:00:00'), title: 'Evening Activities', location: 'Activity Center' },
+  { date: '2026-05-07', day: 'Thursday', time: '7:30 AM', startHour: 7, startMinute: 30, title: 'Breakfast', location: 'Lakeside Dining Room' },
+  { date: '2026-05-07', day: 'Thursday', time: '9:00 AM', startHour: 9, startMinute: 0, title: 'Morning Assembly & Announcements', location: 'AC Room 207' },
+  { date: '2026-05-07', day: 'Thursday', time: '10:00 AM', startHour: 10, startMinute: 0, title: 'Session Time', location: 'Activity Center' },
+  { date: '2026-05-07', day: 'Thursday', time: '12:00 PM', startHour: 12, startMinute: 0, title: 'Lunch', location: 'Lakeside Dining Room' },
+  { date: '2026-05-07', day: 'Thursday', time: '1:30 PM', startHour: 13, startMinute: 30, title: 'Afternoon Activities', location: 'Various' },
+  { date: '2026-05-07', day: 'Thursday', time: '5:30 PM', startHour: 17, startMinute: 30, title: 'Dinner & Awards Ceremony', location: 'Lakeside Dining Room' },
+  { date: '2026-05-07', day: 'Thursday', time: '7:00 PM', startHour: 19, startMinute: 0, title: 'Evening Assembly', location: 'AC Room 207' },
+  { date: '2026-05-07', day: 'Thursday', time: '8:00 PM', startHour: 20, startMinute: 0, title: 'Evening Activities', location: 'Activity Center' },
 
   // Friday May 8
-  { date: '2026-05-08', day: 'Friday', time: '7:30 AM', startTime: new Date('2026-05-08T07:30:00'), title: 'Breakfast', location: 'Lakeside Dining Room' },
-  { date: '2026-05-08', day: 'Friday', time: '9:00 AM', startTime: new Date('2026-05-08T09:00:00'), title: 'Final Assembly & Farewell', location: 'AC Room 207' },
-  { date: '2026-05-08', day: 'Friday', time: '11:00 AM', startTime: new Date('2026-05-08T11:00:00'), title: 'Event Concludes / Checkout', location: 'Various' },
+  { date: '2026-05-08', day: 'Friday', time: '7:30 AM', startHour: 7, startMinute: 30, title: 'Breakfast', location: 'Lakeside Dining Room' },
+  { date: '2026-05-08', day: 'Friday', time: '9:00 AM', startHour: 9, startMinute: 0, title: 'Final Assembly & Farewell', location: 'AC Room 207' },
+  { date: '2026-05-08', day: 'Friday', time: '11:00 AM', startHour: 11, startMinute: 0, title: 'Event Concludes / Checkout', location: 'Various' },
 ]
 
 export function NowNextSchedule() {
@@ -93,63 +111,101 @@ export function NowNextSchedule() {
     }
 
     const updateSchedule = () => {
-      const now = new Date()
-      const eventStart = new Date('2026-05-04T13:00:00')
-      const eventEnd = new Date('2026-05-08T11:00:00')
+      // Get current time in Central Time
+      const centralNow = getCentralTime()
+      const centralHour = centralNow.getHours()
+      const centralMinute = centralNow.getMinutes()
+      const centralDateStr = centralNow.toISOString().split('T')[0]
 
       setTimeLeft(calculateTimeLeft())
 
-      if (now < eventStart) {
-        setEventStatus('before')
-        setNowItem(null)
-        setNextItem(SCHEDULE_ITEMS[0])
-      } else if (now > eventEnd) {
+      // Event start: May 4, 2026 at 1:00 PM Central
+      // Event end: May 8, 2026 at 11:00 AM Central
+      const eventStartDate = '2026-05-04'
+      const eventEndDate = '2026-05-08'
+
+      // Check if before event
+      if (centralDateStr < eventStartDate || (centralDateStr === eventStartDate && (centralHour < 13 || (centralHour === 13 && centralMinute === 0)))) {
+        if (centralDateStr < eventStartDate || centralHour < 13) {
+          setEventStatus('before')
+          setNowItem(null)
+          setNextItem(SCHEDULE_ITEMS[0])
+          return
+        }
+      }
+
+      // Check if after event
+      if (centralDateStr > eventEndDate || (centralDateStr === eventEndDate && centralHour >= 11)) {
         setEventStatus('after')
         setNowItem(null)
         setNextItem(null)
-      } else {
-        setEventStatus('during')
+        return
+      }
 
-        let current = null
-        let next = null
+      // During event
+      setEventStatus('during')
 
-        for (let i = 0; i < SCHEDULE_ITEMS.length; i++) {
-          const item = SCHEDULE_ITEMS[i]
-          const nextScheduleItem = SCHEDULE_ITEMS[i + 1]
+      let current: ScheduleItem | null = null
+      let next: ScheduleItem | null = null
 
-          let itemEndTime = item.startTime
-          if (item.time.includes(' - ')) {
-            const endTimeStr = item.time.split(' - ')[1]
-            const [time, period] = endTimeStr.split(' ')
-            let [hours, minutes] = time.split(':').map(Number)
-            if (period === 'PM' && hours !== 12) hours += 12
-            if (period === 'AM' && hours === 12) hours = 0
-            itemEndTime = new Date(item.startTime)
-            itemEndTime.setHours(hours, minutes)
-          } else {
-            itemEndTime = new Date(item.startTime)
-            itemEndTime.setHours(itemEndTime.getHours() + 1)
-          }
+      // Find current and next items based on Central Time
+      for (let i = 0; i < SCHEDULE_ITEMS.length; i++) {
+        const item = SCHEDULE_ITEMS[i]
+        const nextScheduleItem = SCHEDULE_ITEMS[i + 1]
 
-          if (now >= item.startTime && now < itemEndTime) {
-            current = item
-            next = nextScheduleItem || null
-            break
-          }
+        // Check if this item is on today's date
+        if (item.date !== centralDateStr) continue
+
+        const itemStartMinutes = item.startHour * 60 + item.startMinute
+        const currentMinutes = centralHour * 60 + centralMinute
+
+        // Calculate end time
+        let itemEndMinutes: number
+        if (item.endHour !== undefined && item.endMinute !== undefined) {
+          itemEndMinutes = item.endHour * 60 + item.endMinute
+        } else {
+          // Default to 1 hour duration if no end time specified
+          itemEndMinutes = itemStartMinutes + 60
         }
 
-        if (!current) {
-          for (const item of SCHEDULE_ITEMS) {
-            if (item.startTime > now) {
-              next = item
+        // Check if current time is within this item's window
+        if (currentMinutes >= itemStartMinutes && currentMinutes < itemEndMinutes) {
+          current = item
+          // Find next item (could be later today or tomorrow)
+          for (let j = i + 1; j < SCHEDULE_ITEMS.length; j++) {
+            const potentialNext = SCHEDULE_ITEMS[j]
+            const nextStartMinutes = potentialNext.startHour * 60 + potentialNext.startMinute
+            if (potentialNext.date === centralDateStr && nextStartMinutes > currentMinutes) {
+              next = potentialNext
+              break
+            } else if (potentialNext.date > centralDateStr) {
+              next = potentialNext
               break
             }
           }
+          break
         }
-
-        setNowItem(current)
-        setNextItem(next)
       }
+
+      // If no current item, find the next upcoming one
+      if (!current) {
+        const currentMinutes = centralHour * 60 + centralMinute
+        for (const item of SCHEDULE_ITEMS) {
+          if (item.date === centralDateStr) {
+            const itemStartMinutes = item.startHour * 60 + item.startMinute
+            if (itemStartMinutes > currentMinutes) {
+              next = item
+              break
+            }
+          } else if (item.date > centralDateStr) {
+            next = item
+            break
+          }
+        }
+      }
+
+      setNowItem(current)
+      setNextItem(next)
     }
 
     updateSchedule()
