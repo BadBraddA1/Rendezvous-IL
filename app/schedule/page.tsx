@@ -544,12 +544,6 @@ export default function SchedulePage() {
                     Lunch at the Lakeside Dining Room & then depart for home
                   </dd>
                 </div>
-                <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
-                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">1:30 PM</dt>
-                  <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
-                    Add-on Activity: Indoor Climbing Tower [$10 per person; pre-registration by April 15th required]
-                  </dd>
-                </div>
               </dl>
             </section>
 
