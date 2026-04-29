@@ -198,10 +198,6 @@ export function WeatherForecast() {
   )
 }
 
-// Lake Williamson coordinates for radar
-const RADAR_LAT = 39.2795
-const RADAR_LON = -89.8820
-
 // Rain Alert Popup - shows once per day when rain is expected
 export function RainAlertBanner() {
   const [weather, setWeather] = useState<WeatherData | null>(null)
