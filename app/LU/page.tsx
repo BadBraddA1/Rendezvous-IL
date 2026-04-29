@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Cloud, CloudRain, Sun, CloudSun, Snowflake, CloudLightning, Wind, Droplets, Clock, ChevronRight, Calendar, Thermometer } from 'lucide-react'
+import { Cloud, CloudRain, Sun, CloudSun, Snowflake, CloudLightning, Wind, Droplets, Clock, ChevronRight, Calendar, Thermometer, Megaphone } from 'lucide-react'
+import { AnnouncementsDisplay } from '@/components/announcements-display'
 
 // Schedule data from NowNextSchedule
 interface ScheduleItem {
@@ -79,7 +80,7 @@ const SCHEDULE_ITEMS: ScheduleItem[] = [
   { date: '2026-05-08', day: 'Friday', time: '11:00 AM', startHour: 11, startMinute: 0, title: 'Event Concludes / Checkout', location: 'Various' },
 ]
 
-type ViewMode = 'all' | 'weather' | 'schedule' | 'meal'
+type ViewMode = 'all' | 'weather' | 'schedule' | 'meal' | 'announcements'
 
 function getCentralTime(): Date {
   return new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' }))
@@ -163,6 +164,10 @@ export default function LiveUpdatesPage() {
         setViewMode('meal')
         setAutoRotate(false)
         break
+      case '5':
+        setViewMode('announcements')
+        setAutoRotate(false)
+        break
       case '0':
       case 'a':
       case 'A':
@@ -190,7 +195,7 @@ export default function LiveUpdatesPage() {
   useEffect(() => {
     if (!autoRotate) return
     
-    const views: ViewMode[] = ['all', 'weather', 'schedule']
+    const views: ViewMode[] = ['all', 'weather', 'schedule', 'announcements']
     let currentIndex = 0
     
     const interval = setInterval(() => {
@@ -495,18 +500,31 @@ export default function LiveUpdatesPage() {
         )}
 
         {/* Meal Only View */}
-        {viewMode === 'meal' && nextMeal && (
-          <div className="h-[calc(100vh-12rem)] flex flex-col items-center justify-center">
-            <div className="text-[10rem] mb-8">
-              {nextMeal.title.toLowerCase().includes('breakfast') ? '🍳' : 
-               nextMeal.title.toLowerCase().includes('lunch') ? '🥪' : 
-               nextMeal.title.toLowerCase().includes('cookout') ? '🔥' : '🍽️'}
-            </div>
-            <h3 className="text-6xl font-bold mb-4">{nextMeal.title}</h3>
-            <p className="text-4xl text-white/70">{nextMeal.time}</p>
-            <p className="text-2xl text-white/50 mt-4">{nextMeal.location}</p>
-          </div>
-        )}
+{viewMode === 'meal' && nextMeal && (
+  <div className="h-[calc(100vh-12rem)] flex flex-col items-center justify-center">
+  <div className="text-[10rem] mb-8">
+  {nextMeal.title.toLowerCase().includes('breakfast') ? '🍳' :
+  nextMeal.title.toLowerCase().includes('lunch') ? '🥪' :
+  nextMeal.title.toLowerCase().includes('cookout') ? '🔥' : '🍽️'}
+  </div>
+  <h3 className="text-6xl font-bold mb-4">{nextMeal.title}</h3>
+  <p className="text-4xl text-white/70">{nextMeal.time}</p>
+  <p className="text-2xl text-white/50 mt-4">{nextMeal.location}</p>
+  </div>
+  )}
+
+  {/* Announcements View */}
+  {viewMode === 'announcements' && (
+  <div className="h-[calc(100vh-12rem)] flex flex-col items-center justify-center px-8">
+  <div className="flex items-center gap-4 mb-8">
+    <Megaphone className="h-16 w-16 text-yellow-400" />
+    <h2 className="text-5xl font-bold">Announcements</h2>
+  </div>
+  <div className="w-full max-w-4xl">
+    <AnnouncementsDisplay variant="large" />
+  </div>
+  </div>
+  )}
       </main>
 
       {/* Footer Controls */}
@@ -518,8 +536,9 @@ export default function LiveUpdatesPage() {
               <kbd className={`px-3 py-1 rounded text-sm ${viewMode === 'all' ? 'bg-primary text-white' : 'bg-white/10'}`}>1 All</kbd>
               <kbd className={`px-3 py-1 rounded text-sm ${viewMode === 'weather' ? 'bg-primary text-white' : 'bg-white/10'}`}>2 Weather</kbd>
               <kbd className={`px-3 py-1 rounded text-sm ${viewMode === 'schedule' ? 'bg-primary text-white' : 'bg-white/10'}`}>3 Schedule</kbd>
-              <kbd className={`px-3 py-1 rounded text-sm ${viewMode === 'meal' ? 'bg-primary text-white' : 'bg-white/10'}`}>4 Meal</kbd>
-              <kbd className={`px-3 py-1 rounded text-sm ${autoRotate ? 'bg-green-600 text-white' : 'bg-white/10'}`}>0/A Auto</kbd>
+<kbd className={`px-3 py-1 rounded text-sm ${viewMode === 'meal' ? 'bg-primary text-white' : 'bg-white/10'}`}>4 Meal</kbd>
+  <kbd className={`px-3 py-1 rounded text-sm ${viewMode === 'announcements' ? 'bg-primary text-white' : 'bg-white/10'}`}>5 Announcements</kbd>
+  <kbd className={`px-3 py-1 rounded text-sm ${autoRotate ? 'bg-green-600 text-white' : 'bg-white/10'}`}>0/A Auto</kbd>
               <kbd className={`px-3 py-1 rounded text-sm ${isFullscreen ? 'bg-blue-600 text-white' : 'bg-white/10'}`}>F Fullscreen</kbd>
             </div>
           </div>
