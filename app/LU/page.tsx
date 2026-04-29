@@ -566,7 +566,8 @@ export default function LiveUpdatesPage() {
   )}
       </main>
 
-      {/* Footer Controls */}
+      {/* Footer Controls - hidden in fullscreen */}
+      {!isFullscreen && (
       <footer className="fixed bottom-0 left-0 right-0 bg-black/80 backdrop-blur-sm border-t border-white/10">
         <div className="flex items-center justify-between px-8 py-4">
           <div className="flex items-center gap-4">
@@ -597,6 +598,7 @@ export default function LiveUpdatesPage() {
           </div>
         </div>
       </footer>
+      )}
     </div>
   )
 }
