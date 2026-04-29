@@ -8,7 +8,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Megaphone, Send, Trash2, Clock, AlertTriangle, Info, AlertCircle } from "lucide-react"
+import { Megaphone, Send, Trash2, Clock, AlertTriangle, Info, AlertCircle, Lock } from "lucide-react"
+
+const ADMIN_PASSWORD = "Rendezvous2026!"
 
 type Announcement = {
   id: number
@@ -21,6 +23,10 @@ type Announcement = {
 }
 
 export default function AdminAnnouncementsPage() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [password, setPassword] = useState("")
+  const [passwordError, setPasswordError] = useState(false)
+  
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -32,9 +38,71 @@ export default function AdminAnnouncementsPage() {
   const [expiresIn, setExpiresIn] = useState<string>("")
   const [sendToGroupMe, setSendToGroupMe] = useState(false)
 
+  // Check if already authenticated (session storage)
   useEffect(() => {
-    fetchAnnouncements()
+    const auth = sessionStorage.getItem('announcements_auth')
+    if (auth === 'true') {
+      setIsAuthenticated(true)
+    }
   }, [])
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchAnnouncements()
+    }
+  }, [isAuthenticated])
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (password === ADMIN_PASSWORD) {
+      setIsAuthenticated(true)
+      sessionStorage.setItem('announcements_auth', 'true')
+      setPasswordError(false)
+    } else {
+      setPasswordError(true)
+    }
+  }
+
+  // Password protection screen
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+              <Lock className="h-6 w-6 text-primary" />
+            </div>
+            <CardTitle>Announcements Admin</CardTitle>
+            <CardDescription>Enter the admin password to continue</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value)
+                    setPasswordError(false)
+                  }}
+                  placeholder="Enter admin password"
+                  className={passwordError ? 'border-red-500' : ''}
+                />
+                {passwordError && (
+                  <p className="text-sm text-red-500">Incorrect password</p>
+                )}
+              </div>
+              <Button type="submit" className="w-full">
+                Access Announcements
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   const fetchAnnouncements = async () => {
     try {
