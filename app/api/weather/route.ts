@@ -57,12 +57,17 @@ export async function GET() {
 
   try {
     // Using OpenWeather One Call API 3.0
+    console.log("[v0] Fetching weather from OpenWeather API...")
     const response = await fetch(
       `https://api.openweathermap.org/data/3.0/onecall?lat=${LAT}&lon=${LON}&exclude=minutely,daily,alerts&units=imperial&appid=${apiKey}`,
       { next: { revalidate: 300 } } // Cache for 5 minutes
     )
 
     if (!response.ok) {
+      const errorText = await response.text()
+      console.log(`[v0] One Call API 3.0 failed (${response.status}): ${errorText}`)
+      console.log("[v0] Trying 2.5 API as fallback...")
+      
       // Try 2.5 API as fallback
       const fallbackResponse = await fetch(
         `https://api.openweathermap.org/data/2.5/forecast?lat=${LAT}&lon=${LON}&units=imperial&appid=${apiKey}`,
@@ -70,7 +75,13 @@ export async function GET() {
       )
 
       if (!fallbackResponse.ok) {
-        throw new Error("Weather API request failed")
+        const fallbackError = await fallbackResponse.text()
+        console.error(`[v0] 2.5 API also failed (${fallbackResponse.status}): ${fallbackError}`)
+        return NextResponse.json({ 
+          error: "Weather API request failed", 
+          details: fallbackError,
+          status: fallbackResponse.status 
+        }, { status: 500 })
       }
 
       const fallbackData = await fallbackResponse.json()
