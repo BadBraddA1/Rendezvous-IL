@@ -141,7 +141,7 @@ function getEventEmoji(title: string, isMeal?: boolean): string {
   if (lowerTitle.includes('check-in') || lowerTitle.includes('checkout')) return '📋'
   if (lowerTitle.includes('assembly') || lowerTitle.includes('announcement')) return '📢'
   if (lowerTitle.includes('session') || lowerTitle.includes('meeting')) return '👥'
-  if (lowerTitle.includes('game') || lowerTitle.includes('dodgeball') || lowerTitle.includes('knockout')) return '🎮'
+  if (lowerTitle.includes('game') || lowerTitle.includes('dodgeball') || lowerTitle.includes('knockout')) return '����'
   if (lowerTitle.includes('archery')) return '🏹'
   if (lowerTitle.includes('obstacle') || lowerTitle.includes('rope')) return '🧗'
   if (lowerTitle.includes('gym') || lowerTitle.includes('sport')) return '🏀'
@@ -494,6 +494,7 @@ export default function LiveUpdatesPage() {
             nowItem={nowItem} 
             nextItem={nextItem} 
             nextMeal={nextMeal}
+            upcomingToday={upcomingToday}
             volunteerSchedule={volunteerSchedule}
             volunteerTimeSlot={volunteerTimeSlot}
           />
@@ -551,12 +552,75 @@ function KeyButton({ label, active }: { label: string; active?: boolean }) {
   )
 }
 
+// Schedule Card - shows up to 5 events
+function ScheduleCard({ 
+  nowItem, 
+  nextItem, 
+  upcomingToday 
+}: { 
+  nowItem: ScheduleItem | null
+  nextItem: ScheduleItem | null
+  upcomingToday: ScheduleItem[]
+}) {
+  // Combine now + upcoming, limit to 5
+  const eventsToShow: { item: ScheduleItem; isNow: boolean }[] = []
+  
+  if (nowItem) {
+    eventsToShow.push({ item: nowItem, isNow: true })
+  }
+  
+  for (const item of upcomingToday) {
+    if (eventsToShow.length >= 5) break
+    // Don't duplicate the nextItem if it's already in the list
+    if (!eventsToShow.some(e => e.item === item)) {
+      eventsToShow.push({ item, isNow: false })
+    }
+  }
+
+  return (
+    <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
+      <div className="flex items-center gap-2 text-white/60 text-sm mb-4">
+        <Calendar className="h-4 w-4" />
+        <span className="uppercase tracking-wider font-medium">Schedule</span>
+      </div>
+      <div className="space-y-2">
+        {eventsToShow.length > 0 ? (
+          eventsToShow.map(({ item, isNow }, index) => (
+            <div 
+              key={index}
+              className={`p-3 rounded-xl border ${
+                isNow 
+                  ? "bg-white/10 border-white/20" 
+                  : item === nextItem
+                  ? "bg-white/5 border-white/15"
+                  : "bg-white/5 border-white/10"
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                {isNow && <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse shrink-0" />}
+                <span className="text-xl shrink-0">{getEventEmoji(item.title, item.isMeal)}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm truncate">{item.title}</p>
+                  <p className="text-xs text-white/50">{isNow ? "NOW" : item.time}</p>
+                </div>
+              </div>
+            </div>
+          ))
+        ) : (
+          <p className="text-white/50 text-sm">No upcoming events</p>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // All View - dashboard with cards
 function AllView({ 
   weather, 
   nowItem, 
   nextItem, 
   nextMeal,
+  upcomingToday,
   volunteerSchedule,
   volunteerTimeSlot
 }: { 
@@ -564,6 +628,7 @@ function AllView({
   nowItem: ScheduleItem | null
   nextItem: ScheduleItem | null
   nextMeal: ScheduleItem | null
+  upcomingToday: ScheduleItem[]
   volunteerSchedule: VolunteerSchedule | null
   volunteerTimeSlot: string
 }) {
@@ -619,52 +684,8 @@ function AllView({
         )}
       </div>
 
-      {/* Schedule Card */}
-      <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
-        <div className="flex items-center gap-2 text-white/60 text-sm mb-6">
-          <Calendar className="h-4 w-4" />
-          <span className="uppercase tracking-wider font-medium">Schedule</span>
-        </div>
-        <div className="space-y-4">
-          {nowItem && (
-            <div className="p-4 rounded-xl bg-white/10 border border-white/20">
-              <div className="flex items-center gap-2 text-white/60 text-xs mb-2">
-                <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                <span>NOW · {nowItem.time}</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">{getEventEmoji(nowItem.title, nowItem.isMeal)}</span>
-                <div>
-                  <h3 className="font-semibold text-lg">{nowItem.title}</h3>
-                  {nowItem.location && (
-                    <p className="text-white/50 text-sm">📍 {nowItem.location}</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-          {nextItem && (
-            <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-              <div className="flex items-center gap-2 text-white/60 text-xs mb-2">
-                <ChevronRight className="h-3 w-3" />
-                <span>NEXT · {nextItem.time}</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">{getEventEmoji(nextItem.title, nextItem.isMeal)}</span>
-                <div>
-                  <h3 className="font-semibold text-lg">{nextItem.title}</h3>
-                  {nextItem.location && (
-                    <p className="text-white/50 text-sm">📍 {nextItem.location}</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-          {!nowItem && !nextItem && (
-            <p className="text-white/50">No upcoming events</p>
-          )}
-        </div>
-      </div>
+      {/* Schedule Card - shows up to 5 events */}
+      <ScheduleCard nowItem={nowItem} nextItem={nextItem} upcomingToday={upcomingToday} />
 
       {/* Next Meal Card */}
       <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
@@ -718,16 +739,44 @@ function AllView({
 
 // Weather View - Full screen weather
 function WeatherView({ weather }: { weather: WeatherData | null }) {
+  // Get time-based greeting
+  const centralNow = getCentralTime()
+  const hour = centralNow.getHours()
+  let greeting = "Welcome to Rendezvous!"
+  let greetingEmoji = "👋"
+  
+  if (hour >= 5 && hour < 12) {
+    greeting = "Good Morning!"
+    greetingEmoji = "☀️"
+  } else if (hour >= 12 && hour < 17) {
+    greeting = "Good Afternoon!"
+    greetingEmoji = "🌤️"
+  } else if (hour >= 17 && hour < 21) {
+    greeting = "Good Evening!"
+    greetingEmoji = "🌅"
+  } else {
+    greeting = "Good Night!"
+    greetingEmoji = "🌙"
+  }
+
   if (!weather) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <p className="text-white/50 text-2xl">Loading weather...</p>
+      <div className="flex flex-col items-center justify-center h-full">
+        <p className="text-4xl mb-4">{greetingEmoji} {greeting}</p>
+        <p className="text-2xl text-white/70 mb-8">Welcome to Rendezvous 2026</p>
+        <p className="text-white/50 text-xl">Loading weather...</p>
       </div>
     )
   }
 
   return (
     <div className="flex flex-col items-center justify-center h-full">
+      {/* Greeting */}
+      <div className="text-center mb-8">
+        <p className="text-4xl mb-2">{greetingEmoji} {greeting}</p>
+        <p className="text-xl text-white/60">Welcome to Rendezvous 2026</p>
+      </div>
+      
       <div className="flex items-center gap-8 mb-4">
         {getWeatherIcon(weather.current.weather[0].id, weather.current.weather[0].icon, "lg")}
         <span className="text-[10rem] font-light leading-none">{Math.round(weather.current.temp)}°</span>
