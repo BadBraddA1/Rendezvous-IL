@@ -295,7 +295,7 @@ export function RainAlertBanner() {
         </div>
       </div>
 
-      {/* Radar Dialog */}
+      {/* Radar Dialog - Using OpenWeatherMap radar tiles */}
       <Dialog open={showRadar} onOpenChange={setShowRadar}>
         <DialogContent className="max-w-4xl w-[95vw]">
           <DialogHeader>
@@ -305,17 +305,17 @@ export function RainAlertBanner() {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            {/* Embedded radar from weather.gov or windy */}
-            <div className="aspect-video rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
+            {/* OpenWeatherMap radar via iframe with Leaflet */}
+            <div className="aspect-video rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800 relative">
               <iframe
-                src={`https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=in&metricTemp=°F&metricWind=mph&zoom=8&overlay=radar&product=radar&level=surface&lat=${RADAR_LAT}&lon=${RADAR_LON}&detailLat=${RADAR_LAT}&detailLon=${RADAR_LON}&marker=true&message=true`}
+                src={`https://openweathermap.org/weathermap?basemap=map&cities=false&layer=precipitation&lat=${RADAR_LAT}&lon=${RADAR_LON}&zoom=8`}
                 className="w-full h-full border-0"
-                title="Weather Radar"
+                title="OpenWeather Radar"
                 loading="lazy"
               />
             </div>
             <p className="text-xs text-muted-foreground text-center">
-              Radar data provided by Windy.com - showing precipitation around Lake Williamson Christian Center
+              Radar data provided by OpenWeatherMap - showing precipitation around Lake Williamson Christian Center
             </p>
           </div>
         </DialogContent>
