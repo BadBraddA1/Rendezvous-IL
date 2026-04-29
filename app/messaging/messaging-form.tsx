@@ -278,8 +278,9 @@ export function MessagingForm({ initialAnnouncements }: MessagingFormProps) {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8"
+                        className={`h-8 w-8 ${ann.is_active ? "text-green-600 hover:text-green-700" : "text-muted-foreground"}`}
                         onClick={() => toggleActive(ann.id, ann.is_active)}
+                        title={ann.is_active ? "Click to hide from /LU and /schedule" : "Click to show on /LU and /schedule"}
                       >
                         {ann.is_active ? (
                           <Eye className="h-4 w-4" />
@@ -292,6 +293,7 @@ export function MessagingForm({ initialAnnouncements }: MessagingFormProps) {
                         size="icon"
                         className="h-8 w-8 text-red-500 hover:text-red-600"
                         onClick={() => deleteAnnouncement(ann.id)}
+                        title="Delete announcement"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
