@@ -196,8 +196,10 @@ export function WeatherForecast() {
   )
 }
 
-// Component to show inline weather for a specific time
-export function InlineWeather({ hour }: { hour: number }) {
+// Component to show inline weather for a specific date and time
+// date format: "2026-05-07" (YYYY-MM-DD)
+// hour: 14 for 2 PM, 17 for 5 PM, etc.
+export function InlineWeather({ date, hour }: { date: string; hour: number }) {
   const [weather, setWeather] = useState<WeatherData | null>(null)
 
   useEffect(() => {
@@ -211,29 +213,44 @@ export function InlineWeather({ hour }: { hour: number }) {
 
   if (!weather) return null
 
-  // Find the forecast closest to the requested hour
-  const now = new Date()
-  const targetTime = new Date()
-  targetTime.setHours(hour, 0, 0, 0)
-  
-  // If the target time is in the past today, it's for "demo" purposes
-  // In production during the event, this would show actual forecast
-  
-  const hourlyForecast = weather.hourly.find(h => {
-    const forecastHour = new Date(h.dt * 1000).getHours()
-    return forecastHour === hour
-  }) || weather.hourly[0]
+  // Parse the target date and hour
+  const [year, month, day] = date.split('-').map(Number)
+  const targetDate = new Date(year, month - 1, day, hour, 0, 0, 0)
+  const targetTimestamp = Math.floor(targetDate.getTime() / 1000)
 
-  if (!hourlyForecast) return null
+  // Find the forecast closest to the target date+time
+  // The 2.5 API gives 3-hour intervals, so find the closest one
+  let closestForecast = weather.hourly[0]
+  let smallestDiff = Math.abs(weather.hourly[0].dt - targetTimestamp)
+
+  for (const forecast of weather.hourly) {
+    const diff = Math.abs(forecast.dt - targetTimestamp)
+    if (diff < smallestDiff) {
+      smallestDiff = diff
+      closestForecast = forecast
+    }
+  }
+
+  // Only show if forecast is within 3 hours of target time (data is available)
+  // If target is too far in the future, don't show anything
+  const threeHoursInSeconds = 3 * 60 * 60
+  if (smallestDiff > threeHoursInSeconds) {
+    return (
+      <span className="inline-flex items-center gap-1 ml-2 px-2 py-0.5 rounded-full bg-gray-100/50 dark:bg-gray-800/30 text-xs text-muted-foreground">
+        <Cloud className="h-4 w-4" />
+        <span>Forecast unavailable</span>
+      </span>
+    )
+  }
 
   return (
     <span className="inline-flex items-center gap-1 ml-2 px-2 py-0.5 rounded-full bg-blue-100/50 dark:bg-blue-900/30 text-xs">
-      {getWeatherIcon(hourlyForecast.weather[0].id, hourlyForecast.weather[0].icon)}
-      <span className="font-medium">{Math.round(hourlyForecast.temp)}°F</span>
-      {hourlyForecast.pop > 0.2 && (
+      {getWeatherIcon(closestForecast.weather[0].id, closestForecast.weather[0].icon)}
+      <span className="font-medium">{Math.round(closestForecast.temp)}°F</span>
+      {closestForecast.pop > 0.2 && (
         <span className="text-blue-500 flex items-center gap-0.5">
           <Droplets className="h-2.5 w-2.5" />
-          {Math.round(hourlyForecast.pop * 100)}%
+          {Math.round(closestForecast.pop * 100)}%
         </span>
       )}
     </span>

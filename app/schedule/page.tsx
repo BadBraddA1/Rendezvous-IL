@@ -263,7 +263,7 @@ export default function SchedulePage() {
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
                   <dt className="mb-3 text-sm font-semibold text-primary md:text-base flex items-center flex-wrap gap-2">
                     Outside afternoon activities (weather permitting) or free time:
-                    <InlineWeather hour={14} />
+                    <InlineWeather date="2026-05-05" hour={14} />
                   </dt>
                   <dd className="ml-4 space-y-2 text-sm leading-relaxed text-muted-foreground md:space-y-3 md:text-base">
                     <p>
@@ -362,7 +362,7 @@ export default function SchedulePage() {
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
                   <dt className="mb-3 text-sm font-semibold text-primary md:text-base flex items-center flex-wrap gap-2">
                     Outside afternoon activities (weather permitting) or free time:
-                    <InlineWeather hour={14} />
+                    <InlineWeather date="2026-05-06" hour={14} />
                   </dt>
                   <dd className="ml-4 space-y-2 text-sm leading-relaxed text-muted-foreground md:space-y-3 md:text-base">
                     <p>
@@ -460,7 +460,7 @@ export default function SchedulePage() {
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
                   <dt className="mb-3 text-sm font-semibold text-primary md:text-base flex items-center flex-wrap gap-2">
                     Outside afternoon activities (weather permitting) or free time:
-                    <InlineWeather hour={14} />
+                    <InlineWeather date="2026-05-07" hour={14} />
                   </dt>
                   <dd className="ml-4 space-y-2 text-sm leading-relaxed text-muted-foreground md:space-y-3 md:text-base">
                     <p>
@@ -479,7 +479,7 @@ export default function SchedulePage() {
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base flex items-center flex-wrap gap-2">
                     5:30 PM
-                    <InlineWeather hour={17} />
+                    <InlineWeather date="2026-05-07" hour={17} />
                   </dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Cookout by the lake (weather permitting)
@@ -488,7 +488,7 @@ export default function SchedulePage() {
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base flex items-center flex-wrap gap-2">
                     6:30 PM
-                    <InlineWeather hour={18} />
+                    <InlineWeather date="2026-05-07" hour={18} />
                   </dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Hayrides (starting by the lake)
@@ -497,7 +497,7 @@ export default function SchedulePage() {
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base flex items-center flex-wrap gap-2">
                     7:00 PM
-                    <InlineWeather hour={19} />
+                    <InlineWeather date="2026-05-07" hour={19} />
                   </dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Evening assembly & announcements at the <LocationLink locationId="bonfire-site" onShowMap={showMapWithLocation}>bonfire</LocationLink> [no song books or projector]
@@ -507,7 +507,7 @@ export default function SchedulePage() {
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
                   <dt className="mb-3 text-sm font-semibold text-primary md:text-base flex items-center flex-wrap gap-2">
                     Evening activities or free time at the <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>Activity Center</LocationLink>:
-                    <InlineWeather hour={20} />
+                    <InlineWeather date="2026-05-07" hour={20} />
                   </dt>
                   <dd className="ml-4 space-y-2 text-sm leading-relaxed text-muted-foreground md:space-y-3 md:text-base">
                     <p>

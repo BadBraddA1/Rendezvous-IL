@@ -87,6 +87,7 @@ export async function GET() {
       const fallbackData = await fallbackResponse.json()
       
       // Transform 2.5 API response to match our format
+      // Keep all forecast data (up to 5 days) for event date lookups
       const transformedData: WeatherData = {
         current: {
           dt: Math.floor(Date.now() / 1000),
@@ -96,7 +97,7 @@ export async function GET() {
           weather: fallbackData.list[0].weather,
           wind_speed: fallbackData.list[0].wind.speed,
         },
-        hourly: fallbackData.list.slice(0, 8).map((item: any) => ({
+        hourly: fallbackData.list.map((item: any) => ({
           dt: item.dt,
           temp: item.main.temp,
           feels_like: item.main.feels_like,
@@ -114,10 +115,10 @@ export async function GET() {
 
     const data = await response.json()
     
-    // Only keep first 8 hours of hourly data
+    // Keep more hourly data for event date lookups (48 hours available in One Call)
     const weatherData: WeatherData = {
       current: data.current,
-      hourly: data.hourly.slice(0, 8),
+      hourly: data.hourly.slice(0, 48),
     }
 
     cachedData = weatherData
