@@ -1,17 +1,9 @@
 import { NextResponse } from "next/server"
-import { cookies } from "next/headers"
 import { sql } from "@/lib/db"
 
 // GET - Fetch all announcements
 export async function GET() {
   try {
-    const cookieStore = await cookies()
-    const sessionCookie = cookieStore.get("admin_session")
-
-    if (!sessionCookie || sessionCookie.value !== "authenticated") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
     const announcements = await sql`
       SELECT 
         id, title, message, priority, is_active, 
@@ -33,13 +25,6 @@ export async function GET() {
 // POST - Create new announcement
 export async function POST(request: Request) {
   try {
-    const cookieStore = await cookies()
-    const sessionCookie = cookieStore.get("admin_session")
-
-    if (!sessionCookie || sessionCookie.value !== "authenticated") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
     const body = await request.json()
     const { title, message, priority, sendToGroupMe, showOnLiveUpdates, showOnSchedule } = body
 
