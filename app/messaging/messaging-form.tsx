@@ -28,10 +28,9 @@ interface Announcement {
 
 interface MessagingFormProps {
   initialAnnouncements: Announcement[]
-  isAdmin: boolean
 }
 
-export function MessagingForm({ initialAnnouncements, isAdmin }: MessagingFormProps) {
+export function MessagingForm({ initialAnnouncements }: MessagingFormProps) {
   const [announcements, setAnnouncements] = useState<Announcement[]>(initialAnnouncements)
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState("")
@@ -46,12 +45,6 @@ export function MessagingForm({ initialAnnouncements, isAdmin }: MessagingFormPr
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    if (!isAdmin) {
-      setMessage("You must be logged in as admin to create announcements")
-      return
-    }
-    
     setIsLoading(true)
     setMessage("")
 
@@ -105,11 +98,6 @@ export function MessagingForm({ initialAnnouncements, isAdmin }: MessagingFormPr
   }
 
   const toggleActive = async (id: number, currentState: boolean) => {
-    if (!isAdmin) {
-      setMessage("You must be logged in as admin to modify announcements")
-      return
-    }
-    
     try {
       const res = await fetch(`/api/admin/announcements/${id}`, {
         method: "PATCH",
@@ -131,11 +119,6 @@ export function MessagingForm({ initialAnnouncements, isAdmin }: MessagingFormPr
   }
 
   const deleteAnnouncement = async (id: number) => {
-    if (!isAdmin) {
-      setMessage("You must be logged in as admin to delete announcements")
-      return
-    }
-    
     if (!confirm("Are you sure you want to delete this announcement?")) return
     
     try {
