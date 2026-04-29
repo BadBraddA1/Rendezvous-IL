@@ -85,6 +85,17 @@ interface VolunteerSchedule {
   closingPrayer: string | null
 }
 
+interface MealData {
+  id: number
+  meal_date: string
+  meal_type: string
+  main_dish: string
+  side_dishes: string | null
+  dessert: string | null
+  beverages: string | null
+  notes: string | null
+}
+
 const SCHEDULE_ITEMS: ScheduleItem[] = [
   // Monday May 4
   { date: '2026-05-04', day: 'Monday', time: '1:00 PM - 5:15 PM', startHour: 13, startMinute: 0, endHour: 17, endMinute: 15, title: 'Check-in at Activity Center', location: 'Activity Center' },
@@ -141,7 +152,7 @@ function getEventEmoji(title: string, isMeal?: boolean): string {
   if (lowerTitle.includes('check-in') || lowerTitle.includes('checkout')) return '📋'
   if (lowerTitle.includes('assembly') || lowerTitle.includes('announcement')) return '📢'
   if (lowerTitle.includes('session') || lowerTitle.includes('meeting')) return '👥'
-  if (lowerTitle.includes('game') || lowerTitle.includes('dodgeball') || lowerTitle.includes('knockout')) return '������'
+  if (lowerTitle.includes('game') || lowerTitle.includes('dodgeball') || lowerTitle.includes('knockout')) return '��������'
   if (lowerTitle.includes('archery')) return '🏹'
   if (lowerTitle.includes('obstacle') || lowerTitle.includes('rope')) return '🧗'
   if (lowerTitle.includes('gym') || lowerTitle.includes('sport')) return '🏀'
@@ -220,6 +231,7 @@ export default function LiveUpdatesPage() {
   const [upcomingAll, setUpcomingAll] = useState<ScheduleItem[]>([])
   const [volunteerSchedule, setVolunteerSchedule] = useState<VolunteerSchedule | null>(null)
   const [volunteerTimeSlot, setVolunteerTimeSlot] = useState<string>("")
+  const [mealData, setMealData] = useState<MealData | null>(null)
 
   // Determine available views (exclude announcements if empty)
   const availableViews = useMemo<ViewType[]>(() => {
@@ -259,6 +271,41 @@ export default function LiveUpdatesPage() {
     const interval = setInterval(fetchAnnouncements, 60 * 1000)
     return () => clearInterval(interval)
   }, [])
+
+  // Fetch meal data based on next meal
+  useEffect(() => {
+    const fetchMealData = async () => {
+      if (!nextMeal) {
+        setMealData(null)
+        return
+      }
+      
+      try {
+        const centralNow = getCentralTime()
+        const year = centralNow.getFullYear()
+        const month = String(centralNow.getMonth() + 1).padStart(2, '0')
+        const day = String(centralNow.getDate()).padStart(2, '0')
+        const centralDateStr = `${year}-${month}-${day}`
+        
+        // Determine meal type from title
+        const title = nextMeal.title.toLowerCase()
+        let mealType = 'dinner'
+        if (title.includes('breakfast')) mealType = 'breakfast'
+        else if (title.includes('lunch')) mealType = 'lunch'
+        
+        const res = await fetch(`/api/meals?date=${centralDateStr}&mealType=${mealType}`)
+        const data = await res.json()
+        if (data.meals && data.meals.length > 0) {
+          setMealData(data.meals[0])
+        } else {
+          setMealData(null)
+        }
+      } catch {
+        setMealData(null)
+      }
+    }
+    fetchMealData()
+  }, [nextMeal])
 
   // Fetch volunteer schedule
   useEffect(() => {
@@ -538,7 +585,7 @@ export default function LiveUpdatesPage() {
           <ScheduleView nowItem={nowItem} nextItem={nextItem} upcomingToday={upcomingToday} upcomingAll={upcomingAll} />
         )}
         {currentView === "meal" && (
-          <MealView nextMeal={nextMeal} />
+          <MealView nextMeal={nextMeal} mealData={mealData} />
         )}
         {currentView === "announcements" && (
           <AnnouncementsView announcements={announcements} />
@@ -950,8 +997,8 @@ function ScheduleView({
   )
 }
 
-// Meal View - Full screen meal display
-function MealView({ nextMeal }: { nextMeal: ScheduleItem | null }) {
+// Meal View - Full screen meal display with menu
+function MealView({ nextMeal, mealData }: { nextMeal: ScheduleItem | null; mealData: MealData | null }) {
   if (!nextMeal) {
     return (
       <div className="flex flex-col items-center justify-center h-full">
@@ -963,26 +1010,70 @@ function MealView({ nextMeal }: { nextMeal: ScheduleItem | null }) {
 
   return (
     <div className="flex flex-col items-center justify-center h-full">
-      <div className="text-9xl mb-8">
+      <div className="text-8xl mb-6">
         {getEventEmoji(nextMeal.title, true)}
       </div>
-      <h2 className="text-6xl font-bold mb-4">{nextMeal.title}</h2>
-      <p className="text-3xl text-white/60 mb-4">⏰ {nextMeal.time}</p>
+      <h2 className="text-5xl font-bold mb-3">{nextMeal.title}</h2>
+      <p className="text-2xl text-white/60 mb-2">{nextMeal.time}</p>
       {nextMeal.location && (
-        <p className="text-xl text-white/40">📍 {nextMeal.location}</p>
+        <p className="text-lg text-white/40 mb-8">📍 {nextMeal.location}</p>
       )}
       
-      {/* Placeholder for future menu data */}
-      {/* 
-      <div className="mt-12 p-8 rounded-2xl bg-white/5 border border-white/10 max-w-2xl">
-        <h3 className="text-xl font-semibold mb-4 text-center">Menu</h3>
-        <div className="grid grid-cols-2 gap-4">
-          {menuItems.map(item => (
-            <p key={item} className="text-white/70">{item}</p>
-          ))}
+      {/* Menu Display */}
+      {mealData ? (
+        <div className="mt-4 p-8 rounded-2xl bg-white/5 border border-white/10 max-w-2xl w-full">
+          <h3 className="text-2xl font-semibold mb-6 text-center border-b border-white/10 pb-4">Menu</h3>
+          <div className="space-y-4">
+            <div className="flex items-start gap-4">
+              <span className="text-2xl">🍖</span>
+              <div>
+                <p className="text-white/50 text-sm uppercase tracking-wider">Main Dish</p>
+                <p className="text-xl font-medium">{mealData.main_dish}</p>
+              </div>
+            </div>
+            
+            {mealData.side_dishes && (
+              <div className="flex items-start gap-4">
+                <span className="text-2xl">🥗</span>
+                <div>
+                  <p className="text-white/50 text-sm uppercase tracking-wider">Sides</p>
+                  <p className="text-lg">{mealData.side_dishes}</p>
+                </div>
+              </div>
+            )}
+            
+            {mealData.dessert && (
+              <div className="flex items-start gap-4">
+                <span className="text-2xl">🍰</span>
+                <div>
+                  <p className="text-white/50 text-sm uppercase tracking-wider">Dessert</p>
+                  <p className="text-lg">{mealData.dessert}</p>
+                </div>
+              </div>
+            )}
+            
+            {mealData.beverages && (
+              <div className="flex items-start gap-4">
+                <span className="text-2xl">🥤</span>
+                <div>
+                  <p className="text-white/50 text-sm uppercase tracking-wider">Beverages</p>
+                  <p className="text-lg">{mealData.beverages}</p>
+                </div>
+              </div>
+            )}
+            
+            {mealData.notes && (
+              <div className="mt-4 pt-4 border-t border-white/10 text-center">
+                <p className="text-white/60 italic">{mealData.notes}</p>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-      */}
+      ) : (
+        <div className="mt-8 text-white/40 text-lg">
+          Menu details coming soon...
+        </div>
+      )}
     </div>
   )
 }
