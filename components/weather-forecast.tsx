@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Cloud, CloudRain, Sun, CloudSun, Snowflake, CloudLightning, Wind, Droplets, RefreshCw } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Cloud, CloudRain, Sun, CloudSun, Snowflake, CloudLightning, Wind, Droplets, RefreshCw, AlertTriangle, Radar, X } from 'lucide-react'
 
 interface HourlyForecast {
   dt: number
@@ -193,6 +195,132 @@ export function WeatherForecast() {
         </div>
       </CardContent>
     </Card>
+  )
+}
+
+// Lake Williamson coordinates for radar
+const RADAR_LAT = 39.2795
+const RADAR_LON = -89.8820
+
+// Rain Alert Banner - shows when rain is expected in the next few hours
+export function RainAlertBanner() {
+  const [weather, setWeather] = useState<WeatherData | null>(null)
+  const [dismissed, setDismissed] = useState(false)
+  const [showRadar, setShowRadar] = useState(false)
+
+  useEffect(() => {
+    const fetchWeather = async () => {
+      try {
+        const res = await fetch('/api/weather')
+        const data = await res.json()
+        if (!data.error) setWeather(data)
+      } catch {}
+    }
+    fetchWeather()
+    const interval = setInterval(fetchWeather, 5 * 60 * 1000) // Refresh every 5 min
+    return () => clearInterval(interval)
+  }, [])
+
+  if (!weather || dismissed) return null
+
+  // Check next 6 hours for rain probability > 30%
+  const next6Hours = weather.hourly.slice(0, 6)
+  const rainyHours = next6Hours.filter(h => h.pop > 0.3)
+  
+  if (rainyHours.length === 0) return null
+
+  // Find the highest rain probability and when it occurs
+  const maxRainHour = rainyHours.reduce((max, h) => h.pop > max.pop ? h : max, rainyHours[0])
+  const rainTime = new Date(maxRainHour.dt * 1000).toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: 'America/Chicago',
+  })
+
+  // Determine severity
+  const maxPop = Math.round(maxRainHour.pop * 100)
+  const isStorm = maxRainHour.weather[0].id >= 200 && maxRainHour.weather[0].id < 300
+  const isHeavyRain = maxRainHour.weather[0].id >= 500 && maxRainHour.weather[0].id < 600
+
+  const bgColor = isStorm 
+    ? 'bg-gradient-to-r from-yellow-500/90 to-orange-500/90' 
+    : maxPop >= 70 
+    ? 'bg-gradient-to-r from-blue-500/90 to-blue-600/90'
+    : 'bg-gradient-to-r from-blue-400/80 to-blue-500/80'
+
+  const alertMessage = isStorm 
+    ? 'Thunderstorms expected'
+    : isHeavyRain
+    ? 'Rain likely'
+    : 'Chance of rain'
+
+  return (
+    <>
+      <div className={`${bgColor} text-white rounded-lg px-4 py-3 flex items-center justify-between gap-4 shadow-lg`}>
+        <div className="flex items-center gap-3">
+          {isStorm ? (
+            <CloudLightning className="h-6 w-6 flex-shrink-0 animate-pulse" />
+          ) : (
+            <CloudRain className="h-6 w-6 flex-shrink-0" />
+          )}
+          <div>
+            <p className="font-semibold flex items-center gap-2">
+              {alertMessage}
+              <span className="bg-white/20 px-2 py-0.5 rounded text-sm">{maxPop}% chance</span>
+            </p>
+            <p className="text-sm text-white/90">
+              Around {rainTime} - {maxRainHour.weather[0].description}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-white hover:bg-white/20 gap-1.5"
+            onClick={() => setShowRadar(true)}
+          >
+            <Radar className="h-4 w-4" />
+            <span className="hidden sm:inline">View Radar</span>
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-white/70 hover:text-white hover:bg-white/20 h-8 w-8"
+            onClick={() => setDismissed(true)}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Radar Dialog */}
+      <Dialog open={showRadar} onOpenChange={setShowRadar}>
+        <DialogContent className="max-w-4xl w-[95vw]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Radar className="h-5 w-5 text-blue-500" />
+              Weather Radar - Lake Williamson Area
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* Embedded radar from weather.gov or windy */}
+            <div className="aspect-video rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
+              <iframe
+                src={`https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=in&metricTemp=°F&metricWind=mph&zoom=8&overlay=radar&product=radar&level=surface&lat=${RADAR_LAT}&lon=${RADAR_LON}&detailLat=${RADAR_LAT}&detailLon=${RADAR_LON}&marker=true&message=true`}
+                className="w-full h-full border-0"
+                title="Weather Radar"
+                loading="lazy"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground text-center">
+              Radar data provided by Windy.com - showing precipitation around Lake Williamson Christian Center
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
 
