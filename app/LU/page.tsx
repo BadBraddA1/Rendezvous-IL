@@ -119,6 +119,30 @@ export default function LiveUpdatesPage() {
   const [nowItem, setNowItem] = useState<ScheduleItem | null>(null)
   const [nextItems, setNextItems] = useState<ScheduleItem[]>([])
   const [autoRotate, setAutoRotate] = useState(true)
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  const [scheduleRotateIndex, setScheduleRotateIndex] = useState(0)
+
+  // Toggle fullscreen
+  const toggleFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().then(() => {
+        setIsFullscreen(true)
+      }).catch(() => {})
+    } else {
+      document.exitFullscreen().then(() => {
+        setIsFullscreen(false)
+      }).catch(() => {})
+    }
+  }, [])
+
+  // Listen for fullscreen changes (e.g., user presses Escape in fullscreen)
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement)
+    }
+    document.addEventListener('fullscreenchange', handleFullscreenChange)
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
+  }, [])
 
   // Keyboard controls
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
@@ -144,12 +168,18 @@ export default function LiveUpdatesPage() {
       case 'A':
         setAutoRotate(true)
         break
+      case 'f':
+      case 'F':
+        toggleFullscreen()
+        break
       case 'Escape':
-        setAutoRotate(true)
-        setViewMode('all')
+        if (!document.fullscreenElement) {
+          setAutoRotate(true)
+          setViewMode('all')
+        }
         break
     }
-  }, [])
+  }, [toggleFullscreen])
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown)
@@ -170,6 +200,21 @@ export default function LiveUpdatesPage() {
     
     return () => clearInterval(interval)
   }, [autoRotate])
+
+  // Rotate through schedule items when in schedule view or fullscreen
+  useEffect(() => {
+    if (viewMode !== 'schedule' && !isFullscreen) return
+    
+    const interval = setInterval(() => {
+      setScheduleRotateIndex(prev => {
+        const totalItems = nextItems.length + (nowItem ? 1 : 0)
+        if (totalItems === 0) return 0
+        return (prev + 1) % totalItems
+      })
+    }, 5000) // Rotate schedule items every 5 seconds
+    
+    return () => clearInterval(interval)
+  }, [viewMode, isFullscreen, nextItems.length, nowItem])
 
   // Update time every second
   useEffect(() => {
@@ -475,9 +520,16 @@ export default function LiveUpdatesPage() {
               <kbd className={`px-3 py-1 rounded text-sm ${viewMode === 'schedule' ? 'bg-primary text-white' : 'bg-white/10'}`}>3 Schedule</kbd>
               <kbd className={`px-3 py-1 rounded text-sm ${viewMode === 'meal' ? 'bg-primary text-white' : 'bg-white/10'}`}>4 Meal</kbd>
               <kbd className={`px-3 py-1 rounded text-sm ${autoRotate ? 'bg-green-600 text-white' : 'bg-white/10'}`}>0/A Auto</kbd>
+              <kbd className={`px-3 py-1 rounded text-sm ${isFullscreen ? 'bg-blue-600 text-white' : 'bg-white/10'}`}>F Fullscreen</kbd>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
+            {isFullscreen && (
+              <span className="text-blue-400 text-sm flex items-center gap-2">
+                <span className="h-2 w-2 bg-blue-400 rounded-full animate-pulse" />
+                Fullscreen
+              </span>
+            )}
             {autoRotate && (
               <span className="text-green-400 text-sm flex items-center gap-2">
                 <span className="h-2 w-2 bg-green-400 rounded-full animate-pulse" />
