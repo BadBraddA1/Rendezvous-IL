@@ -1,21 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import dynamic from 'next/dynamic'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Cloud, CloudRain, Sun, CloudSun, Snowflake, CloudLightning, Wind, Droplets, RefreshCw, Radar, X } from 'lucide-react'
-
-// Dynamically import WeatherRadar to avoid SSR issues with Leaflet
-const WeatherRadar = dynamic(() => import('@/components/weather-radar').then(mod => mod.WeatherRadar), {
-  ssr: false,
-  loading: () => (
-    <div className="aspect-video rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-      <div className="text-muted-foreground text-sm">Loading radar...</div>
-    </div>
-  ),
-})
+import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Cloud, CloudRain, Sun, CloudSun, Snowflake, CloudLightning, Wind, Droplets, RefreshCw } from 'lucide-react'
 
 interface HourlyForecast {
   dt: number
@@ -217,7 +206,6 @@ const RADAR_LON = -89.8820
 export function RainAlertBanner() {
   const [weather, setWeather] = useState<WeatherData | null>(null)
   const [showAlert, setShowAlert] = useState(false)
-  const [showRadar, setShowRadar] = useState(false)
 
   useEffect(() => {
     const fetchWeather = async () => {
@@ -285,79 +273,45 @@ export function RainAlertBanner() {
     : 'Keep an eye on the sky - you might need an umbrella!'
 
   return (
-    <>
-      {/* Full-page Rain Alert Dialog */}
-      <Dialog open={showAlert} onOpenChange={setShowAlert}>
-        <DialogContent className="max-w-md">
-          <div className="text-center space-y-4">
-            {/* Weather icon */}
-            <div className={`mx-auto w-20 h-20 rounded-full flex items-center justify-center ${
-              isStorm ? 'bg-yellow-100 dark:bg-yellow-900/30' : 'bg-blue-100 dark:bg-blue-900/30'
-            }`}>
-              {isStorm ? (
-                <CloudLightning className="h-10 w-10 text-yellow-600 dark:text-yellow-400 animate-pulse" />
-              ) : (
-                <CloudRain className="h-10 w-10 text-blue-600 dark:text-blue-400" />
-              )}
-            </div>
-            
-            {/* Alert title */}
-            <div>
-              <h2 className="text-2xl font-bold text-foreground">{alertMessage}</h2>
-              <p className="text-lg text-primary font-semibold">{maxPop}% chance around {rainTime}</p>
-            </div>
-            
-            {/* Weather details */}
-            <p className="text-muted-foreground">
-              {alertDescription}
-            </p>
-            
-            <p className="text-sm text-muted-foreground capitalize">
-              Expected: {maxRainHour.weather[0].description}
-            </p>
-            
-            {/* Actions */}
-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              <Button
-                variant="outline"
-                className="flex-1 gap-2"
-                onClick={() => {
-                  setShowAlert(false)
-                  setShowRadar(true)
-                }}
-              >
-                <Radar className="h-4 w-4" />
-                View Radar
-              </Button>
-              <Button
-                className="flex-1"
-                onClick={() => setShowAlert(false)}
-              >
-                Got it!
-              </Button>
-            </div>
+    <Dialog open={showAlert} onOpenChange={setShowAlert}>
+      <DialogContent className="max-w-md">
+        <div className="text-center space-y-4">
+          {/* Weather icon */}
+          <div className={`mx-auto w-20 h-20 rounded-full flex items-center justify-center ${
+            isStorm ? 'bg-yellow-100 dark:bg-yellow-900/30' : 'bg-blue-100 dark:bg-blue-900/30'
+          }`}>
+            {isStorm ? (
+              <CloudLightning className="h-10 w-10 text-yellow-600 dark:text-yellow-400 animate-pulse" />
+            ) : (
+              <CloudRain className="h-10 w-10 text-blue-600 dark:text-blue-400" />
+            )}
           </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Radar Dialog */}
-      <Dialog open={showRadar} onOpenChange={setShowRadar}>
-        <DialogContent className="max-w-4xl w-[95vw]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Radar className="h-5 w-5 text-blue-500" />
-              Weather Radar - Lake Williamson Area
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <WeatherRadar />
-            <p className="text-xs text-muted-foreground text-center">
-              Radar data provided by OpenWeatherMap - showing precipitation around Lake Williamson Christian Center
-            </p>
+          
+          {/* Alert title */}
+          <div>
+            <h2 className="text-2xl font-bold text-foreground">{alertMessage}</h2>
+            <p className="text-lg text-primary font-semibold">{maxPop}% chance around {rainTime}</p>
           </div>
-        </DialogContent>
-      </Dialog>
-    </>
+          
+          {/* Weather details */}
+          <p className="text-muted-foreground">
+            {alertDescription}
+          </p>
+          
+          <p className="text-sm text-muted-foreground capitalize">
+            Expected: {maxRainHour.weather[0].description}
+          </p>
+          
+          {/* Actions */}
+          <Button
+            className="w-full"
+            onClick={() => setShowAlert(false)}
+          >
+            Got it!
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   )
 }
 
