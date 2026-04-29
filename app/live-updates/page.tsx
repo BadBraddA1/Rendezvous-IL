@@ -664,7 +664,7 @@ function ScheduleCard({
 
   return (
     <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
-      <div className="flex items-center justify-center gap-2 text-white/60 text-sm mb-4">
+      <div className="flex items-center gap-2 text-white/60 text-sm mb-4">
         <Calendar className="h-4 w-4" />
         <span className="uppercase tracking-wider font-medium">Schedule</span>
       </div>
@@ -681,12 +681,14 @@ function ScheduleCard({
                   : "bg-white/5 border-white/10"
               }`}
             >
-              <div className="flex items-center gap-3 justify-center">
-                {isNow && <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse shrink-0" />}
-                <span className="text-xl shrink-0">{getEventEmoji(item.title, item.isMeal)}</span>
-                <div className="min-w-0">
-                  <p className="font-medium text-sm">{item.title}</p>
-                  <p className="text-xs text-white/50">
+              <div className="flex items-start gap-3">
+                <div className="flex items-center gap-2 shrink-0 pt-0.5">
+                  {isNow && <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />}
+                  <span className="text-lg">{getEventEmoji(item.title, item.isMeal)}</span>
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium text-sm leading-tight">{item.title}</p>
+                  <p className="text-xs text-white/50 mt-0.5">
                     {isNow ? "NOW" : `${item.day} ${item.time}`}
                   </p>
                 </div>
@@ -739,17 +741,17 @@ function AllView({
     <div className={`grid grid-cols-1 gap-6 w-full max-w-5xl ${hasVolunteers ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
       {/* Weather Card */}
       <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
-        <div className="flex items-center justify-center gap-2 text-white/60 text-sm mb-6">
+        <div className="flex items-center gap-2 text-white/60 text-sm mb-6">
           <Droplets className="h-4 w-4" />
           <span className="uppercase tracking-wider font-medium">Weather</span>
         </div>
         {weather ? (
           <div className="space-y-6">
-            <div className="flex items-center justify-center gap-4">
+            <div className="flex items-center gap-4">
               {getWeatherIcon(weather.current.weather[0].id, weather.current.weather[0].icon, "md")}
               <span className="text-5xl font-bold">{Math.round(weather.current.temp)}°</span>
             </div>
-            <p className="text-white/70 capitalize text-center">{weather.current.weather[0].description}</p>
+            <p className="text-white/70 capitalize">{weather.current.weather[0].description}</p>
             <div className="grid grid-cols-3 gap-2">
               {weather.hourly.slice(0, 3).map((hour) => (
                 <div key={hour.dt} className="text-center p-3 rounded-xl bg-white/5">
@@ -778,7 +780,7 @@ function AllView({
 
       {/* Next Meal Card */}
       <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
-        <div className="flex items-center justify-center gap-2 text-white/60 text-sm mb-6">
+        <div className="flex items-center gap-2 text-white/60 text-sm mb-6">
           <Clock className="h-4 w-4" />
           <span className="uppercase tracking-wider font-medium">Next Meal</span>
         </div>
