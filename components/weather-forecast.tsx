@@ -371,15 +371,10 @@ export function InlineWeather({ date, hour }: { date: string; hour: number }) {
   }
 
   // Only show if forecast is within 3 hours of target time (data is available)
-  // If target is too far in the future, don't show anything
+  // If target is too far in the future, hide the badge entirely
   const threeHoursInSeconds = 3 * 60 * 60
   if (smallestDiff > threeHoursInSeconds) {
-    return (
-      <span className="inline-flex items-center gap-1 ml-2 px-2 py-0.5 rounded-full bg-gray-100/50 dark:bg-gray-800/30 text-xs text-muted-foreground">
-        <Cloud className="h-4 w-4" />
-        <span>Forecast unavailable</span>
-      </span>
-    )
+    return null
   }
 
   return (
