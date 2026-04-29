@@ -3,12 +3,14 @@
 import Link from "next/link"
 import Image from "next/image"
 import { useState } from "react"
-import { Menu } from "lucide-react"
+import { Menu, Sun } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { WeatherAssistant } from "@/components/weather-assistant"
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false)
+  const [showRay, setShowRay] = useState(false)
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-xl">
@@ -43,7 +45,18 @@ export function SiteHeader() {
           <Link href="/calculator" className="text-sm font-medium transition-colors hover:text-primary">
             Calculator
           </Link>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5 border-primary/30 hover:bg-primary/10"
+            onClick={() => setShowRay(true)}
+          >
+            <Sun className="h-4 w-4 text-yellow-500" />
+            Ask Ray
+          </Button>
         </div>
+        
+        <WeatherAssistant open={showRay} onOpenChange={setShowRay} />
 
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild className="md:hidden">
@@ -95,6 +108,18 @@ export function SiteHeader() {
               >
                 Calculator
               </Link>
+              <Button
+                variant="outline"
+                size="lg"
+                className="gap-2 border-primary/30 hover:bg-primary/10"
+                onClick={() => {
+                  setOpen(false)
+                  setShowRay(true)
+                }}
+              >
+                <Sun className="h-5 w-5 text-yellow-500" />
+                Ask Ray
+              </Button>
             </nav>
           </SheetContent>
         </Sheet>

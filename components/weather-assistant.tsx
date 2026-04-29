@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Sun, CloudRain, Cloud, ThumbsUp, ThumbsDown, Meh, RefreshCw, MessageCircle } from 'lucide-react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Sun, CloudRain, Cloud, ThumbsUp, ThumbsDown, Meh, RefreshCw } from 'lucide-react'
 
 type OutdoorRating = 'excellent' | 'good' | 'fair' | 'poor' | 'unknown'
 
@@ -86,11 +86,15 @@ function RayAvatar({ className = "h-10 w-10" }: { className?: string }) {
   )
 }
 
-export function WeatherAssistant() {
+type WeatherAssistantProps = {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}
+
+export function WeatherAssistant({ open, onOpenChange }: WeatherAssistantProps) {
   const [data, setData] = useState<WeatherAssistantData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
-  const [open, setOpen] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -115,39 +119,8 @@ export function WeatherAssistant() {
     return () => clearInterval(interval)
   }, [])
 
-  // Determine quick status for button
-  const getQuickStatus = () => {
-    if (!data?.today) return { text: "Check weather", color: "bg-primary" }
-    const rating = data.today.outdoor.rating
-    if (rating === 'excellent' || rating === 'good') {
-      return { text: "Great day ahead!", color: "bg-green-500 hover:bg-green-600" }
-    } else if (rating === 'fair') {
-      return { text: "Mixed conditions", color: "bg-yellow-500 hover:bg-yellow-600" }
-    } else {
-      return { text: "Indoor day likely", color: "bg-red-500 hover:bg-red-600" }
-    }
-  }
-
-  const quickStatus = getQuickStatus()
-
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button 
-          variant="outline" 
-          className="w-full sm:w-auto gap-3 py-6 px-5 border-primary/30 bg-gradient-to-r from-primary/5 to-orange-500/5 hover:from-primary/10 hover:to-orange-500/10 transition-all"
-        >
-          <RayAvatar className="h-8 w-8" />
-          <div className="flex flex-col items-start">
-            <span className="font-semibold text-foreground">Ask Ray</span>
-            <span className="text-xs text-muted-foreground">
-              {loading ? "Loading..." : error ? "Weather assistant" : quickStatus.text}
-            </span>
-          </div>
-          <MessageCircle className="h-4 w-4 ml-auto text-muted-foreground" />
-        </Button>
-      </DialogTrigger>
-      
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">

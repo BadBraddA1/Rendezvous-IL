@@ -213,10 +213,10 @@ export function WeatherForecast() {
 const RADAR_LAT = 39.2795
 const RADAR_LON = -89.8820
 
-// Rain Alert Banner - shows when rain is expected in the next few hours
+// Rain Alert Popup - shows once per day when rain is expected
 export function RainAlertBanner() {
   const [weather, setWeather] = useState<WeatherData | null>(null)
-  const [dismissed, setDismissed] = useState(false)
+  const [showAlert, setShowAlert] = useState(false)
   const [showRadar, setShowRadar] = useState(false)
 
   useEffect(() => {
@@ -228,11 +228,29 @@ export function RainAlertBanner() {
       } catch {}
     }
     fetchWeather()
-    const interval = setInterval(fetchWeather, 5 * 60 * 1000) // Refresh every 5 min
-    return () => clearInterval(interval)
   }, [])
 
-  if (!weather || dismissed) return null
+  // Check if we should show the alert (once per day)
+  useEffect(() => {
+    if (!weather) return
+    
+    // Check next 6 hours for rain probability > 30%
+    const next6Hours = weather.hourly.slice(0, 6)
+    const rainyHours = next6Hours.filter(h => h.pop > 0.3)
+    
+    if (rainyHours.length === 0) return
+    
+    // Check localStorage for last shown date
+    const today = new Date().toDateString()
+    const lastShown = localStorage.getItem('rainAlertLastShown')
+    
+    if (lastShown !== today) {
+      setShowAlert(true)
+      localStorage.setItem('rainAlertLastShown', today)
+    }
+  }, [weather])
+
+  if (!weather) return null
 
   // Check next 6 hours for rain probability > 30%
   const next6Hours = weather.hourly.slice(0, 6)
@@ -254,59 +272,75 @@ export function RainAlertBanner() {
   const isStorm = maxRainHour.weather[0].id >= 200 && maxRainHour.weather[0].id < 300
   const isHeavyRain = maxRainHour.weather[0].id >= 500 && maxRainHour.weather[0].id < 600
 
-  const bgColor = isStorm 
-    ? 'bg-gradient-to-r from-yellow-500/90 to-orange-500/90' 
-    : maxPop >= 70 
-    ? 'bg-gradient-to-r from-blue-500/90 to-blue-600/90'
-    : 'bg-gradient-to-r from-blue-400/80 to-blue-500/80'
-
   const alertMessage = isStorm 
-    ? 'Thunderstorms expected'
+    ? 'Thunderstorms Expected'
     : isHeavyRain
-    ? 'Rain likely'
-    : 'Chance of rain'
+    ? 'Rain Likely Today'
+    : 'Chance of Rain'
+
+  const alertDescription = isStorm
+    ? 'Outdoor activities may need to be moved inside. Stay safe!'
+    : isHeavyRain
+    ? 'Consider bringing rain gear or planning indoor alternatives.'
+    : 'Keep an eye on the sky - you might need an umbrella!'
 
   return (
     <>
-      <div className={`${bgColor} text-white rounded-lg px-4 py-3 flex items-center justify-between gap-4 shadow-lg`}>
-        <div className="flex items-center gap-3">
-          {isStorm ? (
-            <CloudLightning className="h-6 w-6 flex-shrink-0 animate-pulse" />
-          ) : (
-            <CloudRain className="h-6 w-6 flex-shrink-0" />
-          )}
-          <div>
-            <p className="font-semibold flex items-center gap-2">
-              {alertMessage}
-              <span className="bg-white/20 px-2 py-0.5 rounded text-sm">{maxPop}% chance</span>
+      {/* Full-page Rain Alert Dialog */}
+      <Dialog open={showAlert} onOpenChange={setShowAlert}>
+        <DialogContent className="max-w-md">
+          <div className="text-center space-y-4">
+            {/* Weather icon */}
+            <div className={`mx-auto w-20 h-20 rounded-full flex items-center justify-center ${
+              isStorm ? 'bg-yellow-100 dark:bg-yellow-900/30' : 'bg-blue-100 dark:bg-blue-900/30'
+            }`}>
+              {isStorm ? (
+                <CloudLightning className="h-10 w-10 text-yellow-600 dark:text-yellow-400 animate-pulse" />
+              ) : (
+                <CloudRain className="h-10 w-10 text-blue-600 dark:text-blue-400" />
+              )}
+            </div>
+            
+            {/* Alert title */}
+            <div>
+              <h2 className="text-2xl font-bold text-foreground">{alertMessage}</h2>
+              <p className="text-lg text-primary font-semibold">{maxPop}% chance around {rainTime}</p>
+            </div>
+            
+            {/* Weather details */}
+            <p className="text-muted-foreground">
+              {alertDescription}
             </p>
-            <p className="text-sm text-white/90">
-              Around {rainTime} - {maxRainHour.weather[0].description}
+            
+            <p className="text-sm text-muted-foreground capitalize">
+              Expected: {maxRainHour.weather[0].description}
             </p>
+            
+            {/* Actions */}
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <Button
+                variant="outline"
+                className="flex-1 gap-2"
+                onClick={() => {
+                  setShowAlert(false)
+                  setShowRadar(true)
+                }}
+              >
+                <Radar className="h-4 w-4" />
+                View Radar
+              </Button>
+              <Button
+                className="flex-1"
+                onClick={() => setShowAlert(false)}
+              >
+                Got it!
+              </Button>
+            </div>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-white hover:bg-white/20 gap-1.5"
-            onClick={() => setShowRadar(true)}
-          >
-            <Radar className="h-4 w-4" />
-            <span className="hidden sm:inline">View Radar</span>
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-white/70 hover:text-white hover:bg-white/20 h-8 w-8"
-            onClick={() => setDismissed(true)}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
+        </DialogContent>
+      </Dialog>
 
-      {/* Radar Dialog - Using OpenWeatherMap radar tiles */}
+      {/* Radar Dialog */}
       <Dialog open={showRadar} onOpenChange={setShowRadar}>
         <DialogContent className="max-w-4xl w-[95vw]">
           <DialogHeader>
