@@ -7,7 +7,7 @@ import { SiteFooter } from "@/components/site-footer"
 import { useState } from "react"
 import { NowNextSchedule } from "@/components/now-next-schedule"
 import { VolunteerSchedule } from "@/components/volunteer-schedule"
-import { WeatherForecast, InlineWeather, RainAlertBanner } from "@/components/weather-forecast"
+import { WeatherForecast, InlineWeather } from "@/components/weather-forecast"
 import { ScheduleMap } from "@/components/schedule-map"
 import { LocationLink } from "@/components/location-link"
 
@@ -46,7 +46,6 @@ export default function SchedulePage() {
 
       <main className="container mx-auto px-4 py-8 md:py-12">
         <div className="mb-8 space-y-4">
-          <RainAlertBanner />
           <NowNextSchedule />
           <WeatherForecast />
         </div>
@@ -373,7 +372,7 @@ export default function SchedulePage() {
                       <span className="font-semibold text-foreground">2:30 PM</span> Gaga Ball Tournament
                     </p>
                     <p>
-                      <span className="font-semibold text-foreground">3:30 PM</span> Kids&apos; movie & craft in <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>AC Room 207</LocationLink>
+                      <span className="font-semibold text-foreground">3:30 PM</span> Kids&apos; movie & craft (Painting rocks) in <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>AC Room 207</LocationLink>
                     </p>
                     <p>
                       <span className="font-semibold text-foreground">3:30 PM</span> <LocationLink locationId="disc-golf" onShowMap={showMapWithLocation}>Disc golf</LocationLink> (begins behind <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>Activity Center</LocationLink>)
