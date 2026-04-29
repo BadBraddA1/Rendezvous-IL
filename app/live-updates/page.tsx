@@ -250,17 +250,10 @@ export default function LiveUpdatesPage() {
     )
   }, [volunteerSchedule])
 
-  // Determine available views (exclude empty sections)
+  // Always show all tabs for testing
   const availableViews = useMemo<ViewType[]>(() => {
-    const base: ViewType[] = ["all", "weather", "schedule", "meal"]
-    if (hasVolunteerData) {
-      base.push("volunteers")
-    }
-    if (announcements.length > 0) {
-      base.push("announcements")
-    }
-    return base
-  }, [announcements.length, hasVolunteerData])
+    return ["all", "weather", "schedule", "meal", "volunteers", "announcements"]
+  }, [])
 
   // Fetch weather
   useEffect(() => {
@@ -630,12 +623,8 @@ export default function LiveUpdatesPage() {
           <KeyButton label="2 Weather" active={currentView === "weather"} />
           <KeyButton label="3 Schedule" active={currentView === "schedule"} />
           <KeyButton label="4 Meal" active={currentView === "meal"} />
-          {hasVolunteerData && (
-            <KeyButton label="5 Volunteers" active={currentView === "volunteers"} />
-          )}
-          {announcements.length > 0 && (
-            <KeyButton label="6 Announcements" active={currentView === "announcements"} />
-          )}
+          <KeyButton label="5 Volunteers" active={currentView === "volunteers"} />
+          <KeyButton label="6 Announcements" active={currentView === "announcements"} />
           <KeyButton label="0/A Auto" active={isAutoRotating} />
           <KeyButton label="F Fullscreen" active={isFullscreen} />
           {isAutoRotating && (
