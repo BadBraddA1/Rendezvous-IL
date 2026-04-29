@@ -10,6 +10,7 @@ import { VolunteerSchedule } from "@/components/volunteer-schedule"
 import { WeatherForecast, InlineWeather } from "@/components/weather-forecast"
 import { ScheduleMap } from "@/components/schedule-map"
 import { LocationLink } from "@/components/location-link"
+import { ScheduleAnnouncements } from "@/components/schedule-announcements"
 
 export default function SchedulePage() {
   const [activeDay, setActiveDay] = useState<string>("")
@@ -46,6 +47,7 @@ export default function SchedulePage() {
 
       <main className="container mx-auto px-4 py-8 md:py-12">
         <div className="mb-8 space-y-4">
+          <ScheduleAnnouncements />
           <NowNextSchedule />
           <WeatherForecast />
         </div>
