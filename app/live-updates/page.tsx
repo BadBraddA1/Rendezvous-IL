@@ -513,16 +513,12 @@ export default function LiveUpdatesPage() {
           setIsAutoRotating(false)
           break
         case "5":
-          if (hasVolunteerData) {
-            setCurrentView("volunteers")
-            setIsAutoRotating(false)
-          }
+          setCurrentView("volunteers")
+          setIsAutoRotating(false)
           break
         case "6":
-          if (announcements.length > 0) {
-            setCurrentView("announcements")
-            setIsAutoRotating(false)
-          }
+          setCurrentView("announcements")
+          setIsAutoRotating(false)
           break
         case "0":
         case "a":
