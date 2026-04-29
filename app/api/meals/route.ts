@@ -21,7 +21,7 @@ export async function GET(request: Request) {
       query += ` AND meal_type = $${params.length}`
     }
 
-    query += ` ORDER BY date, CASE meal_type WHEN 'breakfast' THEN 1 WHEN 'lunch' THEN 2 WHEN 'dinner' THEN 3 END`
+    query += ` ORDER BY date ASC, CASE meal_type WHEN 'breakfast' THEN 1 WHEN 'lunch' THEN 2 WHEN 'dinner' THEN 3 END`
 
     const meals = await sql(query, params)
 
