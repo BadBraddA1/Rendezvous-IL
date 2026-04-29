@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation"
+import { cookies } from "next/headers"
 import { MessagingForm } from "./messaging-form"
 import { sql } from "@/lib/db"
 
@@ -17,6 +19,13 @@ interface Announcement {
 }
 
 export default async function MessagingPage() {
+  // Check admin authentication
+  const cookieStore = await cookies()
+  const sessionCookie = cookieStore.get("admin_session")
+
+  if (!sessionCookie || sessionCookie.value !== "authenticated") {
+    redirect("/admin/login")
+  }
   // Fetch existing announcements
   let announcements: Announcement[] = []
   
