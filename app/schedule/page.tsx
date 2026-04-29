@@ -7,6 +7,7 @@ import { SiteFooter } from "@/components/site-footer"
 import { useState } from "react"
 import { NowNextSchedule } from "@/components/now-next-schedule"
 import { VolunteerSchedule } from "@/components/volunteer-schedule"
+import { WeatherForecast, InlineWeather } from "@/components/weather-forecast"
 import { ScheduleMap } from "@/components/schedule-map"
 import { LocationLink } from "@/components/location-link"
 
@@ -44,8 +45,9 @@ export default function SchedulePage() {
       <SiteHeader />
 
       <main className="container mx-auto px-4 py-8 md:py-12">
-        <div className="mb-8">
+        <div className="mb-8 space-y-4">
           <NowNextSchedule />
+          <WeatherForecast />
         </div>
 
         <div className="mb-8 text-center md:mb-12">
@@ -259,8 +261,9 @@ export default function SchedulePage() {
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
-                  <dt className="mb-3 text-sm font-semibold text-primary md:text-base">
+                  <dt className="mb-3 text-sm font-semibold text-primary md:text-base flex items-center flex-wrap gap-2">
                     Outside afternoon activities (weather permitting) or free time:
+                    <InlineWeather date="2026-05-05" hour={14} />
                   </dt>
                   <dd className="ml-4 space-y-2 text-sm leading-relaxed text-muted-foreground md:space-y-3 md:text-base">
                     <p>
@@ -357,8 +360,9 @@ export default function SchedulePage() {
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
-                  <dt className="mb-3 text-sm font-semibold text-primary md:text-base">
+                  <dt className="mb-3 text-sm font-semibold text-primary md:text-base flex items-center flex-wrap gap-2">
                     Outside afternoon activities (weather permitting) or free time:
+                    <InlineWeather date="2026-05-06" hour={14} />
                   </dt>
                   <dd className="ml-4 space-y-2 text-sm leading-relaxed text-muted-foreground md:space-y-3 md:text-base">
                     <p>
@@ -454,8 +458,9 @@ export default function SchedulePage() {
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
-                  <dt className="mb-3 text-sm font-semibold text-primary md:text-base">
+                  <dt className="mb-3 text-sm font-semibold text-primary md:text-base flex items-center flex-wrap gap-2">
                     Outside afternoon activities (weather permitting) or free time:
+                    <InlineWeather date="2026-05-07" hour={14} />
                   </dt>
                   <dd className="ml-4 space-y-2 text-sm leading-relaxed text-muted-foreground md:space-y-3 md:text-base">
                     <p>
@@ -472,27 +477,37 @@ export default function SchedulePage() {
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
-                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">5:30 PM</dt>
+                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base flex items-center flex-wrap gap-2">
+                    5:30 PM
+                    <InlineWeather date="2026-05-07" hour={17} />
+                  </dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Cookout by the lake (weather permitting)
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
-                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">6:30 PM</dt>
+                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base flex items-center flex-wrap gap-2">
+                    6:30 PM
+                    <InlineWeather date="2026-05-07" hour={18} />
+                  </dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Hayrides (starting by the lake)
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
-                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">7:00 PM</dt>
+                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base flex items-center flex-wrap gap-2">
+                    7:00 PM
+                    <InlineWeather date="2026-05-07" hour={19} />
+                  </dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Evening assembly & announcements at the <LocationLink locationId="bonfire-site" onShowMap={showMapWithLocation}>bonfire</LocationLink> [no song books or projector]
                     <VolunteerSchedule date="2026-05-07" timeSlot="Evening Devotion" />
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
-                  <dt className="mb-3 text-sm font-semibold text-primary md:text-base">
+                  <dt className="mb-3 text-sm font-semibold text-primary md:text-base flex items-center flex-wrap gap-2">
                     Evening activities or free time at the <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>Activity Center</LocationLink>:
+                    <InlineWeather date="2026-05-07" hour={20} />
                   </dt>
                   <dd className="ml-4 space-y-2 text-sm leading-relaxed text-muted-foreground md:space-y-3 md:text-base">
                     <p>
