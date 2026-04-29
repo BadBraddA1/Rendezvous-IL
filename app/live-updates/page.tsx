@@ -251,10 +251,17 @@ export default function LiveUpdatesPage() {
     )
   }, [volunteerSchedule])
 
-  // Always show all tabs for testing
+  // Conditionally show tabs based on available data
   const availableViews = useMemo<ViewType[]>(() => {
-    return ["all", "weather", "schedule", "meal", "volunteers", "announcements"]
-  }, [])
+    const views: ViewType[] = ["all", "weather", "schedule", "meal"]
+    if (hasVolunteerData) {
+      views.push("volunteers")
+    }
+    if (announcements.length > 0) {
+      views.push("announcements")
+    }
+    return views
+  }, [hasVolunteerData, announcements.length])
 
   // Fetch weather
   useEffect(() => {
@@ -513,12 +520,16 @@ export default function LiveUpdatesPage() {
           setIsAutoRotating(false)
           break
         case "5":
-          setCurrentView("volunteers")
-          setIsAutoRotating(false)
+          if (hasVolunteerData) {
+            setCurrentView("volunteers")
+            setIsAutoRotating(false)
+          }
           break
         case "6":
-          setCurrentView("announcements")
-          setIsAutoRotating(false)
+          if (announcements.length > 0) {
+            setCurrentView("announcements")
+            setIsAutoRotating(false)
+          }
           break
         case "0":
         case "a":
@@ -620,8 +631,12 @@ export default function LiveUpdatesPage() {
           <KeyButton label="2 Weather" active={currentView === "weather"} />
           <KeyButton label="3 Schedule" active={currentView === "schedule"} />
           <KeyButton label="4 Meal" active={currentView === "meal"} />
-          <KeyButton label="5 Volunteers" active={currentView === "volunteers"} />
-          <KeyButton label="6 Announcements" active={currentView === "announcements"} />
+          {hasVolunteerData && (
+            <KeyButton label="5 Volunteers" active={currentView === "volunteers"} />
+          )}
+          {announcements.length > 0 && (
+            <KeyButton label="6 Announcements" active={currentView === "announcements"} />
+          )}
           <KeyButton label="0/A Auto" active={isAutoRotating} />
           <KeyButton label="F Fullscreen" active={isFullscreen} />
           {isAutoRotating && (

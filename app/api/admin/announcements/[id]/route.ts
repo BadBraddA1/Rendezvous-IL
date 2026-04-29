@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server"
-import { cookies } from "next/headers"
 import { sql } from "@/lib/db"
 
 // PATCH - Update announcement
@@ -8,13 +7,6 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const cookieStore = await cookies()
-    const sessionCookie = cookieStore.get("admin_session")
-
-    if (!sessionCookie || sessionCookie.value !== "authenticated") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
     const { id } = await params
     const body = await request.json()
     const { is_active, show_on_live_updates, show_on_schedule } = body
@@ -57,13 +49,6 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const cookieStore = await cookies()
-    const sessionCookie = cookieStore.get("admin_session")
-
-    if (!sessionCookie || sessionCookie.value !== "authenticated") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
     const { id } = await params
 
     await sql`
