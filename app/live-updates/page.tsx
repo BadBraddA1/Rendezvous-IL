@@ -568,7 +568,7 @@ function AllView({
   volunteerTimeSlot: string
 }) {
   // Check if volunteer schedule has any filled items
-  const volunteerItems = volunteerSchedule ? [
+  const volunteerItems: { label: string; value: string | null; subtitle?: string | null; emoji: string }[] = volunteerSchedule ? [
     { label: "Opening Prayer", value: volunteerSchedule.openingPrayer, emoji: "🙏" },
     { label: "[A] Leading Singing", value: volunteerSchedule.leadingSingingA, emoji: "🎵" },
     { label: "[B] Leading Singing", value: volunteerSchedule.leadingSingingB, emoji: "🎵" },
