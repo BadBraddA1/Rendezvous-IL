@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Cloud, CloudRain, Sun, CloudSun, Snowflake, CloudLightning, Wind, Droplets, RefreshCw, AlertTriangle, Radar, X } from 'lucide-react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Cloud, CloudRain, Sun, CloudSun, Snowflake, CloudLightning, Wind, Droplets, RefreshCw, Radar, X } from 'lucide-react'
+import { WeatherRadar } from '@/components/weather-radar'
 
 interface HourlyForecast {
   dt: number
@@ -305,15 +306,7 @@ export function RainAlertBanner() {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            {/* OpenWeatherMap radar via iframe with Leaflet */}
-            <div className="aspect-video rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800 relative">
-              <iframe
-                src={`https://openweathermap.org/weathermap?basemap=map&cities=false&layer=precipitation&lat=${RADAR_LAT}&lon=${RADAR_LON}&zoom=8`}
-                className="w-full h-full border-0"
-                title="OpenWeather Radar"
-                loading="lazy"
-              />
-            </div>
+            <WeatherRadar />
             <p className="text-xs text-muted-foreground text-center">
               Radar data provided by OpenWeatherMap - showing precipitation around Lake Williamson Christian Center
             </p>
