@@ -156,7 +156,7 @@ function getWeatherIcon(weatherId: number, iconCode: string, size: "sm" | "md" |
 export default function LiveUpdatesPage() {
   const [currentView, setCurrentView] = useState<ViewType>("all")
   const [isFullscreen, setIsFullscreen] = useState(false)
-  const [isAutoRotating, setIsAutoRotating] = useState(false)
+  const [isAutoRotating, setIsAutoRotating] = useState(true)
   const [currentTime, setCurrentTime] = useState(new Date())
   
   // Data states
@@ -423,7 +423,8 @@ export default function LiveUpdatesPage() {
         )}
       </main>
 
-      {/* Keyboard Controls Footer */}
+      {/* Keyboard Controls Footer - hidden in fullscreen */}
+      {!isFullscreen && (
       <footer className="px-8 py-4 border-t border-white/10">
         <div className="flex items-center gap-4 justify-center flex-wrap">
           <span className="text-white/50 text-sm">Keyboard Controls:</span>
@@ -444,6 +445,7 @@ export default function LiveUpdatesPage() {
           )}
         </div>
       </footer>
+      )}
     </div>
   )
 }
