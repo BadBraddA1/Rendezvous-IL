@@ -13,8 +13,7 @@ import {
   Calendar,
   Clock,
   ChevronRight,
-  Megaphone,
-  UtensilsCrossed
+  Megaphone
 } from "lucide-react"
 
 interface Announcement {
@@ -116,6 +115,38 @@ const SCHEDULE_ITEMS: ScheduleItem[] = [
 
 type ViewType = "all" | "weather" | "schedule" | "meal" | "announcements"
 
+function getEventEmoji(title: string, isMeal?: boolean): string {
+  const lowerTitle = title.toLowerCase()
+  
+  if (isMeal) {
+    if (lowerTitle.includes('breakfast')) return '🍳'
+    if (lowerTitle.includes('lunch')) return '🥪'
+    if (lowerTitle.includes('dinner')) return '🍽️'
+    return '🍴'
+  }
+  
+  if (lowerTitle.includes('check-in') || lowerTitle.includes('checkout')) return '📋'
+  if (lowerTitle.includes('assembly') || lowerTitle.includes('announcement')) return '📢'
+  if (lowerTitle.includes('session') || lowerTitle.includes('meeting')) return '👥'
+  if (lowerTitle.includes('game') || lowerTitle.includes('dodgeball') || lowerTitle.includes('knockout')) return '🎮'
+  if (lowerTitle.includes('archery')) return '🏹'
+  if (lowerTitle.includes('obstacle') || lowerTitle.includes('rope')) return '🧗'
+  if (lowerTitle.includes('gym') || lowerTitle.includes('sport')) return '🏀'
+  if (lowerTitle.includes('bonfire') || lowerTitle.includes('fire')) return '🔥'
+  if (lowerTitle.includes('picture') || lowerTitle.includes('photo')) return '📸'
+  if (lowerTitle.includes('award') || lowerTitle.includes('ceremony')) return '🏆'
+  if (lowerTitle.includes('farewell') || lowerTitle.includes('goodbye')) return '👋'
+  if (lowerTitle.includes('ice breaker') || lowerTitle.includes('introduction')) return '🤝'
+  if (lowerTitle.includes('nine square')) return '⬜'
+  if (lowerTitle.includes('table game')) return '🎲'
+  if (lowerTitle.includes('afternoon') || lowerTitle.includes('activities')) return '☀️'
+  if (lowerTitle.includes('evening')) return '🌙'
+  if (lowerTitle.includes('mom') || lowerTitle.includes('family')) return '👨‍👩‍👧'
+  if (lowerTitle.includes('young adult')) return '🧑‍🤝‍🧑'
+  
+  return '📍'
+}
+
 function getCentralTime(): Date {
   return new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' }))
 }
@@ -165,6 +196,7 @@ export default function LiveUpdatesPage() {
   const [nowItem, setNowItem] = useState<ScheduleItem | null>(null)
   const [nextItem, setNextItem] = useState<ScheduleItem | null>(null)
   const [nextMeal, setNextMeal] = useState<ScheduleItem | null>(null)
+  const [upcomingToday, setUpcomingToday] = useState<ScheduleItem[]>([])
 
   // Determine available views (exclude announcements if empty)
   const availableViews = useMemo<ViewType[]>(() => {
@@ -273,9 +305,20 @@ export default function LiveUpdatesPage() {
         meal = current
       }
 
+      // Get all remaining events for today
+      const todayUpcoming: ScheduleItem[] = []
+      for (const item of SCHEDULE_ITEMS) {
+        if (item.date !== centralDateStr) continue
+        const itemStartMinutes = item.startHour * 60 + item.startMinute
+        if (itemStartMinutes > currentMinutes) {
+          todayUpcoming.push(item)
+        }
+      }
+
       setNowItem(current)
       setNextItem(next)
       setNextMeal(meal)
+      setUpcomingToday(todayUpcoming)
     }
 
     updateSchedule()
@@ -324,19 +367,24 @@ export default function LiveUpdatesPage() {
       switch (e.key) {
         case "1":
           setCurrentView("all")
+          setIsAutoRotating(false)
           break
         case "2":
           setCurrentView("weather")
+          setIsAutoRotating(false)
           break
         case "3":
           setCurrentView("schedule")
+          setIsAutoRotating(false)
           break
         case "4":
           setCurrentView("meal")
+          setIsAutoRotating(false)
           break
         case "5":
           if (announcements.length > 0) {
             setCurrentView("announcements")
+            setIsAutoRotating(false)
           }
           break
         case "0":
@@ -413,7 +461,7 @@ export default function LiveUpdatesPage() {
           <WeatherView weather={weather} />
         )}
         {currentView === "schedule" && (
-          <ScheduleView nowItem={nowItem} nextItem={nextItem} />
+          <ScheduleView nowItem={nowItem} nextItem={nextItem} upcomingToday={upcomingToday} />
         )}
         {currentView === "meal" && (
           <MealView nextMeal={nextMeal} />
@@ -522,25 +570,35 @@ function AllView({
           {nowItem && (
             <div className="p-4 rounded-xl bg-white/10 border border-white/20">
               <div className="flex items-center gap-2 text-white/60 text-xs mb-2">
-                <ChevronRight className="h-3 w-3" />
-                <span>{nowItem.time}</span>
+                <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                <span>NOW · {nowItem.time}</span>
               </div>
-              <h3 className="font-semibold text-lg">{nowItem.title}</h3>
-              {nowItem.location && (
-                <p className="text-white/50 text-sm">{nowItem.location}</p>
-              )}
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">{getEventEmoji(nowItem.title, nowItem.isMeal)}</span>
+                <div>
+                  <h3 className="font-semibold text-lg">{nowItem.title}</h3>
+                  {nowItem.location && (
+                    <p className="text-white/50 text-sm">📍 {nowItem.location}</p>
+                  )}
+                </div>
+              </div>
             </div>
           )}
           {nextItem && (
             <div className="p-4 rounded-xl bg-white/5 border border-white/10">
               <div className="flex items-center gap-2 text-white/60 text-xs mb-2">
                 <ChevronRight className="h-3 w-3" />
-                <span>{nextItem.time}</span>
+                <span>NEXT · {nextItem.time}</span>
               </div>
-              <h3 className="font-semibold text-lg">{nextItem.title}</h3>
-              {nextItem.location && (
-                <p className="text-white/50 text-sm">{nextItem.location}</p>
-              )}
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">{getEventEmoji(nextItem.title, nextItem.isMeal)}</span>
+                <div>
+                  <h3 className="font-semibold text-lg">{nextItem.title}</h3>
+                  {nextItem.location && (
+                    <p className="text-white/50 text-sm">📍 {nextItem.location}</p>
+                  )}
+                </div>
+              </div>
             </div>
           )}
           {!nowItem && !nextItem && (
@@ -558,16 +616,19 @@ function AllView({
         {nextMeal ? (
           <div className="flex flex-col items-center justify-center h-[calc(100%-3rem)] text-center">
             <div className="text-6xl mb-4">
-              <UtensilsCrossed className="h-16 w-16 text-white/70" />
+              {getEventEmoji(nextMeal.title, true)}
             </div>
             <h3 className="text-2xl font-bold mb-2">{nextMeal.title}</h3>
-            <p className="text-white/60 text-lg">{nextMeal.time}</p>
+            <p className="text-white/60 text-lg">⏰ {nextMeal.time}</p>
             {nextMeal.location && (
-              <p className="text-white/40 text-sm mt-1">{nextMeal.location}</p>
+              <p className="text-white/40 text-sm mt-1">📍 {nextMeal.location}</p>
             )}
           </div>
         ) : (
-          <p className="text-white/50">No upcoming meals</p>
+          <div className="flex flex-col items-center justify-center h-[calc(100%-3rem)] text-center">
+            <div className="text-4xl mb-4">🍽️</div>
+            <p className="text-white/50">No upcoming meals</p>
+          </div>
         )}
       </div>
     </div>
@@ -624,49 +685,86 @@ function WeatherView({ weather }: { weather: WeatherData | null }) {
   )
 }
 
-// Schedule View - Full screen schedule
+// Schedule View - Full screen schedule with all upcoming events for the day
 function ScheduleView({ 
   nowItem, 
-  nextItem 
+  nextItem,
+  upcomingToday
 }: { 
   nowItem: ScheduleItem | null
   nextItem: ScheduleItem | null
+  upcomingToday: ScheduleItem[]
 }) {
   return (
-    <div className="flex flex-col items-center justify-center h-full">
-      {nowItem && (
-        <div className="text-center mb-12">
-          <div className="flex items-center justify-center gap-2 text-white/50 text-lg mb-4">
-            <span className="w-3 h-3 bg-green-400 rounded-full animate-pulse" />
-            <span>HAPPENING NOW</span>
+    <div className="flex h-full gap-12">
+      {/* Left side - Happening Now / Up Next */}
+      <div className="flex-1 flex flex-col justify-center">
+        {nowItem && (
+          <div className="text-center mb-12">
+            <div className="flex items-center justify-center gap-2 text-white/50 text-lg mb-4">
+              <span className="w-3 h-3 bg-green-400 rounded-full animate-pulse" />
+              <span>HAPPENING NOW</span>
+            </div>
+            <div className="text-6xl mb-4">{getEventEmoji(nowItem.title, nowItem.isMeal)}</div>
+            <h2 className="text-4xl font-bold mb-4">{nowItem.title}</h2>
+            <p className="text-2xl text-white/60 mb-2">{nowItem.time}</p>
+            {nowItem.location && (
+              <p className="text-xl text-white/40">📍 {nowItem.location}</p>
+            )}
           </div>
-          <h2 className="text-5xl font-bold mb-4">{nowItem.title}</h2>
-          <p className="text-2xl text-white/60 mb-2">{nowItem.time}</p>
-          {nowItem.location && (
-            <p className="text-xl text-white/40">{nowItem.location}</p>
-          )}
-        </div>
-      )}
-      
-      {nextItem && (
-        <div className="text-center">
-          {nowItem && <div className="w-24 h-px bg-white/20 mx-auto mb-12" />}
-          <div className="flex items-center justify-center gap-2 text-white/50 text-lg mb-4">
-            <ChevronRight className="h-5 w-5" />
-            <span>UP NEXT</span>
+        )}
+        
+        {nextItem && (
+          <div className="text-center">
+            {nowItem && <div className="w-24 h-px bg-white/20 mx-auto mb-12" />}
+            <div className="flex items-center justify-center gap-2 text-white/50 text-lg mb-4">
+              <ChevronRight className="h-5 w-5" />
+              <span>UP NEXT</span>
+            </div>
+            <div className={`mb-4 ${nowItem ? "text-4xl" : "text-6xl"}`}>{getEventEmoji(nextItem.title, nextItem.isMeal)}</div>
+            <h2 className={`font-bold mb-4 ${nowItem ? "text-2xl" : "text-4xl"}`}>{nextItem.title}</h2>
+            <p className={`text-white/60 mb-2 ${nowItem ? "text-lg" : "text-2xl"}`}>{nextItem.time}</p>
+            {nextItem.location && (
+              <p className={`text-white/40 ${nowItem ? "text-base" : "text-xl"}`}>📍 {nextItem.location}</p>
+            )}
           </div>
-          <h2 className={`font-bold mb-4 ${nowItem ? "text-3xl" : "text-5xl"}`}>{nextItem.title}</h2>
-          <p className={`text-white/60 mb-2 ${nowItem ? "text-xl" : "text-2xl"}`}>{nextItem.time}</p>
-          {nextItem.location && (
-            <p className={`text-white/40 ${nowItem ? "text-lg" : "text-xl"}`}>{nextItem.location}</p>
-          )}
-        </div>
-      )}
-      
-      {!nowItem && !nextItem && (
-        <div className="text-center">
-          <h2 className="text-4xl font-bold text-white/60">No Scheduled Events</h2>
-          <p className="text-xl text-white/40 mt-4">Enjoy your free time!</p>
+        )}
+        
+        {!nowItem && !nextItem && (
+          <div className="text-center">
+            <div className="text-6xl mb-4">😴</div>
+            <h2 className="text-4xl font-bold text-white/60">No Scheduled Events</h2>
+            <p className="text-xl text-white/40 mt-4">Enjoy your free time!</p>
+          </div>
+        )}
+      </div>
+
+      {/* Right side - Today's Schedule */}
+      {upcomingToday.length > 0 && (
+        <div className="w-96 flex flex-col">
+          <h3 className="text-lg font-semibold text-white/60 mb-4 flex items-center gap-2">
+            📅 TODAY&apos;S SCHEDULE
+          </h3>
+          <div className="flex-1 overflow-y-auto space-y-3 pr-2">
+            {upcomingToday.map((item, index) => (
+              <div 
+                key={index}
+                className={`p-4 rounded-xl border transition-colors ${
+                  item === nextItem 
+                    ? "bg-white/10 border-white/30" 
+                    : "bg-white/5 border-white/10"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">{getEventEmoji(item.title, item.isMeal)}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">{item.title}</p>
+                    <p className="text-sm text-white/50">{item.time}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
@@ -678,7 +776,7 @@ function MealView({ nextMeal }: { nextMeal: ScheduleItem | null }) {
   if (!nextMeal) {
     return (
       <div className="flex flex-col items-center justify-center h-full">
-        <UtensilsCrossed className="h-24 w-24 text-white/30 mb-8" />
+        <div className="text-8xl mb-8">🍽️</div>
         <h2 className="text-4xl font-bold text-white/60">No Upcoming Meals</h2>
       </div>
     )
@@ -686,13 +784,13 @@ function MealView({ nextMeal }: { nextMeal: ScheduleItem | null }) {
 
   return (
     <div className="flex flex-col items-center justify-center h-full">
-      <div className="text-8xl mb-8">
-        <UtensilsCrossed className="h-32 w-32 text-white/70" />
+      <div className="text-9xl mb-8">
+        {getEventEmoji(nextMeal.title, true)}
       </div>
       <h2 className="text-6xl font-bold mb-4">{nextMeal.title}</h2>
-      <p className="text-3xl text-white/60 mb-4">{nextMeal.time}</p>
+      <p className="text-3xl text-white/60 mb-4">⏰ {nextMeal.time}</p>
       {nextMeal.location && (
-        <p className="text-xl text-white/40">{nextMeal.location}</p>
+        <p className="text-xl text-white/40">📍 {nextMeal.location}</p>
       )}
       
       {/* Placeholder for future menu data */}
