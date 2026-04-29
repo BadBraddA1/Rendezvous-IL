@@ -10,6 +10,7 @@ import { VolunteerSchedule } from "@/components/volunteer-schedule"
 import { WeatherForecast, InlineWeather } from "@/components/weather-forecast"
 import { ScheduleMap } from "@/components/schedule-map"
 import { LocationLink } from "@/components/location-link"
+import { AnnouncementsDisplay } from "@/components/announcements-display"
 
 export default function SchedulePage() {
   const [activeDay, setActiveDay] = useState<string>("")
@@ -46,6 +47,7 @@ export default function SchedulePage() {
 
       <main className="container mx-auto px-4 py-8 md:py-12">
         <div className="mb-8 space-y-4">
+          <AnnouncementsDisplay />
           <NowNextSchedule />
           <WeatherForecast />
         </div>
@@ -183,7 +185,7 @@ export default function SchedulePage() {
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base">4:00 – 5:00 PM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
-                    Ice Breaker (Take-A-Hike Game or something else?) in <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>AC Room 205/206</LocationLink>
+                    Ice Breaker (Take-A-Hike Game) in <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>AC Room 205/206</LocationLink>
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
@@ -252,6 +254,8 @@ export default function SchedulePage() {
                     Young Adult session at the <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>Activity Center</LocationLink> (non-parent graduates; meet in Ping Pong Room)
                     <br />
                     Mom&apos;s session in <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>AC Room 207</LocationLink> (free time for everyone else; black-light activities & nine square)
+                    <br />
+                    <span className="font-semibold text-foreground">10:00 – 11:30 AM</span> Miniature Painting Session (during Moms & YA sessions)
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
@@ -473,6 +477,9 @@ export default function SchedulePage() {
                     <p>
                       <span className="font-semibold text-foreground">3:30 PM</span> Billiards & air hockey tournaments
                       at the <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>Activity Center</LocationLink> [if needed, finish up any other tourneys]
+                    </p>
+                    <p>
+                      <span className="font-semibold text-foreground">3:00 – 5:00 PM</span> Miniature Painting Session
                     </p>
                   </dd>
                 </div>

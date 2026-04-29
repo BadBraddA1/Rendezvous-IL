@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server"
 
 // Lake Williamson Christian Center, Carlinville, IL coordinates
-const LAT = 39.2795
-const LON = -89.8820
+const LAT = 39.250237
+const LON = -89.830346
 
 export interface HourlyForecast {
   dt: number
@@ -44,6 +44,12 @@ const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
 export async function GET() {
   // Try multiple possible env var names
   const apiKey = process.env.Open_Weather || process.env.OPEN_WEATHER || process.env.OPENWEATHER_API_KEY
+  
+  console.log("[v0] Weather API called")
+  console.log("[v0] Open_Weather exists:", !!process.env.Open_Weather)
+  console.log("[v0] OPEN_WEATHER exists:", !!process.env.OPEN_WEATHER)
+  console.log("[v0] OPENWEATHER_API_KEY exists:", !!process.env.OPENWEATHER_API_KEY)
+  console.log("[v0] API key found:", !!apiKey)
 
   if (!apiKey) {
     console.error("[v0] Weather API key not found. Checked: Open_Weather, OPEN_WEATHER, OPENWEATHER_API_KEY")

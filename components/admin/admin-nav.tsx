@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { LayoutDashboard, Users, Settings, FileText, LogOut, MapPin } from "lucide-react"
+import { LayoutDashboard, Users, Settings, FileText, LogOut, MapPin, Megaphone } from "lucide-react"
 
 interface AdminNavProps {
   currentPage: string
@@ -22,6 +22,7 @@ export function AdminNav({ currentPage, admin }: AdminNavProps) {
   const navItems = [
     { href: "/admin", label: "Dashboard", icon: LayoutDashboard, page: "dashboard" },
     { href: "/admin/registrations", label: "Registrations", icon: Users, page: "registrations" },
+    { href: "/announcements", label: "Announcements", icon: Megaphone, page: "announcements" },
     { href: "/admin/map", label: "Map", icon: MapPin, page: "map" },
     { href: "/admin/settings", label: "Settings", icon: Settings, page: "settings", requireAdmin: true },
     { href: "/admin/audit", label: "Audit Logs", icon: FileText, page: "audit", requireAdmin: true },
