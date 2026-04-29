@@ -173,10 +173,10 @@ if (lowerTitle.includes('check-in') || lowerTitle.includes('checkout')) return '
   return '📌'
 }
 
-// TEST MODE: Set to true to simulate the second day of the event (May 5, 2026 at 9:00 AM)
-// Using May 5 because it has Morning Devotion data
+// TEST MODE: Set to true to simulate the event
+// Set to just before the first event starts (May 4, 2026 at 12:55 PM - 5 min before Check-in)
 const TEST_MODE = true
-const TEST_DATE = new Date('2026-05-05T09:00:00')
+const TEST_DATE = new Date('2026-05-04T12:55:00')
 
 function getCentralTime(): Date {
   if (TEST_MODE) {
@@ -741,15 +741,15 @@ function AllView({
   volunteerTimeSlot: string
 }) {
   // Check if volunteer schedule has any filled items
-  const volunteerItems: { label: string; value: string | null; subtitle?: string | null; emoji: string }[] = volunteerSchedule ? [
-    { label: "Opening Prayer", value: volunteerSchedule.openingPrayer, emoji: "🙏" },
-    { label: "[A] Leading Singing", value: volunteerSchedule.leadingSingingA, emoji: "🎵" },
-    { label: "[B] Leading Singing", value: volunteerSchedule.leadingSingingB, emoji: "🎵" },
-    { label: "[A] Reading Scripture", value: volunteerSchedule.readingScriptureA, emoji: "📖" },
-    { label: "[A] Lesson", value: volunteerSchedule.presentingLessonA, subtitle: volunteerSchedule.lessonTitleA, emoji: "📚" },
-    { label: "[B] Reading Scripture", value: volunteerSchedule.readingScriptureB, emoji: "📖" },
-    { label: "[B] Lesson", value: volunteerSchedule.presentingLessonB, subtitle: volunteerSchedule.lessonTitleB, emoji: "📚" },
-    { label: "Closing Prayer", value: volunteerSchedule.closingPrayer, emoji: "🙏" },
+const volunteerItems: { label: string; value: string | null; subtitle?: string | null }[] = volunteerSchedule ? [
+  { label: "Opening Prayer", value: volunteerSchedule.openingPrayer },
+  { label: "Leading Singing [A]", value: volunteerSchedule.leadingSingingA },
+  { label: "Leading Singing [B]", value: volunteerSchedule.leadingSingingB },
+  { label: "Reading Scripture [A]", value: volunteerSchedule.readingScriptureA },
+  { label: "Presenting [A]", value: volunteerSchedule.presentingLessonA, subtitle: volunteerSchedule.lessonTitleA },
+  { label: "Reading Scripture [B]", value: volunteerSchedule.readingScriptureB },
+  { label: "Presenting [B]", value: volunteerSchedule.presentingLessonB, subtitle: volunteerSchedule.lessonTitleB },
+  { label: "Closing Prayer", value: volunteerSchedule.closingPrayer },
   ].filter(item => item.value) : []
 
   const hasVolunteers = volunteerItems.length > 0
@@ -823,18 +823,16 @@ function AllView({
       {/* Volunteer Schedule Card - only show if there are volunteers */}
       {hasVolunteers && (
         <div className="bg-white/5 rounded-2xl p-8 border border-white/10">
-          <div className="flex items-center gap-3 text-white/60 text-lg mb-6">
-            <span className="text-2xl">🙏</span>
+          <div className="text-white/60 text-lg mb-6">
             <span className="uppercase tracking-wider font-medium">{volunteerTimeSlot}</span>
           </div>
           <div className="space-y-3">
             {volunteerItems.map((item, index) => (
-              <div key={index} className="flex items-center gap-3 text-base">
-                <span className="text-xl">{item.emoji}</span>
-                <span className="text-white/50 min-w-[120px]">{item.label}:</span>
-                <span className="font-medium text-lg">{item.value}</span>
+              <div key={index} className="text-base">
+                <span className="text-white/50">{item.label}:</span>
+                <span className="font-medium text-lg ml-2">{item.value}</span>
                 {item.subtitle && (
-                  <span className="text-white/40 italic text-sm">({item.subtitle})</span>
+                  <span className="text-white/40 italic text-sm ml-2">({item.subtitle})</span>
                 )}
               </div>
             ))}
@@ -1109,27 +1107,25 @@ function VolunteersView({
   if (!volunteerSchedule) {
     return (
       <div className="flex flex-col items-center justify-center h-full">
-        <div className="text-8xl mb-8">🙏</div>
         <h2 className="text-5xl font-bold text-white/60">No Volunteer Schedule</h2>
       </div>
     )
   }
 
   const roles = [
-    { label: "Opening Prayer", value: volunteerSchedule.openingPrayer, icon: "🙏" },
-    { label: "[A] Leading Singing", value: volunteerSchedule.leadingSingingA, icon: "🎵" },
-    { label: "[B] Leading Singing", value: volunteerSchedule.leadingSingingB, icon: "🎵" },
-    { label: "[A] Reading Scripture", value: volunteerSchedule.readingScriptureA, icon: "📖" },
-    { label: "[A] Presenting Lesson", value: volunteerSchedule.presentingLessonA, subtitle: volunteerSchedule.lessonTitleA, icon: "📚" },
-    { label: "[B] Reading Scripture", value: volunteerSchedule.readingScriptureB, icon: "📖" },
-    { label: "[B] Presenting Lesson", value: volunteerSchedule.presentingLessonB, subtitle: volunteerSchedule.lessonTitleB, icon: "📚" },
-    { label: "Closing Prayer", value: volunteerSchedule.closingPrayer, icon: "🙏" },
+    { label: "Opening Prayer", value: volunteerSchedule.openingPrayer },
+    { label: "Leading Singing [A]", value: volunteerSchedule.leadingSingingA },
+    { label: "Leading Singing [B]", value: volunteerSchedule.leadingSingingB },
+    { label: "Reading Scripture [A]", value: volunteerSchedule.readingScriptureA },
+    { label: "Presenting Lesson [A]", value: volunteerSchedule.presentingLessonA, subtitle: volunteerSchedule.lessonTitleA },
+    { label: "Reading Scripture [B]", value: volunteerSchedule.readingScriptureB },
+    { label: "Presenting Lesson [B]", value: volunteerSchedule.presentingLessonB, subtitle: volunteerSchedule.lessonTitleB },
+    { label: "Closing Prayer", value: volunteerSchedule.closingPrayer },
   ].filter(r => r.value)
 
   return (
     <div className="flex flex-col items-center justify-center h-full max-w-5xl mx-auto">
       <div className="text-center mb-12">
-        <div className="text-7xl mb-6">🙏</div>
         <h2 className="text-5xl font-bold mb-3">{volunteerTimeSlot}</h2>
         <p className="text-2xl text-white/60">Devotional Assignments</p>
       </div>
@@ -1137,8 +1133,7 @@ function VolunteersView({
       <div className="w-full bg-white/5 rounded-2xl border border-white/10 p-10">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {roles.map((role, index) => (
-            <div key={index} className="flex items-start gap-5">
-              <span className="text-3xl shrink-0">{role.icon}</span>
+            <div key={index} className="flex items-start">
               <div>
                 <p className="text-white/50 text-base uppercase tracking-wider">{role.label}</p>
                 <p className="text-2xl font-medium">{role.value}</p>
