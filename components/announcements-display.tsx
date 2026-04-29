@@ -48,11 +48,15 @@ export function AnnouncementsDisplay({ variant = 'default' }: { variant?: 'defau
     const fetchAnnouncements = async () => {
       try {
         const res = await fetch('/api/announcements')
+        if (!res.ok) return // Silently fail - no announcements to show
         const data = await res.json()
-        if (data.announcements) {
-          setAnnouncements(data.announcements)
+        // API returns array directly, not wrapped in object
+        if (Array.isArray(data)) {
+          setAnnouncements(data)
         }
-      } catch {}
+      } catch {
+        // Silently fail - announcements are optional
+      }
     }
     fetchAnnouncements()
     // Refresh every 30 seconds
