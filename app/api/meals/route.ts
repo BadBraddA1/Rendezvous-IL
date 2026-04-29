@@ -13,7 +13,7 @@ export async function GET(request: Request) {
 
     if (date) {
       params.push(date)
-      query += ` AND meal_date = $${params.length}`
+      query += ` AND date = $${params.length}`
     }
 
     if (mealType) {
@@ -21,7 +21,7 @@ export async function GET(request: Request) {
       query += ` AND meal_type = $${params.length}`
     }
 
-    query += ` ORDER BY meal_date, CASE meal_type WHEN 'breakfast' THEN 1 WHEN 'lunch' THEN 2 WHEN 'dinner' THEN 3 END`
+    query += ` ORDER BY date, CASE meal_type WHEN 'breakfast' THEN 1 WHEN 'lunch' THEN 2 WHEN 'dinner' THEN 3 END`
 
     const meals = await sql(query, params)
 
@@ -36,11 +36,11 @@ export async function POST(request: Request) {
   try {
     const sql = neon(process.env.NEON_DATABASE_URL!)
     const body = await request.json()
-    const { meal_date, meal_type, main_dish, side_dishes, dessert, beverages, notes } = body
+    const { date, meal_type, main_dish, sides, dessert, drinks, notes, title } = body
 
     const result = await sql`
-      INSERT INTO meals (meal_date, meal_type, main_dish, side_dishes, dessert, beverages, notes)
-      VALUES (${meal_date}, ${meal_type}, ${main_dish}, ${side_dishes || null}, ${dessert || null}, ${beverages || null}, ${notes || null})
+      INSERT INTO meals (date, meal_type, main_dish, sides, dessert, drinks, notes, title)
+      VALUES (${date}, ${meal_type}, ${main_dish}, ${sides || null}, ${dessert || null}, ${drinks || null}, ${notes || null}, ${title || null})
       RETURNING *
     `
 

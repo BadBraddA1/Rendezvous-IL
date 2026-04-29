@@ -87,13 +87,14 @@ interface VolunteerSchedule {
 
 interface MealData {
   id: number
-  meal_date: string
+  date: string
   meal_type: string
   main_dish: string
-  side_dishes: string | null
+  sides: string[] | null
   dessert: string | null
-  beverages: string | null
+  drinks: string[] | null
   notes: string | null
+  title: string | null
 }
 
 const SCHEDULE_ITEMS: ScheduleItem[] = [
@@ -137,7 +138,7 @@ const SCHEDULE_ITEMS: ScheduleItem[] = [
   { date: '2026-05-08', day: 'Friday', time: '11:00 AM', startHour: 11, startMinute: 0, title: 'Event Concludes / Checkout', location: 'Various' },
 ]
 
-type ViewType = "all" | "weather" | "schedule" | "meal" | "announcements"
+type ViewType = "all" | "weather" | "schedule" | "meal" | "volunteers" | "announcements"
 
 function getEventEmoji(title: string, isMeal?: boolean): string {
   const lowerTitle = title.toLowerCase()
@@ -234,14 +235,32 @@ export default function LiveUpdatesPage() {
   const [volunteerTimeSlot, setVolunteerTimeSlot] = useState<string>("")
   const [mealData, setMealData] = useState<MealData | null>(null)
 
-  // Determine available views (exclude announcements if empty)
+  // Check if volunteer schedule has data
+  const hasVolunteerData = useMemo(() => {
+    if (!volunteerSchedule) return false
+    return !!(
+      volunteerSchedule.openingPrayer ||
+      volunteerSchedule.leadingSingingA ||
+      volunteerSchedule.leadingSingingB ||
+      volunteerSchedule.readingScriptureA ||
+      volunteerSchedule.presentingLessonA ||
+      volunteerSchedule.readingScriptureB ||
+      volunteerSchedule.presentingLessonB ||
+      volunteerSchedule.closingPrayer
+    )
+  }, [volunteerSchedule])
+
+  // Determine available views (exclude empty sections)
   const availableViews = useMemo<ViewType[]>(() => {
     const base: ViewType[] = ["all", "weather", "schedule", "meal"]
+    if (hasVolunteerData) {
+      base.push("volunteers")
+    }
     if (announcements.length > 0) {
       base.push("announcements")
     }
     return base
-  }, [announcements.length])
+  }, [announcements.length, hasVolunteerData])
 
   // Fetch weather
   useEffect(() => {
@@ -500,6 +519,12 @@ export default function LiveUpdatesPage() {
           setIsAutoRotating(false)
           break
         case "5":
+          if (hasVolunteerData) {
+            setCurrentView("volunteers")
+            setIsAutoRotating(false)
+          }
+          break
+        case "6":
           if (announcements.length > 0) {
             setCurrentView("announcements")
             setIsAutoRotating(false)
@@ -533,7 +558,7 @@ export default function LiveUpdatesPage() {
 
     window.addEventListener("keydown", handleKeyDown)
     return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [toggleFullscreen, availableViews, announcements.length])
+  }, [toggleFullscreen, availableViews, announcements.length, hasVolunteerData])
 
   // Format current date/time
   const formattedTime = currentTime.toLocaleTimeString('en-US', {
@@ -588,6 +613,9 @@ export default function LiveUpdatesPage() {
         {currentView === "meal" && (
           <MealView nextMeal={nextMeal} mealData={mealData} />
         )}
+        {currentView === "volunteers" && (
+          <VolunteersView volunteerSchedule={volunteerSchedule} volunteerTimeSlot={volunteerTimeSlot} />
+        )}
         {currentView === "announcements" && (
           <AnnouncementsView announcements={announcements} />
         )}
@@ -602,8 +630,11 @@ export default function LiveUpdatesPage() {
           <KeyButton label="2 Weather" active={currentView === "weather"} />
           <KeyButton label="3 Schedule" active={currentView === "schedule"} />
           <KeyButton label="4 Meal" active={currentView === "meal"} />
+          {hasVolunteerData && (
+            <KeyButton label="5 Volunteers" active={currentView === "volunteers"} />
+          )}
           {announcements.length > 0 && (
-            <KeyButton label="5 Announcements" active={currentView === "announcements"} />
+            <KeyButton label="6 Announcements" active={currentView === "announcements"} />
           )}
           <KeyButton label="0/A Auto" active={isAutoRotating} />
           <KeyButton label="F Fullscreen" active={isFullscreen} />
@@ -1035,12 +1066,12 @@ function MealView({ nextMeal, mealData }: { nextMeal: ScheduleItem | null; mealD
               </div>
             </div>
             
-            {mealData.side_dishes && (
+            {mealData.sides && mealData.sides.length > 0 && (
               <div className="flex items-start gap-4">
                 <span className="text-2xl">🥗</span>
                 <div>
                   <p className="text-white/50 text-sm uppercase tracking-wider">Sides</p>
-                  <p className="text-lg">{mealData.side_dishes}</p>
+                  <p className="text-lg">{mealData.sides.join(", ")}</p>
                 </div>
               </div>
             )}
@@ -1055,12 +1086,12 @@ function MealView({ nextMeal, mealData }: { nextMeal: ScheduleItem | null; mealD
               </div>
             )}
             
-            {mealData.beverages && (
+            {mealData.drinks && mealData.drinks.length > 0 && (
               <div className="flex items-start gap-4">
                 <span className="text-2xl">🥤</span>
                 <div>
                   <p className="text-white/50 text-sm uppercase tracking-wider">Beverages</p>
-                  <p className="text-lg">{mealData.beverages}</p>
+                  <p className="text-lg">{mealData.drinks.join(", ")}</p>
                 </div>
               </div>
             )}
@@ -1077,6 +1108,62 @@ function MealView({ nextMeal, mealData }: { nextMeal: ScheduleItem | null; mealD
           Menu details coming soon...
         </div>
       )}
+    </div>
+  )
+}
+
+// Volunteers View - Shows devotional schedule for current time slot
+function VolunteersView({ 
+  volunteerSchedule, 
+  volunteerTimeSlot 
+}: { 
+  volunteerSchedule: VolunteerSchedule | null
+  volunteerTimeSlot: string
+}) {
+  if (!volunteerSchedule) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full">
+        <div className="text-6xl mb-6">🙏</div>
+        <h2 className="text-4xl font-bold text-white/60">No Volunteer Schedule</h2>
+      </div>
+    )
+  }
+
+  const roles = [
+    { label: "Opening Prayer", value: volunteerSchedule.openingPrayer, icon: "🙏" },
+    { label: "[A] Leading Singing", value: volunteerSchedule.leadingSingingA, icon: "🎵" },
+    { label: "[B] Leading Singing", value: volunteerSchedule.leadingSingingB, icon: "🎵" },
+    { label: "[A] Reading Scripture", value: volunteerSchedule.readingScriptureA, icon: "📖" },
+    { label: "[A] Presenting Lesson", value: volunteerSchedule.presentingLessonA, subtitle: volunteerSchedule.lessonTitleA, icon: "📚" },
+    { label: "[B] Reading Scripture", value: volunteerSchedule.readingScriptureB, icon: "📖" },
+    { label: "[B] Presenting Lesson", value: volunteerSchedule.presentingLessonB, subtitle: volunteerSchedule.lessonTitleB, icon: "📚" },
+    { label: "Closing Prayer", value: volunteerSchedule.closingPrayer, icon: "🙏" },
+  ].filter(r => r.value)
+
+  return (
+    <div className="flex flex-col items-center justify-center h-full max-w-3xl mx-auto">
+      <div className="text-center mb-8">
+        <div className="text-5xl mb-4">🙏</div>
+        <h2 className="text-4xl font-bold mb-2">{volunteerTimeSlot}</h2>
+        <p className="text-xl text-white/60">Devotional Assignments</p>
+      </div>
+      
+      <div className="w-full bg-white/5 rounded-2xl border border-white/10 p-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {roles.map((role, index) => (
+            <div key={index} className="flex items-start gap-4">
+              <span className="text-2xl shrink-0">{role.icon}</span>
+              <div>
+                <p className="text-white/50 text-sm uppercase tracking-wider">{role.label}</p>
+                <p className="text-xl font-medium">{role.value}</p>
+                {role.subtitle && (
+                  <p className="text-white/40 text-sm italic">({role.subtitle})</p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }
