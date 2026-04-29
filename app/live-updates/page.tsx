@@ -173,9 +173,10 @@ if (lowerTitle.includes('check-in') || lowerTitle.includes('checkout')) return '
   return '📌'
 }
 
-// TEST MODE: Set to true to simulate the first day of the event (May 4, 2026 at 7:00 PM)
+// TEST MODE: Set to true to simulate the second day of the event (May 5, 2026 at 9:00 AM)
+// Using May 5 because it has Morning Devotion data
 const TEST_MODE = true
-const TEST_DATE = new Date('2026-05-04T19:00:00')
+const TEST_DATE = new Date('2026-05-05T09:00:00')
 
 function getCentralTime(): Date {
   if (TEST_MODE) {
