@@ -566,7 +566,7 @@ export default function LiveUpdatesPage() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 p-8">
+      <main className="flex-1 p-8 flex items-center justify-center">
         {currentView === "all" && (
           <AllView 
             weather={weather} 
@@ -736,7 +736,7 @@ function AllView({
   const hasVolunteers = volunteerItems.length > 0
 
   return (
-    <div className={`grid grid-cols-1 gap-6 h-full max-w-6xl mx-auto place-content-center ${hasVolunteers ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
+    <div className={`grid grid-cols-1 gap-6 w-full max-w-5xl ${hasVolunteers ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
       {/* Weather Card */}
       <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
         <div className="flex items-center justify-center gap-2 text-white/60 text-sm mb-6">
