@@ -27,6 +27,23 @@ export default function WeatherApiTestPage() {
     }
   }
 
+  const checkEnv = async () => {
+    setLoading(true)
+    setResponse("")
+    setStatus(null)
+    
+    try {
+      const res = await fetch("/api/weather/env-check")
+      setStatus(res.status)
+      const data = await res.json()
+      setResponse(JSON.stringify(data, null, 2))
+    } catch (error) {
+      setResponse(`Fetch error: ${error}`)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-background p-8">
       <div className="max-w-4xl mx-auto space-y-6">
@@ -47,6 +64,9 @@ export default function WeatherApiTestPage() {
                 ) : (
                   "Test Weather API"
                 )}
+              </Button>
+              <Button onClick={checkEnv} disabled={loading} variant="outline">
+                Check Env Vars
               </Button>
               
               {status !== null && (
