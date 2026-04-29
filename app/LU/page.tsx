@@ -122,6 +122,7 @@ export default function LiveUpdatesPage() {
   const [autoRotate, setAutoRotate] = useState(true)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [scheduleRotateIndex, setScheduleRotateIndex] = useState(0)
+  const [hiddenTabs, setHiddenTabs] = useState<Set<ViewMode>>(new Set())
 
   // Toggle fullscreen
   const toggleFullscreen = useCallback(() => {
@@ -145,28 +146,62 @@ export default function LiveUpdatesPage() {
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
   }, [])
 
+  // Map number keys to view modes
+  const keyToView: Record<string, ViewMode> = {
+    '1': 'all',
+    '2': 'weather',
+    '3': 'schedule',
+    '4': 'meal',
+    '5': 'announcements'
+  }
+
   // Keyboard controls
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    // Shift + number = hide that tab
+    if (e.shiftKey && keyToView[e.key]) {
+      const viewToHide = keyToView[e.key]
+      setHiddenTabs(prev => {
+        const newSet = new Set(prev)
+        newSet.add(viewToHide)
+        return newSet
+      })
+      // If currently viewing the hidden tab, switch to 'all'
+      if (viewMode === viewToHide) {
+        setViewMode('all')
+      }
+      return
+    }
+
     switch (e.key) {
       case '1':
-        setViewMode('all')
-        setAutoRotate(false)
+        if (!hiddenTabs.has('all')) {
+          setViewMode('all')
+          setAutoRotate(false)
+        }
         break
       case '2':
-        setViewMode('weather')
-        setAutoRotate(false)
+        if (!hiddenTabs.has('weather')) {
+          setViewMode('weather')
+          setAutoRotate(false)
+        }
         break
       case '3':
-        setViewMode('schedule')
-        setAutoRotate(false)
+        if (!hiddenTabs.has('schedule')) {
+          setViewMode('schedule')
+          setAutoRotate(false)
+        }
         break
       case '4':
-        setViewMode('meal')
-        setAutoRotate(false)
+        if (!hiddenTabs.has('meal')) {
+          setViewMode('meal')
+          setAutoRotate(false)
+        }
         break
       case '5':
-        setViewMode('announcements')
-        setAutoRotate(false)
+        if (!hiddenTabs.has('announcements')) {
+          setViewMode('announcements')
+          setAutoRotate(false)
+        }
         break
       case '0':
       case 'a':
@@ -184,7 +219,7 @@ export default function LiveUpdatesPage() {
         }
         break
     }
-  }, [toggleFullscreen])
+  }, [toggleFullscreen, hiddenTabs, viewMode])
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown)
@@ -195,7 +230,11 @@ export default function LiveUpdatesPage() {
   useEffect(() => {
     if (!autoRotate) return
     
-    const views: ViewMode[] = ['all', 'weather', 'schedule', 'announcements']
+    const allViews: ViewMode[] = ['all', 'weather', 'schedule', 'announcements']
+    // Filter out hidden tabs
+    const views = allViews.filter(v => !hiddenTabs.has(v))
+    if (views.length === 0) return
+    
     let currentIndex = 0
     
     const interval = setInterval(() => {
@@ -204,7 +243,7 @@ export default function LiveUpdatesPage() {
     }, 10000) // Rotate every 10 seconds
     
     return () => clearInterval(interval)
-  }, [autoRotate])
+  }, [autoRotate, hiddenTabs])
 
   // Rotate through schedule items when in schedule view or fullscreen
   useEffect(() => {
@@ -533,12 +572,12 @@ export default function LiveUpdatesPage() {
           <div className="flex items-center gap-4">
             <span className="text-white/50 text-sm">Keyboard Controls:</span>
             <div className="flex gap-2">
-              <kbd className={`px-3 py-1 rounded text-sm ${viewMode === 'all' ? 'bg-primary text-white' : 'bg-white/10'}`}>1 All</kbd>
-              <kbd className={`px-3 py-1 rounded text-sm ${viewMode === 'weather' ? 'bg-primary text-white' : 'bg-white/10'}`}>2 Weather</kbd>
-              <kbd className={`px-3 py-1 rounded text-sm ${viewMode === 'schedule' ? 'bg-primary text-white' : 'bg-white/10'}`}>3 Schedule</kbd>
-<kbd className={`px-3 py-1 rounded text-sm ${viewMode === 'meal' ? 'bg-primary text-white' : 'bg-white/10'}`}>4 Meal</kbd>
-  <kbd className={`px-3 py-1 rounded text-sm ${viewMode === 'announcements' ? 'bg-primary text-white' : 'bg-white/10'}`}>5 Announcements</kbd>
-  <kbd className={`px-3 py-1 rounded text-sm ${autoRotate ? 'bg-green-600 text-white' : 'bg-white/10'}`}>0/A Auto</kbd>
+              <kbd className={`px-3 py-1 rounded text-sm ${hiddenTabs.has('all') ? 'bg-red-900/50 line-through text-white/30' : viewMode === 'all' ? 'bg-primary text-white' : 'bg-white/10'}`}>1 All</kbd>
+              <kbd className={`px-3 py-1 rounded text-sm ${hiddenTabs.has('weather') ? 'bg-red-900/50 line-through text-white/30' : viewMode === 'weather' ? 'bg-primary text-white' : 'bg-white/10'}`}>2 Weather</kbd>
+              <kbd className={`px-3 py-1 rounded text-sm ${hiddenTabs.has('schedule') ? 'bg-red-900/50 line-through text-white/30' : viewMode === 'schedule' ? 'bg-primary text-white' : 'bg-white/10'}`}>3 Schedule</kbd>
+              <kbd className={`px-3 py-1 rounded text-sm ${hiddenTabs.has('meal') ? 'bg-red-900/50 line-through text-white/30' : viewMode === 'meal' ? 'bg-primary text-white' : 'bg-white/10'}`}>4 Meal</kbd>
+              <kbd className={`px-3 py-1 rounded text-sm ${hiddenTabs.has('announcements') ? 'bg-red-900/50 line-through text-white/30' : viewMode === 'announcements' ? 'bg-primary text-white' : 'bg-white/10'}`}>5 Announcements</kbd>
+              <kbd className={`px-3 py-1 rounded text-sm ${autoRotate ? 'bg-green-600 text-white' : 'bg-white/10'}`}>0/A Auto</kbd>
               <kbd className={`px-3 py-1 rounded text-sm ${isFullscreen ? 'bg-blue-600 text-white' : 'bg-white/10'}`}>F Fullscreen</kbd>
             </div>
           </div>
