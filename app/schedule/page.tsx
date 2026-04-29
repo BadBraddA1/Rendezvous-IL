@@ -183,7 +183,7 @@ export default function SchedulePage() {
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base">4:00 – 5:00 PM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
-                    Ice Breaker (Take-A-Hike Game or something else?) in <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>AC Room 205/206</LocationLink>
+                    Ice Breaker (Take-A-Hike Game) in <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>AC Room 205/206</LocationLink>
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
