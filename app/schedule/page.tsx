@@ -7,7 +7,7 @@ import { SiteFooter } from "@/components/site-footer"
 import { useState } from "react"
 import { NowNextSchedule } from "@/components/now-next-schedule"
 import { VolunteerSchedule } from "@/components/volunteer-schedule"
-import { WeatherForecast, InlineWeather } from "@/components/weather-forecast"
+import { WeatherForecast, InlineWeather, RainAlertBanner } from "@/components/weather-forecast"
 import { ScheduleMap } from "@/components/schedule-map"
 import { LocationLink } from "@/components/location-link"
 
@@ -46,6 +46,7 @@ export default function SchedulePage() {
 
       <main className="container mx-auto px-4 py-8 md:py-12">
         <div className="mb-8 space-y-4">
+          <RainAlertBanner />
           <NowNextSchedule />
           <WeatherForecast />
         </div>

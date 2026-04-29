@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Cloud, CloudRain, Sun, CloudSun, Snowflake, CloudLightning, Wind, Droplets, RefreshCw } from 'lucide-react'
 
 interface HourlyForecast {
@@ -193,6 +195,119 @@ export function WeatherForecast() {
         </div>
       </CardContent>
     </Card>
+  )
+}
+
+// Rain Alert Popup - shows once per day when rain is expected
+export function RainAlertBanner() {
+  const [weather, setWeather] = useState<WeatherData | null>(null)
+  const [showAlert, setShowAlert] = useState(false)
+
+  useEffect(() => {
+    const fetchWeather = async () => {
+      try {
+        const res = await fetch('/api/weather')
+        const data = await res.json()
+        if (!data.error) setWeather(data)
+      } catch {}
+    }
+    fetchWeather()
+  }, [])
+
+  // Check if we should show the alert (once per day)
+  useEffect(() => {
+    if (!weather) return
+    
+    // Check next 6 hours for rain probability > 30%
+    const next6Hours = weather.hourly.slice(0, 6)
+    const rainyHours = next6Hours.filter(h => h.pop > 0.3)
+    
+    if (rainyHours.length === 0) return
+    
+    // Check localStorage for last shown date
+    const today = new Date().toDateString()
+    const lastShown = localStorage.getItem('rainAlertLastShown')
+    
+    if (lastShown !== today) {
+      setShowAlert(true)
+      localStorage.setItem('rainAlertLastShown', today)
+    }
+  }, [weather])
+
+  if (!weather) return null
+
+  // Check next 6 hours for rain probability > 30%
+  const next6Hours = weather.hourly.slice(0, 6)
+  const rainyHours = next6Hours.filter(h => h.pop > 0.3)
+  
+  if (rainyHours.length === 0) return null
+
+  // Find the highest rain probability and when it occurs
+  const maxRainHour = rainyHours.reduce((max, h) => h.pop > max.pop ? h : max, rainyHours[0])
+  const rainTime = new Date(maxRainHour.dt * 1000).toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: 'America/Chicago',
+  })
+
+  // Determine severity
+  const maxPop = Math.round(maxRainHour.pop * 100)
+  const isStorm = maxRainHour.weather[0].id >= 200 && maxRainHour.weather[0].id < 300
+  const isHeavyRain = maxRainHour.weather[0].id >= 500 && maxRainHour.weather[0].id < 600
+
+  const alertMessage = isStorm 
+    ? 'Thunderstorms Expected'
+    : isHeavyRain
+    ? 'Rain Likely Today'
+    : 'Chance of Rain'
+
+  const alertDescription = isStorm
+    ? 'Outdoor activities may need to be moved inside. Stay safe!'
+    : isHeavyRain
+    ? 'Consider bringing rain gear or planning indoor alternatives.'
+    : 'Keep an eye on the sky - you might need an umbrella!'
+
+  return (
+    <Dialog open={showAlert} onOpenChange={setShowAlert}>
+      <DialogContent className="max-w-md">
+        <div className="text-center space-y-4">
+          {/* Weather icon */}
+          <div className={`mx-auto w-20 h-20 rounded-full flex items-center justify-center ${
+            isStorm ? 'bg-yellow-100 dark:bg-yellow-900/30' : 'bg-blue-100 dark:bg-blue-900/30'
+          }`}>
+            {isStorm ? (
+              <CloudLightning className="h-10 w-10 text-yellow-600 dark:text-yellow-400 animate-pulse" />
+            ) : (
+              <CloudRain className="h-10 w-10 text-blue-600 dark:text-blue-400" />
+            )}
+          </div>
+          
+          {/* Alert title */}
+          <div>
+            <h2 className="text-2xl font-bold text-foreground">{alertMessage}</h2>
+            <p className="text-lg text-primary font-semibold">{maxPop}% chance around {rainTime}</p>
+          </div>
+          
+          {/* Weather details */}
+          <p className="text-muted-foreground">
+            {alertDescription}
+          </p>
+          
+          <p className="text-sm text-muted-foreground capitalize">
+            Expected: {maxRainHour.weather[0].description}
+          </p>
+          
+          {/* Actions */}
+          <Button
+            className="w-full"
+            onClick={() => setShowAlert(false)}
+          >
+            Got it!
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   )
 }
 
