@@ -141,7 +141,7 @@ function getEventEmoji(title: string, isMeal?: boolean): string {
   if (lowerTitle.includes('check-in') || lowerTitle.includes('checkout')) return '📋'
   if (lowerTitle.includes('assembly') || lowerTitle.includes('announcement')) return '📢'
   if (lowerTitle.includes('session') || lowerTitle.includes('meeting')) return '👥'
-  if (lowerTitle.includes('game') || lowerTitle.includes('dodgeball') || lowerTitle.includes('knockout')) return '����'
+  if (lowerTitle.includes('game') || lowerTitle.includes('dodgeball') || lowerTitle.includes('knockout')) return '������'
   if (lowerTitle.includes('archery')) return '🏹'
   if (lowerTitle.includes('obstacle') || lowerTitle.includes('rope')) return '🧗'
   if (lowerTitle.includes('gym') || lowerTitle.includes('sport')) return '🏀'
@@ -210,6 +210,7 @@ export default function LiveUpdatesPage() {
   const [nextItem, setNextItem] = useState<ScheduleItem | null>(null)
   const [nextMeal, setNextMeal] = useState<ScheduleItem | null>(null)
   const [upcomingToday, setUpcomingToday] = useState<ScheduleItem[]>([])
+  const [upcomingAll, setUpcomingAll] = useState<ScheduleItem[]>([])
   const [volunteerSchedule, setVolunteerSchedule] = useState<VolunteerSchedule | null>(null)
   const [volunteerTimeSlot, setVolunteerTimeSlot] = useState<string>("")
 
@@ -354,10 +355,25 @@ export default function LiveUpdatesPage() {
         }
       }
 
+      // Get all upcoming events (including future days)
+      const allUpcoming: ScheduleItem[] = []
+      for (const item of SCHEDULE_ITEMS) {
+        if (item.date < centralDateStr) continue
+        if (item.date === centralDateStr) {
+          const itemStartMinutes = item.startHour * 60 + item.startMinute
+          if (itemStartMinutes > currentMinutes) {
+            allUpcoming.push(item)
+          }
+        } else {
+          allUpcoming.push(item)
+        }
+      }
+
       setNowItem(current)
       setNextItem(next)
       setNextMeal(meal)
       setUpcomingToday(todayUpcoming)
+      setUpcomingAll(allUpcoming)
     }
 
     updateSchedule()
@@ -495,6 +511,7 @@ export default function LiveUpdatesPage() {
             nextItem={nextItem} 
             nextMeal={nextMeal}
             upcomingToday={upcomingToday}
+            upcomingAll={upcomingAll}
             volunteerSchedule={volunteerSchedule}
             volunteerTimeSlot={volunteerTimeSlot}
           />
@@ -503,7 +520,7 @@ export default function LiveUpdatesPage() {
           <WeatherView weather={weather} />
         )}
         {currentView === "schedule" && (
-          <ScheduleView nowItem={nowItem} nextItem={nextItem} upcomingToday={upcomingToday} />
+          <ScheduleView nowItem={nowItem} nextItem={nextItem} upcomingToday={upcomingToday} upcomingAll={upcomingAll} />
         )}
         {currentView === "meal" && (
           <MealView nextMeal={nextMeal} />
@@ -552,15 +569,17 @@ function KeyButton({ label, active }: { label: string; active?: boolean }) {
   )
 }
 
-// Schedule Card - shows up to 5 events
+// Schedule Card - shows up to 5 events (includes future days if today is empty)
 function ScheduleCard({ 
   nowItem, 
   nextItem, 
-  upcomingToday 
+  upcomingToday,
+  upcomingAll
 }: { 
   nowItem: ScheduleItem | null
   nextItem: ScheduleItem | null
   upcomingToday: ScheduleItem[]
+  upcomingAll: ScheduleItem[]
 }) {
   // Combine now + upcoming, limit to 5
   const eventsToShow: { item: ScheduleItem; isNow: boolean }[] = []
@@ -569,9 +588,12 @@ function ScheduleCard({
     eventsToShow.push({ item: nowItem, isNow: true })
   }
   
-  for (const item of upcomingToday) {
+  // Use upcomingAll to include future days if today has no events
+  const upcoming = upcomingToday.length > 0 ? upcomingToday : upcomingAll
+  
+  for (const item of upcoming) {
     if (eventsToShow.length >= 5) break
-    // Don't duplicate the nextItem if it's already in the list
+    // Don't duplicate if already in the list
     if (!eventsToShow.some(e => e.item === item)) {
       eventsToShow.push({ item, isNow: false })
     }
@@ -601,7 +623,9 @@ function ScheduleCard({
                 <span className="text-xl shrink-0">{getEventEmoji(item.title, item.isMeal)}</span>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm truncate">{item.title}</p>
-                  <p className="text-xs text-white/50">{isNow ? "NOW" : item.time}</p>
+                  <p className="text-xs text-white/50">
+                    {isNow ? "NOW" : `${item.day} ${item.time}`}
+                  </p>
                 </div>
               </div>
             </div>
@@ -621,6 +645,7 @@ function AllView({
   nextItem, 
   nextMeal,
   upcomingToday,
+  upcomingAll,
   volunteerSchedule,
   volunteerTimeSlot
 }: { 
@@ -629,6 +654,7 @@ function AllView({
   nextItem: ScheduleItem | null
   nextMeal: ScheduleItem | null
   upcomingToday: ScheduleItem[]
+  upcomingAll: ScheduleItem[]
   volunteerSchedule: VolunteerSchedule | null
   volunteerTimeSlot: string
 }) {
@@ -685,7 +711,7 @@ function AllView({
       </div>
 
       {/* Schedule Card - shows up to 5 events */}
-      <ScheduleCard nowItem={nowItem} nextItem={nextItem} upcomingToday={upcomingToday} />
+      <ScheduleCard nowItem={nowItem} nextItem={nextItem} upcomingToday={upcomingToday} upcomingAll={upcomingAll} />
 
       {/* Next Meal Card */}
       <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
@@ -815,16 +841,22 @@ function WeatherView({ weather }: { weather: WeatherData | null }) {
   )
 }
 
-// Schedule View - Full screen schedule with all upcoming events for the day
+// Schedule View - Full screen schedule with all upcoming events
 function ScheduleView({ 
   nowItem, 
   nextItem,
-  upcomingToday
+  upcomingToday,
+  upcomingAll
 }: { 
   nowItem: ScheduleItem | null
   nextItem: ScheduleItem | null
   upcomingToday: ScheduleItem[]
+  upcomingAll: ScheduleItem[]
 }) {
+  // Use upcoming events - today if available, else all upcoming
+  const upcoming = upcomingToday.length > 0 ? upcomingToday : upcomingAll.slice(0, 10)
+  const showingFuture = upcomingToday.length === 0 && upcomingAll.length > 0
+
   return (
     <div className="flex h-full gap-12">
       {/* Left side - Happening Now / Up Next */}
@@ -853,7 +885,7 @@ function ScheduleView({
             </div>
             <div className={`mb-4 ${nowItem ? "text-4xl" : "text-6xl"}`}>{getEventEmoji(nextItem.title, nextItem.isMeal)}</div>
             <h2 className={`font-bold mb-4 ${nowItem ? "text-2xl" : "text-4xl"}`}>{nextItem.title}</h2>
-            <p className={`text-white/60 mb-2 ${nowItem ? "text-lg" : "text-2xl"}`}>{nextItem.time}</p>
+            <p className={`text-white/60 mb-2 ${nowItem ? "text-lg" : "text-2xl"}`}>{nextItem.day} {nextItem.time}</p>
             {nextItem.location && (
               <p className={`text-white/40 ${nowItem ? "text-base" : "text-xl"}`}>📍 {nextItem.location}</p>
             )}
@@ -869,14 +901,14 @@ function ScheduleView({
         )}
       </div>
 
-      {/* Right side - Today's Schedule */}
-      {upcomingToday.length > 0 && (
+      {/* Right side - Upcoming Schedule */}
+      {upcoming.length > 0 && (
         <div className="w-96 flex flex-col">
           <h3 className="text-lg font-semibold text-white/60 mb-4 flex items-center gap-2">
-            📅 TODAY&apos;S SCHEDULE
+            📅 {showingFuture ? "UPCOMING SCHEDULE" : "TODAY'S SCHEDULE"}
           </h3>
           <div className="flex-1 overflow-y-auto space-y-3 pr-2">
-            {upcomingToday.map((item, index) => (
+            {upcoming.map((item, index) => (
               <div 
                 key={index}
                 className={`p-4 rounded-xl border transition-colors ${
@@ -889,7 +921,9 @@ function ScheduleView({
                   <span className="text-2xl">{getEventEmoji(item.title, item.isMeal)}</span>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium truncate">{item.title}</p>
-                    <p className="text-sm text-white/50">{item.time}</p>
+                    <p className="text-sm text-white/50">
+                      {showingFuture ? `${item.day} ${item.time}` : item.time}
+                    </p>
                   </div>
                 </div>
               </div>
