@@ -160,7 +160,14 @@ function getEventEmoji(title: string, isMeal?: boolean): string {
   return '📍'
 }
 
+// TEST MODE: Set to true to simulate the first day of the event (May 4, 2026 at 9:00 AM)
+const TEST_MODE = true
+const TEST_DATE = new Date('2026-05-04T09:00:00')
+
 function getCentralTime(): Date {
+  if (TEST_MODE) {
+    return TEST_DATE
+  }
   return new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' }))
 }
 
@@ -259,7 +266,11 @@ export default function LiveUpdatesPage() {
       try {
         const centralNow = getCentralTime()
         const centralHour = centralNow.getHours()
-        const centralDateStr = centralNow.toISOString().split('T')[0]
+        // Format date as YYYY-MM-DD
+        const year = centralNow.getFullYear()
+        const month = String(centralNow.getMonth() + 1).padStart(2, '0')
+        const day = String(centralNow.getDate()).padStart(2, '0')
+        const centralDateStr = `${year}-${month}-${day}`
         
         // Morning Devotion: before noon, Evening Devotion: after noon
         const timeSlot = centralHour < 12 ? "Morning Devotion" : "Evening Devotion"
@@ -291,7 +302,11 @@ export default function LiveUpdatesPage() {
       const centralNow = getCentralTime()
       const centralHour = centralNow.getHours()
       const centralMinute = centralNow.getMinutes()
-      const centralDateStr = centralNow.toISOString().split('T')[0]
+      // Format date as YYYY-MM-DD
+      const year = centralNow.getFullYear()
+      const month = String(centralNow.getMonth() + 1).padStart(2, '0')
+      const day = String(centralNow.getDate()).padStart(2, '0')
+      const centralDateStr = `${year}-${month}-${day}`
 
       let current: ScheduleItem | null = null
       let next: ScheduleItem | null = null
