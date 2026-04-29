@@ -40,9 +40,16 @@ export default function AdminAnnouncementsPage() {
     try {
       const res = await fetch('/api/announcements')
       const data = await res.json()
-      setAnnouncements(data)
+      // Ensure data is an array
+      if (Array.isArray(data)) {
+        setAnnouncements(data)
+      } else {
+        console.error('[v0] API response is not an array:', data)
+        setAnnouncements([])
+      }
     } catch (error) {
-      console.error('Failed to fetch announcements:', error)
+      console.error('[v0] Failed to fetch announcements:', error)
+      setAnnouncements([])
     } finally {
       setLoading(false)
     }
