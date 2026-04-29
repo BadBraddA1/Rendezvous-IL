@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation"
 import { cookies } from "next/headers"
 import { MessagingForm } from "./messaging-form"
 import { sql } from "@/lib/db"
@@ -19,13 +18,11 @@ interface Announcement {
 }
 
 export default async function MessagingPage() {
-  // Check admin authentication
+  // Check admin authentication status to pass to form
   const cookieStore = await cookies()
   const sessionCookie = cookieStore.get("admin_session")
+  const isAdmin = sessionCookie?.value === "authenticated"
 
-  if (!sessionCookie || sessionCookie.value !== "authenticated") {
-    redirect("/admin/login")
-  }
   // Fetch existing announcements
   let announcements: Announcement[] = []
   
@@ -52,7 +49,7 @@ export default async function MessagingPage() {
             <p className="text-muted-foreground">Send messages to GroupMe and display announcements on /LU and /schedule</p>
           </div>
 
-          <MessagingForm initialAnnouncements={announcements} />
+          <MessagingForm initialAnnouncements={announcements} isAdmin={isAdmin} />
       </div>
     </div>
   )

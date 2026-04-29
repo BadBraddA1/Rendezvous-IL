@@ -28,9 +28,10 @@ interface Announcement {
 
 interface MessagingFormProps {
   initialAnnouncements: Announcement[]
+  isAdmin: boolean
 }
 
-export function MessagingForm({ initialAnnouncements }: MessagingFormProps) {
+export function MessagingForm({ initialAnnouncements, isAdmin }: MessagingFormProps) {
   const [announcements, setAnnouncements] = useState<Announcement[]>(initialAnnouncements)
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState("")
@@ -45,6 +46,12 @@ export function MessagingForm({ initialAnnouncements }: MessagingFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    if (!isAdmin) {
+      setMessage("You must be logged in as admin to create announcements")
+      return
+    }
+    
     setIsLoading(true)
     setMessage("")
 
@@ -98,28 +105,54 @@ export function MessagingForm({ initialAnnouncements }: MessagingFormProps) {
   }
 
   const toggleActive = async (id: number, currentState: boolean) => {
+    if (!isAdmin) {
+      setMessage("You must be logged in as admin to modify announcements")
+      return
+    }
+    
     try {
-      await fetch(`/api/admin/announcements/${id}`, {
+      const res = await fetch(`/api/admin/announcements/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ is_active: !currentState }),
       })
+      
+      if (!res.ok) {
+        const data = await res.json()
+        setMessage(data.error || "Failed to update announcement")
+        return
+      }
+      
       await refreshAnnouncements()
+      setMessage("")
     } catch {
-      console.error("Error toggling announcement")
+      setMessage("Error toggling announcement")
     }
   }
 
   const deleteAnnouncement = async (id: number) => {
+    if (!isAdmin) {
+      setMessage("You must be logged in as admin to delete announcements")
+      return
+    }
+    
     if (!confirm("Are you sure you want to delete this announcement?")) return
     
     try {
-      await fetch(`/api/admin/announcements/${id}`, {
+      const res = await fetch(`/api/admin/announcements/${id}`, {
         method: "DELETE",
       })
+      
+      if (!res.ok) {
+        const data = await res.json()
+        setMessage(data.error || "Failed to delete announcement")
+        return
+      }
+      
       await refreshAnnouncements()
+      setMessage("")
     } catch {
-      console.error("Error deleting announcement")
+      setMessage("Error deleting announcement")
     }
   }
 
