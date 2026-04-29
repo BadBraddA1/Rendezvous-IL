@@ -1,11 +1,21 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import dynamic from 'next/dynamic'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Cloud, CloudRain, Sun, CloudSun, Snowflake, CloudLightning, Wind, Droplets, RefreshCw, Radar, X } from 'lucide-react'
-import { WeatherRadar } from '@/components/weather-radar'
+
+// Dynamically import WeatherRadar to avoid SSR issues with Leaflet
+const WeatherRadar = dynamic(() => import('@/components/weather-radar').then(mod => mod.WeatherRadar), {
+  ssr: false,
+  loading: () => (
+    <div className="aspect-video rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+      <div className="text-muted-foreground text-sm">Loading radar...</div>
+    </div>
+  ),
+})
 
 interface HourlyForecast {
   dt: number
