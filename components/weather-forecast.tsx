@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
-import { Cloud, CloudRain, Sun, CloudSun, Snowflake, CloudLightning, Wind, Droplets, RefreshCw } from 'lucide-react'
+import { Cloud, CloudRain, Sun, CloudSun, Snowflake, CloudLightning, Wind, Droplets, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react'
 
 interface HourlyForecast {
   dt: number
@@ -72,6 +72,7 @@ export function WeatherForecast() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const [expanded, setExpanded] = useState(false)
 
   const fetchWeather = async () => {
     try {
@@ -133,7 +134,8 @@ export function WeatherForecast() {
   }
 
   const current = weather.current
-  const hourly = weather.hourly.slice(0, 5) // Next 5 hours
+  // Show 5 hours by default, 12 when expanded
+  const hourly = expanded ? weather.hourly.slice(0, 12) : weather.hourly.slice(0, 5)
 
   return (
     <Card className="border-blue-200/50 bg-gradient-to-br from-blue-50/50 to-transparent dark:from-blue-950/20">
@@ -174,8 +176,30 @@ export function WeatherForecast() {
 
         {/* Hourly Forecast */}
         <div>
-          <p className="text-xs font-medium text-muted-foreground mb-2">Next 5 Hours</p>
-          <div className="grid grid-cols-5 gap-2">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-medium text-muted-foreground">
+              {expanded ? 'Next 12 Hours' : 'Next 5 Hours'}
+            </p>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 text-xs gap-1 text-muted-foreground hover:text-foreground"
+              onClick={() => setExpanded(!expanded)}
+            >
+              {expanded ? (
+                <>
+                  Show Less
+                  <ChevronUp className="h-3 w-3" />
+                </>
+              ) : (
+                <>
+                  Show 12 Hours
+                  <ChevronDown className="h-3 w-3" />
+                </>
+              )}
+            </Button>
+          </div>
+          <div className={`grid gap-2 ${expanded ? 'grid-cols-4 sm:grid-cols-6 md:grid-cols-12' : 'grid-cols-5'}`}>
             {hourly.map((hour) => (
               <div key={hour.dt} className="text-center p-2 rounded-lg bg-background/50">
                 <p className="text-xs font-medium text-muted-foreground">{formatTime(hour.dt)}</p>
