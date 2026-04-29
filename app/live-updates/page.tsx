@@ -72,6 +72,19 @@ interface ScheduleItem {
   isMeal?: boolean
 }
 
+interface VolunteerSchedule {
+  openingPrayer: string | null
+  leadingSingingA: string | null
+  leadingSingingB: string | null
+  readingScriptureA: string | null
+  presentingLessonA: string | null
+  lessonTitleA: string | null
+  readingScriptureB: string | null
+  presentingLessonB: string | null
+  lessonTitleB: string | null
+  closingPrayer: string | null
+}
+
 const SCHEDULE_ITEMS: ScheduleItem[] = [
   // Monday May 4
   { date: '2026-05-04', day: 'Monday', time: '1:00 PM - 5:15 PM', startHour: 13, startMinute: 0, endHour: 17, endMinute: 15, title: 'Check-in at Activity Center', location: 'Activity Center' },
@@ -197,6 +210,8 @@ export default function LiveUpdatesPage() {
   const [nextItem, setNextItem] = useState<ScheduleItem | null>(null)
   const [nextMeal, setNextMeal] = useState<ScheduleItem | null>(null)
   const [upcomingToday, setUpcomingToday] = useState<ScheduleItem[]>([])
+  const [volunteerSchedule, setVolunteerSchedule] = useState<VolunteerSchedule | null>(null)
+  const [volunteerTimeSlot, setVolunteerTimeSlot] = useState<string>("")
 
   // Determine available views (exclude announcements if empty)
   const availableViews = useMemo<ViewType[]>(() => {
@@ -234,6 +249,30 @@ export default function LiveUpdatesPage() {
     }
     fetchAnnouncements()
     const interval = setInterval(fetchAnnouncements, 60 * 1000)
+    return () => clearInterval(interval)
+  }, [])
+
+  // Fetch volunteer schedule
+  useEffect(() => {
+    const fetchVolunteerSchedule = async () => {
+      try {
+        const centralNow = getCentralTime()
+        const centralHour = centralNow.getHours()
+        const centralDateStr = centralNow.toISOString().split('T')[0]
+        
+        // Morning Devotion: before noon, Evening Devotion: after noon
+        const timeSlot = centralHour < 12 ? "Morning Devotion" : "Evening Devotion"
+        setVolunteerTimeSlot(timeSlot)
+        
+        const res = await fetch(`/api/volunteer-schedule?date=${centralDateStr}&timeSlot=${encodeURIComponent(timeSlot)}`)
+        const data = await res.json()
+        if (data.schedule) {
+          setVolunteerSchedule(data.schedule)
+        }
+      } catch {}
+    }
+    fetchVolunteerSchedule()
+    const interval = setInterval(fetchVolunteerSchedule, 60 * 1000)
     return () => clearInterval(interval)
   }, [])
 
@@ -454,7 +493,9 @@ export default function LiveUpdatesPage() {
             weather={weather} 
             nowItem={nowItem} 
             nextItem={nextItem} 
-            nextMeal={nextMeal} 
+            nextMeal={nextMeal}
+            volunteerSchedule={volunteerSchedule}
+            volunteerTimeSlot={volunteerTimeSlot}
           />
         )}
         {currentView === "weather" && (
@@ -510,20 +551,38 @@ function KeyButton({ label, active }: { label: string; active?: boolean }) {
   )
 }
 
-// All View - 3 column dashboard
+// All View - dashboard with cards
 function AllView({ 
   weather, 
   nowItem, 
   nextItem, 
-  nextMeal 
+  nextMeal,
+  volunteerSchedule,
+  volunteerTimeSlot
 }: { 
   weather: WeatherData | null
   nowItem: ScheduleItem | null
   nextItem: ScheduleItem | null
   nextMeal: ScheduleItem | null
+  volunteerSchedule: VolunteerSchedule | null
+  volunteerTimeSlot: string
 }) {
+  // Check if volunteer schedule has any filled items
+  const volunteerItems = volunteerSchedule ? [
+    { label: "Opening Prayer", value: volunteerSchedule.openingPrayer, emoji: "🙏" },
+    { label: "[A] Leading Singing", value: volunteerSchedule.leadingSingingA, emoji: "🎵" },
+    { label: "[B] Leading Singing", value: volunteerSchedule.leadingSingingB, emoji: "🎵" },
+    { label: "[A] Reading Scripture", value: volunteerSchedule.readingScriptureA, emoji: "📖" },
+    { label: "[A] Lesson", value: volunteerSchedule.presentingLessonA, subtitle: volunteerSchedule.lessonTitleA, emoji: "📚" },
+    { label: "[B] Reading Scripture", value: volunteerSchedule.readingScriptureB, emoji: "📖" },
+    { label: "[B] Lesson", value: volunteerSchedule.presentingLessonB, subtitle: volunteerSchedule.lessonTitleB, emoji: "📚" },
+    { label: "Closing Prayer", value: volunteerSchedule.closingPrayer, emoji: "🙏" },
+  ].filter(item => item.value) : []
+
+  const hasVolunteers = volunteerItems.length > 0
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
+    <div className={`grid grid-cols-1 gap-6 h-full ${hasVolunteers ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
       {/* Weather Card */}
       <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
         <div className="flex items-center gap-2 text-white/60 text-sm mb-6">
@@ -631,6 +690,28 @@ function AllView({
           </div>
         )}
       </div>
+
+      {/* Volunteer Schedule Card - only show if there are volunteers */}
+      {hasVolunteers && (
+        <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
+          <div className="flex items-center gap-2 text-white/60 text-sm mb-4">
+            <span className="text-lg">🙏</span>
+            <span className="uppercase tracking-wider font-medium">{volunteerTimeSlot}</span>
+          </div>
+          <div className="space-y-2">
+            {volunteerItems.map((item, index) => (
+              <div key={index} className="flex items-center gap-2 text-sm">
+                <span>{item.emoji}</span>
+                <span className="text-white/50 min-w-[100px]">{item.label}:</span>
+                <span className="font-medium">{item.value}</span>
+                {item.subtitle && (
+                  <span className="text-white/40 italic text-xs">({item.subtitle})</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
