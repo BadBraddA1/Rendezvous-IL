@@ -9,7 +9,7 @@ async function getSession() {
   const sessionToken = cookieStore.get("admin_session")?.value
   if (!sessionToken) return null
 
-  const sql = neon(process.env.DATABASE_URL!)
+  const sql = neon(process.env.NEON_DATABASE_URL!)
   const sessions = await sql`
     SELECT s.*, u.email, u.role, u.first_name, u.last_name
     FROM admin_sessions s
@@ -21,7 +21,7 @@ async function getSession() {
 }
 
 async function getMeals() {
-  const sql = neon(process.env.DATABASE_URL!)
+  const sql = neon(process.env.NEON_DATABASE_URL!)
   const meals = await sql`
     SELECT * FROM meals 
     ORDER BY meal_date, 

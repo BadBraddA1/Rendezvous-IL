@@ -6,7 +6,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const sql = neon(process.env.DATABASE_URL!)
+    const sql = neon(process.env.NEON_DATABASE_URL!)
     const { id } = await params
 
     await sql`DELETE FROM meals WHERE id = ${parseInt(id)}`
@@ -23,7 +23,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const sql = neon(process.env.DATABASE_URL!)
+    const sql = neon(process.env.NEON_DATABASE_URL!)
     const { id } = await params
     const body = await request.json()
     const { main_dish, side_dishes, dessert, beverages, notes } = body

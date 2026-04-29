@@ -149,26 +149,27 @@ function getEventEmoji(title: string, isMeal?: boolean): string {
     return '🍴'
   }
   
-  if (lowerTitle.includes('check-in') || lowerTitle.includes('checkout')) return '📋'
-  if (lowerTitle.includes('assembly') || lowerTitle.includes('announcement')) return '📢'
+if (lowerTitle.includes('check-in') || lowerTitle.includes('checkout')) return '📝'
+  if (lowerTitle.includes('assembly') || lowerTitle.includes('announcement')) return '📣'
   if (lowerTitle.includes('session') || lowerTitle.includes('meeting')) return '👥'
-  if (lowerTitle.includes('game') || lowerTitle.includes('dodgeball') || lowerTitle.includes('knockout')) return '��������'
-  if (lowerTitle.includes('archery')) return '🏹'
-  if (lowerTitle.includes('obstacle') || lowerTitle.includes('rope')) return '🧗'
+  if (lowerTitle.includes('dodgeball')) return '🏐'
+  if (lowerTitle.includes('game') || lowerTitle.includes('knockout')) return '🎯'
+  if (lowerTitle.includes('archery')) return '🎯'
+  if (lowerTitle.includes('obstacle') || lowerTitle.includes('rope')) return '🧱'
   if (lowerTitle.includes('gym') || lowerTitle.includes('sport')) return '🏀'
   if (lowerTitle.includes('bonfire') || lowerTitle.includes('fire')) return '🔥'
-  if (lowerTitle.includes('picture') || lowerTitle.includes('photo')) return '📸'
+  if (lowerTitle.includes('picture') || lowerTitle.includes('photo')) return '📷'
   if (lowerTitle.includes('award') || lowerTitle.includes('ceremony')) return '🏆'
   if (lowerTitle.includes('farewell') || lowerTitle.includes('goodbye')) return '👋'
   if (lowerTitle.includes('ice breaker') || lowerTitle.includes('introduction')) return '🤝'
-  if (lowerTitle.includes('nine square')) return '⬜'
+  if (lowerTitle.includes('nine square')) return '🔲'
   if (lowerTitle.includes('table game')) return '🎲'
   if (lowerTitle.includes('afternoon') || lowerTitle.includes('activities')) return '☀️'
   if (lowerTitle.includes('evening')) return '🌙'
   if (lowerTitle.includes('mom') || lowerTitle.includes('family')) return '👨‍👩‍👧'
-  if (lowerTitle.includes('young adult')) return '🧑‍🤝‍🧑'
+  if (lowerTitle.includes('young adult')) return '👥'
   
-  return '📍'
+  return '📌'
 }
 
 // TEST MODE: Set to true to simulate the first day of the event (May 4, 2026 at 9:00 AM)
@@ -663,7 +664,7 @@ function ScheduleCard({
 
   return (
     <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
-      <div className="flex items-center gap-2 text-white/60 text-sm mb-4">
+      <div className="flex items-center justify-center gap-2 text-white/60 text-sm mb-4">
         <Calendar className="h-4 w-4" />
         <span className="uppercase tracking-wider font-medium">Schedule</span>
       </div>
@@ -680,11 +681,11 @@ function ScheduleCard({
                   : "bg-white/5 border-white/10"
               }`}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 justify-center">
                 {isNow && <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse shrink-0" />}
                 <span className="text-xl shrink-0">{getEventEmoji(item.title, item.isMeal)}</span>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm truncate">{item.title}</p>
+                <div className="min-w-0">
+                  <p className="font-medium text-sm">{item.title}</p>
                   <p className="text-xs text-white/50">
                     {isNow ? "NOW" : `${item.day} ${item.time}`}
                   </p>
@@ -735,20 +736,20 @@ function AllView({
   const hasVolunteers = volunteerItems.length > 0
 
   return (
-    <div className={`grid grid-cols-1 gap-6 h-full ${hasVolunteers ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
+    <div className={`grid grid-cols-1 gap-6 h-full max-w-6xl mx-auto place-content-center ${hasVolunteers ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
       {/* Weather Card */}
       <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
-        <div className="flex items-center gap-2 text-white/60 text-sm mb-6">
+        <div className="flex items-center justify-center gap-2 text-white/60 text-sm mb-6">
           <Droplets className="h-4 w-4" />
           <span className="uppercase tracking-wider font-medium">Weather</span>
         </div>
         {weather ? (
           <div className="space-y-6">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center justify-center gap-4">
               {getWeatherIcon(weather.current.weather[0].id, weather.current.weather[0].icon, "md")}
               <span className="text-5xl font-bold">{Math.round(weather.current.temp)}°</span>
             </div>
-            <p className="text-white/70 capitalize">{weather.current.weather[0].description}</p>
+            <p className="text-white/70 capitalize text-center">{weather.current.weather[0].description}</p>
             <div className="grid grid-cols-3 gap-2">
               {weather.hourly.slice(0, 3).map((hour) => (
                 <div key={hour.dt} className="text-center p-3 rounded-xl bg-white/5">
@@ -777,7 +778,7 @@ function AllView({
 
       {/* Next Meal Card */}
       <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
-        <div className="flex items-center gap-2 text-white/60 text-sm mb-6">
+        <div className="flex items-center justify-center gap-2 text-white/60 text-sm mb-6">
           <Clock className="h-4 w-4" />
           <span className="uppercase tracking-wider font-medium">Next Meal</span>
         </div>

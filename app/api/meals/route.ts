@@ -3,7 +3,7 @@ import { NextResponse } from "next/server"
 
 export async function GET(request: Request) {
   try {
-    const sql = neon(process.env.DATABASE_URL!)
+    const sql = neon(process.env.NEON_DATABASE_URL!)
     const { searchParams } = new URL(request.url)
     const date = searchParams.get("date")
     const mealType = searchParams.get("mealType")
@@ -34,7 +34,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const sql = neon(process.env.DATABASE_URL!)
+    const sql = neon(process.env.NEON_DATABASE_URL!)
     const body = await request.json()
     const { meal_date, meal_type, main_dish, side_dishes, dessert, beverages, notes } = body
 
