@@ -1,4 +1,3 @@
-import { AdminNav } from "@/components/admin/admin-nav"
 import { MessagingForm } from "./messaging-form"
 import { sql } from "@/lib/db"
 
@@ -18,9 +17,6 @@ interface Announcement {
 }
 
 export default async function MessagingPage() {
-  // Auth temporarily disabled for testing
-  const admin = { email: "admin@braddcorp.com", role: "admin" }
-
   // Fetch existing announcements
   let announcements: Announcement[] = []
   
@@ -40,10 +36,7 @@ export default async function MessagingPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <AdminNav currentPage="messaging" admin={admin} />
-
-      <main className="flex-1 bg-background p-6">
+    <div className="min-h-screen bg-background p-6">
         <div className="container mx-auto space-y-6">
           <div>
             <h2 className="text-3xl font-bold tracking-tight">Messaging & Announcements</h2>
@@ -51,8 +44,7 @@ export default async function MessagingPage() {
           </div>
 
           <MessagingForm initialAnnouncements={announcements} />
-        </div>
-      </main>
+      </div>
     </div>
   )
 }
