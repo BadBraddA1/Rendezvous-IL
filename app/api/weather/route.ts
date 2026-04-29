@@ -42,9 +42,11 @@ let cacheTime = 0
 const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
 
 export async function GET() {
-  const apiKey = process.env.Open_Weather
+  // Try multiple possible env var names
+  const apiKey = process.env.Open_Weather || process.env.OPEN_WEATHER || process.env.OPENWEATHER_API_KEY
 
   if (!apiKey) {
+    console.error("[v0] Weather API key not found. Checked: Open_Weather, OPEN_WEATHER, OPENWEATHER_API_KEY")
     return NextResponse.json({ error: "Weather API key not configured" }, { status: 500 })
   }
 
