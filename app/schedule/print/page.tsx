@@ -1,3 +1,5 @@
+"use client"
+
 import { Printer } from "lucide-react"
 
 // Schedule data structure
