@@ -3,7 +3,7 @@
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Apple, Smartphone, Share, MoreVertical, Plus, Download, CheckCircle2 } from "lucide-react"
+import { Apple, Smartphone, Share, MoreVertical, Plus, Download, CheckCircle2, Bell } from "lucide-react"
 
 function StepNumber({ num }: { num: number }) {
   return (
@@ -209,13 +209,20 @@ export default function InstallPage() {
               <h2 className="mb-4 text-center text-2xl font-bold text-foreground md:text-3xl">
                 Why Add to Home Screen?
               </h2>
-              <div className="grid gap-6 md:grid-cols-3">
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
                 <div className="rounded-lg border border-border/50 bg-card p-5 text-center shadow-sm">
                   <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
                     <Smartphone className="h-6 w-6 text-primary" />
                   </div>
                   <h3 className="mb-1 font-semibold">Quick Access</h3>
                   <p className="text-sm text-muted-foreground">One tap to see the schedule - no typing URLs</p>
+                </div>
+                <div className="rounded-lg border border-border/50 bg-card p-5 text-center shadow-sm">
+                  <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                    <Bell className="h-6 w-6 text-primary" />
+                  </div>
+                  <h3 className="mb-1 font-semibold">Push Notifications</h3>
+                  <p className="text-sm text-muted-foreground">Get alerts for schedule changes and announcements</p>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-card p-5 text-center shadow-sm">
                   <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
