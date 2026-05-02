@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Clock, ChevronRight, ArrowDown } from 'lucide-react'
+import { WeatherForecast } from '@/components/weather-forecast'
 import { Button } from '@/components/ui/button'
 
 interface TimeLeft {
@@ -251,54 +252,72 @@ export function NowNextSchedule() {
   // Loading state
   if (!mounted) {
     return (
-      <div className="w-full">
-        <div className="mb-4 text-center">
-          <h3 className="text-2xl font-bold text-ring">Event Starts In</h3>
-        </div>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-          {["Days", "Hours", "Minutes", "Seconds"].map((label) => (
-            <Card key={label} className="border-secondary-foreground/20 bg-primary text-background">
-              <CardContent className="p-4 sm:p-6 text-center">
-                <div className="text-3xl sm:text-4xl font-bold text-secondary-foreground mb-2">--</div>
-                <div className="text-xs sm:text-sm text-secondary-foreground/70">{label}</div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-        <div className="mt-4 text-center">
-          <p className="text-ring">May 4, 2026 at 1:00 PM Central Time</p>
+      <div className="w-full space-y-6">
+        <div className="text-center">
+          <h3 className="text-2xl font-bold text-ring">Loading Schedule...</h3>
         </div>
       </div>
     )
   }
 
-  // Before event - show countdown
+  // Before event - show weather and next up events immediately
   if (eventStatus === 'before') {
+    // Get first few events to preview
+    const previewEvents = SCHEDULE_ITEMS.slice(0, 6)
+    
     return (
-      <div className="w-full">
-        <div className="mb-4 text-center">
-          <h3 className="text-2xl font-bold text-ring">Event Starts In</h3>
-        </div>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-          {[
-            { label: "Days", value: timeLeft.days },
-            { label: "Hours", value: timeLeft.hours },
-            { label: "Minutes", value: timeLeft.minutes },
-            { label: "Seconds", value: timeLeft.seconds },
-          ].map((item) => (
-            <Card key={item.label} className="border-secondary-foreground/20 bg-primary text-background">
-              <CardContent className="p-4 sm:p-6 text-center">
-                <div className="text-3xl sm:text-4xl font-bold text-secondary-foreground mb-2">
-                  {String(item.value).padStart(2, "0")}
+      <div className="w-full space-y-4">
+        {/* Weather Section - shows immediately */}
+        <WeatherForecast />
+
+        {/* Next Up Events */}
+        <Card className="border-accent/30 bg-gradient-to-br from-accent/5 to-transparent overflow-hidden">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="rounded-full bg-accent p-2">
+                  <ChevronRight className="h-4 w-4 text-accent-foreground" />
                 </div>
-                <div className="text-xs sm:text-sm text-secondary-foreground/70">{item.label}</div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-        <div className="mt-4 text-center">
-          <p className="text-ring">May 4, 2026 at 1:00 PM Central Time</p>
-        </div>
+                <div>
+                  <CardTitle className="text-lg font-bold">Next Up</CardTitle>
+                  <CardDescription>What&apos;s happening at Rendezvous</CardDescription>
+                </div>
+              </div>
+              {/* Live updating indicator */}
+              <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-primary/10">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                </span>
+                <span className="text-xs font-medium text-primary">Live</span>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="space-y-3">
+              {previewEvents.map((event, index) => (
+                <div 
+                  key={index} 
+                  className="flex items-start gap-3 p-3 rounded-lg bg-background/50 border border-border/30"
+                >
+                  <div className="flex flex-col items-center shrink-0 min-w-[60px]">
+                    <span className="text-xs font-medium text-muted-foreground">{event.day}</span>
+                    <span className="text-sm font-bold text-primary">{event.time.split(' - ')[0]}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-semibold text-foreground">{event.title}</h4>
+                    {event.location && (
+                      <p className="text-sm text-muted-foreground">{event.location}</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <p className="mt-4 text-sm text-muted-foreground text-center">
+              ...and much more! Scroll down to see the full schedule.
+            </p>
+          </CardContent>
+        </Card>
       </div>
     )
   }
