@@ -1,6 +1,7 @@
 "use client"
 
-import { Printer } from "lucide-react"
+import { Download } from "lucide-react"
+import { jsPDF } from "jspdf"
 
 // Schedule data structure
 const scheduleData = [
@@ -90,21 +91,121 @@ const scheduleData = [
 ]
 
 export default function PrintableSchedulePage() {
-  const handlePrint = () => {
-    console.log("[v0] Print button clicked")
-    window.print()
+  const generatePDF = () => {
+    const doc = new jsPDF()
+    const pageWidth = doc.internal.pageSize.getWidth()
+    const margin = 15
+    const contentWidth = pageWidth - margin * 2
+    let yPos = 20
+
+    // Helper to add new page if needed
+    const checkPageBreak = (neededSpace: number) => {
+      if (yPos + neededSpace > 270) {
+        doc.addPage()
+        yPos = 20
+      }
+    }
+
+    // Header
+    doc.setFontSize(22)
+    doc.setFont("helvetica", "bold")
+    doc.text("Rendezvous 2026 Schedule", pageWidth / 2, yPos, { align: "center" })
+    yPos += 8
+
+    doc.setFontSize(12)
+    doc.setFont("helvetica", "normal")
+    doc.text("May 4-8, 2026", pageWidth / 2, yPos, { align: "center" })
+    yPos += 6
+
+    doc.setFontSize(10)
+    doc.setTextColor(100)
+    doc.text("Lake Williamson Christian Center, Carlinville, IL", pageWidth / 2, yPos, { align: "center" })
+    doc.setTextColor(0)
+    yPos += 12
+
+    // Line under header
+    doc.setLineWidth(0.5)
+    doc.line(margin, yPos, pageWidth - margin, yPos)
+    yPos += 10
+
+    // Schedule by day
+    scheduleData.forEach((day) => {
+      checkPageBreak(30)
+
+      // Day header
+      doc.setFontSize(14)
+      doc.setFont("helvetica", "bold")
+      doc.text(`${day.date} (${day.day})`, margin, yPos)
+      yPos += 2
+      doc.setLineWidth(0.2)
+      doc.line(margin, yPos, pageWidth - margin, yPos)
+      yPos += 8
+
+      // Events
+      day.events.forEach((event) => {
+        const eventLines = doc.splitTextToSize(event.title, contentWidth - 45)
+        const locationLines = event.location ? doc.splitTextToSize(event.location, contentWidth - 45) : []
+        const noteLines = event.note ? doc.splitTextToSize(event.note, contentWidth - 45) : []
+        const totalLines = eventLines.length + locationLines.length + noteLines.length
+        const neededSpace = totalLines * 5 + 6
+
+        checkPageBreak(neededSpace)
+
+        // Time
+        doc.setFontSize(9)
+        doc.setFont("helvetica", "bold")
+        doc.text(event.time, margin, yPos)
+
+        // Event title
+        doc.setFont("helvetica", "normal")
+        doc.text(eventLines, margin + 40, yPos)
+        yPos += eventLines.length * 4
+
+        // Location
+        if (event.location) {
+          doc.setFontSize(8)
+          doc.setTextColor(80)
+          doc.text(locationLines, margin + 40, yPos)
+          yPos += locationLines.length * 3.5
+        }
+
+        // Note
+        if (event.note) {
+          doc.setFontSize(8)
+          doc.setTextColor(120)
+          doc.setFont("helvetica", "italic")
+          doc.text(noteLines, margin + 40, yPos)
+          doc.setFont("helvetica", "normal")
+          yPos += noteLines.length * 3.5
+        }
+
+        doc.setTextColor(0)
+        yPos += 4
+      })
+
+      yPos += 6
+    })
+
+    // Footer
+    checkPageBreak(20)
+    doc.setFontSize(8)
+    doc.setTextColor(100)
+    doc.text("Rendezvous 2026 • Lake Williamson Christian Center • Carlinville, IL", pageWidth / 2, 285, { align: "center" })
+
+    // Save the PDF
+    doc.save("rendezvous-2026-schedule.pdf")
   }
 
   return (
     <div className="min-h-screen bg-white">
       {/* Print button - hidden when printing */}
-      <div className="print:hidden fixed top-4 right-4 z-50">
+      <div className="fixed top-4 right-4 z-50">
         <button
-          onClick={handlePrint}
+          onClick={generatePDF}
           className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors shadow-lg"
         >
-          <Printer className="h-4 w-4" />
-          Print Schedule
+          <Download className="h-4 w-4" />
+          Download PDF
         </button>
       </div>
 
