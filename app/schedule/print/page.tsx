@@ -90,12 +90,17 @@ const scheduleData = [
 ]
 
 export default function PrintableSchedulePage() {
+  const handlePrint = () => {
+    console.log("[v0] Print button clicked")
+    window.print()
+  }
+
   return (
     <div className="min-h-screen bg-white">
       {/* Print button - hidden when printing */}
       <div className="print:hidden fixed top-4 right-4 z-50">
         <button
-          onClick={() => window.print()}
+          onClick={handlePrint}
           className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors shadow-lg"
         >
           <Printer className="h-4 w-4" />
