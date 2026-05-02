@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Send, Megaphone, Trash2, Eye, EyeOff, RefreshCw } from "lucide-react"
+import { Send, Megaphone, Trash2, Eye, EyeOff, RefreshCw, Bell } from "lucide-react"
 
 interface Announcement {
   id: number
@@ -40,6 +40,7 @@ export function MessagingForm({ initialAnnouncements }: MessagingFormProps) {
   const [content, setContent] = useState("")
   const [priority, setPriority] = useState("normal")
   const [sendToGroupMe, setSendToGroupMe] = useState(false)
+  const [sendPushNotification, setSendPushNotification] = useState(false)
   const [showOnLiveUpdates, setShowOnLiveUpdates] = useState(true)
   const [showOnSchedule, setShowOnSchedule] = useState(false)
 
@@ -65,11 +66,37 @@ export function MessagingForm({ initialAnnouncements }: MessagingFormProps) {
       const data = await res.json()
 
       if (res.ok) {
-        setMessage("Announcement created successfully!")
+        let successMsg = "Announcement created successfully!"
+        
+        // Send push notification if enabled
+        if (sendPushNotification) {
+          try {
+            const pushRes = await fetch("/api/push-notification", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                title,
+                message: content,
+                url: "https://rendezvousil.com/schedule",
+              }),
+            })
+            const pushData = await pushRes.json()
+            if (pushRes.ok) {
+              successMsg += ` Push sent to ${pushData.recipients || 0} users.`
+            } else {
+              successMsg += ` Push failed: ${pushData.error}`
+            }
+          } catch {
+            successMsg += " Push notification failed to send."
+          }
+        }
+        
+        setMessage(successMsg)
         setTitle("")
         setContent("")
         setPriority("normal")
         setSendToGroupMe(false)
+        setSendPushNotification(false)
         setShowOnLiveUpdates(true)
         setShowOnSchedule(false)
         
@@ -213,6 +240,21 @@ export function MessagingForm({ initialAnnouncements }: MessagingFormProps) {
                   id="groupme"
                   checked={sendToGroupMe}
                   onCheckedChange={setSendToGroupMe}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="push" className="flex items-center gap-1.5">
+                    <Bell className="h-3.5 w-3.5" />
+                    Send Push Notification
+                  </Label>
+                  <p className="text-xs text-muted-foreground">Send to all users with notifications enabled</p>
+                </div>
+                <Switch
+                  id="push"
+                  checked={sendPushNotification}
+                  onCheckedChange={setSendPushNotification}
                 />
               </div>
 
