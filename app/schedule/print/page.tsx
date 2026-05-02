@@ -8,7 +8,7 @@ const scheduleData = [
     color: "secondary",
     events: [
       { time: "1:00 – 5:15 PM", title: "Check-in", location: "Activity Center (AC) [upstairs outside Room 207]", note: "Mini-fridge available in AC Room 205. Use this time for setting up RVs & tents, settling into motel rooms, and for visiting." },
-      { time: "4:00 – 5:00 PM", title: "Ice Breaker", location: "AC Room 205/206", note: "Take-A-Hike Game or similar" },
+      { time: "4:00 – 5:00 PM", title: "Ice Breaker", location: "AC Room 205/206" },
       { time: "5:30 PM", title: "Dinner", location: "Lakeside Dining Room", note: "Please gather outside for a prayer prior to each designated meal time" },
       { time: "7:00 PM", title: "Evening assembly, welcome, family introductions, & announcements", location: "AC Room 207" },
       { time: "8:00 PM", title: "Black-light Dodgeball, Bombardment, & Steal the Bacon", location: "Activity Center", note: "Recommended: small children (under 10) wear light colored clothing" },
