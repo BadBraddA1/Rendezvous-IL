@@ -316,6 +316,17 @@ export function NowNextSchedule() {
             <p className="mt-4 text-sm text-muted-foreground text-center">
               ...and much more! Scroll down to see the full schedule.
             </p>
+            <div className="mt-4 flex justify-center">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => scrollToNow(null, previewEvents[0])}
+                className="flex items-center gap-2"
+              >
+                <ArrowDown className="h-4 w-4" />
+                Jump to Schedule
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
