@@ -11,50 +11,60 @@ import { Trash2, Plus, Utensils } from "lucide-react"
 
 interface Meal {
   id: number
-  meal_date: string
+  date: string
   meal_type: string
   main_dish: string
-  side_dishes: string | null
+  sides: string[] | null
   dessert: string | null
-  beverages: string | null
+  drinks: string[] | null
   notes: string | null
+  title: string | null
 }
 
 export function MealsForm({ initialMeals }: { initialMeals: Meal[] }) {
   const [meals, setMeals] = useState<Meal[]>(initialMeals)
   const [isAdding, setIsAdding] = useState(false)
   const [newMeal, setNewMeal] = useState({
-    meal_date: "",
+    date: "",
     meal_type: "breakfast",
     main_dish: "",
-    side_dishes: "",
+    sides: "",
     dessert: "",
-    beverages: "",
-    notes: ""
+    drinks: "",
+    notes: "",
+    title: ""
   })
   const [saving, setSaving] = useState(false)
 
   const handleAddMeal = async () => {
-    if (!newMeal.meal_date || !newMeal.main_dish) return
+    if (!newMeal.date || !newMeal.main_dish) return
     
     setSaving(true)
     try {
+      // Convert comma-separated sides and drinks to arrays
+      const mealData = {
+        ...newMeal,
+        sides: newMeal.sides ? newMeal.sides.split(",").map(s => s.trim()).filter(Boolean) : null,
+        drinks: newMeal.drinks ? newMeal.drinks.split(",").map(s => s.trim()).filter(Boolean) : null,
+      }
+      
       const res = await fetch("/api/meals", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newMeal)
+        body: JSON.stringify(mealData)
       })
       const data = await res.json()
       if (data.meal) {
         setMeals([...meals, data.meal])
         setNewMeal({
-          meal_date: "",
+          date: "",
           meal_type: "breakfast",
           main_dish: "",
-          side_dishes: "",
+          sides: "",
           dessert: "",
-          beverages: "",
-          notes: ""
+          drinks: "",
+          notes: "",
+          title: ""
         })
         setIsAdding(false)
       }
@@ -93,9 +103,9 @@ export function MealsForm({ initialMeals }: { initialMeals: Meal[] }) {
 
   // Group meals by date
   const mealsByDate = meals.reduce((acc, meal) => {
-    const date = meal.meal_date
-    if (!acc[date]) acc[date] = []
-    acc[date].push(meal)
+    const mealDate = meal.date
+    if (!acc[mealDate]) acc[mealDate] = []
+    acc[mealDate].push(meal)
     return acc
   }, {} as Record<string, Meal[]>)
 
@@ -122,8 +132,8 @@ export function MealsForm({ initialMeals }: { initialMeals: Meal[] }) {
                 <Label>Date</Label>
                 <Input
                   type="date"
-                  value={newMeal.meal_date}
-                  onChange={(e) => setNewMeal({ ...newMeal, meal_date: e.target.value })}
+                  value={newMeal.date}
+                  onChange={(e) => setNewMeal({ ...newMeal, date: e.target.value })}
                 />
               </div>
               <div>
@@ -154,10 +164,10 @@ export function MealsForm({ initialMeals }: { initialMeals: Meal[] }) {
             </div>
             
             <div>
-              <Label>Side Dishes</Label>
+              <Label>Sides (comma-separated)</Label>
               <Input
-                value={newMeal.side_dishes}
-                onChange={(e) => setNewMeal({ ...newMeal, side_dishes: e.target.value })}
+                value={newMeal.sides}
+                onChange={(e) => setNewMeal({ ...newMeal, sides: e.target.value })}
                 placeholder="e.g., Mashed Potatoes, Green Beans"
               />
             </div>
@@ -172,10 +182,10 @@ export function MealsForm({ initialMeals }: { initialMeals: Meal[] }) {
                 />
               </div>
               <div>
-                <Label>Beverages</Label>
+                <Label>Drinks (comma-separated)</Label>
                 <Input
-                  value={newMeal.beverages}
-                  onChange={(e) => setNewMeal({ ...newMeal, beverages: e.target.value })}
+                  value={newMeal.drinks}
+                  onChange={(e) => setNewMeal({ ...newMeal, drinks: e.target.value })}
                   placeholder="e.g., Lemonade, Tea, Coffee"
                 />
               </div>
@@ -192,7 +202,7 @@ export function MealsForm({ initialMeals }: { initialMeals: Meal[] }) {
             </div>
             
             <div className="flex gap-2">
-              <Button onClick={handleAddMeal} disabled={saving || !newMeal.meal_date || !newMeal.main_dish}>
+              <Button onClick={handleAddMeal} disabled={saving || !newMeal.date || !newMeal.main_dish}>
                 {saving ? "Saving..." : "Save Meal"}
               </Button>
               <Button variant="outline" onClick={() => setIsAdding(false)}>
@@ -223,14 +233,14 @@ export function MealsForm({ initialMeals }: { initialMeals: Meal[] }) {
                       <div>
                         <h4 className="font-semibold capitalize">{meal.meal_type}</h4>
                         <p className="text-lg">{meal.main_dish}</p>
-                        {meal.side_dishes && (
-                          <p className="text-sm text-muted-foreground">Sides: {meal.side_dishes}</p>
+                        {meal.sides && meal.sides.length > 0 && (
+                          <p className="text-sm text-muted-foreground">Sides: {meal.sides.join(", ")}</p>
                         )}
                         {meal.dessert && (
                           <p className="text-sm text-muted-foreground">Dessert: {meal.dessert}</p>
                         )}
-                        {meal.beverages && (
-                          <p className="text-sm text-muted-foreground">Drinks: {meal.beverages}</p>
+                        {meal.drinks && meal.drinks.length > 0 && (
+                          <p className="text-sm text-muted-foreground">Drinks: {meal.drinks.join(", ")}</p>
                         )}
                         {meal.notes && (
                           <p className="text-sm text-muted-foreground italic mt-1">{meal.notes}</p>

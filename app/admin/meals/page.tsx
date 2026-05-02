@@ -24,7 +24,7 @@ async function getMeals() {
   const sql = neon(process.env.NEON_DATABASE_URL!)
   const meals = await sql`
     SELECT * FROM meals 
-    ORDER BY meal_date, 
+    ORDER BY date, 
     CASE meal_type WHEN 'breakfast' THEN 1 WHEN 'lunch' THEN 2 WHEN 'dinner' THEN 3 END
   `
   return meals
