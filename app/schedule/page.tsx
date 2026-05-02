@@ -261,11 +261,16 @@ export default function SchedulePage() {
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
-                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">10:00 AM</dt>
+                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">10:00 AM – 11:30 AM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Young Adult session at the <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>Activity Center</LocationLink> (non-parent graduates; meet in Ping Pong Room)
                     <br />
                     Mom&apos;s session in <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>AC Room 207</LocationLink> (free time for everyone else; black-light activities & nine square)
+                    <br />
+                    <span className="inline-flex items-center gap-1">
+                      Miniature Painting
+                      <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">Pre-registration required</span>
+                    </span>
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
@@ -480,6 +485,10 @@ export default function SchedulePage() {
                     <p>
                       <span className="font-semibold text-foreground">3:30 PM</span> Billiards & air hockey tournaments
                       at the <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>Activity Center</LocationLink> [if needed, finish up any other tourneys]
+                    </p>
+                    <p>
+                      <span className="font-semibold text-foreground">3:00 – 5:00 PM</span> Miniature Painting
+                      <span className="ml-1 text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">Pre-registration required</span>
                     </p>
                   </dd>
                 </div>
