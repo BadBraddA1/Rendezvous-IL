@@ -1,7 +1,8 @@
 "use client"
 
 import type React from "react"
-import { Users, Map, X } from "lucide-react"
+import { Users, Map, X, Printer } from "lucide-react"
+import Link from "next/link"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { useState } from "react"
@@ -60,13 +61,22 @@ export default function SchedulePage() {
           <p className="text-balance text-sm text-muted-foreground md:text-base">
             Lake Williamson Christian Center, Carlinville, IL
           </p>
-          <button
-            onClick={() => setShowMap(true)}
-            className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
-          >
-            <Map className="h-4 w-4" />
-            View Venue Map
-          </button>
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+            <button
+              onClick={() => setShowMap(true)}
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+            >
+              <Map className="h-4 w-4" />
+              View Venue Map
+            </button>
+            <Link
+              href="/schedule/print"
+              className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+            >
+              <Printer className="h-4 w-4" />
+              Download PDF
+            </Link>
+          </div>
         </div>
 
         {/* Map Modal */}
