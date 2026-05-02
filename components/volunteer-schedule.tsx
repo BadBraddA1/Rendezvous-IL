@@ -63,9 +63,9 @@ export function VolunteerSchedule({ date, timeSlot }: VolunteerScheduleProps) {
     { label: "Opening Prayer", value: schedule.openingPrayer },
     { label: "[A] Leading singing", value: schedule.leadingSingingA },
     { label: "[B] Leading singing", value: schedule.leadingSingingB },
-    { label: "[A] Reading scripture", value: schedule.readingScriptureA },
+    { label: "[A] Reading scripture", value: schedule.readingScriptureA, scripture: schedule.lessonScriptureA },
     { label: "[A] Presenting a lesson", value: schedule.presentingLessonA, lessonTitle: schedule.lessonTitleA },
-    { label: "[B] Reading scripture", value: schedule.readingScriptureB },
+    { label: "[B] Reading scripture", value: schedule.readingScriptureB, scripture: schedule.lessonScriptureB },
     { label: "[B] Presenting a lesson", value: schedule.presentingLessonB, lessonTitle: schedule.lessonTitleB },
     { label: "Closing Prayer", value: schedule.closingPrayer },
   ]
@@ -78,37 +78,9 @@ export function VolunteerSchedule({ date, timeSlot }: VolunteerScheduleProps) {
     return null
   }
 
-  // Extract lessons with their presenters and scripture
-  const lessons = [
-    { title: schedule.lessonTitleA, presenter: schedule.presentingLessonA, scripture: schedule.lessonScriptureA },
-    { title: schedule.lessonTitleB, presenter: schedule.presentingLessonB, scripture: schedule.lessonScriptureB },
-  ].filter(l => l.title && l.presenter)
-
   return (
-    <div className="mt-3 rounded-md border border-primary/20 bg-primary/5 p-3 space-y-3">
-      {/* Lessons section */}
-      {lessons.length > 0 && (
-        <div className="space-y-2">
-          {lessons.map((lesson, idx) => (
-            <div key={idx}>
-              <p className="font-medium text-foreground text-sm">Lesson: &quot;{lesson.title}&quot;</p>
-              <p className="text-xs text-muted-foreground">
-                Speaker: {lesson.presenter}
-                {lesson.scripture && <> | Scripture: {lesson.scripture}</>}
-              </p>
-            </div>
-          ))}
-        </div>
-      )}
-      
-      {/* Divider if we have both lessons and volunteer items */}
-      {lessons.length > 0 && filledItems.length > 0 && (
-        <div className="border-t border-primary/10" />
-      )}
-      
-      {/* Volunteer Schedule */}
-      <div>
-        <p className="text-xs font-semibold text-primary mb-2">Volunteer Schedule</p>
+    <div className="mt-3 rounded-md border border-primary/20 bg-primary/5 p-3">
+      <p className="text-xs font-semibold text-primary mb-2">Volunteer Schedule</p>
         <ul className="space-y-1 text-xs md:text-sm text-muted-foreground">
           {filledItems.map((item) => (
             <li key={item.label} className="flex justify-between gap-2">
@@ -117,13 +89,15 @@ export function VolunteerSchedule({ date, timeSlot }: VolunteerScheduleProps) {
                 {item.lessonTitle && (
                   <span className="italic text-muted-foreground"> - {item.lessonTitle}</span>
                 )}
+                {item.scripture && (
+                  <span className="italic text-muted-foreground"> - {item.scripture}</span>
+                )}
                 :
               </span>
               <span className="font-medium text-foreground">{item.value}</span>
             </li>
           ))}
         </ul>
-      </div>
     </div>
   )
 }
