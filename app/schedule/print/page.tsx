@@ -169,20 +169,6 @@ export default function PrintableSchedulePage() {
           <p className="mt-1">Visit rendezvous-il.vercel.app for live updates and announcements</p>
         </footer>
       </div>
-
-      {/* Print styles */}
-      <style jsx global>{`
-        @media print {
-          @page {
-            margin: 0.5in;
-            size: letter;
-          }
-          body {
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-          }
-        }
-      `}</style>
     </div>
   )
 }
