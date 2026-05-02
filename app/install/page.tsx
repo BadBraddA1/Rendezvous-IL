@@ -38,7 +38,7 @@ function IOSInstructions() {
             <div>
               <p className="font-medium text-foreground">Navigate to the schedule</p>
               <p className="text-sm text-muted-foreground">
-                Go to <span className="font-mono text-primary">rendezvousil.com/schedule</span> or <span className="font-mono text-primary">rendezvousil.com/LU</span> for live updates.
+                Go to <span className="font-mono text-primary">rendezvousil.com/schedule</span>
               </p>
             </div>
           </li>
@@ -119,7 +119,7 @@ function AndroidInstructions() {
             <div>
               <p className="font-medium text-foreground">Navigate to the schedule</p>
               <p className="text-sm text-muted-foreground">
-                Go to <span className="font-mono text-primary">rendezvousil.com/schedule</span> or <span className="font-mono text-primary">rendezvousil.com/LU</span> for live updates.
+                Go to <span className="font-mono text-primary">rendezvousil.com/schedule</span>
               </p>
             </div>
           </li>
