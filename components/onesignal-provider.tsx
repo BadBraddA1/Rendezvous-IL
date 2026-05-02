@@ -30,6 +30,11 @@ export function OneSignalProvider() {
         safari_web_id: "web.onesignal.auto.081d2360-74df-41b0-afe2-959ef72fcc8c",
         notifyButton: {
           enable: true,
+          position: "bottom-left",
+          offset: {
+            bottom: "24px",
+            left: "24px",
+          },
         },
         allowLocalhostAsSecureOrigin: true,
       })
