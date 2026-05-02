@@ -8,7 +8,7 @@ import { SiteFooter } from "@/components/site-footer"
 import { useState } from "react"
 import { NowNextSchedule } from "@/components/now-next-schedule"
 import { VolunteerSchedule } from "@/components/volunteer-schedule"
-import { WeatherForecast, InlineWeather } from "@/components/weather-forecast"
+import { InlineWeather } from "@/components/weather-forecast"
 import { ScheduleMap } from "@/components/schedule-map"
 import { LocationLink } from "@/components/location-link"
 import { ScheduleAnnouncements } from "@/components/schedule-announcements"
@@ -50,7 +50,6 @@ export default function SchedulePage() {
         <div className="mb-8 space-y-4">
           <ScheduleAnnouncements />
           <NowNextSchedule />
-          <WeatherForecast />
         </div>
 
         <div className="mb-8 text-center md:mb-12">
