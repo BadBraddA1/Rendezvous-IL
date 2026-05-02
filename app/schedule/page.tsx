@@ -534,6 +534,9 @@ export default function SchedulePage() {
                     <p>
                       <span className="font-semibold text-foreground">9:00 PM</span> Adult/Teen Volleyball
                     </p>
+                    <p>
+                      <span className="font-semibold text-foreground">10:00 PM</span> Racquetball Court Singing
+                    </p>
                   </dd>
                 </div>
               </dl>
