@@ -210,10 +210,6 @@ export default function SchedulePage() {
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base">7:00 PM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Evening assembly, welcome, family introductions, & announcements in <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>AC Room 207</LocationLink>
-                    <div className="mt-2 p-2 rounded-md bg-primary/5 border border-primary/10">
-                      <p className="font-medium text-foreground">Lesson: &quot;Stay on Target&quot;</p>
-                      <p className="text-sm">Speaker: Patrick | Scripture: Galatians 1:6-7</p>
-                    </div>
                     <VolunteerSchedule date="2026-05-04" timeSlot="Evening Devotion" />
                   </dd>
                 </div>
@@ -261,10 +257,6 @@ export default function SchedulePage() {
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base">9:00 AM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Morning assembly & announcements in <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>AC Room 207</LocationLink>
-                    <div className="mt-2 p-2 rounded-md bg-primary/5 border border-primary/10">
-                      <p className="font-medium text-foreground">Lesson: &quot;Crucified with Christ&quot;</p>
-                      <p className="text-sm">Speaker: Adam | Scripture: Galatians 2:18-20</p>
-                    </div>
                     <VolunteerSchedule date="2026-05-05" timeSlot="Morning Devotion" />
                   </dd>
                 </div>
@@ -317,10 +309,6 @@ export default function SchedulePage() {
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base">7:00 PM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Evening assembly & announcements in <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>AC Room 207</LocationLink>
-                    <div className="mt-2 p-2 rounded-md bg-primary/5 border border-primary/10">
-                      <p className="font-medium text-foreground">Lesson: &quot;The Law, the Promise, & the Faith&quot;</p>
-                      <p className="text-sm">Speaker: Lee | Scripture: Galatians 3:23-27</p>
-                    </div>
                     <VolunteerSchedule date="2026-05-05" timeSlot="Evening Devotion" />
                   </dd>
                 </div>
@@ -364,12 +352,6 @@ export default function SchedulePage() {
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base">9:00 AM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Morning assembly, group picture, & announcements in <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>AC Room 207</LocationLink>
-                    <div className="mt-2 p-2 rounded-md bg-primary/5 border border-primary/10 space-y-1">
-                      <p className="font-medium text-foreground">Lesson: &quot;Our Identity&quot;</p>
-                      <p className="text-sm">Speaker: Daniel | Scripture: Galatians 4:4-7</p>
-                      <p className="font-medium text-foreground mt-2">Lesson: &quot;Serve One Another&quot;</p>
-                      <p className="text-sm">Speaker: Johnathan | Scripture: Galatians 5:13-15</p>
-                    </div>
                     <VolunteerSchedule date="2026-05-06" timeSlot="Morning Devotion" />
                   </dd>
                 </div>
@@ -417,12 +399,6 @@ export default function SchedulePage() {
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base">7:00 PM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Evening assembly & announcements in <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>Room 207 at the Activity Center</LocationLink>
-                    <div className="mt-2 p-2 rounded-md bg-primary/5 border border-primary/10 space-y-1">
-                      <p className="font-medium text-foreground">Lesson: &quot;Bear Each Other&apos;s Burdens / God&apos;s Family&quot;</p>
-                      <p className="text-sm">Speaker: Caleb | Scripture: Galatians 6:1-5</p>
-                      <p className="font-medium text-foreground mt-2">Lesson: &quot;Our Adoption&quot;</p>
-                      <p className="text-sm">Speaker: Ryan | Scripture: Ephesians 1:3-6</p>
-                    </div>
                     <VolunteerSchedule date="2026-05-06" timeSlot="Evening Devotion" />
                   </dd>
                 </div>
@@ -466,12 +442,6 @@ export default function SchedulePage() {
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base">9:00 AM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Morning assembly & announcements in <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>AC Room 207</LocationLink>
-                    <div className="mt-2 p-2 rounded-md bg-primary/5 border border-primary/10 space-y-1">
-                      <p className="font-medium text-foreground">Lesson: &quot;Framing Your Faith&quot;</p>
-                      <p className="text-sm">Speaker: Justin | Scripture: Ephesians 2:8-10</p>
-                      <p className="font-medium text-foreground mt-2">Lesson: &quot;God&apos;s Eternal Purpose: Realized in Christ, Proclaimed by the Church&quot;</p>
-                      <p className="text-sm">Speaker: Michael | Scripture: Ephesians 3:7-12</p>
-                    </div>
                     <VolunteerSchedule date="2026-05-07" timeSlot="Morning Devotion" />
                   </dd>
                 </div>
@@ -548,10 +518,6 @@ export default function SchedulePage() {
                   </dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Evening assembly & announcements at the <LocationLink locationId="bonfire-site" onShowMap={showMapWithLocation}>bonfire</LocationLink> [no song books or projector]
-                    <div className="mt-2 p-2 rounded-md bg-primary/5 border border-primary/10">
-                      <p className="font-medium text-foreground">Lesson: &quot;The Christian Walk&quot;</p>
-                      <p className="text-sm">Speaker: Aaron | Scripture: Ephesians 5:22-33</p>
-                    </div>
                     <VolunteerSchedule date="2026-05-07" timeSlot="Evening Devotion" />
                   </dd>
                 </div>
@@ -596,12 +562,6 @@ export default function SchedulePage() {
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base">9:00 AM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Morning assembly, Bible bowl awards, & brainstorming for next year in <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>AC Room 207</LocationLink>
-                    <div className="mt-2 p-2 rounded-md bg-primary/5 border border-primary/10 space-y-1">
-                      <p className="font-medium text-foreground">Lesson: &quot;Walking Worthy&quot;</p>
-                      <p className="text-sm">Speaker: Jason | Scripture: Ephesians 4:1-7</p>
-                      <p className="font-medium text-foreground mt-2">Lesson: &quot;The Armor of God&quot;</p>
-                      <p className="text-sm">Speaker: Peter | Scripture: Ephesians 6:10-12</p>
-                    </div>
                     <VolunteerSchedule date="2026-05-08" timeSlot="Morning Devotion" />
                   </dd>
                 </div>

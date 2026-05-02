@@ -76,23 +76,49 @@ export function VolunteerSchedule({ date, timeSlot }: VolunteerScheduleProps) {
     return null
   }
 
+  // Extract lessons with their presenters
+  const lessons = [
+    { title: schedule.lessonTitleA, presenter: schedule.presentingLessonA },
+    { title: schedule.lessonTitleB, presenter: schedule.presentingLessonB },
+  ].filter(l => l.title && l.presenter)
+
   return (
-    <div className="mt-3 rounded-md border border-primary/20 bg-primary/5 p-3">
-      <p className="text-xs font-semibold text-primary mb-2">Volunteer Schedule</p>
-      <ul className="space-y-1 text-xs md:text-sm text-muted-foreground">
-        {filledItems.map((item) => (
-          <li key={item.label} className="flex justify-between gap-2">
-            <span className="text-foreground/70">
-              {item.label}
-              {item.lessonTitle && (
-                <span className="italic text-muted-foreground"> - {item.lessonTitle}</span>
-              )}
-              :
-            </span>
-            <span className="font-medium text-foreground">{item.value}</span>
-          </li>
-        ))}
-      </ul>
+    <div className="mt-3 rounded-md border border-primary/20 bg-primary/5 p-3 space-y-3">
+      {/* Lessons section */}
+      {lessons.length > 0 && (
+        <div className="space-y-1.5">
+          {lessons.map((lesson, idx) => (
+            <div key={idx}>
+              <p className="font-medium text-foreground text-sm">Lesson: &quot;{lesson.title}&quot;</p>
+              <p className="text-xs text-muted-foreground">Speaker: {lesson.presenter}</p>
+            </div>
+          ))}
+        </div>
+      )}
+      
+      {/* Divider if we have both lessons and volunteer items */}
+      {lessons.length > 0 && filledItems.length > 0 && (
+        <div className="border-t border-primary/10" />
+      )}
+      
+      {/* Volunteer Schedule */}
+      <div>
+        <p className="text-xs font-semibold text-primary mb-2">Volunteer Schedule</p>
+        <ul className="space-y-1 text-xs md:text-sm text-muted-foreground">
+          {filledItems.map((item) => (
+            <li key={item.label} className="flex justify-between gap-2">
+              <span className="text-foreground/70">
+                {item.label}
+                {item.lessonTitle && (
+                  <span className="italic text-muted-foreground"> - {item.lessonTitle}</span>
+                )}
+                :
+              </span>
+              <span className="font-medium text-foreground">{item.value}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   )
 }
