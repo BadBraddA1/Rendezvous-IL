@@ -79,9 +79,11 @@ interface VolunteerSchedule {
   readingScriptureA: string | null
   presentingLessonA: string | null
   lessonTitleA: string | null
+  lessonScriptureA: string | null
   readingScriptureB: string | null
   presentingLessonB: string | null
   lessonTitleB: string | null
+  lessonScriptureB: string | null
   closingPrayer: string | null
 }
 
@@ -760,9 +762,9 @@ const volunteerItems: { label: string; value: string | null; subtitle?: string |
   { label: "Opening Prayer", value: volunteerSchedule.openingPrayer },
   { label: "Leading Singing [A]", value: volunteerSchedule.leadingSingingA },
   { label: "Leading Singing [B]", value: volunteerSchedule.leadingSingingB },
-  { label: "Reading Scripture [A]", value: volunteerSchedule.readingScriptureA },
+  { label: "Reading Scripture [A]", value: volunteerSchedule.readingScriptureA, subtitle: volunteerSchedule.lessonScriptureA },
   { label: "Presenting [A]", value: volunteerSchedule.presentingLessonA, subtitle: volunteerSchedule.lessonTitleA },
-  { label: "Reading Scripture [B]", value: volunteerSchedule.readingScriptureB },
+  { label: "Reading Scripture [B]", value: volunteerSchedule.readingScriptureB, subtitle: volunteerSchedule.lessonScriptureB },
   { label: "Presenting [B]", value: volunteerSchedule.presentingLessonB, subtitle: volunteerSchedule.lessonTitleB },
   { label: "Closing Prayer", value: volunteerSchedule.closingPrayer },
   ].filter(item => item.value) : []
@@ -1131,9 +1133,9 @@ function VolunteersView({
     { label: "Opening Prayer", value: volunteerSchedule.openingPrayer },
     { label: "Leading Singing [A]", value: volunteerSchedule.leadingSingingA },
     { label: "Leading Singing [B]", value: volunteerSchedule.leadingSingingB },
-    { label: "Reading Scripture [A]", value: volunteerSchedule.readingScriptureA },
+    { label: "Reading Scripture [A]", value: volunteerSchedule.readingScriptureA, subtitle: volunteerSchedule.lessonScriptureA },
     { label: "Presenting Lesson [A]", value: volunteerSchedule.presentingLessonA, subtitle: volunteerSchedule.lessonTitleA },
-    { label: "Reading Scripture [B]", value: volunteerSchedule.readingScriptureB },
+    { label: "Reading Scripture [B]", value: volunteerSchedule.readingScriptureB, subtitle: volunteerSchedule.lessonScriptureB },
     { label: "Presenting Lesson [B]", value: volunteerSchedule.presentingLessonB, subtitle: volunteerSchedule.lessonTitleB },
     { label: "Closing Prayer", value: volunteerSchedule.closingPrayer },
   ].filter(r => r.value)

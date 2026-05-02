@@ -63,9 +63,9 @@ export function VolunteerSchedule({ date, timeSlot }: VolunteerScheduleProps) {
     { label: "Opening Prayer", value: schedule.openingPrayer },
     { label: "[A] Leading singing", value: schedule.leadingSingingA },
     { label: "[B] Leading singing", value: schedule.leadingSingingB },
-    { label: "[A] Reading scripture", value: schedule.readingScriptureA },
+    { label: "[A] Reading scripture", value: schedule.readingScriptureA, scripture: schedule.lessonScriptureA },
     { label: "[A] Presenting a lesson", value: schedule.presentingLessonA, lessonTitle: schedule.lessonTitleA },
-    { label: "[B] Reading scripture", value: schedule.readingScriptureB },
+    { label: "[B] Reading scripture", value: schedule.readingScriptureB, scripture: schedule.lessonScriptureB },
     { label: "[B] Presenting a lesson", value: schedule.presentingLessonB, lessonTitle: schedule.lessonTitleB },
     { label: "Closing Prayer", value: schedule.closingPrayer },
   ]
@@ -116,6 +116,9 @@ export function VolunteerSchedule({ date, timeSlot }: VolunteerScheduleProps) {
                 {item.label}
                 {item.lessonTitle && (
                   <span className="italic text-muted-foreground"> - {item.lessonTitle}</span>
+                )}
+                {item.scripture && (
+                  <span className="italic text-muted-foreground"> - {item.scripture}</span>
                 )}
                 :
               </span>
