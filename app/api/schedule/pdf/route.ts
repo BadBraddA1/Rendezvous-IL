@@ -177,11 +177,14 @@ export async function GET() {
     yPos += 6
   })
 
-  // Footer
-  checkPageBreak(20)
-  doc.setFontSize(8)
-  doc.setTextColor(100)
-  doc.text("Rendezvous 2026 - Lake Williamson Christian Center - Carlinville, IL", pageWidth / 2, 285, { align: "center" })
+  // Footer on each page
+  const totalPages = doc.getNumberOfPages()
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i)
+    doc.setFontSize(8)
+    doc.setTextColor(100)
+    doc.text("Rendezvous 2026 - Lake Williamson Christian Center - Carlinville, IL", pageWidth / 2, 285, { align: "center" })
+  }
 
   // Generate PDF as array buffer
   const pdfBuffer = doc.output("arraybuffer")
