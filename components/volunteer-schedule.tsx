@@ -14,9 +14,11 @@ interface Schedule {
   readingScriptureA: string | null
   presentingLessonA: string | null
   lessonTitleA: string | null
+  lessonScriptureA: string | null
   readingScriptureB: string | null
   presentingLessonB: string | null
   lessonTitleB: string | null
+  lessonScriptureB: string | null
   closingPrayer: string | null
 }
 
@@ -76,21 +78,24 @@ export function VolunteerSchedule({ date, timeSlot }: VolunteerScheduleProps) {
     return null
   }
 
-  // Extract lessons with their presenters
+  // Extract lessons with their presenters and scripture
   const lessons = [
-    { title: schedule.lessonTitleA, presenter: schedule.presentingLessonA },
-    { title: schedule.lessonTitleB, presenter: schedule.presentingLessonB },
+    { title: schedule.lessonTitleA, presenter: schedule.presentingLessonA, scripture: schedule.lessonScriptureA },
+    { title: schedule.lessonTitleB, presenter: schedule.presentingLessonB, scripture: schedule.lessonScriptureB },
   ].filter(l => l.title && l.presenter)
 
   return (
     <div className="mt-3 rounded-md border border-primary/20 bg-primary/5 p-3 space-y-3">
       {/* Lessons section */}
       {lessons.length > 0 && (
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           {lessons.map((lesson, idx) => (
             <div key={idx}>
               <p className="font-medium text-foreground text-sm">Lesson: &quot;{lesson.title}&quot;</p>
-              <p className="text-xs text-muted-foreground">Speaker: {lesson.presenter}</p>
+              <p className="text-xs text-muted-foreground">
+                Speaker: {lesson.presenter}
+                {lesson.scripture && <> | Scripture: {lesson.scripture}</>}
+              </p>
             </div>
           ))}
         </div>
