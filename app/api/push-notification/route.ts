@@ -14,6 +14,10 @@ export async function POST(request: Request) {
     const ONESIGNAL_APP_ID = process.env.ONESIGNAL_APP_ID
     const ONESIGNAL_REST_API_KEY = process.env.ONESIGNAL_REST_API_KEY
 
+    console.log("[v0] OneSignal App ID exists:", !!ONESIGNAL_APP_ID)
+    console.log("[v0] OneSignal API Key exists:", !!ONESIGNAL_REST_API_KEY)
+    console.log("[v0] OneSignal API Key length:", ONESIGNAL_REST_API_KEY?.length || 0)
+
     if (!ONESIGNAL_APP_ID || !ONESIGNAL_REST_API_KEY) {
       return NextResponse.json(
         { error: "OneSignal credentials not configured" },
