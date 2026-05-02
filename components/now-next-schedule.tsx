@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Clock, ChevronRight, ArrowDown, Radio } from 'lucide-react'
+import { Clock, ChevronRight, ArrowDown } from 'lucide-react'
 import { WeatherForecast } from '@/components/weather-forecast'
 import { Button } from '@/components/ui/button'
 
@@ -260,39 +260,36 @@ export function NowNextSchedule() {
     )
   }
 
-  // Before event - show next up events with weather
+  // Before event - show weather and next up events immediately
   if (eventStatus === 'before') {
     // Get first few events to preview
     const previewEvents = SCHEDULE_ITEMS.slice(0, 6)
     
     return (
-      <div className="w-full space-y-6">
-        {/* Live updating indicator + header */}
-        <div className="text-center space-y-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-            </span>
-            <span className="text-sm font-medium text-primary">Live Updating</span>
-          </div>
-          <h3 className="text-2xl font-bold text-ring">Rendezvous 2026</h3>
-          <p className="text-muted-foreground">May 4-8, 2026 at Lake Williamson Christian Center</p>
-        </div>
-
-        {/* Weather Section */}
+      <div className="w-full space-y-4">
+        {/* Weather Section - shows immediately */}
         <WeatherForecast />
 
         {/* Next Up Events */}
         <Card className="border-accent/30 bg-gradient-to-br from-accent/5 to-transparent overflow-hidden">
           <CardHeader className="pb-3">
-            <div className="flex items-center gap-2">
-              <div className="rounded-full bg-accent p-2">
-                <ChevronRight className="h-4 w-4 text-accent-foreground" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="rounded-full bg-accent p-2">
+                  <ChevronRight className="h-4 w-4 text-accent-foreground" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg font-bold">Next Up</CardTitle>
+                  <CardDescription>What&apos;s happening at Rendezvous</CardDescription>
+                </div>
               </div>
-              <div>
-                <CardTitle className="text-lg font-bold">Next Up at Rendezvous</CardTitle>
-                <CardDescription>Here&apos;s what&apos;s coming!</CardDescription>
+              {/* Live updating indicator */}
+              <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-primary/10">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                </span>
+                <span className="text-xs font-medium text-primary">Live</span>
               </div>
             </div>
           </CardHeader>
