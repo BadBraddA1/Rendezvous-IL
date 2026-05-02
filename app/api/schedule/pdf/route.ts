@@ -1,11 +1,10 @@
-import { Download } from "lucide-react"
+import { jsPDF } from "jspdf"
 
-// Schedule data structure
+// Schedule data - same as print page
 const scheduleData = [
   {
     day: "Monday",
     date: "May 4",
-    color: "secondary",
     events: [
       { time: "1:00 – 5:15 PM", title: "Check-in", location: "Activity Center (AC) [upstairs outside Room 207]", note: "Mini-fridge available in AC Room 205. Use this time for setting up RVs & tents, settling into motel rooms, and for visiting." },
       { time: "4:00 – 5:00 PM", title: "Ice Breaker", location: "AC Room 205/206", note: "Take-A-Hike Game or similar" },
@@ -18,7 +17,6 @@ const scheduleData = [
   {
     day: "Tuesday",
     date: "May 5",
-    color: "primary",
     events: [
       { time: "7:30 AM", title: "Breakfast", location: "Lakeside Dining Room" },
       { time: "9:00 AM", title: "Morning assembly & announcements", location: "AC Room 207" },
@@ -37,7 +35,6 @@ const scheduleData = [
   {
     day: "Wednesday",
     date: "May 6",
-    color: "foreground",
     events: [
       { time: "7:30 AM", title: "Breakfast", location: "Lakeside Dining Room" },
       { time: "9:00 AM", title: "Morning assembly, group picture, & announcements", location: "AC Room 207" },
@@ -57,7 +54,6 @@ const scheduleData = [
   {
     day: "Thursday",
     date: "May 7",
-    color: "primary",
     events: [
       { time: "7:30 AM", title: "Breakfast", location: "Lakeside Dining Room" },
       { time: "9:00 AM", title: "Morning assembly & announcements", location: "AC Room 207" },
@@ -77,7 +73,6 @@ const scheduleData = [
   {
     day: "Friday",
     date: "May 8",
-    color: "secondary",
     events: [
       { time: "7:30 AM", title: "Breakfast", location: "Lakeside Dining Room" },
       { time: "9:00 AM", title: "Morning assembly, Bible bowl awards, & brainstorming for next year", location: "AC Room 207" },
@@ -87,102 +82,114 @@ const scheduleData = [
   },
 ]
 
-export default function PrintableSchedulePage() {
-  return (
-    <div className="min-h-screen bg-white">
-      {/* Print button - hidden when printing */}
-      <div className="fixed top-4 right-4 z-50">
-        <a
-          href="/api/schedule/pdf"
-          download="rendezvous-2026-schedule.pdf"
-          className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors shadow-lg"
-        >
-          <Download className="h-4 w-4" />
-          Download PDF
-        </a>
-      </div>
+export async function GET() {
+  const doc = new jsPDF()
+  const pageWidth = doc.internal.pageSize.getWidth()
+  const margin = 15
+  const contentWidth = pageWidth - margin * 2
+  let yPos = 20
 
-      {/* Back link - hidden when printing */}
-      <div className="print:hidden fixed top-4 left-4 z-50">
-        <a
-          href="/schedule"
-          className="flex items-center gap-2 bg-muted text-muted-foreground px-4 py-2 rounded-lg hover:bg-muted/80 transition-colors shadow-lg"
-        >
-          &larr; Back to Schedule
-        </a>
-      </div>
+  // Helper to add new page if needed
+  const checkPageBreak = (neededSpace: number) => {
+    if (yPos + neededSpace > 270) {
+      doc.addPage()
+      yPos = 20
+    }
+  }
 
-      {/* Printable content */}
-      <div className="max-w-4xl mx-auto p-8 print:p-4 print:max-w-none">
-        {/* Header */}
-        <header className="text-center mb-8 print:mb-6 border-b-2 border-gray-900 pb-4">
-          <h1 className="text-3xl font-bold text-gray-900 print:text-2xl">Rendezvous 2026 Schedule</h1>
-          <p className="text-lg text-gray-600 mt-1 print:text-base">May 4-8, 2026</p>
-          <p className="text-gray-500 print:text-sm">Lake Williamson Christian Center, Carlinville, IL</p>
-        </header>
+  // Header
+  doc.setFontSize(22)
+  doc.setFont("helvetica", "bold")
+  doc.text("Rendezvous 2026 Schedule", pageWidth / 2, yPos, { align: "center" })
+  yPos += 8
 
-        {/* Schedule by day */}
-        <div className="space-y-8 print:space-y-4">
-          {scheduleData.map((day) => (
-            <section key={day.day} className="print:break-inside-avoid-page">
-              {/* Day header */}
-              <div className="flex items-center gap-3 mb-4 print:mb-2 border-b border-gray-300 pb-2">
-                <div className="flex items-center justify-center w-10 h-10 print:w-8 print:h-8 rounded-full bg-gray-900 text-white font-bold text-lg print:text-base">
-                  {day.day.charAt(0)}
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-gray-900 print:text-lg">{day.date} ({day.day})</h2>
-                </div>
-              </div>
+  doc.setFontSize(12)
+  doc.setFont("helvetica", "normal")
+  doc.text("May 4-8, 2026", pageWidth / 2, yPos, { align: "center" })
+  yPos += 6
 
-              {/* Events table */}
-              <table className="w-full text-sm print:text-xs">
-                <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left py-2 pr-4 font-semibold text-gray-700 w-32 print:w-24">Time</th>
-                    <th className="text-left py-2 pr-4 font-semibold text-gray-700">Event</th>
-                    <th className="text-left py-2 font-semibold text-gray-700 w-40 print:w-32">Location</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {day.events.map((event, index) => (
-                    <tr key={index} className="border-b border-gray-100 print:break-inside-avoid">
-                      <td className="py-2 pr-4 align-top text-gray-600 whitespace-nowrap">{event.time}</td>
-                      <td className="py-2 pr-4 align-top">
-                        <span className="font-medium text-gray-900">{event.title}</span>
-                        {event.note && (
-                          <span className="block text-gray-500 text-xs mt-0.5 italic">{event.note}</span>
-                        )}
-                      </td>
-                      <td className="py-2 align-top text-gray-600">{event.location}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </section>
-          ))}
-        </div>
+  doc.setFontSize(10)
+  doc.setTextColor(100)
+  doc.text("Lake Williamson Christian Center, Carlinville, IL", pageWidth / 2, yPos, { align: "center" })
+  doc.setTextColor(0)
+  yPos += 12
 
-        {/* Footer */}
-        <footer className="mt-8 pt-4 border-t border-gray-300 text-center text-xs text-gray-500 print:mt-4">
-          <p>Rendezvous 2026 &bull; Lake Williamson Christian Center &bull; Carlinville, IL</p>
-          <p className="mt-1">Visit rendezvous-il.vercel.app for live updates and announcements</p>
-        </footer>
-      </div>
+  // Line under header
+  doc.setLineWidth(0.5)
+  doc.line(margin, yPos, pageWidth - margin, yPos)
+  yPos += 10
 
-      {/* Print styles */}
-      <style jsx global>{`
-        @media print {
-          @page {
-            margin: 0.5in;
-            size: letter;
-          }
-          body {
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-          }
-        }
-      `}</style>
-    </div>
-  )
+  // Schedule by day
+  scheduleData.forEach((day) => {
+    checkPageBreak(30)
+
+    // Day header
+    doc.setFontSize(14)
+    doc.setFont("helvetica", "bold")
+    doc.text(`${day.date} (${day.day})`, margin, yPos)
+    yPos += 2
+    doc.setLineWidth(0.2)
+    doc.line(margin, yPos, pageWidth - margin, yPos)
+    yPos += 8
+
+    // Events
+    day.events.forEach((event) => {
+      const eventLines = doc.splitTextToSize(event.title, contentWidth - 45)
+      const locationLines = event.location ? doc.splitTextToSize(event.location, contentWidth - 45) : []
+      const noteLines = event.note ? doc.splitTextToSize(event.note, contentWidth - 45) : []
+      const totalLines = eventLines.length + locationLines.length + noteLines.length
+      const neededSpace = totalLines * 5 + 6
+
+      checkPageBreak(neededSpace)
+
+      // Time
+      doc.setFontSize(9)
+      doc.setFont("helvetica", "bold")
+      doc.text(event.time, margin, yPos)
+
+      // Event title
+      doc.setFont("helvetica", "normal")
+      doc.text(eventLines, margin + 40, yPos)
+      yPos += eventLines.length * 4
+
+      // Location
+      if (event.location) {
+        doc.setFontSize(8)
+        doc.setTextColor(80)
+        doc.text(locationLines, margin + 40, yPos)
+        yPos += locationLines.length * 3.5
+      }
+
+      // Note
+      if (event.note) {
+        doc.setFontSize(8)
+        doc.setTextColor(120)
+        doc.setFont("helvetica", "italic")
+        doc.text(noteLines, margin + 40, yPos)
+        doc.setFont("helvetica", "normal")
+        yPos += noteLines.length * 3.5
+      }
+
+      doc.setTextColor(0)
+      yPos += 4
+    })
+
+    yPos += 6
+  })
+
+  // Footer
+  checkPageBreak(20)
+  doc.setFontSize(8)
+  doc.setTextColor(100)
+  doc.text("Rendezvous 2026 - Lake Williamson Christian Center - Carlinville, IL", pageWidth / 2, 285, { align: "center" })
+
+  // Generate PDF as array buffer
+  const pdfBuffer = doc.output("arraybuffer")
+
+  return new Response(pdfBuffer, {
+    headers: {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": "attachment; filename=rendezvous-2026-schedule.pdf",
+    },
+  })
 }
