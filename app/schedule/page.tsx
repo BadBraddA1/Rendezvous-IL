@@ -12,6 +12,7 @@ import { InlineWeather } from "@/components/weather-forecast"
 import { ScheduleMap } from "@/components/schedule-map"
 import { LocationLink } from "@/components/location-link"
 import { ScheduleAnnouncements } from "@/components/schedule-announcements"
+import { MealMenu } from "@/components/meal-menu"
 
 export default function SchedulePage() {
   const [activeDay, setActiveDay] = useState<string>("")
@@ -202,6 +203,7 @@ export default function SchedulePage() {
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Dinner at the <LocationLink locationId="lakeside-dining" onShowMap={showMapWithLocation}>Lakeside Dining Room</LocationLink> (please gather outside for a prayer prior to each designated meal
                     time)
+                    <MealMenu date="2026-05-04" mealType="dinner" />
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
@@ -248,6 +250,7 @@ export default function SchedulePage() {
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base">7:30 AM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Breakfast at the <LocationLink locationId="lakeside-dining" onShowMap={showMapWithLocation}>Lakeside Dining Room</LocationLink>
+                    <MealMenu date="2026-05-05" mealType="breakfast" />
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
@@ -269,6 +272,7 @@ export default function SchedulePage() {
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base">12:00 PM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Lunch at the <LocationLink locationId="lakeside-dining" onShowMap={showMapWithLocation}>Lakeside Dining Room</LocationLink>
+                    <MealMenu date="2026-05-05" mealType="lunch" />
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
@@ -293,6 +297,7 @@ export default function SchedulePage() {
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base">5:30 PM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Dinner at the <LocationLink locationId="lakeside-dining" onShowMap={showMapWithLocation}>Lakeside Dining Room</LocationLink>
+                    <MealMenu date="2026-05-05" mealType="dinner" />
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
@@ -335,6 +340,7 @@ export default function SchedulePage() {
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base">7:30 AM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Breakfast at the <LocationLink locationId="lakeside-dining" onShowMap={showMapWithLocation}>Lakeside Dining Room</LocationLink>
+                    <MealMenu date="2026-05-06" mealType="breakfast" />
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
@@ -351,23 +357,10 @@ export default function SchedulePage() {
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
-                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">12:00 PM</dt>
+<dt className="mb-2 text-sm font-semibold text-primary md:text-base">12:00 PM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Lunch at the <LocationLink locationId="lakeside-dining" onShowMap={showMapWithLocation}>Lakeside Dining Room</LocationLink>
-                  </dd>
-                </div>
-                <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
-                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">2:30 PM</dt>
-                  <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
-                    <a
-                      href="https://docs.google.com/document/d/1_lCl-SAWgHRITnPfoYP-U1l074Z6PxBO8h6M2f4w-k4/edit?usp=drivesdk"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary hover:underline"
-                    >
-                      Scrabble Tournament
-                    </a>{" "}
-                    in <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>AC Room 205/206</LocationLink>
+                    <MealMenu date="2026-05-06" mealType="lunch" />
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
@@ -394,6 +387,7 @@ export default function SchedulePage() {
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base">5:30 PM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Dinner at the <LocationLink locationId="lakeside-dining" onShowMap={showMapWithLocation}>Lakeside Dining Room</LocationLink>
+                    <MealMenu date="2026-05-06" mealType="dinner" />
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
@@ -436,6 +430,7 @@ export default function SchedulePage() {
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base">7:30 AM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Breakfast at the <LocationLink locationId="lakeside-dining" onShowMap={showMapWithLocation}>Lakeside Dining Room</LocationLink>
+                    <MealMenu date="2026-05-07" mealType="breakfast" />
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
@@ -466,6 +461,7 @@ export default function SchedulePage() {
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base">12:00 PM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Lunch at the <LocationLink locationId="lakeside-dining" onShowMap={showMapWithLocation}>Lakeside Dining Room</LocationLink>
+                    <MealMenu date="2026-05-07" mealType="lunch" />
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
@@ -494,6 +490,7 @@ export default function SchedulePage() {
                   </dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Cookout by the lake (weather permitting)
+                    <MealMenu date="2026-05-07" mealType="dinner" />
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
@@ -549,6 +546,7 @@ export default function SchedulePage() {
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base">7:30 AM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Breakfast at the <LocationLink locationId="lakeside-dining" onShowMap={showMapWithLocation}>Lakeside Dining Room</LocationLink>
+                    <MealMenu date="2026-05-08" mealType="breakfast" />
                   </dd>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
@@ -568,6 +566,7 @@ export default function SchedulePage() {
                   <dt className="mb-2 text-sm font-semibold text-primary md:text-base">12:00 PM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Lunch at the Lakeside Dining Room & then depart for home
+                    <MealMenu date="2026-05-08" mealType="lunch" />
                   </dd>
                 </div>
               </dl>
