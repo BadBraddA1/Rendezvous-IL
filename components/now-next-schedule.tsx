@@ -272,33 +272,78 @@ export function NowNextSchedule() {
     )
   }
 
-  // Before event - show countdown
+  // Before event - show countdown + preview of what's coming
   if (eventStatus === 'before') {
+    // Get first few events to preview
+    const previewEvents = SCHEDULE_ITEMS.slice(0, 5)
+    
     return (
-      <div className="w-full">
-        <div className="mb-4 text-center">
-          <h3 className="text-2xl font-bold text-ring">Event Starts In</h3>
+      <div className="w-full space-y-6">
+        {/* Countdown Section */}
+        <div>
+          <div className="mb-4 text-center">
+            <h3 className="text-2xl font-bold text-ring">Event Starts In</h3>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+            {[
+              { label: "Days", value: timeLeft.days },
+              { label: "Hours", value: timeLeft.hours },
+              { label: "Minutes", value: timeLeft.minutes },
+              { label: "Seconds", value: timeLeft.seconds },
+            ].map((item) => (
+              <Card key={item.label} className="border-secondary-foreground/20 bg-primary text-background">
+                <CardContent className="p-4 sm:p-6 text-center">
+                  <div className="text-3xl sm:text-4xl font-bold text-secondary-foreground mb-2">
+                    {String(item.value).padStart(2, "0")}
+                  </div>
+                  <div className="text-xs sm:text-sm text-secondary-foreground/70">{item.label}</div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          <div className="mt-4 text-center">
+            <p className="text-ring">May 4, 2026 at 1:00 PM Central Time</p>
+          </div>
         </div>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-          {[
-            { label: "Days", value: timeLeft.days },
-            { label: "Hours", value: timeLeft.hours },
-            { label: "Minutes", value: timeLeft.minutes },
-            { label: "Seconds", value: timeLeft.seconds },
-          ].map((item) => (
-            <Card key={item.label} className="border-secondary-foreground/20 bg-primary text-background">
-              <CardContent className="p-4 sm:p-6 text-center">
-                <div className="text-3xl sm:text-4xl font-bold text-secondary-foreground mb-2">
-                  {String(item.value).padStart(2, "0")}
+
+        {/* Preview of upcoming events */}
+        <Card className="border-accent/30 bg-gradient-to-br from-accent/5 to-transparent overflow-hidden">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <div className="rounded-full bg-accent p-2">
+                <ChevronRight className="h-4 w-4 text-accent-foreground" />
+              </div>
+              <div>
+                <CardTitle className="text-lg font-bold">Coming Up at Rendezvous</CardTitle>
+                <CardDescription>Here&apos;s what to look forward to!</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="space-y-3">
+              {previewEvents.map((event, index) => (
+                <div 
+                  key={index} 
+                  className="flex items-start gap-3 p-3 rounded-lg bg-background/50 border border-border/30"
+                >
+                  <div className="flex flex-col items-center shrink-0">
+                    <span className="text-xs font-medium text-muted-foreground">{event.day}</span>
+                    <span className="text-sm font-bold text-primary">{event.time.split(' - ')[0]}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-semibold text-foreground truncate">{event.title}</h4>
+                    {event.location && (
+                      <p className="text-sm text-muted-foreground truncate">{event.location}</p>
+                    )}
+                  </div>
                 </div>
-                <div className="text-xs sm:text-sm text-secondary-foreground/70">{item.label}</div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-        <div className="mt-4 text-center">
-          <p className="text-ring">May 4, 2026 at 1:00 PM Central Time</p>
-        </div>
+              ))}
+            </div>
+            <p className="mt-4 text-sm text-muted-foreground text-center">
+              ...and much more! Scroll down to see the full schedule.
+            </p>
+          </CardContent>
+        </Card>
       </div>
     )
   }
