@@ -61,13 +61,13 @@ export const scheduleData: ScheduleDay[] = [
       { time: "7:30 AM", title: "Breakfast", location: "Lakeside Dining Room" },
       { time: "9:00 AM", title: "Morning assembly & announcements", location: "AC Room 207" },
       {
-        time: "10:00 – 11:30 AM",
+        time: "10:00 AM",
         title: "Young Adult session",
         location: "AC Ping Pong Room",
         note: "Non-parent graduates",
       },
       {
-        time: "10:00 – 11:30 AM",
+        time: "10:00 AM",
         title: "Mom's session",
         location: "AC Room 207",
         note: "Free time for everyone else; black-light activities & nine square",
