@@ -684,7 +684,16 @@ export default function LiveUpdatesPage() {
   })
 
   return (
-    <div className="h-screen max-h-screen overflow-hidden bg-black text-white flex flex-col">
+    <div 
+      className="h-screen max-h-screen overflow-hidden bg-black text-white flex flex-col"
+      style={{
+        // Scale the entire UI with viewport size: every rem-based Tailwind class
+        // (text-*, p-*, h-*, w-*, gap-*) grows proportionally on larger TVs.
+        // Floor 14px (laptop), ceiling 64px so 120" 4K TVs fill comfortably.
+        // Approx: 1366×768 → ~16px, 1920×1080 → ~30px, 3840×2160 → ~58-64px.
+        fontSize: "clamp(14px, calc(0.85vw + 0.85vh + 4px), 64px)",
+      }}
+    >
       {/* Header */}
       <header className="shrink-0 flex items-center justify-between px-12 py-6 border-b border-white/10">
         <div className="flex items-center gap-5">
@@ -1286,7 +1295,7 @@ function ScheduleView({
 
       {/* Right side - Upcoming Schedule */}
       {upcoming.length > 0 && (
-        <div className="w-[440px] relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-violet-500/[0.08] via-white/[0.03] to-transparent backdrop-blur-sm p-6 flex flex-col">
+        <div className="w-[28rem] relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-violet-500/[0.08] via-white/[0.03] to-transparent backdrop-blur-sm p-6 flex flex-col">
           <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-violet-500/15 blur-2xl" />
           <div className="relative flex items-center gap-3 mb-5">
             <div className="rounded-xl bg-violet-500/15 p-2.5 border border-violet-400/20">
@@ -1532,7 +1541,7 @@ function MapView({
       </div>
 
       {/* Left side - Event info card */}
-      <div className="w-[420px] shrink-0 flex flex-col">
+      <div className="w-[26rem] shrink-0 flex flex-col">
         <div className={`flex-1 relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br ${cc.bg} via-white/[0.04] to-transparent backdrop-blur-sm p-7 flex flex-col justify-center`}>
           <div className={`absolute -top-12 -right-12 h-40 w-40 rounded-full ${cc.glow} blur-2xl`} />
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
