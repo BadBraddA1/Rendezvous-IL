@@ -667,9 +667,9 @@ export default function LiveUpdatesPage() {
   })
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col">
+    <div className="h-screen max-h-screen overflow-hidden bg-black text-white flex flex-col">
       {/* Header */}
-      <header className="flex items-center justify-between px-12 py-6 border-b border-white/10">
+      <header className="shrink-0 flex items-center justify-between px-12 py-6 border-b border-white/10">
         <div className="flex items-center gap-5">
           <div className="relative h-16 w-16 shrink-0 rounded-xl bg-white/5 border border-white/10 p-2 flex items-center justify-center">
             <Image
@@ -730,7 +730,7 @@ export default function LiveUpdatesPage() {
 
       {/* Keyboard Controls Footer - hidden in fullscreen */}
       {!isFullscreen && (
-      <footer className="px-12 py-6 border-t border-white/10">
+      <footer className="shrink-0 px-12 py-6 border-t border-white/10">
         <div className="flex items-center gap-6 justify-center flex-wrap">
           <span className="text-white/50 text-lg">Keyboard Controls:</span>
           <KeyButton label="1 All" active={currentView === "all"} />
@@ -891,7 +891,7 @@ function AllView({
   const featuredIsNow = !!nowItem
 
   return (
-    <div className="relative w-full max-w-[1800px] mx-auto">
+    <div className="relative w-full h-full max-w-[1800px] mx-auto flex flex-col overflow-hidden">
       {/* Ambient background orbs for depth */}
       <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
         <div className="absolute -top-40 -left-40 h-[28rem] w-[28rem] rounded-full bg-orange-500/10 blur-3xl animate-pulse" style={{ animationDuration: "6s" }} />
@@ -900,22 +900,22 @@ function AllView({
       </div>
 
       {/* HERO BANNER - Logo, tagline, featured event */}
-      <div className="relative mb-8 overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.08] via-white/[0.04] to-transparent backdrop-blur-sm">
+      <div className="relative mb-6 shrink-0 overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.08] via-white/[0.04] to-transparent backdrop-blur-sm">
         {/* Decorative gradient stripe */}
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-orange-400/60 to-transparent" />
         <div className="absolute -top-24 left-1/2 -translate-x-1/2 h-48 w-[40rem] rounded-full bg-orange-500/20 blur-3xl" />
 
-        <div className="relative grid grid-cols-12 gap-8 p-10">
+        <div className="relative grid grid-cols-12 gap-6 p-6">
           {/* Left: Logo + Tagline */}
           <div className="col-span-5 flex flex-col items-center justify-center text-center">
-            <div className="relative mb-4">
+            <div className="relative mb-3">
               <div className="absolute inset-0 -z-10 rounded-full bg-orange-500/30 blur-3xl" />
               <Image
                 src="/rendezvous-logo.png"
                 alt="Rendezvous Homeschool Family Retreat"
                 width={400}
                 height={400}
-                className="h-44 w-auto drop-shadow-2xl brightness-0 invert"
+                className="h-32 w-auto drop-shadow-2xl brightness-0 invert"
                 priority
               />
             </div>
@@ -929,8 +929,8 @@ function AllView({
           {/* Right: Featured event spotlight */}
           <div className="col-span-7 flex flex-col justify-center">
             {featuredItem ? (
-              <div className="relative rounded-2xl border border-white/10 bg-gradient-to-br from-orange-500/10 via-white/[0.03] to-transparent p-8">
-                <div className="flex items-center gap-3 mb-6">
+              <div className="relative rounded-2xl border border-white/10 bg-gradient-to-br from-orange-500/10 via-white/[0.03] to-transparent p-6">
+                <div className="flex items-center gap-3 mb-4">
                   {featuredIsNow ? (
                     <>
                       <span className="relative flex h-3 w-3">
@@ -982,7 +982,7 @@ function AllView({
       </div>
 
       {/* CARDS GRID */}
-      <div className={`grid grid-cols-1 gap-6 ${hasVolunteers ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
+      <div className={`grid grid-cols-1 gap-6 flex-1 min-h-0 ${hasVolunteers ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
         {/* Weather Card */}
         <div className="group relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-sky-500/[0.08] via-white/[0.03] to-transparent backdrop-blur-sm p-7">
           <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-sky-500/10 blur-2xl" />
