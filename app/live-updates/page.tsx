@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from "react"
 import Image from "next/image"
 import { mapLocations, mapPaths } from "@/lib/venue-map-data"
 import { ViewTransition } from "@/components/view-transition"
+import { IceCreamChallenge } from "@/components/ice-cream-challenge"
 import { 
   Cloud, 
   CloudRain, 
@@ -306,6 +307,15 @@ export default function LiveUpdatesPage() {
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isAutoRotating, setIsAutoRotating] = useState(true)
   const [currentTime, setCurrentTime] = useState(new Date())
+  // Admin mode (?admin=1) — gates the ice cream challenge editor.
+  // Without this flag, Stephen and Brian will not see any controls or hidden state.
+  const [adminMode, setAdminMode] = useState(false)
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search)
+      setAdminMode(params.get("admin") === "1")
+    }
+  }, [])
   
   // Data states
   const [weather, setWeather] = useState<WeatherData | null>(null)
@@ -721,7 +731,7 @@ export default function LiveUpdatesPage() {
             <ScheduleView nowItem={nowItem} nextItem={nextItem} upcomingToday={upcomingToday} upcomingAll={upcomingAll} />
           )}
           {currentView === "meal" && (
-            <MealView nextMeal={nextMeal} mealData={mealData} />
+            <MealView nextMeal={nextMeal} mealData={mealData} adminMode={adminMode} />
           )}
           {currentView === "map" && (
             <MapView nowItem={nowItem} nextItem={nextItem} prevItem={prevItem} />
@@ -1322,7 +1332,15 @@ function ScheduleView({
 }
 
 // Meal View - Full screen meal display with menu
-function MealView({ nextMeal, mealData }: { nextMeal: ScheduleItem | null; mealData: MealData | null }) {
+function MealView({ 
+  nextMeal, 
+  mealData, 
+  adminMode = false 
+}: { 
+  nextMeal: ScheduleItem | null
+  mealData: MealData | null
+  adminMode?: boolean
+}) {
   return (
     <div className="relative w-full h-full flex items-center justify-center">
       {/* Ambient amber glow orbs */}
@@ -1410,6 +1428,11 @@ function MealView({ nextMeal, mealData }: { nextMeal: ScheduleItem | null; mealD
           ) : (
             <p className="mt-8 text-white/40 text-lg">Menu details coming soon...</p>
           )}
+
+          {/* Ice Cream Challenge — hidden until admin reveals it */}
+          <div className="mt-5 w-full">
+            <IceCreamChallenge adminMode={adminMode} />
+          </div>
         </div>
       )}
     </div>
