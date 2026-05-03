@@ -43,6 +43,9 @@ export function SiteHeader() {
           <Link href="/calculator" className="text-sm font-medium transition-colors hover:text-primary">
             Calculator
           </Link>
+          <Link href="/map2026" className="text-sm font-medium transition-colors hover:text-primary">
+            Attendee
+          </Link>
         </div>
 
         <Sheet open={open} onOpenChange={setOpen}>
@@ -94,6 +97,13 @@ export function SiteHeader() {
                 onClick={() => setOpen(false)}
               >
                 Calculator
+              </Link>
+              <Link
+                href="/map2026"
+                className="text-xl font-medium text-center transition-colors hover:text-primary"
+                onClick={() => setOpen(false)}
+              >
+                Attendee
               </Link>
             </nav>
           </SheetContent>
