@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
 
-const sql = neon(process.env.DATABASE_URL!)
-
 export const dynamic = "force-dynamic"
 export const revalidate = 0
 
@@ -26,6 +24,7 @@ function parse(value: unknown): Challenge {
 
 export async function GET() {
   try {
+    const sql = neon(process.env.NEON_DATABASE_URL!)
     const rows = await sql`SELECT value FROM app_settings WHERE key = 'ice_cream_challenge' LIMIT 1`
     const value = rows[0]?.value
     return NextResponse.json(parse(value))
@@ -37,6 +36,7 @@ export async function GET() {
 
 export async function PUT(req: Request) {
   try {
+    const sql = neon(process.env.NEON_DATABASE_URL!)
     const body = await req.json()
     const next: Challenge = {
       visible: !!body.visible,
