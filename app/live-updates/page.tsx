@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react"
 import Image from "next/image"
-import { mapLocations } from "@/lib/venue-map-data"
+import { mapLocations, mapPaths } from "@/lib/venue-map-data"
 import { 
   Cloud, 
   CloudRain, 
@@ -304,6 +304,7 @@ export default function LiveUpdatesPage() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
   const [nowItem, setNowItem] = useState<ScheduleItem | null>(null)
   const [nextItem, setNextItem] = useState<ScheduleItem | null>(null)
+  const [prevItem, setPrevItem] = useState<ScheduleItem | null>(null)
   const [nextMeal, setNextMeal] = useState<ScheduleItem | null>(null)
   const [upcomingToday, setUpcomingToday] = useState<ScheduleItem[]>([])
   const [upcomingAll, setUpcomingAll] = useState<ScheduleItem[]>([])
@@ -453,15 +454,14 @@ export default function LiveUpdatesPage() {
 
       let current: ScheduleItem | null = null
       let next: ScheduleItem | null = null
+      let prev: ScheduleItem | null = null
       let meal: ScheduleItem | null = null
 
       const currentMinutes = centralHour * 60 + centralMinute
 
-      // Find current and next items
+      // Find current, prev, and next items
       for (let i = 0; i < SCHEDULE_ITEMS.length; i++) {
         const item = SCHEDULE_ITEMS[i]
-        
-        if (item.date < centralDateStr) continue
 
         const itemStartMinutes = item.startHour * 60 + item.startMinute
         let itemEndMinutes: number
@@ -471,9 +471,18 @@ export default function LiveUpdatesPage() {
           itemEndMinutes = itemStartMinutes + 60
         }
 
+        if (item.date < centralDateStr) {
+          // From a previous day - keep updating prev so we end with the latest completed event
+          prev = item
+          continue
+        }
+
         if (item.date === centralDateStr) {
           if (currentMinutes >= itemStartMinutes && currentMinutes < itemEndMinutes) {
             current = item
+          } else if (itemEndMinutes <= currentMinutes) {
+            // Already finished today - this is now the most recent prev
+            prev = item
           } else if (itemStartMinutes > currentMinutes && !next) {
             next = item
           }
@@ -529,6 +538,7 @@ export default function LiveUpdatesPage() {
 
       setNowItem(current)
       setNextItem(next)
+      setPrevItem(prev)
       setNextMeal(meal)
       setUpcomingToday(todayUpcoming)
       setUpcomingAll(allUpcoming)
@@ -705,7 +715,7 @@ export default function LiveUpdatesPage() {
           <MealView nextMeal={nextMeal} mealData={mealData} />
         )}
         {currentView === "map" && (
-          <MapView nowItem={nowItem} nextItem={nextItem} />
+          <MapView nowItem={nowItem} nextItem={nextItem} prevItem={prevItem} />
         )}
         {currentView === "volunteers" && (
           <VolunteersView volunteerSchedule={volunteerSchedule} volunteerTimeSlot={volunteerTimeSlot} />
@@ -1213,7 +1223,15 @@ function MealView({ nextMeal, mealData }: { nextMeal: ScheduleItem | null; mealD
 }
 
 // Map View - Shows the venue map with current/next event location highlighted
-function MapView({ nowItem, nextItem }: { nowItem: ScheduleItem | null; nextItem: ScheduleItem | null }) {
+function MapView({ 
+  nowItem, 
+  nextItem, 
+  prevItem 
+}: { 
+  nowItem: ScheduleItem | null
+  nextItem: ScheduleItem | null
+  prevItem: ScheduleItem | null
+}) {
   // Prefer current event, fall back to next
   const featuredItem = nowItem || nextItem
   const isHappeningNow = !!nowItem
@@ -1221,6 +1239,29 @@ function MapView({ nowItem, nextItem }: { nowItem: ScheduleItem | null; nextItem
   const featuredLocation = featuredLocationId 
     ? mapLocations.find(l => l.id === featuredLocationId) 
     : null
+
+  // Find the previous location (where you're coming from)
+  const prevLocationId = getLocationIdForEvent(prevItem)
+  const prevLocation = prevLocationId && prevLocationId !== featuredLocationId
+    ? mapLocations.find(l => l.id === prevLocationId)
+    : null
+
+  // Try to find a path between prev and featured location.
+  // Paths are defined in either direction, so check both and reverse if needed.
+  let routePoints: { x: number; y: number }[] | null = null
+  let routeColor = "#f97316"
+  if (prevLocationId && featuredLocationId && prevLocationId !== featuredLocationId) {
+    const path = mapPaths.find(p => {
+      const endpoints = p.points.filter(pt => pt.pinId).map(pt => pt.pinId)
+      return endpoints.includes(prevLocationId) && endpoints.includes(featuredLocationId)
+    })
+    if (path) {
+      const firstPin = path.points.find(pt => pt.pinId)?.pinId
+      const points = firstPin === prevLocationId ? path.points : [...path.points].reverse()
+      routePoints = points.map(pt => ({ x: pt.x, y: pt.y }))
+      // Use the featured location's color for the route to reinforce the destination
+    }
+  }
 
   const colorToHex: Record<string, string> = {
     red: "#ef4444",
@@ -1230,6 +1271,16 @@ function MapView({ nowItem, nextItem }: { nowItem: ScheduleItem | null; nextItem
     blue: "#3b82f6",
     purple: "#a855f7",
     pink: "#ec4899",
+  }
+
+  if (featuredLocation) {
+    const c = featuredLocation.color || (
+      featuredLocation.category === "dining" ? "orange"
+      : featuredLocation.category === "meeting" ? "red"
+      : featuredLocation.category === "lodging" ? "blue"
+      : "purple"
+    )
+    routeColor = colorToHex[c] || routeColor
   }
 
   return (
@@ -1258,12 +1309,29 @@ function MapView({ nowItem, nextItem }: { nowItem: ScheduleItem | null; nextItem
             <p className="text-2xl text-white/70 mb-2">
               {isHappeningNow ? featuredItem.time : `${featuredItem.day} ${featuredItem.time}`}
             </p>
+            {prevLocation && routePoints && (
+              <div className="mt-6 p-4 rounded-xl bg-white/5 border border-white/10">
+                <div className="flex items-start gap-3">
+                  <div className="flex flex-col items-center pt-1">
+                    <div className="w-3 h-3 rounded-full bg-white/40" />
+                    <div className="w-px h-6 bg-white/20 my-1" />
+                    <ChevronRight className="h-4 w-4 text-white/40 rotate-90" />
+                  </div>
+                  <div>
+                    <p className="text-white/40 text-xs uppercase tracking-wider mb-0.5">Coming From</p>
+                    <p className="text-lg font-medium text-white/80 leading-tight">{prevLocation.name}</p>
+                  </div>
+                </div>
+              </div>
+            )}
             {featuredLocation && (
-              <div className="mt-6 p-5 rounded-xl bg-orange-500/10 border border-orange-500/30">
+              <div className={`${prevLocation && routePoints ? "mt-3" : "mt-6"} p-5 rounded-xl bg-orange-500/10 border border-orange-500/30`}>
                 <div className="flex items-start gap-3">
                   <MapPin className="h-7 w-7 text-orange-400 shrink-0 mt-1" fill="currentColor" />
                   <div>
-                    <p className="text-orange-400 text-xs uppercase tracking-wider mb-1">Location</p>
+                    <p className="text-orange-400 text-xs uppercase tracking-wider mb-1">
+                      {prevLocation && routePoints ? "Heading To" : "Location"}
+                    </p>
                     <p className="text-2xl font-semibold leading-tight">{featuredLocation.name}</p>
                     {featuredLocation.description && (
                       <p className="text-white/60 text-base mt-2 leading-snug">{featuredLocation.description}</p>
@@ -1321,9 +1389,66 @@ function MapView({ nowItem, nextItem }: { nowItem: ScheduleItem | null; nextItem
             draggable={false}
           />
 
+          {/* Route path overlay - shown when there's a known path from prev → featured */}
+          {routePoints && routePoints.length >= 2 && (
+            <svg
+              className="absolute inset-0 w-full h-full pointer-events-none"
+              viewBox="0 0 100 100"
+              preserveAspectRatio="none"
+              style={{ zIndex: 5 }}
+            >
+              <defs>
+                <marker
+                  id="route-arrow"
+                  viewBox="0 0 10 10"
+                  refX="8"
+                  refY="5"
+                  markerWidth="5"
+                  markerHeight="5"
+                  orient="auto-start-reverse"
+                >
+                  <path d="M 0 0 L 10 5 L 0 10 z" fill={routeColor} />
+                </marker>
+              </defs>
+              {/* Subtle white halo behind the route for contrast on the colorful map */}
+              <polyline
+                points={routePoints.map(p => `${p.x},${p.y}`).join(" ")}
+                fill="none"
+                stroke="white"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                opacity="0.7"
+                vectorEffect="non-scaling-stroke"
+                style={{ strokeWidth: 8 }}
+              />
+              {/* Animated dashed colored route */}
+              <polyline
+                points={routePoints.map(p => `${p.x},${p.y}`).join(" ")}
+                fill="none"
+                stroke={routeColor}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                vectorEffect="non-scaling-stroke"
+                markerEnd="url(#route-arrow)"
+                style={{ 
+                  strokeWidth: 5,
+                  strokeDasharray: "8 6",
+                  animation: "route-dash 1.2s linear infinite",
+                }}
+              />
+              <style>{`
+                @keyframes route-dash {
+                  to { stroke-dashoffset: -14; }
+                }
+              `}</style>
+            </svg>
+          )}
+
           {/* Pins overlay - positioned as % of the wrapper, which equals image pixels */}
           {mapLocations.map((location) => {
             const isFeatured = location.id === featuredLocationId
+            const isPrev = location.id === prevLocationId && location.id !== featuredLocationId && !!routePoints
             const color = location.color || (
               location.category === "dining" ? "orange"
               : location.category === "meeting" ? "red"
@@ -1339,7 +1464,7 @@ function MapView({ nowItem, nextItem }: { nowItem: ScheduleItem | null; nextItem
                 style={{ 
                   left: `${location.x}%`, 
                   top: `${location.y}%`,
-                  zIndex: isFeatured ? 20 : 10,
+                  zIndex: isFeatured ? 20 : isPrev ? 15 : 10,
                 }}
               >
                 {isFeatured && (
@@ -1356,18 +1481,32 @@ function MapView({ nowItem, nextItem }: { nowItem: ScheduleItem | null; nextItem
                     />
                   </>
                 )}
+                {isPrev && (
+                  <div 
+                    className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-8 h-8 rounded-full border-2 border-white/70 bg-white/30"
+                  />
+                )}
                 <MapPin
                   className={`relative drop-shadow-lg transition-all ${
-                    isFeatured ? "h-14 w-14 animate-bounce" : "h-7 w-7 opacity-70"
+                    isFeatured ? "h-14 w-14 animate-bounce" 
+                    : isPrev ? "h-10 w-10" 
+                    : "h-7 w-7 opacity-70"
                   }`}
-                  style={{ color: hex }}
-                  fill={isFeatured ? hex : "white"}
+                  style={{ color: isPrev ? "#ffffff" : hex }}
+                  fill={isFeatured ? hex : isPrev ? "#9ca3af" : "white"}
                   strokeWidth={2}
                 />
                 {isFeatured && (
                   <div 
                     className="absolute left-1/2 -translate-x-1/2 -top-12 px-3 py-1.5 rounded-lg text-sm font-semibold whitespace-nowrap shadow-xl"
                     style={{ backgroundColor: hex, color: "white" }}
+                  >
+                    {location.name}
+                  </div>
+                )}
+                {isPrev && (
+                  <div 
+                    className="absolute left-1/2 -translate-x-1/2 -top-9 px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap shadow-lg bg-white/90 text-black/80"
                   >
                     {location.name}
                   </div>
