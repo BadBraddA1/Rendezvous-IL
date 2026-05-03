@@ -38,7 +38,6 @@ import {
   Sunset,
   Beef,
   Salad,
-  Cake,
   CupSoda,
   Volleyball,
   CalendarDays,
@@ -181,35 +180,36 @@ function getEventIcon(title: string, isMeal?: boolean, size: "xs" | "sm" | "md" 
     xl: "h-28 w-28",
     "2xl": "h-36 w-36",
   }
-  const className = `${sizeClasses[size]} text-orange-400 shrink-0`
+  const sz = sizeClasses[size]
+  const base = `${sz} shrink-0`
   
   if (isMeal) {
-    if (lowerTitle.includes('breakfast')) return <Coffee className={className} />
-    if (lowerTitle.includes('lunch')) return <Sandwich className={className} />
-    if (lowerTitle.includes('dinner')) return <UtensilsCrossed className={className} />
-    return <Utensils className={className} />
+    if (lowerTitle.includes('breakfast')) return <Coffee className={`${base} text-amber-500`} />
+    if (lowerTitle.includes('lunch')) return <Sandwich className={`${base} text-yellow-500`} />
+    if (lowerTitle.includes('dinner')) return <UtensilsCrossed className={`${base} text-orange-500`} />
+    return <Utensils className={`${base} text-orange-400`} />
   }
   
-  if (lowerTitle.includes('check-in') || lowerTitle.includes('checkout')) return <ClipboardCheck className={className} />
-  if (lowerTitle.includes('assembly') || lowerTitle.includes('announcement')) return <Megaphone className={className} />
-  if (lowerTitle.includes('archery')) return <Target className={className} />
-  if (lowerTitle.includes('dodgeball')) return <Volleyball className={className} />
-  if (lowerTitle.includes('game') || lowerTitle.includes('knockout')) return <Gamepad2 className={className} />
-  if (lowerTitle.includes('obstacle') || lowerTitle.includes('rope')) return <Mountain className={className} />
-  if (lowerTitle.includes('gym') || lowerTitle.includes('sport')) return <Dumbbell className={className} />
-  if (lowerTitle.includes('bonfire') || lowerTitle.includes('fire')) return <Flame className={className} />
-  if (lowerTitle.includes('picture') || lowerTitle.includes('photo')) return <Camera className={className} />
-  if (lowerTitle.includes('award') || lowerTitle.includes('ceremony')) return <Trophy className={className} />
-  if (lowerTitle.includes('farewell') || lowerTitle.includes('goodbye')) return <Hand className={className} />
-  if (lowerTitle.includes('ice breaker') || lowerTitle.includes('introduction')) return <Users className={className} />
-  if (lowerTitle.includes('nine square')) return <Grid3x3 className={className} />
-  if (lowerTitle.includes('table game')) return <Dice5 className={className} />
-  if (lowerTitle.includes('mom') || lowerTitle.includes('family')) return <Heart className={className} />
-  if (lowerTitle.includes('young adult') || lowerTitle.includes('session') || lowerTitle.includes('meeting')) return <Users className={className} />
-  if (lowerTitle.includes('afternoon') || lowerTitle.includes('activities')) return <Sun className={className} />
-  if (lowerTitle.includes('evening')) return <Moon className={className} />
+  if (lowerTitle.includes('check-in') || lowerTitle.includes('checkout')) return <ClipboardCheck className={`${base} text-emerald-400`} />
+  if (lowerTitle.includes('assembly') || lowerTitle.includes('announcement')) return <Megaphone className={`${base} text-rose-400`} />
+  if (lowerTitle.includes('archery')) return <Target className={`${base} text-red-500`} />
+  if (lowerTitle.includes('dodgeball')) return <Volleyball className={`${base} text-violet-400`} />
+  if (lowerTitle.includes('game') || lowerTitle.includes('knockout')) return <Gamepad2 className={`${base} text-fuchsia-400`} />
+  if (lowerTitle.includes('obstacle') || lowerTitle.includes('rope')) return <Mountain className={`${base} text-stone-400`} />
+  if (lowerTitle.includes('gym') || lowerTitle.includes('sport')) return <Dumbbell className={`${base} text-sky-400`} />
+  if (lowerTitle.includes('bonfire') || lowerTitle.includes('fire')) return <Flame className={`${base} text-orange-500`} />
+  if (lowerTitle.includes('picture') || lowerTitle.includes('photo')) return <Camera className={`${base} text-pink-400`} />
+  if (lowerTitle.includes('award') || lowerTitle.includes('ceremony')) return <Trophy className={`${base} text-yellow-400`} />
+  if (lowerTitle.includes('farewell') || lowerTitle.includes('goodbye')) return <Hand className={`${base} text-amber-400`} />
+  if (lowerTitle.includes('ice breaker') || lowerTitle.includes('introduction')) return <Users className={`${base} text-cyan-400`} />
+  if (lowerTitle.includes('nine square')) return <Grid3x3 className={`${base} text-lime-400`} />
+  if (lowerTitle.includes('table game')) return <Dice5 className={`${base} text-purple-400`} />
+  if (lowerTitle.includes('mom') || lowerTitle.includes('family')) return <Heart className={`${base} text-rose-500`} />
+  if (lowerTitle.includes('young adult') || lowerTitle.includes('session') || lowerTitle.includes('meeting')) return <Users className={`${base} text-cyan-400`} />
+  if (lowerTitle.includes('afternoon') || lowerTitle.includes('activities')) return <Sun className={`${base} text-yellow-400`} />
+  if (lowerTitle.includes('evening')) return <Moon className={`${base} text-indigo-300`} />
   
-  return <MapPin className={className} />
+  return <MapPin className={`${base} text-orange-400`} />
 }
 
 function getGreetingIcon(hour: number, sizeClass: string = "h-20 w-20") {
@@ -1132,7 +1132,7 @@ function MealView({ nextMeal, mealData }: { nextMeal: ScheduleItem | null; mealD
           <h3 className="text-3xl font-semibold mb-8 text-center border-b border-white/10 pb-6">Menu</h3>
           <div className="space-y-6">
             <div className="flex items-start gap-5">
-              <Beef className="h-9 w-9 text-orange-400 shrink-0" />
+              <Beef className="h-9 w-9 text-red-400 shrink-0" />
               <div>
                 <p className="text-white/50 text-base uppercase tracking-wider">Main Dish</p>
                 <p className="text-2xl font-medium">{mealData.main_dish}</p>
@@ -1141,7 +1141,7 @@ function MealView({ nextMeal, mealData }: { nextMeal: ScheduleItem | null; mealD
             
             {mealData.sides && mealData.sides.length > 0 && (
               <div className="flex items-start gap-5">
-                <Salad className="h-9 w-9 text-orange-400 shrink-0" />
+                <Salad className="h-9 w-9 text-green-400 shrink-0" />
                 <div>
                   <p className="text-white/50 text-base uppercase tracking-wider">Sides</p>
                   <p className="text-xl">{mealData.sides.join(", ")}</p>
@@ -1149,19 +1149,9 @@ function MealView({ nextMeal, mealData }: { nextMeal: ScheduleItem | null; mealD
               </div>
             )}
             
-            {mealData.dessert && (
-              <div className="flex items-start gap-5">
-                <Cake className="h-9 w-9 text-orange-400 shrink-0" />
-                <div>
-                  <p className="text-white/50 text-base uppercase tracking-wider">Dessert</p>
-                  <p className="text-xl">{mealData.dessert}</p>
-                </div>
-              </div>
-            )}
-            
             {mealData.drinks && mealData.drinks.length > 0 && (
               <div className="flex items-start gap-5">
-                <CupSoda className="h-9 w-9 text-orange-400 shrink-0" />
+                <CupSoda className="h-9 w-9 text-cyan-400 shrink-0" />
                 <div>
                   <p className="text-white/50 text-base uppercase tracking-wider">Beverages</p>
                   <p className="text-xl">{mealData.drinks.join(", ")}</p>
