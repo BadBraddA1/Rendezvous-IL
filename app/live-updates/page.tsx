@@ -200,7 +200,12 @@ function getLocationIdForEvent(item: ScheduleItem | null): string | null {
   return "activities-center"
 }
 
-function getEventIcon(title: string, isMeal?: boolean, size: "xs" | "sm" | "md" | "lg" | "xl" | "2xl" = "md") {
+function getEventIcon(
+  title: string, 
+  isMeal?: boolean, 
+  size: "xs" | "sm" | "md" | "lg" | "xl" | "2xl" = "md",
+  colorOverrideClass?: string
+) {
   const lowerTitle = title.toLowerCase()
   const sizeClasses = {
     xs: "h-7 w-7",
@@ -212,34 +217,36 @@ function getEventIcon(title: string, isMeal?: boolean, size: "xs" | "sm" | "md" 
   }
   const sz = sizeClasses[size]
   const base = `${sz} shrink-0`
+  // If a color override class is given, use it instead of the per-event color
+  const c = (defaultClass: string) => colorOverrideClass ?? defaultClass
   
   if (isMeal) {
-    if (lowerTitle.includes('breakfast')) return <Coffee className={`${base} text-amber-500`} />
-    if (lowerTitle.includes('lunch')) return <Sandwich className={`${base} text-yellow-500`} />
-    if (lowerTitle.includes('dinner')) return <UtensilsCrossed className={`${base} text-orange-500`} />
-    return <Utensils className={`${base} text-orange-400`} />
+    if (lowerTitle.includes('breakfast')) return <Coffee className={`${base} ${c("text-amber-500")}`} />
+    if (lowerTitle.includes('lunch')) return <Sandwich className={`${base} ${c("text-yellow-500")}`} />
+    if (lowerTitle.includes('dinner')) return <UtensilsCrossed className={`${base} ${c("text-orange-500")}`} />
+    return <Utensils className={`${base} ${c("text-orange-400")}`} />
   }
   
-  if (lowerTitle.includes('check-in') || lowerTitle.includes('checkout')) return <ClipboardCheck className={`${base} text-emerald-400`} />
-  if (lowerTitle.includes('assembly') || lowerTitle.includes('announcement')) return <Megaphone className={`${base} text-rose-400`} />
-  if (lowerTitle.includes('archery')) return <Target className={`${base} text-red-500`} />
-  if (lowerTitle.includes('dodgeball')) return <Volleyball className={`${base} text-violet-400`} />
-  if (lowerTitle.includes('game') || lowerTitle.includes('knockout')) return <Gamepad2 className={`${base} text-fuchsia-400`} />
-  if (lowerTitle.includes('obstacle') || lowerTitle.includes('rope')) return <Mountain className={`${base} text-stone-400`} />
-  if (lowerTitle.includes('gym') || lowerTitle.includes('sport')) return <Dumbbell className={`${base} text-sky-400`} />
-  if (lowerTitle.includes('bonfire') || lowerTitle.includes('fire')) return <Flame className={`${base} text-orange-500`} />
-  if (lowerTitle.includes('picture') || lowerTitle.includes('photo')) return <Camera className={`${base} text-pink-400`} />
-  if (lowerTitle.includes('award') || lowerTitle.includes('ceremony')) return <Trophy className={`${base} text-yellow-400`} />
-  if (lowerTitle.includes('farewell') || lowerTitle.includes('goodbye')) return <Hand className={`${base} text-amber-400`} />
-  if (lowerTitle.includes('ice breaker') || lowerTitle.includes('introduction')) return <Users className={`${base} text-cyan-400`} />
-  if (lowerTitle.includes('nine square')) return <Grid3x3 className={`${base} text-lime-400`} />
-  if (lowerTitle.includes('table game')) return <Dice5 className={`${base} text-purple-400`} />
-  if (lowerTitle.includes('mom') || lowerTitle.includes('family')) return <Heart className={`${base} text-rose-500`} />
-  if (lowerTitle.includes('young adult') || lowerTitle.includes('session') || lowerTitle.includes('meeting')) return <Users className={`${base} text-cyan-400`} />
-  if (lowerTitle.includes('afternoon') || lowerTitle.includes('activities')) return <Sun className={`${base} text-yellow-400`} />
-  if (lowerTitle.includes('evening')) return <Moon className={`${base} text-indigo-300`} />
+  if (lowerTitle.includes('check-in') || lowerTitle.includes('checkout')) return <ClipboardCheck className={`${base} ${c("text-emerald-400")}`} />
+  if (lowerTitle.includes('assembly') || lowerTitle.includes('announcement')) return <Megaphone className={`${base} ${c("text-rose-400")}`} />
+  if (lowerTitle.includes('archery')) return <Target className={`${base} ${c("text-red-500")}`} />
+  if (lowerTitle.includes('dodgeball')) return <Volleyball className={`${base} ${c("text-violet-400")}`} />
+  if (lowerTitle.includes('game') || lowerTitle.includes('knockout')) return <Gamepad2 className={`${base} ${c("text-fuchsia-400")}`} />
+  if (lowerTitle.includes('obstacle') || lowerTitle.includes('rope')) return <Mountain className={`${base} ${c("text-stone-400")}`} />
+  if (lowerTitle.includes('gym') || lowerTitle.includes('sport')) return <Dumbbell className={`${base} ${c("text-sky-400")}`} />
+  if (lowerTitle.includes('bonfire') || lowerTitle.includes('fire')) return <Flame className={`${base} ${c("text-orange-500")}`} />
+  if (lowerTitle.includes('picture') || lowerTitle.includes('photo')) return <Camera className={`${base} ${c("text-pink-400")}`} />
+  if (lowerTitle.includes('award') || lowerTitle.includes('ceremony')) return <Trophy className={`${base} ${c("text-yellow-400")}`} />
+  if (lowerTitle.includes('farewell') || lowerTitle.includes('goodbye')) return <Hand className={`${base} ${c("text-amber-400")}`} />
+  if (lowerTitle.includes('ice breaker') || lowerTitle.includes('introduction')) return <Users className={`${base} ${c("text-cyan-400")}`} />
+  if (lowerTitle.includes('nine square')) return <Grid3x3 className={`${base} ${c("text-lime-400")}`} />
+  if (lowerTitle.includes('table game')) return <Dice5 className={`${base} ${c("text-purple-400")}`} />
+  if (lowerTitle.includes('mom') || lowerTitle.includes('family')) return <Heart className={`${base} ${c("text-rose-500")}`} />
+  if (lowerTitle.includes('young adult') || lowerTitle.includes('session') || lowerTitle.includes('meeting')) return <Users className={`${base} ${c("text-cyan-400")}`} />
+  if (lowerTitle.includes('afternoon') || lowerTitle.includes('activities')) return <Sun className={`${base} ${c("text-yellow-400")}`} />
+  if (lowerTitle.includes('evening')) return <Moon className={`${base} ${c("text-indigo-300")}`} />
   
-  return <MapPin className={`${base} text-orange-400`} />
+  return <MapPin className={`${base} ${c("text-orange-400")}`} />
 }
 
 function getGreetingIcon(hour: number, sizeClass: string = "h-20 w-20") {
@@ -1110,63 +1117,75 @@ function WeatherView({ weather }: { weather: WeatherData | null }) {
     greeting = "Good Night!"
   }
 
-  if (!weather) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full">
-        <div className="flex items-center gap-5 mb-4">
-          {getGreetingIcon(hour, "h-16 w-16")}
-          <p className="text-6xl font-light">{greeting}</p>
-        </div>
-        <p className="text-3xl text-white/70 mb-8">Welcome to Rendezvous 2026</p>
-        <p className="text-white/50 text-2xl">Loading weather...</p>
-      </div>
-    )
-  }
-
   return (
-    <div className="flex flex-col items-center justify-center h-full">
-      {/* Greeting */}
-      <div className="text-center mb-10">
-        <div className="flex items-center justify-center gap-5 mb-3">
-          {getGreetingIcon(hour, "h-16 w-16")}
-          <p className="text-6xl font-light">{greeting}</p>
-        </div>
-        <p className="text-2xl text-white/60">Welcome to Rendezvous 2026</p>
-      </div>
-      
-      <div className="flex items-center gap-10 mb-6">
-        {getWeatherIcon(weather.current.weather[0].id, weather.current.weather[0].icon, "lg")}
-        <span className="text-[12rem] font-light leading-none">{Math.round(weather.current.temp)}°</span>
-      </div>
-      <p className="text-4xl text-white/80 capitalize mb-10">{weather.current.weather[0].description}</p>
-      
-      <div className="flex items-center gap-16 text-2xl text-white/60 mb-14">
-        <span className="flex items-center gap-3">
-          <Droplets className="h-7 w-7" />
-          {weather.current.humidity}% Humidity
-        </span>
-        <span className="flex items-center gap-3">
-          <Wind className="h-7 w-7" />
-          {Math.round(weather.current.wind_speed)} mph Wind
-        </span>
+    <div className="relative w-full h-full flex items-center justify-center">
+      {/* Ambient sky-blue glow orbs */}
+      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute -top-40 -left-40 h-[28rem] w-[28rem] rounded-full bg-sky-500/15 blur-3xl animate-pulse" style={{ animationDuration: "6s" }} />
+        <div className="absolute -bottom-40 -right-40 h-[32rem] w-[32rem] rounded-full bg-cyan-500/10 blur-3xl animate-pulse" style={{ animationDuration: "8s", animationDelay: "2s" }} />
       </div>
 
-      <div className="flex gap-6">
-        {weather.hourly.slice(0, 6).map((hour) => (
-          <div key={hour.dt} className="text-center p-6 rounded-2xl bg-white/5 min-w-[120px]">
-            <p className="text-lg text-white/50 mb-3">{formatTime(hour.dt)}</p>
-            <div className="flex justify-center mb-3">
-              {getWeatherIcon(hour.weather[0].id, hour.weather[0].icon, "sm")}
+      <div className="relative w-full h-full max-w-6xl flex flex-col items-center justify-center">
+        {/* Glow card panel */}
+        <div className="relative w-full overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-sky-500/[0.10] via-white/[0.04] to-transparent backdrop-blur-sm p-10">
+          <div className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-sky-500/15 blur-2xl" />
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sky-300/40 to-transparent" />
+
+          <div className="relative flex flex-col items-center justify-center">
+            {/* Greeting */}
+            <div className="text-center mb-8">
+              <div className="flex items-center justify-center gap-5 mb-2">
+                {getGreetingIcon(hour, "h-14 w-14")}
+                <p className="text-5xl font-light">{greeting}</p>
+              </div>
+              <p className="text-xl text-white/60">Welcome to Rendezvous 2026</p>
             </div>
-            <p className="text-3xl font-semibold mb-2">{Math.round(hour.temp)}°</p>
-            {hour.pop > 0.1 && (
-              <p className="text-base text-blue-400 flex items-center justify-center gap-2">
-                <Droplets className="h-4 w-4" />
-                {Math.round(hour.pop * 100)}%
-              </p>
+
+            {!weather ? (
+              <p className="text-white/50 text-2xl">Loading weather...</p>
+            ) : (
+              <>
+                <div className="flex items-center gap-10 mb-4">
+                  {getWeatherIcon(weather.current.weather[0].id, weather.current.weather[0].icon, "lg")}
+                  <span className="text-[10rem] font-light leading-none tabular-nums">{Math.round(weather.current.temp)}°</span>
+                </div>
+                <p className="text-3xl text-white/80 capitalize mb-8">{weather.current.weather[0].description}</p>
+
+                <div className="flex items-center gap-12 text-xl text-white/60 mb-10">
+                  <span className="flex items-center gap-3">
+                    <Droplets className="h-6 w-6 text-sky-300" />
+                    {weather.current.humidity}% Humidity
+                  </span>
+                  <span className="flex items-center gap-3">
+                    <Wind className="h-6 w-6 text-sky-300" />
+                    {Math.round(weather.current.wind_speed)} mph Wind
+                  </span>
+                </div>
+
+                <div className="flex gap-4">
+                  {weather.hourly.slice(0, 6).map((hour) => (
+                    <div 
+                      key={hour.dt} 
+                      className="text-center p-5 rounded-2xl bg-gradient-to-br from-sky-500/[0.08] via-white/[0.03] to-transparent border border-white/10 min-w-[110px]"
+                    >
+                      <p className="text-sm text-white/50 mb-2 font-medium">{formatTime(hour.dt)}</p>
+                      <div className="flex justify-center mb-2">
+                        {getWeatherIcon(hour.weather[0].id, hour.weather[0].icon, "sm")}
+                      </div>
+                      <p className="text-2xl font-semibold mb-1 tabular-nums">{Math.round(hour.temp)}°</p>
+                      {hour.pop > 0.1 && (
+                        <p className="text-sm text-sky-300 flex items-center justify-center gap-1">
+                          <Droplets className="h-3.5 w-3.5" />
+                          {Math.round(hour.pop * 100)}%
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
           </div>
-        ))}
+        </div>
       </div>
     </div>
   )
@@ -1189,77 +1208,95 @@ function ScheduleView({
   const showingFuture = upcomingToday.length === 0 && upcomingAll.length > 0
 
   return (
-    <div className="flex h-full gap-16">
+    <div className="relative w-full h-full flex gap-6">
+      {/* Ambient violet glow orbs */}
+      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute -top-40 -left-40 h-[28rem] w-[28rem] rounded-full bg-violet-500/15 blur-3xl animate-pulse" style={{ animationDuration: "6s" }} />
+        <div className="absolute -bottom-40 right-1/4 h-96 w-96 rounded-full bg-fuchsia-500/10 blur-3xl animate-pulse" style={{ animationDuration: "8s", animationDelay: "2s" }} />
+      </div>
+
       {/* Left side - Happening Now / Up Next */}
-      <div className="flex-1 flex flex-col justify-center">
-        {nowItem && (
-          <div className="text-center mb-12">
-            <div className="flex items-center justify-center gap-3 text-white/50 text-xl mb-6">
-              <span className="w-4 h-4 bg-green-400 rounded-full animate-pulse" />
-              <span>HAPPENING NOW</span>
+      <div className="flex-1 relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-violet-500/[0.10] via-white/[0.04] to-transparent backdrop-blur-sm p-8 flex flex-col justify-center">
+        <div className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-violet-500/15 blur-2xl" />
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-300/40 to-transparent" />
+        <div className="relative">
+          {nowItem && (
+            <div className="text-center mb-10">
+              <div className="flex items-center justify-center gap-3 mb-5">
+                <span className="relative flex h-3 w-3">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
+                  <span className="relative inline-flex h-3 w-3 rounded-full bg-green-400" />
+                </span>
+                <span className="text-sm font-bold uppercase tracking-[0.3em] text-green-400">Happening Now</span>
+              </div>
+              <div className="flex justify-center mb-5">{getEventIcon(nowItem.title, nowItem.isMeal, "xl")}</div>
+              <h2 className="text-4xl font-bold mb-3 text-balance">{nowItem.title}</h2>
+              <p className="text-2xl text-white/70 mb-2">{nowItem.time}</p>
+              {nowItem.location && (
+                <p className="text-xl text-white/50 flex items-center justify-center gap-2">
+                  <MapPin className="h-5 w-5 text-violet-300" />
+                  {nowItem.location}
+                </p>
+              )}
             </div>
-            <div className="flex justify-center mb-6">{getEventIcon(nowItem.title, nowItem.isMeal, "2xl")}</div>
-            <h2 className="text-5xl font-bold mb-4">{nowItem.title}</h2>
-            <p className="text-3xl text-white/60 mb-3">{nowItem.time}</p>
-            {nowItem.location && (
-              <p className="text-2xl text-white/40 flex items-center justify-center gap-2">
-                <MapPin className="h-6 w-6" />
-                {nowItem.location}
-              </p>
-            )}
-          </div>
-        )}
-        
-        {nextItem && (
-          <div className="text-center">
-            {nowItem && <div className="w-32 h-px bg-white/20 mx-auto mb-12" />}
-            <div className="flex items-center justify-center gap-3 text-white/50 text-xl mb-6">
-              <ChevronRight className="h-6 w-6" />
-              <span>UP NEXT</span>
+          )}
+
+          {nextItem && (
+            <div className="text-center">
+              {nowItem && <div className="w-32 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent mx-auto mb-10" />}
+              <div className="flex items-center justify-center gap-3 mb-5">
+                <ChevronRight className="h-5 w-5 text-violet-300" />
+                <span className="text-sm font-bold uppercase tracking-[0.3em] text-violet-300">Up Next</span>
+              </div>
+              <div className="flex justify-center mb-5">{getEventIcon(nextItem.title, nextItem.isMeal, nowItem ? "lg" : "xl")}</div>
+              <h2 className={`font-bold mb-3 text-balance ${nowItem ? "text-2xl" : "text-4xl"}`}>{nextItem.title}</h2>
+              <p className={`text-white/70 mb-2 ${nowItem ? "text-lg" : "text-2xl"}`}>{nextItem.day} {nextItem.time}</p>
+              {nextItem.location && (
+                <p className={`text-white/50 flex items-center justify-center gap-2 ${nowItem ? "text-base" : "text-xl"}`}>
+                  <MapPin className={nowItem ? "h-4 w-4 text-violet-300" : "h-5 w-5 text-violet-300"} />
+                  {nextItem.location}
+                </p>
+              )}
             </div>
-            <div className="flex justify-center mb-6">{getEventIcon(nextItem.title, nextItem.isMeal, nowItem ? "lg" : "2xl")}</div>
-            <h2 className={`font-bold mb-4 ${nowItem ? "text-3xl" : "text-5xl"}`}>{nextItem.title}</h2>
-            <p className={`text-white/60 mb-3 ${nowItem ? "text-xl" : "text-3xl"}`}>{nextItem.day} {nextItem.time}</p>
-            {nextItem.location && (
-              <p className={`text-white/40 flex items-center justify-center gap-2 ${nowItem ? "text-lg" : "text-2xl"}`}>
-                <MapPin className={nowItem ? "h-4 w-4" : "h-6 w-6"} />
-                {nextItem.location}
-              </p>
-            )}
-          </div>
-        )}
-        
-        {!nowItem && !nextItem && (
-          <div className="text-center">
-            <Bed className="h-32 w-32 text-white/30 mx-auto mb-6" />
-            <h2 className="text-5xl font-bold text-white/60">No Scheduled Events</h2>
-            <p className="text-2xl text-white/40 mt-4">Enjoy your free time!</p>
-          </div>
-        )}
+          )}
+
+          {!nowItem && !nextItem && (
+            <div className="text-center">
+              <Bed className="h-28 w-28 text-white/30 mx-auto mb-5" />
+              <h2 className="text-4xl font-bold text-white/60">No Scheduled Events</h2>
+              <p className="text-xl text-white/40 mt-3">Enjoy your free time!</p>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Right side - Upcoming Schedule */}
       {upcoming.length > 0 && (
-        <div className="w-[450px] flex flex-col">
-          <h3 className="text-xl font-semibold text-white/60 mb-6 flex items-center gap-3 uppercase tracking-wider">
-            <CalendarDays className="h-6 w-6 text-orange-400" />
-            {showingFuture ? "Upcoming Schedule" : "Today's Schedule"}
-          </h3>
-          <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+        <div className="w-[440px] relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-violet-500/[0.08] via-white/[0.03] to-transparent backdrop-blur-sm p-6 flex flex-col">
+          <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-violet-500/15 blur-2xl" />
+          <div className="relative flex items-center gap-3 mb-5">
+            <div className="rounded-xl bg-violet-500/15 p-2.5 border border-violet-400/20">
+              <CalendarDays className="h-5 w-5 text-violet-300" />
+            </div>
+            <span className="text-sm uppercase tracking-[0.2em] font-bold text-violet-300/90">
+              {showingFuture ? "Upcoming" : "Today's Schedule"}
+            </span>
+          </div>
+          <div className="relative flex-1 min-h-0 overflow-hidden space-y-2.5 pr-1">
             {upcoming.map((item, index) => (
-              <div 
+              <div
                 key={index}
-                className={`p-5 rounded-xl border transition-colors ${
-                  item === nextItem 
-                    ? "bg-white/10 border-white/30" 
-                    : "bg-white/5 border-white/10"
+                className={`p-4 rounded-xl border transition-colors ${
+                  item === nextItem
+                    ? "bg-violet-500/15 border-violet-400/40"
+                    : "bg-white/[0.03] border-white/10"
                 }`}
               >
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
                   {getEventIcon(item.title, item.isMeal, "sm")}
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-lg">{item.title}</p>
-                    <p className="text-base text-white/50">
+                    <p className="font-semibold text-base truncate">{item.title}</p>
+                    <p className="text-sm text-white/50 mt-0.5">
                       {showingFuture ? `${item.day} ${item.time}` : item.time}
                     </p>
                   </div>
@@ -1275,72 +1312,93 @@ function ScheduleView({
 
 // Meal View - Full screen meal display with menu
 function MealView({ nextMeal, mealData }: { nextMeal: ScheduleItem | null; mealData: MealData | null }) {
-  if (!nextMeal) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full">
-        <UtensilsCrossed className="h-32 w-32 text-white/30 mb-8" />
-        <h2 className="text-5xl font-bold text-white/60">No Upcoming Meals</h2>
-      </div>
-    )
-  }
-
   return (
-    <div className="flex flex-col items-center justify-center h-full">
-      <div className="mb-8">
-        {getEventIcon(nextMeal.title, true, "2xl")}
+    <div className="relative w-full h-full flex items-center justify-center">
+      {/* Ambient amber glow orbs */}
+      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute -top-40 -left-40 h-[28rem] w-[28rem] rounded-full bg-amber-500/15 blur-3xl animate-pulse" style={{ animationDuration: "6s" }} />
+        <div className="absolute -bottom-40 -right-40 h-[32rem] w-[32rem] rounded-full bg-orange-500/10 blur-3xl animate-pulse" style={{ animationDuration: "8s", animationDelay: "2s" }} />
       </div>
-      <h2 className="text-6xl font-bold mb-4">{nextMeal.title}</h2>
-      <p className="text-3xl text-white/60 mb-3">{nextMeal.time}</p>
-      {nextMeal.location && (
-        <p className="text-xl text-white/40 mb-10 flex items-center gap-2">
-          <MapPin className="h-5 w-5" />
-          {nextMeal.location}
-        </p>
-      )}
-      
-      {/* Menu Display */}
-      {mealData ? (
-        <div className="mt-4 p-10 rounded-2xl bg-white/5 border border-white/10 max-w-3xl w-full">
-          <h3 className="text-3xl font-semibold mb-8 text-center border-b border-white/10 pb-6">Menu</h3>
-          <div className="space-y-6">
-            <div className="flex items-start gap-5">
-              <Beef className="h-9 w-9 text-red-400 shrink-0" />
-              <div>
-                <p className="text-white/50 text-base uppercase tracking-wider">Main Dish</p>
-                <p className="text-2xl font-medium">{mealData.main_dish}</p>
-              </div>
-            </div>
-            
-            {mealData.sides && mealData.sides.length > 0 && (
-              <div className="flex items-start gap-5">
-                <Salad className="h-9 w-9 text-green-400 shrink-0" />
-                <div>
-                  <p className="text-white/50 text-base uppercase tracking-wider">Sides</p>
-                  <p className="text-xl">{mealData.sides.join(", ")}</p>
-                </div>
-              </div>
-            )}
-            
-            {mealData.drinks && mealData.drinks.length > 0 && (
-              <div className="flex items-start gap-5">
-                <CupSoda className="h-9 w-9 text-cyan-400 shrink-0" />
-                <div>
-                  <p className="text-white/50 text-base uppercase tracking-wider">Beverages</p>
-                  <p className="text-xl">{mealData.drinks.join(", ")}</p>
-                </div>
-              </div>
-            )}
-            
-            {mealData.notes && (
-              <div className="mt-6 pt-6 border-t border-white/10 text-center">
-                <p className="text-white/60 italic text-lg">{mealData.notes}</p>
-              </div>
-            )}
-          </div>
+
+      {!nextMeal ? (
+        <div className="relative w-full max-w-2xl rounded-3xl border border-white/10 bg-gradient-to-br from-amber-500/[0.10] via-white/[0.04] to-transparent backdrop-blur-sm p-12 flex flex-col items-center justify-center">
+          <div className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-amber-500/15 blur-2xl" />
+          <UtensilsCrossed className="h-24 w-24 text-white/30 mb-6 relative" />
+          <h2 className="text-4xl font-bold text-white/60 relative">No Upcoming Meals</h2>
         </div>
       ) : (
-        <div className="mt-10 text-white/40 text-xl">
-          Menu details coming soon...
+        <div className="relative w-full max-w-4xl flex flex-col items-center justify-center">
+          {/* Meal hero panel */}
+          <div className="w-full relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-amber-500/[0.10] via-white/[0.04] to-transparent backdrop-blur-sm p-8 flex flex-col items-center text-center">
+            <div className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-amber-500/15 blur-2xl" />
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-300/40 to-transparent" />
+            <div className="relative flex flex-col items-center">
+              <div className="mb-5 rounded-3xl bg-white/5 border border-white/10 p-5">
+                {getEventIcon(nextMeal.title, true, "xl")}
+              </div>
+              <h2 className="text-5xl font-bold mb-3">{nextMeal.title}</h2>
+              <p className="text-2xl text-white/70 mb-2 flex items-center gap-2">
+                <Clock className="h-5 w-5 text-amber-300" />
+                {nextMeal.time}
+              </p>
+              {nextMeal.location && (
+                <p className="text-lg text-white/50 flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-amber-300" />
+                  {nextMeal.location}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Menu Display */}
+          {mealData ? (
+            <div className="mt-5 w-full relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-amber-500/[0.06] via-white/[0.03] to-transparent backdrop-blur-sm p-8">
+              <div className="absolute -top-10 -left-10 h-40 w-40 rounded-full bg-amber-500/10 blur-2xl" />
+              <div className="relative flex items-center gap-3 mb-6 pb-5 border-b border-white/10">
+                <div className="rounded-xl bg-amber-500/15 p-2.5 border border-amber-400/20">
+                  <UtensilsCrossed className="h-5 w-5 text-amber-300" />
+                </div>
+                <h3 className="text-2xl font-bold uppercase tracking-[0.15em] text-amber-300/90">Menu</h3>
+              </div>
+              <div className="relative space-y-5">
+                <div className="flex items-start gap-5 p-4 rounded-2xl bg-red-500/[0.08] border border-red-500/20">
+                  <Beef className="h-8 w-8 text-red-400 shrink-0" />
+                  <div>
+                    <p className="text-red-300/90 text-xs uppercase tracking-[0.2em] font-bold mb-1">Main Dish</p>
+                    <p className="text-xl font-semibold">{mealData.main_dish}</p>
+                  </div>
+                </div>
+
+                {mealData.sides && mealData.sides.length > 0 && (
+                  <div className="flex items-start gap-5 p-4 rounded-2xl bg-green-500/[0.08] border border-green-500/20">
+                    <Salad className="h-8 w-8 text-green-400 shrink-0" />
+                    <div>
+                      <p className="text-green-300/90 text-xs uppercase tracking-[0.2em] font-bold mb-1">Sides</p>
+                      <p className="text-lg">{mealData.sides.join(", ")}</p>
+                    </div>
+                  </div>
+                )}
+
+                {mealData.drinks && mealData.drinks.length > 0 && (
+                  <div className="flex items-start gap-5 p-4 rounded-2xl bg-cyan-500/[0.08] border border-cyan-500/20">
+                    <CupSoda className="h-8 w-8 text-cyan-400 shrink-0" />
+                    <div>
+                      <p className="text-cyan-300/90 text-xs uppercase tracking-[0.2em] font-bold mb-1">Beverages</p>
+                      <p className="text-lg">{mealData.drinks.join(", ")}</p>
+                    </div>
+                  </div>
+                )}
+
+                {mealData.notes && (
+                  <div className="pt-5 mt-5 border-t border-white/10 text-center">
+                    <p className="text-white/60 italic text-base">{mealData.notes}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <p className="mt-8 text-white/40 text-lg">Menu details coming soon...</p>
+          )}
         </div>
       )}
     </div>
@@ -1398,105 +1456,144 @@ function MapView({
     pink: "#ec4899",
   }
 
+  // Resolve the destination color name (e.g. "red", "orange", "purple", "blue") and Tailwind classes
+  const featuredColorName = featuredLocation 
+    ? (featuredLocation.color || (
+        featuredLocation.category === "dining" ? "orange"
+        : featuredLocation.category === "meeting" ? "red"
+        : featuredLocation.category === "lodging" ? "blue"
+        : "purple"
+      ))
+    : "orange"
+  
   if (featuredLocation) {
-    const c = featuredLocation.color || (
-      featuredLocation.category === "dining" ? "orange"
-      : featuredLocation.category === "meeting" ? "red"
-      : featuredLocation.category === "lodging" ? "blue"
-      : "purple"
-    )
-    routeColor = colorToHex[c] || routeColor
+    routeColor = colorToHex[featuredColorName] || routeColor
   }
 
+  // Tailwind class lookup keyed by color name so the destination color flows through
+  // to the icon, label, and callout — all matching the map pin
+  const colorClasses: Record<string, { 
+    icon: string; 
+    text: string; 
+    border: string; 
+    bg: string;
+    glow: string;
+  }> = {
+    red:    { icon: "text-red-400",    text: "text-red-300",    border: "border-red-500/40",    bg: "from-red-500/[0.12]",    glow: "bg-red-500/20" },
+    orange: { icon: "text-orange-400", text: "text-orange-300", border: "border-orange-500/40", bg: "from-orange-500/[0.12]", glow: "bg-orange-500/20" },
+    yellow: { icon: "text-yellow-400", text: "text-yellow-300", border: "border-yellow-500/40", bg: "from-yellow-500/[0.12]", glow: "bg-yellow-500/20" },
+    green:  { icon: "text-green-400",  text: "text-green-300",  border: "border-green-500/40",  bg: "from-green-500/[0.12]",  glow: "bg-green-500/20" },
+    blue:   { icon: "text-blue-400",   text: "text-blue-300",   border: "border-blue-500/40",   bg: "from-blue-500/[0.12]",   glow: "bg-blue-500/20" },
+    purple: { icon: "text-purple-400", text: "text-purple-300", border: "border-purple-500/40", bg: "from-purple-500/[0.12]", glow: "bg-purple-500/20" },
+    pink:   { icon: "text-pink-400",   text: "text-pink-300",   border: "border-pink-500/40",   bg: "from-pink-500/[0.12]",   glow: "bg-pink-500/20" },
+  }
+  const cc = colorClasses[featuredColorName] || colorClasses.orange
+
   return (
-    <div className="w-full h-full flex gap-8">
-      {/* Left side - Event info */}
-      <div className="w-[420px] flex flex-col justify-center shrink-0">
-        {featuredItem ? (
-          <>
-            <div className="flex items-center gap-3 text-white/50 text-xl mb-6 uppercase tracking-wider">
-              {isHappeningNow ? (
-                <>
-                  <span className="w-3 h-3 bg-green-400 rounded-full animate-pulse" />
-                  <span>Happening Now</span>
-                </>
-              ) : (
-                <>
-                  <ChevronRight className="h-5 w-5" />
-                  <span>Up Next</span>
-                </>
-              )}
-            </div>
-            <div className="mb-6">
-              {getEventIcon(featuredItem.title, featuredItem.isMeal, "xl")}
-            </div>
-            <h2 className="text-4xl font-bold mb-3 leading-tight">{featuredItem.title}</h2>
-            <p className="text-2xl text-white/70 mb-2">
-              {isHappeningNow ? featuredItem.time : `${featuredItem.day} ${featuredItem.time}`}
-            </p>
-            {prevLocation && routePoints && (
-              <div className="mt-6 p-4 rounded-xl bg-white/5 border border-white/10">
-                <div className="flex items-start gap-3">
-                  <div className="flex flex-col items-center pt-1">
-                    <div className="w-3 h-3 rounded-full bg-white/40" />
-                    <div className="w-px h-6 bg-white/20 my-1" />
-                    <ChevronRight className="h-4 w-4 text-white/40 rotate-90" />
-                  </div>
-                  <div>
-                    <p className="text-white/40 text-xs uppercase tracking-wider mb-0.5">Coming From</p>
-                    <p className="text-lg font-medium text-white/80 leading-tight">{prevLocation.name}</p>
-                  </div>
+    <div className="relative w-full h-full flex gap-6">
+      {/* Ambient glow orbs - matched to destination color */}
+      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+        <div className={`absolute -top-40 -left-40 h-[28rem] w-[28rem] rounded-full ${cc.glow} blur-3xl animate-pulse`} style={{ animationDuration: "6s" }} />
+        <div className={`absolute -bottom-40 right-1/3 h-96 w-96 rounded-full ${cc.glow} blur-3xl animate-pulse`} style={{ animationDuration: "8s", animationDelay: "2s", opacity: 0.6 }} />
+      </div>
+
+      {/* Left side - Event info card */}
+      <div className="w-[420px] shrink-0 flex flex-col">
+        <div className={`flex-1 relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br ${cc.bg} via-white/[0.04] to-transparent backdrop-blur-sm p-7 flex flex-col justify-center`}>
+          <div className={`absolute -top-12 -right-12 h-40 w-40 rounded-full ${cc.glow} blur-2xl`} />
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+          <div className="relative">
+            {featuredItem ? (
+              <>
+                <div className="flex items-center gap-3 mb-5">
+                  {isHappeningNow ? (
+                    <>
+                      <span className="relative flex h-3 w-3">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
+                        <span className="relative inline-flex h-3 w-3 rounded-full bg-green-400" />
+                      </span>
+                      <span className="text-xs font-bold uppercase tracking-[0.3em] text-green-400">Happening Now</span>
+                    </>
+                  ) : (
+                    <>
+                      <ChevronRight className={`h-5 w-5 ${cc.icon}`} />
+                      <span className={`text-xs font-bold uppercase tracking-[0.3em] ${cc.text}`}>Up Next</span>
+                    </>
+                  )}
                 </div>
+                <div className="mb-5">
+                  {/* Icon recolored to match destination pin */}
+                  {getEventIcon(featuredItem.title, featuredItem.isMeal, "lg", cc.icon)}
+                </div>
+                <h2 className="text-3xl font-bold mb-2 leading-tight text-balance">{featuredItem.title}</h2>
+                <p className="text-xl text-white/70 mb-1">
+                  {isHappeningNow ? featuredItem.time : `${featuredItem.day} ${featuredItem.time}`}
+                </p>
+                {prevLocation && routePoints && (
+                  <div className="mt-5 p-3.5 rounded-xl bg-white/5 border border-white/10">
+                    <div className="flex items-start gap-3">
+                      <div className="flex flex-col items-center pt-1">
+                        <div className="w-2.5 h-2.5 rounded-full bg-white/40" />
+                        <div className="w-px h-5 bg-white/20 my-1" />
+                        <ChevronRight className={`h-4 w-4 ${cc.icon} rotate-90`} />
+                      </div>
+                      <div>
+                        <p className="text-white/40 text-xs uppercase tracking-wider mb-0.5">Coming From</p>
+                        <p className="text-base font-medium text-white/80 leading-tight">{prevLocation.name}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {featuredLocation && (
+                  <div className={`mt-3 p-4 rounded-xl bg-gradient-to-br ${cc.bg} via-white/[0.03] to-transparent border ${cc.border}`}>
+                    <div className="flex items-start gap-3">
+                      <MapPin className={`h-6 w-6 ${cc.icon} shrink-0 mt-1`} fill="currentColor" />
+                      <div>
+                        <p className={`${cc.text} text-xs uppercase tracking-[0.2em] font-bold mb-1`}>
+                          {prevLocation && routePoints ? "Heading To" : "Location"}
+                        </p>
+                        <p className="text-xl font-semibold leading-tight">{featuredLocation.name}</p>
+                        {featuredLocation.description && (
+                          <p className="text-white/60 text-sm mt-1.5 leading-snug">{featuredLocation.description}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="text-center">
+                <Bed className="h-24 w-24 text-white/30 mx-auto mb-4" />
+                <h2 className="text-3xl font-bold text-white/60">No Active Events</h2>
+                <p className="text-lg text-white/40 mt-2">Free time at the venue</p>
               </div>
             )}
-            {featuredLocation && (
-              <div className={`${prevLocation && routePoints ? "mt-3" : "mt-6"} p-5 rounded-xl bg-orange-500/10 border border-orange-500/30`}>
-                <div className="flex items-start gap-3">
-                  <MapPin className="h-7 w-7 text-orange-400 shrink-0 mt-1" fill="currentColor" />
-                  <div>
-                    <p className="text-orange-400 text-xs uppercase tracking-wider mb-1">
-                      {prevLocation && routePoints ? "Heading To" : "Location"}
-                    </p>
-                    <p className="text-2xl font-semibold leading-tight">{featuredLocation.name}</p>
-                    {featuredLocation.description && (
-                      <p className="text-white/60 text-base mt-2 leading-snug">{featuredLocation.description}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-          </>
-        ) : (
-          <div className="text-center">
-            <Bed className="h-32 w-32 text-white/30 mx-auto mb-6" />
-            <h2 className="text-4xl font-bold text-white/60">No Active Events</h2>
-            <p className="text-xl text-white/40 mt-3">Free time at the venue</p>
           </div>
-        )}
+        </div>
 
         {/* Legend */}
-        <div className="mt-8 grid grid-cols-2 gap-3">
-          <div className="flex items-center gap-2 text-sm text-white/60">
-            <MapPin className="h-4 w-4 text-red-500" fill="currentColor" />
+        <div className="mt-4 px-2 grid grid-cols-2 gap-2">
+          <div className="flex items-center gap-2 text-xs text-white/60">
+            <MapPin className="h-3.5 w-3.5 text-red-400" fill="currentColor" />
             <span>Meeting</span>
           </div>
-          <div className="flex items-center gap-2 text-sm text-white/60">
-            <MapPin className="h-4 w-4 text-orange-500" fill="currentColor" />
+          <div className="flex items-center gap-2 text-xs text-white/60">
+            <MapPin className="h-3.5 w-3.5 text-orange-400" fill="currentColor" />
             <span>Dining</span>
           </div>
-          <div className="flex items-center gap-2 text-sm text-white/60">
-            <MapPin className="h-4 w-4 text-purple-500" fill="currentColor" />
+          <div className="flex items-center gap-2 text-xs text-white/60">
+            <MapPin className="h-3.5 w-3.5 text-purple-400" fill="currentColor" />
             <span>Activity</span>
           </div>
-          <div className="flex items-center gap-2 text-sm text-white/60">
-            <MapPin className="h-4 w-4 text-blue-500" fill="currentColor" />
+          <div className="flex items-center gap-2 text-xs text-white/60">
+            <MapPin className="h-3.5 w-3.5 text-blue-400" fill="currentColor" />
             <span>Lodging</span>
           </div>
         </div>
       </div>
 
       {/* Right side - Venue map */}
-      <div className="flex-1 relative rounded-2xl border border-white/10 bg-white/5 flex items-center justify-center p-3 pt-14 min-h-0">
+      <div className={`flex-1 relative rounded-3xl border border-white/10 bg-gradient-to-br ${cc.bg} via-white/[0.03] to-transparent backdrop-blur-sm flex items-center justify-center p-3 pt-14 min-h-0`}>
         {/* Aspect-ratio wrapper. NOTE: no overflow-hidden so the pin's floating name label can render above the map for pins near the top edge. The image itself has rounded corners so the visual still looks clean. */}
         <div
           className="relative"
@@ -1653,15 +1750,7 @@ function VolunteersView({
   volunteerSchedule: VolunteerSchedule | null
   volunteerTimeSlot: string
 }) {
-  if (!volunteerSchedule) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full">
-        <h2 className="text-5xl font-bold text-white/60">No Volunteer Schedule</h2>
-      </div>
-    )
-  }
-
-  const roles = [
+  const roles = volunteerSchedule ? [
     { label: "Opening Prayer", value: volunteerSchedule.openingPrayer },
     { label: "Leading Singing [A]", value: volunteerSchedule.leadingSingingA },
     { label: "Leading Singing [B]", value: volunteerSchedule.leadingSingingB },
@@ -1670,69 +1759,124 @@ function VolunteersView({
     { label: "Reading Scripture [B]", value: volunteerSchedule.readingScriptureB, subtitle: volunteerSchedule.lessonScriptureB },
     { label: "Presenting Lesson [B]", value: volunteerSchedule.presentingLessonB, subtitle: volunteerSchedule.lessonTitleB },
     { label: "Closing Prayer", value: volunteerSchedule.closingPrayer },
-  ].filter(r => r.value)
+  ].filter(r => r.value) : []
 
   return (
-    <div className="flex flex-col items-center justify-center h-full max-w-5xl mx-auto">
-      <div className="text-center mb-12">
-        <h2 className="text-5xl font-bold mb-3">{volunteerTimeSlot}</h2>
-        <p className="text-2xl text-white/60">Devotional Assignments</p>
+    <div className="relative w-full h-full flex items-center justify-center">
+      {/* Ambient rose glow orbs */}
+      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute -top-40 -left-40 h-[28rem] w-[28rem] rounded-full bg-rose-500/15 blur-3xl animate-pulse" style={{ animationDuration: "6s" }} />
+        <div className="absolute -bottom-40 -right-40 h-[32rem] w-[32rem] rounded-full bg-pink-500/10 blur-3xl animate-pulse" style={{ animationDuration: "8s", animationDelay: "2s" }} />
       </div>
-      
-      <div className="w-full bg-white/5 rounded-2xl border border-white/10 p-10">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {roles.map((role, index) => (
-            <div key={index} className="flex items-start">
-              <div>
-                <p className="text-white/50 text-base uppercase tracking-wider">{role.label}</p>
-                <p className="text-2xl font-medium">{role.value}</p>
-                {role.subtitle && (
-                  <p className="text-white/40 text-base italic">({role.subtitle})</p>
-                )}
-              </div>
-            </div>
-          ))}
+
+      {!volunteerSchedule ? (
+        <div className="relative w-full max-w-2xl rounded-3xl border border-white/10 bg-gradient-to-br from-rose-500/[0.10] via-white/[0.04] to-transparent backdrop-blur-sm p-12 flex flex-col items-center justify-center">
+          <div className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-rose-500/15 blur-2xl" />
+          <Users className="h-24 w-24 text-white/30 mb-6 relative" />
+          <h2 className="text-4xl font-bold text-white/60 relative">No Volunteer Schedule</h2>
         </div>
-      </div>
+      ) : (
+        <div className="relative w-full max-w-5xl flex flex-col items-center">
+          {/* Header panel */}
+          <div className="relative w-full overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-rose-500/[0.10] via-white/[0.04] to-transparent backdrop-blur-sm p-8 mb-5 text-center">
+            <div className="absolute -top-12 left-1/2 -translate-x-1/2 h-48 w-96 rounded-full bg-rose-500/15 blur-3xl" />
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-rose-300/40 to-transparent" />
+            <div className="relative flex items-center justify-center gap-4 mb-2">
+              <div className="rounded-xl bg-rose-500/15 p-3 border border-rose-400/20">
+                <Users className="h-7 w-7 text-rose-300" />
+              </div>
+              <h2 className="text-4xl font-bold">{volunteerTimeSlot}</h2>
+            </div>
+            <p className="text-lg text-rose-300/80 uppercase tracking-[0.3em] font-bold">Devotional Assignments</p>
+          </div>
+
+          {/* Roles grid */}
+          <div className="relative w-full overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-rose-500/[0.06] via-white/[0.03] to-transparent backdrop-blur-sm p-8">
+            <div className="absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-rose-500/10 blur-2xl" />
+            <div className="absolute -top-10 -right-10 h-40 w-40 rounded-full bg-pink-500/10 blur-2xl" />
+            <div className="relative grid grid-cols-1 md:grid-cols-2 gap-4">
+              {roles.map((role, index) => (
+                <div 
+                  key={index} 
+                  className="p-4 rounded-2xl bg-gradient-to-br from-rose-500/[0.06] via-white/[0.02] to-transparent border border-white/10"
+                >
+                  <p className="text-rose-300/80 text-xs uppercase tracking-[0.2em] font-bold mb-1.5">{role.label}</p>
+                  <p className="text-xl font-semibold">{role.value}</p>
+                  {role.subtitle && (
+                    <p className="text-white/50 text-sm italic mt-1">({role.subtitle})</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
 // Announcements View - Only shows when there are announcements
 function AnnouncementsView({ announcements }: { announcements: Announcement[] }) {
-  if (announcements.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full">
-        <Megaphone className="h-32 w-32 text-amber-400 mb-10" />
-        <h2 className="text-5xl font-bold text-amber-400">No Announcements</h2>
-      </div>
-    )
-  }
-
   return (
-    <div className="flex flex-col items-center justify-center h-full max-w-5xl mx-auto">
-      <div className="flex items-center gap-6 mb-12">
-        <Megaphone className="h-16 w-16 text-amber-400" />
-        <h2 className="text-5xl font-bold text-amber-400">Announcements</h2>
+    <div className="relative w-full h-full flex items-center justify-center">
+      {/* Ambient amber glow orbs */}
+      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute -top-40 -left-40 h-[28rem] w-[28rem] rounded-full bg-amber-500/15 blur-3xl animate-pulse" style={{ animationDuration: "6s" }} />
+        <div className="absolute -bottom-40 -right-40 h-[32rem] w-[32rem] rounded-full bg-yellow-500/10 blur-3xl animate-pulse" style={{ animationDuration: "8s", animationDelay: "2s" }} />
       </div>
-      
-      <div className="w-full space-y-8">
-        {announcements.map((announcement) => (
-          <div 
-            key={announcement.id} 
-            className={`p-8 rounded-2xl border ${
-              announcement.priority === "urgent" 
-                ? "bg-red-500/10 border-red-500/50" 
-                : announcement.priority === "high"
-                ? "bg-orange-500/10 border-orange-500/50"
-                : "bg-white/5 border-white/10"
-            }`}
-          >
-            <h3 className="text-3xl font-bold mb-4">{announcement.title}</h3>
-            <p className="text-xl text-white/70 whitespace-pre-wrap">{announcement.message}</p>
+
+      {announcements.length === 0 ? (
+        <div className="relative w-full max-w-2xl rounded-3xl border border-white/10 bg-gradient-to-br from-amber-500/[0.10] via-white/[0.04] to-transparent backdrop-blur-sm p-12 flex flex-col items-center justify-center">
+          <div className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-amber-500/15 blur-2xl" />
+          <Megaphone className="h-24 w-24 text-amber-400/60 mb-6 relative" />
+          <h2 className="text-4xl font-bold text-amber-300/80 relative">No Announcements</h2>
+        </div>
+      ) : (
+        <div className="relative w-full max-w-5xl flex flex-col items-center">
+          {/* Header panel */}
+          <div className="relative w-full overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-amber-500/[0.10] via-white/[0.04] to-transparent backdrop-blur-sm p-7 mb-5 text-center">
+            <div className="absolute -top-12 left-1/2 -translate-x-1/2 h-48 w-96 rounded-full bg-amber-500/15 blur-3xl" />
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-300/40 to-transparent" />
+            <div className="relative flex items-center justify-center gap-4">
+              <div className="rounded-xl bg-amber-500/15 p-3 border border-amber-400/20">
+                <Megaphone className="h-7 w-7 text-amber-300" />
+              </div>
+              <h2 className="text-4xl font-bold text-amber-300">Announcements</h2>
+            </div>
           </div>
-        ))}
-      </div>
+
+          {/* Announcements list */}
+          <div className="w-full space-y-4">
+            {announcements.map((announcement) => {
+              const isUrgent = announcement.priority === "urgent"
+              const isHigh = announcement.priority === "high"
+              const palette = isUrgent
+                ? { bg: "from-red-500/[0.12]", border: "border-red-500/40", glow: "bg-red-500/20", icon: "text-red-300", badge: "URGENT" }
+                : isHigh
+                ? { bg: "from-orange-500/[0.12]", border: "border-orange-500/40", glow: "bg-orange-500/20", icon: "text-orange-300", badge: "IMPORTANT" }
+                : { bg: "from-amber-500/[0.06]", border: "border-white/10", glow: "bg-amber-500/10", icon: "text-amber-300", badge: null }
+
+              return (
+                <div
+                  key={announcement.id}
+                  className={`relative overflow-hidden rounded-2xl border ${palette.border} bg-gradient-to-br ${palette.bg} via-white/[0.03] to-transparent backdrop-blur-sm p-6`}
+                >
+                  <div className={`absolute -top-10 -right-10 h-32 w-32 rounded-full ${palette.glow} blur-2xl`} />
+                  {palette.badge && (
+                    <div className="relative mb-3">
+                      <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-[0.2em] ${palette.icon} bg-white/[0.05] border ${palette.border}`}>
+                        {palette.badge}
+                      </span>
+                    </div>
+                  )}
+                  <h3 className="relative text-2xl font-bold mb-2 text-balance">{announcement.title}</h3>
+                  <p className="relative text-lg text-white/70 whitespace-pre-wrap leading-relaxed">{announcement.message}</p>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
