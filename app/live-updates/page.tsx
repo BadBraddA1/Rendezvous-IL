@@ -688,10 +688,10 @@ export default function LiveUpdatesPage() {
       className="h-screen max-h-screen overflow-hidden bg-black text-white flex flex-col"
       style={{
         // Scale the entire UI with viewport size: every rem-based Tailwind class
-        // (text-*, p-*, h-*, w-*, gap-*) grows proportionally on larger TVs.
-        // Floor 14px (laptop), ceiling 64px so 120" 4K TVs fill comfortably.
-        // Approx: 1366×768 → ~16px, 1920×1080 → ~30px, 3840×2160 → ~58-64px.
-        fontSize: "clamp(14px, calc(0.85vw + 0.85vh + 4px), 64px)",
+        // (text-*, p-*, h-*, w-*, gap-*) grows proportionally with screen size.
+        // Tuned for 120" 4K TVs viewed from across a large room.
+        // Approx base: 1366×768 → ~18px, 1920×1080 → ~42px, 3840×2160 → ~120px.
+        fontSize: "clamp(14px, calc(1.6vw + 1.6vh + 2px), 140px)",
       }}
     >
       {/* Header */}
@@ -917,7 +917,7 @@ function AllView({
   const featuredIsNow = !!nowItem
 
   return (
-    <div className="relative w-full h-full max-w-[1800px] mx-auto flex flex-col overflow-hidden">
+    <div className="relative w-full h-full mx-auto flex flex-col overflow-hidden">
       {/* Ambient background orbs for depth */}
       <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
         <div className="absolute -top-40 -left-40 h-[28rem] w-[28rem] rounded-full bg-orange-500/10 blur-3xl animate-pulse" style={{ animationDuration: "6s" }} />
@@ -1144,7 +1144,7 @@ function WeatherView({ weather }: { weather: WeatherData | null }) {
         <div className="absolute -bottom-40 -right-40 h-[32rem] w-[32rem] rounded-full bg-cyan-500/10 blur-3xl animate-pulse" style={{ animationDuration: "8s", animationDelay: "2s" }} />
       </div>
 
-      <div className="relative w-full h-full max-w-6xl flex flex-col items-center justify-center">
+      <div className="relative w-full h-full flex flex-col items-center justify-center">
         {/* Glow card panel */}
         <div className="relative w-full overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-sky-500/[0.10] via-white/[0.04] to-transparent backdrop-blur-sm p-10">
           <div className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-sky-500/15 blur-2xl" />
@@ -1365,7 +1365,7 @@ function MealView({
           <h2 className="text-4xl font-bold text-white/60 relative">No Upcoming Meals</h2>
         </div>
       ) : (
-        <div className="relative w-full max-w-4xl flex flex-col items-center justify-center">
+        <div className="relative w-full max-w-7xl flex flex-col items-center justify-center">
           {/* Meal hero panel */}
           <div className="w-full relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-amber-500/[0.10] via-white/[0.04] to-transparent backdrop-blur-sm p-8 flex flex-col items-center text-center">
             <div className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-amber-500/15 blur-2xl" />
@@ -1819,7 +1819,7 @@ function VolunteersView({
           <h2 className="text-4xl font-bold text-white/60 relative">No Volunteer Schedule</h2>
         </div>
       ) : (
-        <div className="relative w-full max-w-5xl flex flex-col items-center">
+        <div className="relative w-full max-w-7xl flex flex-col items-center">
           {/* Header panel */}
           <div className="relative w-full overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-rose-500/[0.10] via-white/[0.04] to-transparent backdrop-blur-sm p-8 mb-5 text-center">
             <div className="absolute -top-12 left-1/2 -translate-x-1/2 h-48 w-96 rounded-full bg-rose-500/15 blur-3xl" />
@@ -1875,7 +1875,7 @@ function AnnouncementsView({ announcements }: { announcements: Announcement[] })
           <h2 className="text-4xl font-bold text-amber-300/80 relative">No Announcements</h2>
         </div>
       ) : (
-        <div className="relative w-full max-w-5xl flex flex-col items-center">
+        <div className="relative w-full max-w-7xl flex flex-col items-center">
           {/* Header panel */}
           <div className="relative w-full overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-amber-500/[0.10] via-white/[0.04] to-transparent backdrop-blur-sm p-7 mb-5 text-center">
             <div className="absolute -top-12 left-1/2 -translate-x-1/2 h-48 w-96 rounded-full bg-amber-500/15 blur-3xl" />
