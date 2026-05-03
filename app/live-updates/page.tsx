@@ -689,9 +689,9 @@ export default function LiveUpdatesPage() {
       style={{
         // Scale the entire UI with viewport size: every rem-based Tailwind class
         // (text-*, p-*, h-*, w-*, gap-*) grows proportionally with screen size.
-        // Floor 14px (laptop) → ceiling 96px so 120" TVs are readable from across the room.
-        // Approx: 1366×768 → ~18px, 1920×1080 → ~36px, 3840×2160 → ~80-96px.
-        fontSize: "clamp(14px, calc(1.1vw + 1.1vh + 4px), 96px)",
+        // Tuned for 120" 4K TVs viewed from across a large room.
+        // Approx base: 1366×768 → ~18px, 1920×1080 → ~42px, 3840×2160 → ~120px.
+        fontSize: "clamp(14px, calc(1.6vw + 1.6vh + 2px), 140px)",
       }}
     >
       {/* Header */}
