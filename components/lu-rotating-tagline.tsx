@@ -8,7 +8,6 @@ const TAGLINES = [
   "Rooted in Christ. Growing Together.",
   "Worship. Play. Connect. Belong.",
   "More Than a Retreat — A Homecoming.",
-  "Building Lifelong Friendships in Christ.",
   "Faith, Family, and the Great Outdoors.",
   "Iron Sharpens Iron. Proverbs 27:17",
   "A Time to Refresh. A Place to Belong.",
