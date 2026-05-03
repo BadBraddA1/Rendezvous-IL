@@ -1204,7 +1204,11 @@ function ScheduleView({
   upcomingAll: ScheduleItem[]
 }) {
   // Use upcoming events - today if available, else all upcoming
-  const upcoming = upcomingToday.length > 0 ? upcomingToday : upcomingAll.slice(0, 10)
+  const upcomingSource = upcomingToday.length > 0 ? upcomingToday : upcomingAll
+  // Cap to a number that always fits in the panel without clipping any row
+  const MAX_UPCOMING = 7
+  const upcoming = upcomingSource.slice(0, MAX_UPCOMING)
+  const moreCount = Math.max(0, upcomingSource.length - MAX_UPCOMING)
   const showingFuture = upcomingToday.length === 0 && upcomingAll.length > 0
 
   return (
@@ -1282,11 +1286,11 @@ function ScheduleView({
               {showingFuture ? "Upcoming" : "Today's Schedule"}
             </span>
           </div>
-          <div className="relative flex-1 min-h-0 overflow-hidden space-y-2.5 pr-1">
+          <div className="relative flex-1 min-h-0 flex flex-col gap-2.5">
             {upcoming.map((item, index) => (
               <div
                 key={index}
-                className={`p-4 rounded-xl border transition-colors ${
+                className={`p-3.5 rounded-xl border transition-colors ${
                   item === nextItem
                     ? "bg-violet-500/15 border-violet-400/40"
                     : "bg-white/[0.03] border-white/10"
@@ -1296,13 +1300,20 @@ function ScheduleView({
                   {getEventIcon(item.title, item.isMeal, "sm")}
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-base truncate">{item.title}</p>
-                    <p className="text-sm text-white/50 mt-0.5">
+                    <p className="text-sm text-white/50 mt-0.5 truncate">
                       {showingFuture ? `${item.day} ${item.time}` : item.time}
                     </p>
                   </div>
                 </div>
               </div>
             ))}
+            {moreCount > 0 && (
+              <div className="mt-auto p-2.5 rounded-xl border border-violet-400/20 bg-violet-500/5 text-center">
+                <p className="text-sm text-violet-300/90 font-semibold">
+                  + {moreCount} more event{moreCount === 1 ? "" : "s"} on the full schedule
+                </p>
+              </div>
+            )}
           </div>
         </div>
       )}
