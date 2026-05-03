@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback, useMemo } from "react"
 import Image from "next/image"
 import { mapLocations, mapPaths } from "@/lib/venue-map-data"
-import { LuRotatingTagline } from "@/components/lu-rotating-tagline"
 import { 
   Cloud, 
   CloudRain, 
@@ -917,12 +916,11 @@ function AllView({
                 priority
               />
             </div>
-            <div className="mb-3 inline-flex items-center gap-3">
+            <div className="inline-flex items-center gap-3">
               <span className="h-px w-8 bg-gradient-to-r from-transparent to-orange-400/60" />
               <span className="text-xs font-bold uppercase tracking-[0.4em] text-orange-400">2026</span>
               <span className="h-px w-8 bg-gradient-to-l from-transparent to-orange-400/60" />
             </div>
-            <LuRotatingTagline className="text-2xl font-semibold leading-tight text-white text-balance min-h-[3.5rem] flex items-center justify-center" />
           </div>
 
           {/* Right: Featured event spotlight */}
