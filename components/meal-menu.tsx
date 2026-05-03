@@ -74,13 +74,6 @@ export function MealMenu({ date, mealType }: MealMenuProps) {
             </div>
           )}
           
-          {meal.dessert && (
-            <div>
-              <span className="font-semibold text-foreground">Dessert:</span>{" "}
-              <span className="text-muted-foreground">{meal.dessert}</span>
-            </div>
-          )}
-          
           {meal.drinks && meal.drinks.length > 0 && (
             <div>
               <span className="font-semibold text-foreground">Drinks:</span>{" "}
