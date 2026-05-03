@@ -1,9 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { checkAdminAuth } from "@/lib/admin-auth"
-import { Resend } from "resend"
 import { sql } from "@/lib/db"
-
-const resend = new Resend(process.env.Resend_API)
+import { resend } from "@/lib/resend"
 
 export async function POST(req: NextRequest) {
   const admin = await checkAdminAuth()
