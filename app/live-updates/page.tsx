@@ -1303,16 +1303,25 @@ function MapView({ nowItem, nextItem }: { nowItem: ScheduleItem | null; nextItem
       </div>
 
       {/* Right side - Venue map */}
-      <div className="flex-1 relative rounded-2xl overflow-hidden border border-white/10 bg-white/5">
-        <div className="relative w-full h-full">
+      <div className="flex-1 relative rounded-2xl overflow-hidden border border-white/10 bg-white/5 flex items-center justify-center p-3 min-h-0">
+        {/* Aspect-ratio wrapper. width:100% + aspect-ratio: 4/3 + max-height:100% lets the box scale down on either axis while preserving the 4:3 ratio of the venue map image. The image fills the wrapper exactly, so pin percentages map directly to image pixels. */}
+        <div
+          className="relative rounded-lg overflow-hidden"
+          style={{
+            width: "100%",
+            aspectRatio: "4 / 3",
+            maxHeight: "100%",
+            maxWidth: "100%",
+          }}
+        >
           <img
             src="/images/venue-map.jpg"
             alt="Lake Williamson venue map"
-            className="absolute inset-0 w-full h-full object-contain"
+            className="absolute inset-0 w-full h-full"
             draggable={false}
           />
 
-          {/* Pins overlay */}
+          {/* Pins overlay - positioned as % of the wrapper, which equals image pixels */}
           {mapLocations.map((location) => {
             const isFeatured = location.id === featuredLocationId
             const color = location.color || (
