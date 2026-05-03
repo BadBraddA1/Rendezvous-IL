@@ -1303,10 +1303,10 @@ function MapView({ nowItem, nextItem }: { nowItem: ScheduleItem | null; nextItem
       </div>
 
       {/* Right side - Venue map */}
-      <div className="flex-1 relative rounded-2xl overflow-hidden border border-white/10 bg-white/5 flex items-center justify-center p-3 min-h-0">
-        {/* Aspect-ratio wrapper. width:100% + aspect-ratio: 4/3 + max-height:100% lets the box scale down on either axis while preserving the 4:3 ratio of the venue map image. The image fills the wrapper exactly, so pin percentages map directly to image pixels. */}
+      <div className="flex-1 relative rounded-2xl border border-white/10 bg-white/5 flex items-center justify-center p-3 pt-14 min-h-0">
+        {/* Aspect-ratio wrapper. NOTE: no overflow-hidden so the pin's floating name label can render above the map for pins near the top edge. The image itself has rounded corners so the visual still looks clean. */}
         <div
-          className="relative rounded-lg overflow-hidden"
+          className="relative"
           style={{
             width: "100%",
             aspectRatio: "4 / 3",
@@ -1317,7 +1317,7 @@ function MapView({ nowItem, nextItem }: { nowItem: ScheduleItem | null; nextItem
           <img
             src="/images/venue-map.jpg"
             alt="Lake Williamson venue map"
-            className="absolute inset-0 w-full h-full"
+            className="absolute inset-0 w-full h-full rounded-lg"
             draggable={false}
           />
 
