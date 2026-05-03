@@ -688,9 +688,10 @@ export default function LiveUpdatesPage() {
       className="h-screen max-h-screen overflow-hidden bg-black text-white flex flex-col"
       style={{
         // Scale the entire UI with viewport size: every rem-based Tailwind class
-        // (text-*, p-*, h-*, w-*, gap-*) will grow proportionally on larger TVs.
-        // Floor 14px (small laptop), ceiling 28px (4K TV); typical 1080p TV ≈ 20-22px.
-        fontSize: "clamp(14px, calc(0.45vw + 0.45vh + 6px), 28px)",
+        // (text-*, p-*, h-*, w-*, gap-*) grows proportionally on larger TVs.
+        // Floor 14px (laptop), ceiling 64px so 120" 4K TVs fill comfortably.
+        // Approx: 1366×768 → ~16px, 1920×1080 → ~30px, 3840×2160 → ~58-64px.
+        fontSize: "clamp(14px, calc(0.85vw + 0.85vh + 4px), 64px)",
       }}
     >
       {/* Header */}
