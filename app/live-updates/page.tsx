@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useMemo } from "react"
 import Image from "next/image"
 import { mapLocations, mapPaths } from "@/lib/venue-map-data"
+import { LuRotatingTagline } from "@/components/lu-rotating-tagline"
 import { 
   Cloud, 
   CloudRain, 
@@ -799,41 +800,51 @@ function ScheduleCard({
   }
 
   return (
-    <div className="bg-white/5 rounded-2xl p-8 border border-white/10">
-      <div className="flex items-center gap-3 text-white/60 text-lg mb-6">
-        <Calendar className="h-6 w-6" />
-        <span className="uppercase tracking-wider font-medium">Schedule</span>
-      </div>
-      <div className="space-y-3">
-        {eventsToShow.length > 0 ? (
-          eventsToShow.map(({ item, isNow }, index) => (
-            <div 
-              key={index}
-              className={`p-4 rounded-xl border ${
-                isNow 
-                  ? "bg-white/10 border-white/20" 
-                  : item === nextItem
-                  ? "bg-white/5 border-white/15"
-                  : "bg-white/5 border-white/10"
-              }`}
-            >
-              <div className="flex items-start gap-4">
-                <div className="flex items-center gap-3 shrink-0 pt-0.5">
-                  {isNow && <span className="w-3 h-3 bg-green-400 rounded-full animate-pulse" />}
-                  {getEventIcon(item.title, item.isMeal, "xs")}
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium text-lg leading-tight">{item.title}</p>
-                  <p className="text-base text-white/50 mt-1">
-                    {isNow ? "NOW" : `${item.day} ${item.time}`}
-                  </p>
+    <div className="group relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-violet-500/[0.08] via-white/[0.03] to-transparent backdrop-blur-sm p-7">
+      <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-violet-500/10 blur-2xl" />
+      <div className="relative">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="rounded-xl bg-violet-500/15 p-2.5 border border-violet-400/20">
+            <Calendar className="h-5 w-5 text-violet-300" />
+          </div>
+          <span className="text-sm uppercase tracking-[0.2em] font-bold text-violet-300/90">Schedule</span>
+        </div>
+        <div className="space-y-2.5">
+          {eventsToShow.length > 0 ? (
+            eventsToShow.map(({ item, isNow }, index) => (
+              <div 
+                key={index}
+                className={`p-3.5 rounded-xl border transition-colors ${
+                  isNow 
+                    ? "bg-green-500/10 border-green-400/30" 
+                    : item === nextItem
+                    ? "bg-white/[0.07] border-white/15"
+                    : "bg-white/[0.03] border-white/5"
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <div className="flex items-center gap-2 shrink-0 pt-0.5">
+                    {isNow && (
+                      <span className="relative flex h-2.5 w-2.5">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
+                        <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-green-400" />
+                      </span>
+                    )}
+                    {getEventIcon(item.title, item.isMeal, "xs")}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-base leading-tight truncate">{item.title}</p>
+                    <p className={`text-sm mt-0.5 ${isNow ? "text-green-300 font-bold uppercase tracking-wider" : "text-white/50"}`}>
+                      {isNow ? "Now" : `${item.day} ${item.time}`}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))
-        ) : (
-          <p className="text-white/50 text-sm">No upcoming events</p>
-        )}
+            ))
+          ) : (
+            <p className="text-white/50 text-sm">No upcoming events</p>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -860,110 +871,223 @@ function AllView({
   volunteerTimeSlot: string
 }) {
   // Check if volunteer schedule has any filled items
-const volunteerItems: { label: string; value: string | null; subtitle?: string | null }[] = volunteerSchedule ? [
-  { label: "Opening Prayer", value: volunteerSchedule.openingPrayer },
-  { label: "Leading Singing [A]", value: volunteerSchedule.leadingSingingA },
-  { label: "Leading Singing [B]", value: volunteerSchedule.leadingSingingB },
-  { label: "Reading Scripture [A]", value: volunteerSchedule.readingScriptureA, subtitle: volunteerSchedule.lessonScriptureA },
-  { label: "Presenting [A]", value: volunteerSchedule.presentingLessonA, subtitle: volunteerSchedule.lessonTitleA },
-  { label: "Reading Scripture [B]", value: volunteerSchedule.readingScriptureB, subtitle: volunteerSchedule.lessonScriptureB },
-  { label: "Presenting [B]", value: volunteerSchedule.presentingLessonB, subtitle: volunteerSchedule.lessonTitleB },
-  { label: "Closing Prayer", value: volunteerSchedule.closingPrayer },
+  const volunteerItems: { label: string; value: string | null; subtitle?: string | null }[] = volunteerSchedule ? [
+    { label: "Opening Prayer", value: volunteerSchedule.openingPrayer },
+    { label: "Leading Singing [A]", value: volunteerSchedule.leadingSingingA },
+    { label: "Leading Singing [B]", value: volunteerSchedule.leadingSingingB },
+    { label: "Reading Scripture [A]", value: volunteerSchedule.readingScriptureA, subtitle: volunteerSchedule.lessonScriptureA },
+    { label: "Presenting [A]", value: volunteerSchedule.presentingLessonA, subtitle: volunteerSchedule.lessonTitleA },
+    { label: "Reading Scripture [B]", value: volunteerSchedule.readingScriptureB, subtitle: volunteerSchedule.lessonScriptureB },
+    { label: "Presenting [B]", value: volunteerSchedule.presentingLessonB, subtitle: volunteerSchedule.lessonTitleB },
+    { label: "Closing Prayer", value: volunteerSchedule.closingPrayer },
   ].filter(item => item.value) : []
 
   const hasVolunteers = volunteerItems.length > 0
 
+  // Featured event - prefer "now" then "next"
+  const featuredItem = nowItem || nextItem
+  const featuredIsNow = !!nowItem
+
   return (
-    <div className={`grid grid-cols-1 gap-8 w-full max-w-7xl ${hasVolunteers ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
-      {/* Weather Card */}
-      <div className="bg-white/5 rounded-2xl p-8 border border-white/10">
-        <div className="flex items-center gap-3 text-white/60 text-lg mb-6">
-          <Droplets className="h-6 w-6" />
-          <span className="uppercase tracking-wider font-medium">Weather</span>
-        </div>
-        {weather ? (
-          <div className="space-y-6">
-            <div className="flex items-center gap-4">
-              {getWeatherIcon(weather.current.weather[0].id, weather.current.weather[0].icon, "md")}
-              <span className="text-6xl font-bold">{Math.round(weather.current.temp)}°</span>
+    <div className="relative w-full max-w-[1800px] mx-auto">
+      {/* Ambient background orbs for depth */}
+      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute -top-40 -left-40 h-[28rem] w-[28rem] rounded-full bg-orange-500/10 blur-3xl animate-pulse" style={{ animationDuration: "6s" }} />
+        <div className="absolute top-1/3 -right-40 h-[32rem] w-[32rem] rounded-full bg-amber-500/10 blur-3xl animate-pulse" style={{ animationDuration: "8s", animationDelay: "2s" }} />
+        <div className="absolute -bottom-40 left-1/3 h-96 w-96 rounded-full bg-rose-500/8 blur-3xl animate-pulse" style={{ animationDuration: "7s", animationDelay: "4s" }} />
+      </div>
+
+      {/* HERO BANNER - Logo, tagline, featured event */}
+      <div className="relative mb-8 overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.08] via-white/[0.04] to-transparent backdrop-blur-sm">
+        {/* Decorative gradient stripe */}
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-orange-400/60 to-transparent" />
+        <div className="absolute -top-24 left-1/2 -translate-x-1/2 h-48 w-[40rem] rounded-full bg-orange-500/20 blur-3xl" />
+
+        <div className="relative grid grid-cols-12 gap-8 p-10">
+          {/* Left: Logo + Tagline */}
+          <div className="col-span-5 flex flex-col items-center justify-center text-center">
+            <div className="relative mb-4">
+              <div className="absolute inset-0 -z-10 rounded-full bg-orange-500/30 blur-3xl" />
+              <Image
+                src="/rendezvous-logo.png"
+                alt="Rendezvous Homeschool Family Retreat"
+                width={400}
+                height={400}
+                className="h-44 w-auto drop-shadow-2xl brightness-0 invert"
+                priority
+              />
             </div>
-            <p className="text-white/70 capitalize text-xl">{weather.current.weather[0].description}</p>
-            <div className="grid grid-cols-3 gap-3">
-              {weather.hourly.slice(0, 3).map((hour) => (
-                <div key={hour.dt} className="text-center p-4 rounded-xl bg-white/5">
-                  <p className="text-sm text-white/50">{formatTime(hour.dt)}</p>
-                  <div className="flex justify-center my-2">
-                    {getWeatherIcon(hour.weather[0].id, hour.weather[0].icon, "sm")}
-                  </div>
-                  <p className="font-semibold text-lg">{Math.round(hour.temp)}°</p>
-                  {hour.pop > 0.1 && (
-                    <p className="text-sm text-blue-400 flex items-center justify-center gap-1">
-                      <Droplets className="h-3 w-3" />
-                      {Math.round(hour.pop * 100)}%
-                    </p>
+            <div className="mb-3 inline-flex items-center gap-3">
+              <span className="h-px w-8 bg-gradient-to-r from-transparent to-orange-400/60" />
+              <span className="text-xs font-bold uppercase tracking-[0.4em] text-orange-400">2026</span>
+              <span className="h-px w-8 bg-gradient-to-l from-transparent to-orange-400/60" />
+            </div>
+            <LuRotatingTagline className="text-2xl font-semibold leading-tight text-white text-balance min-h-[3.5rem] flex items-center justify-center" />
+          </div>
+
+          {/* Right: Featured event spotlight */}
+          <div className="col-span-7 flex flex-col justify-center">
+            {featuredItem ? (
+              <div className="relative rounded-2xl border border-white/10 bg-gradient-to-br from-orange-500/10 via-white/[0.03] to-transparent p-8">
+                <div className="flex items-center gap-3 mb-6">
+                  {featuredIsNow ? (
+                    <>
+                      <span className="relative flex h-3 w-3">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
+                        <span className="relative inline-flex h-3 w-3 rounded-full bg-green-400" />
+                      </span>
+                      <span className="text-sm font-bold uppercase tracking-[0.3em] text-green-400">Happening Now</span>
+                    </>
+                  ) : (
+                    <>
+                      <ChevronRight className="h-5 w-5 text-orange-400" />
+                      <span className="text-sm font-bold uppercase tracking-[0.3em] text-orange-400">Up Next</span>
+                    </>
                   )}
                 </div>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <p className="text-white/50 text-lg">Loading weather...</p>
-        )}
-      </div>
-
-      {/* Schedule Card - shows up to 5 events */}
-      <ScheduleCard nowItem={nowItem} nextItem={nextItem} upcomingToday={upcomingToday} upcomingAll={upcomingAll} />
-
-      {/* Next Meal Card */}
-      <div className="bg-white/5 rounded-2xl p-8 border border-white/10">
-        <div className="flex items-center gap-3 text-white/60 text-lg mb-6">
-          <Clock className="h-6 w-6" />
-          <span className="uppercase tracking-wider font-medium">Next Meal</span>
-        </div>
-        {nextMeal ? (
-          <div className="flex flex-col items-center justify-center h-[calc(100%-3rem)] text-center">
-            <div className="mb-4">
-              {getEventIcon(nextMeal.title, true, "lg")}
-            </div>
-            <h3 className="text-3xl font-bold mb-2">{nextMeal.title}</h3>
-            <p className="text-white/60 text-xl flex items-center justify-center gap-2">
-              <Clock className="h-5 w-5" />
-              {nextMeal.time}
-            </p>
-            {nextMeal.location && (
-              <p className="text-white/40 text-base mt-2 flex items-center justify-center gap-2">
-                <MapPin className="h-4 w-4" />
-                {nextMeal.location}
-              </p>
+                <div className="flex items-start gap-6">
+                  <div className="shrink-0 rounded-2xl bg-white/5 border border-white/10 p-4">
+                    {getEventIcon(featuredItem.title, featuredItem.isMeal, "lg")}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h2 className="text-4xl font-bold leading-tight mb-3 text-balance">{featuredItem.title}</h2>
+                    <div className="flex flex-wrap gap-3">
+                      <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-base">
+                        <Clock className="h-4 w-4 text-orange-400" />
+                        {featuredIsNow ? featuredItem.time : `${featuredItem.day} ${featuredItem.time}`}
+                      </span>
+                      {featuredItem.location && (
+                        <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-base">
+                          <MapPin className="h-4 w-4 text-orange-400" />
+                          {featuredItem.location}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-8 text-center">
+                <Bed className="h-16 w-16 text-white/30 mx-auto mb-4" />
+                <p className="text-2xl font-semibold text-white/60">Free Time</p>
+                <p className="text-base text-white/40 mt-2">Enjoy the retreat!</p>
+              </div>
             )}
           </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center h-[calc(100%-3rem)] text-center">
-            <UtensilsCrossed className="h-16 w-16 text-white/30 mb-4" />
-            <p className="text-white/50 text-lg">No upcoming meals</p>
+        </div>
+
+        {/* Decorative bottom stripe */}
+        <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-orange-400/30 to-transparent" />
+      </div>
+
+      {/* CARDS GRID */}
+      <div className={`grid grid-cols-1 gap-6 ${hasVolunteers ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
+        {/* Weather Card */}
+        <div className="group relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-sky-500/[0.08] via-white/[0.03] to-transparent backdrop-blur-sm p-7">
+          <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-sky-500/10 blur-2xl" />
+          <div className="relative">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="rounded-xl bg-sky-500/15 p-2.5 border border-sky-400/20">
+                <Droplets className="h-5 w-5 text-sky-300" />
+              </div>
+              <span className="text-sm uppercase tracking-[0.2em] font-bold text-sky-300/90">Weather</span>
+            </div>
+            {weather ? (
+              <div className="space-y-5">
+                <div className="flex items-center gap-4">
+                  {getWeatherIcon(weather.current.weather[0].id, weather.current.weather[0].icon, "md")}
+                  <span className="text-6xl font-bold tabular-nums">{Math.round(weather.current.temp)}°</span>
+                </div>
+                <p className="text-white/70 capitalize text-lg">{weather.current.weather[0].description}</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {weather.hourly.slice(0, 3).map((hour) => (
+                    <div key={hour.dt} className="text-center p-3 rounded-xl bg-white/5 border border-white/5">
+                      <p className="text-xs text-white/50 font-medium">{formatTime(hour.dt)}</p>
+                      <div className="flex justify-center my-2">
+                        {getWeatherIcon(hour.weather[0].id, hour.weather[0].icon, "sm")}
+                      </div>
+                      <p className="font-bold text-base tabular-nums">{Math.round(hour.temp)}°</p>
+                      {hour.pop > 0.1 && (
+                        <p className="text-xs text-sky-300 flex items-center justify-center gap-1 mt-0.5">
+                          <Droplets className="h-3 w-3" />
+                          {Math.round(hour.pop * 100)}%
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <p className="text-white/50 text-lg">Loading weather...</p>
+            )}
+          </div>
+        </div>
+
+        {/* Schedule Card */}
+        <ScheduleCard nowItem={nowItem} nextItem={nextItem} upcomingToday={upcomingToday} upcomingAll={upcomingAll} />
+
+        {/* Next Meal Card */}
+        <div className="group relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-amber-500/[0.08] via-white/[0.03] to-transparent backdrop-blur-sm p-7">
+          <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-amber-500/10 blur-2xl" />
+          <div className="relative">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="rounded-xl bg-amber-500/15 p-2.5 border border-amber-400/20">
+                <UtensilsCrossed className="h-5 w-5 text-amber-300" />
+              </div>
+              <span className="text-sm uppercase tracking-[0.2em] font-bold text-amber-300/90">Next Meal</span>
+            </div>
+            {nextMeal ? (
+              <div className="flex flex-col items-center justify-center text-center pt-2">
+                <div className="mb-4 rounded-2xl bg-white/5 border border-white/10 p-4">
+                  {getEventIcon(nextMeal.title, true, "lg")}
+                </div>
+                <h3 className="text-2xl font-bold mb-3">{nextMeal.title}</h3>
+                <p className="text-white/70 text-lg flex items-center justify-center gap-2 mb-2">
+                  <Clock className="h-4 w-4 text-amber-300" />
+                  {nextMeal.time}
+                </p>
+                {nextMeal.location && (
+                  <p className="text-white/50 text-sm flex items-center justify-center gap-1.5">
+                    <MapPin className="h-3.5 w-3.5" />
+                    {nextMeal.location}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center text-center pt-4">
+                <UtensilsCrossed className="h-16 w-16 text-white/30 mb-4" />
+                <p className="text-white/50 text-lg">No upcoming meals</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Volunteer Schedule Card */}
+        {hasVolunteers && (
+          <div className="group relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-rose-500/[0.08] via-white/[0.03] to-transparent backdrop-blur-sm p-7">
+            <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-rose-500/10 blur-2xl" />
+            <div className="relative">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="rounded-xl bg-rose-500/15 p-2.5 border border-rose-400/20">
+                  <Users className="h-5 w-5 text-rose-300" />
+                </div>
+                <span className="text-sm uppercase tracking-[0.2em] font-bold text-rose-300/90 truncate">{volunteerTimeSlot}</span>
+              </div>
+              <div className="space-y-2.5">
+                {volunteerItems.map((item, index) => (
+                  <div key={index} className="text-sm">
+                    <p className="text-white/40 text-xs uppercase tracking-wider mb-0.5">{item.label}</p>
+                    <p className="font-semibold text-base text-white">{item.value}</p>
+                    {item.subtitle && (
+                      <p className="text-white/50 italic text-xs mt-0.5">{item.subtitle}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         )}
       </div>
-
-      {/* Volunteer Schedule Card - only show if there are volunteers */}
-      {hasVolunteers && (
-        <div className="bg-white/5 rounded-2xl p-8 border border-white/10">
-          <div className="text-white/60 text-lg mb-6">
-            <span className="uppercase tracking-wider font-medium">{volunteerTimeSlot}</span>
-          </div>
-          <div className="space-y-3">
-            {volunteerItems.map((item, index) => (
-              <div key={index} className="text-base">
-                <span className="text-white/50">{item.label}:</span>
-                <span className="font-medium text-lg ml-2">{item.value}</span>
-                {item.subtitle && (
-                  <span className="text-white/40 italic text-sm ml-2">({item.subtitle})</span>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   )
 }
