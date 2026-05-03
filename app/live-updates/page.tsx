@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useMemo } from "react"
 import Image from "next/image"
 import { mapLocations, mapPaths } from "@/lib/venue-map-data"
+import { ViewTransition } from "@/components/view-transition"
 import { 
   Cloud, 
   CloudRain, 
@@ -692,37 +693,39 @@ export default function LiveUpdatesPage() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 p-12 flex items-center justify-center">
-        {currentView === "all" && (
-          <AllView 
-            weather={weather} 
-            nowItem={nowItem} 
-            nextItem={nextItem} 
-            nextMeal={nextMeal}
-            upcomingToday={upcomingToday}
-            upcomingAll={upcomingAll}
-            volunteerSchedule={volunteerSchedule}
-            volunteerTimeSlot={volunteerTimeSlot}
-          />
-        )}
-        {currentView === "weather" && (
-          <WeatherView weather={weather} />
-        )}
-        {currentView === "schedule" && (
-          <ScheduleView nowItem={nowItem} nextItem={nextItem} upcomingToday={upcomingToday} upcomingAll={upcomingAll} />
-        )}
-        {currentView === "meal" && (
-          <MealView nextMeal={nextMeal} mealData={mealData} />
-        )}
-        {currentView === "map" && (
-          <MapView nowItem={nowItem} nextItem={nextItem} prevItem={prevItem} />
-        )}
-        {currentView === "volunteers" && (
-          <VolunteersView volunteerSchedule={volunteerSchedule} volunteerTimeSlot={volunteerTimeSlot} />
-        )}
-        {currentView === "announcements" && (
-          <AnnouncementsView announcements={announcements} />
-        )}
+      <main className="flex-1 p-12 flex items-center justify-center overflow-hidden">
+        <ViewTransition viewKey={currentView} className="w-full h-full flex items-center justify-center">
+          {currentView === "all" && (
+            <AllView 
+              weather={weather} 
+              nowItem={nowItem} 
+              nextItem={nextItem} 
+              nextMeal={nextMeal}
+              upcomingToday={upcomingToday}
+              upcomingAll={upcomingAll}
+              volunteerSchedule={volunteerSchedule}
+              volunteerTimeSlot={volunteerTimeSlot}
+            />
+          )}
+          {currentView === "weather" && (
+            <WeatherView weather={weather} />
+          )}
+          {currentView === "schedule" && (
+            <ScheduleView nowItem={nowItem} nextItem={nextItem} upcomingToday={upcomingToday} upcomingAll={upcomingAll} />
+          )}
+          {currentView === "meal" && (
+            <MealView nextMeal={nextMeal} mealData={mealData} />
+          )}
+          {currentView === "map" && (
+            <MapView nowItem={nowItem} nextItem={nextItem} prevItem={prevItem} />
+          )}
+          {currentView === "volunteers" && (
+            <VolunteersView volunteerSchedule={volunteerSchedule} volunteerTimeSlot={volunteerTimeSlot} />
+          )}
+          {currentView === "announcements" && (
+            <AnnouncementsView announcements={announcements} />
+          )}
+        </ViewTransition>
       </main>
 
       {/* Keyboard Controls Footer - hidden in fullscreen */}
