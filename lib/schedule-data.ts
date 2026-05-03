@@ -1,5 +1,8 @@
-// Canonical schedule data - imported by both the printable HTML page and the PDF API route.
-// Update this file ONLY (not the print page or PDF route) so the two outputs never drift.
+// Canonical schedule data - imported by:
+//   - /schedule/print (printable HTML page)
+//   - /api/schedule/pdf (PDF generator)
+//   - /live-updates (the TV "Live Updates" page, via LU_SCHEDULE_ITEMS below)
+// Update this file ONLY so the four outputs never drift.
 // Source of truth must match the onscreen copy on /schedule (app/schedule/page.tsx).
 
 export type ScheduleEvent = {
@@ -208,3 +211,146 @@ export const scheduleData: ScheduleDay[] = [
     ],
   },
 ]
+
+// ---------------------------------------------------------------------------
+// LU (Live Updates) schedule
+// ---------------------------------------------------------------------------
+// The TV "Live Updates" page needs each event broken down with a concrete date,
+// numeric start/end hour & minute, and an isMeal flag. Rather than maintain a
+// second hand-written copy, we derive it from `scheduleData` above so changes
+// to the printable / PDF schedule automatically flow to the LU page.
+//
+// We also append per-night "Good Night!" entries so that after the last real
+// event of the evening the LU's "Up Next" gracefully shows a warm sign-off
+// instead of jumping straight to tomorrow morning's breakfast.
+
+export interface LUScheduleItem {
+  date: string // YYYY-MM-DD in America/Chicago
+  day: string
+  time: string
+  startHour: number
+  startMinute: number
+  endHour?: number
+  endMinute?: number
+  title: string
+  location?: string
+  isMeal?: boolean
+}
+
+const DAY_TO_DATE: Record<string, string> = {
+  Monday: "2026-05-04",
+  Tuesday: "2026-05-05",
+  Wednesday: "2026-05-06",
+  Thursday: "2026-05-07",
+  Friday: "2026-05-08",
+}
+
+/** Parse a single time chunk like "5:30 PM", "10", "10:00 AM". */
+function parseClockChunk(
+  raw: string,
+  fallbackAmPm?: "AM" | "PM",
+): { hour: number; minute: number; amPm: "AM" | "PM" } {
+  const m = raw.trim().match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?$/i)
+  if (!m) throw new Error(`Cannot parse time chunk: "${raw}"`)
+  let hour = parseInt(m[1], 10)
+  const minute = m[2] ? parseInt(m[2], 10) : 0
+  const amPm = ((m[3] || fallbackAmPm || "PM").toUpperCase()) as "AM" | "PM"
+  if (amPm === "PM" && hour < 12) hour += 12
+  if (amPm === "AM" && hour === 12) hour = 0
+  return { hour, minute, amPm }
+}
+
+/** Parse a schedule time string like "5:30 PM", "1:00 – 5:15 PM", "10:00 – 11:30 AM". */
+function parseTimeString(time: string): {
+  startHour: number
+  startMinute: number
+  endHour?: number
+  endMinute?: number
+} {
+  // Normalize en/em dashes and hyphens to a single splitter
+  const normalized = time.replace(/\s+/g, " ").trim()
+  const parts = normalized.split(/\s*[–—-]\s*/)
+  if (parts.length === 2) {
+    const end = parseClockChunk(parts[1])
+    // Start may omit AM/PM and inherit from end (e.g. "1:00 – 5:15 PM").
+    const start = parseClockChunk(parts[0], end.amPm)
+    return {
+      startHour: start.hour,
+      startMinute: start.minute,
+      endHour: end.hour,
+      endMinute: end.minute,
+    }
+  }
+  const single = parseClockChunk(parts[0])
+  return { startHour: single.hour, startMinute: single.minute }
+}
+
+function detectIsMeal(title: string): boolean {
+  return /\b(breakfast|lunch|dinner|cookout)\b/i.test(title)
+}
+
+function formatTimeForDisplay(hour: number, minute: number): string {
+  const ampm = hour >= 12 ? "PM" : "AM"
+  const displayH = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour
+  const mm = String(minute).padStart(2, "0")
+  return `${displayH}:${mm} ${ampm}`
+}
+
+// Synthetic end-of-day entries so the LU schedule has a graceful sign-off after
+// the last real activity each evening. Friday is omitted because the event ends
+// at lunch and people are heading home.
+const GOOD_NIGHT_ENTRIES: Array<{ date: string; day: string; startHour: number; startMinute: number }> = [
+  // Monday: last real event is 9:00 PM Nine Square (default 60-min ends 10 PM)
+  { date: "2026-05-04", day: "Monday", startHour: 22, startMinute: 0 },
+  // Tuesday: pool runs until 10 PM
+  { date: "2026-05-05", day: "Tuesday", startHour: 22, startMinute: 15 },
+  // Wednesday: pool runs until 10 PM
+  { date: "2026-05-06", day: "Wednesday", startHour: 22, startMinute: 15 },
+  // Thursday: Racquetball Court Singing starts at 10 PM (default 60-min ends 11 PM)
+  { date: "2026-05-07", day: "Thursday", startHour: 23, startMinute: 0 },
+]
+
+export const LU_SCHEDULE_ITEMS: LUScheduleItem[] = (() => {
+  const items: LUScheduleItem[] = []
+  for (const day of scheduleData) {
+    const dateISO = DAY_TO_DATE[day.day]
+    if (!dateISO) continue
+    for (const ev of day.events) {
+      const parsed = parseTimeString(ev.time)
+      items.push({
+        date: dateISO,
+        day: day.day,
+        time: ev.time,
+        startHour: parsed.startHour,
+        startMinute: parsed.startMinute,
+        endHour: parsed.endHour,
+        endMinute: parsed.endMinute,
+        title: ev.title,
+        location: ev.location,
+        isMeal: detectIsMeal(ev.title),
+      })
+    }
+  }
+  for (const gn of GOOD_NIGHT_ENTRIES) {
+    items.push({
+      date: gn.date,
+      day: gn.day,
+      time: formatTimeForDisplay(gn.startHour, gn.startMinute),
+      startHour: gn.startHour,
+      startMinute: gn.startMinute,
+      // Run through to just before midnight so it stays the active "now" event
+      endHour: 23,
+      endMinute: 59,
+      title: "Good Night!",
+      location: "See you tomorrow!",
+    })
+  }
+  // Sort chronologically so the LU's linear scan still works correctly
+  items.sort((a, b) => {
+    if (a.date !== b.date) return a.date.localeCompare(b.date)
+    const am = a.startHour * 60 + a.startMinute
+    const bm = b.startHour * 60 + b.startMinute
+    return am - bm
+  })
+  return items
+})()

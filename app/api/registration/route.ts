@@ -1,9 +1,7 @@
 import { neon } from "@neondatabase/serverless"
 import { NextResponse } from "next/server"
-import { Resend } from "resend"
 import { generateRegistrationConfirmationEmail, generateAdminNotificationEmail } from "@/lib/email-templates"
-
-const resend = new Resend(process.env.Resend_API)
+import { resend } from "@/lib/resend"
 
 export async function POST(request: Request) {
   // Registration is closed as of April 15, 2026

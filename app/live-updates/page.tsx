@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useMemo } from "react"
 import Image from "next/image"
 import { mapLocations, mapPaths } from "@/lib/venue-map-data"
+import { LU_SCHEDULE_ITEMS } from "@/lib/schedule-data"
 import { ViewTransition } from "@/components/view-transition"
 import { IceCreamChallenge } from "@/components/ice-cream-challenge"
 import { 
@@ -130,46 +131,10 @@ interface MealData {
   title: string | null
 }
 
-const SCHEDULE_ITEMS: ScheduleItem[] = [
-  // Monday May 4
-  { date: '2026-05-04', day: 'Monday', time: '1:00 PM - 5:15 PM', startHour: 13, startMinute: 0, endHour: 17, endMinute: 15, title: 'Check-in at Activity Center', location: 'Activity Center' },
-  { date: '2026-05-04', day: 'Monday', time: '4:00 PM - 5:00 PM', startHour: 16, startMinute: 0, endHour: 17, endMinute: 0, title: 'Ice Breaker Game', location: 'AC Room 205/206' },
-  { date: '2026-05-04', day: 'Monday', time: '5:30 PM', startHour: 17, startMinute: 30, title: 'Dinner', location: 'Lakeside Dining Room', isMeal: true },
-  { date: '2026-05-04', day: 'Monday', time: '7:00 PM', startHour: 19, startMinute: 0, title: 'Evening Assembly & Introductions', location: 'AC Room 207' },
-  { date: '2026-05-04', day: 'Monday', time: '8:00 PM', startHour: 20, startMinute: 0, title: 'Black-light Dodgeball & Games', location: 'Activity Center' },
-  { date: '2026-05-04', day: 'Monday', time: '9:00 PM', startHour: 21, startMinute: 0, title: 'Nine Square & Knockout', location: 'Activity Center' },
-  // Tuesday May 5
-  { date: '2026-05-05', day: 'Tuesday', time: '7:30 AM', startHour: 7, startMinute: 30, title: 'Breakfast', location: 'Lakeside Dining Room', isMeal: true },
-  { date: '2026-05-05', day: 'Tuesday', time: '9:00 AM', startHour: 9, startMinute: 0, title: 'Morning Assembly & Announcements', location: 'AC Room 207' },
-  { date: '2026-05-05', day: 'Tuesday', time: '10:00 AM', startHour: 10, startMinute: 0, title: 'Young Adult & Mom\'s Session', location: 'Activity Center' },
-  { date: '2026-05-05', day: 'Tuesday', time: '12:00 PM', startHour: 12, startMinute: 0, title: 'Lunch', location: 'Lakeside Dining Room', isMeal: true },
-  { date: '2026-05-05', day: 'Tuesday', time: '1:30 PM', startHour: 13, startMinute: 30, title: 'Archery, Obstacle Course & Rope Games', location: 'Various' },
-  { date: '2026-05-05', day: 'Tuesday', time: '5:30 PM', startHour: 17, startMinute: 30, title: 'Dinner', location: 'Lakeside Dining Room', isMeal: true },
-  { date: '2026-05-05', day: 'Tuesday', time: '7:00 PM', startHour: 19, startMinute: 0, title: 'Evening Assembly & Announcements', location: 'AC Room 207' },
-  { date: '2026-05-05', day: 'Tuesday', time: '8:00 PM', startHour: 20, startMinute: 0, title: 'Gym Time & Table Games', location: 'Activity Center' },
-  // Wednesday May 6
-  { date: '2026-05-06', day: 'Wednesday', time: '7:30 AM', startHour: 7, startMinute: 30, title: 'Breakfast', location: 'Lakeside Dining Room', isMeal: true },
-  { date: '2026-05-06', day: 'Wednesday', time: '9:00 AM', startHour: 9, startMinute: 0, title: 'Morning Assembly & Group Picture', location: 'AC Room 207' },
-  { date: '2026-05-06', day: 'Wednesday', time: '10:00 AM', startHour: 10, startMinute: 0, title: 'General / Family Session', location: 'Activity Center' },
-  { date: '2026-05-06', day: 'Wednesday', time: '12:00 PM', startHour: 12, startMinute: 0, title: 'Lunch', location: 'Lakeside Dining Room', isMeal: true },
-  { date: '2026-05-06', day: 'Wednesday', time: '1:30 PM', startHour: 13, startMinute: 30, title: 'Afternoon Activities', location: 'Various' },
-  { date: '2026-05-06', day: 'Wednesday', time: '5:30 PM', startHour: 17, startMinute: 30, title: 'Dinner', location: 'Lakeside Dining Room', isMeal: true },
-  { date: '2026-05-06', day: 'Wednesday', time: '7:00 PM', startHour: 19, startMinute: 0, title: 'Evening Assembly & Announcements', location: 'AC Room 207' },
-  { date: '2026-05-06', day: 'Wednesday', time: '8:00 PM', startHour: 20, startMinute: 0, title: 'Game Night & Bonfire', location: 'Activity Center' },
-  // Thursday May 7
-  { date: '2026-05-07', day: 'Thursday', time: '7:30 AM', startHour: 7, startMinute: 30, title: 'Breakfast', location: 'Lakeside Dining Room', isMeal: true },
-  { date: '2026-05-07', day: 'Thursday', time: '9:00 AM', startHour: 9, startMinute: 0, title: 'Morning Assembly & Announcements', location: 'AC Room 207' },
-  { date: '2026-05-07', day: 'Thursday', time: '10:00 AM', startHour: 10, startMinute: 0, title: 'Session Time', location: 'Activity Center' },
-  { date: '2026-05-07', day: 'Thursday', time: '12:00 PM', startHour: 12, startMinute: 0, title: 'Lunch', location: 'Lakeside Dining Room', isMeal: true },
-  { date: '2026-05-07', day: 'Thursday', time: '1:30 PM', startHour: 13, startMinute: 30, title: 'Afternoon Activities', location: 'Various' },
-  { date: '2026-05-07', day: 'Thursday', time: '5:30 PM', startHour: 17, startMinute: 30, title: 'Dinner & Awards Ceremony', location: 'Lakeside Dining Room', isMeal: true },
-  { date: '2026-05-07', day: 'Thursday', time: '7:00 PM', startHour: 19, startMinute: 0, title: 'Evening Assembly', location: 'AC Room 207' },
-  { date: '2026-05-07', day: 'Thursday', time: '8:00 PM', startHour: 20, startMinute: 0, title: 'Evening Activities', location: 'Activity Center' },
-  // Friday May 8
-  { date: '2026-05-08', day: 'Friday', time: '7:30 AM', startHour: 7, startMinute: 30, title: 'Breakfast', location: 'Lakeside Dining Room', isMeal: true },
-  { date: '2026-05-08', day: 'Friday', time: '9:00 AM', startHour: 9, startMinute: 0, title: 'Final Assembly & Farewell', location: 'AC Room 207' },
-  { date: '2026-05-08', day: 'Friday', time: '11:00 AM', startHour: 11, startMinute: 0, title: 'Event Concludes / Checkout', location: 'Various' },
-]
+// SCHEDULE_ITEMS is sourced from `lib/schedule-data.ts` (single source of truth).
+// Update times / titles / locations there — both the printable schedule, the
+// downloadable PDF, and this Live Updates page will stay in sync.
+const SCHEDULE_ITEMS: ScheduleItem[] = LU_SCHEDULE_ITEMS as ScheduleItem[]
 
 type ViewType = "all" | "weather" | "schedule" | "meal" | "volunteers" | "announcements" | "map"
 
@@ -228,6 +193,7 @@ function getEventIcon(
     return <Utensils className={`${base} ${c("text-orange-400")}`} />
   }
   
+  if (lowerTitle.includes('good night')) return <Moon className={`${base} ${c("text-indigo-300")}`} />
   if (lowerTitle.includes('check-in') || lowerTitle.includes('checkout')) return <ClipboardCheck className={`${base} ${c("text-emerald-400")}`} />
   if (lowerTitle.includes('assembly') || lowerTitle.includes('announcement')) return <Megaphone className={`${base} ${c("text-rose-400")}`} />
   if (lowerTitle.includes('archery')) return <Target className={`${base} ${c("text-red-500")}`} />
@@ -436,7 +402,10 @@ export default function LiveUpdatesPage() {
         
         // Morning Devotion: before noon, Evening Devotion: after noon
         const timeSlot = centralHour < 12 ? "Morning Devotion" : "Evening Devotion"
-        setVolunteerTimeSlot(timeSlot)
+        // Prefix with the weekday so the LU clearly shows which day's devotion
+        // is being displayed (e.g. "Monday Evening Devotion").
+        const dayName = centralNow.toLocaleDateString("en-US", { weekday: "long" })
+        setVolunteerTimeSlot(`${dayName} ${timeSlot}`)
         
         const res = await fetch(`/api/volunteer-schedule?date=${centralDateStr}&timeSlot=${encodeURIComponent(timeSlot)}`)
         const data = await res.json()

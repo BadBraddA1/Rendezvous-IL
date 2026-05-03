@@ -1,8 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { Resend } from "resend"
 import { sql } from "@/lib/db"
-
-const resend = new Resend(process.env.Resend_API!)
+import { resend } from "@/lib/resend"
 
 const ALLOWED_ADMINS = ["adin@braddcorp.com", "stephen@bradd.us"]
 

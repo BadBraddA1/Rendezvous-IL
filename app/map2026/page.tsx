@@ -5,10 +5,13 @@ import dynamic from "next/dynamic"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge" // still used in search results badge
-import { MapPin, Search, Mail, Phone, Church, Home, User, Users, X, Sparkles, RefreshCw } from "lucide-react"
+import { MapPin, Search, Mail, Phone, Church, Home, User, Users, X, Sparkles, RefreshCw, Lock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
+
+const MAP_PASSWORD = "Rendezvous2026"
+const STORAGE_KEY = "map2026_unlocked"
 
 const LeafletMap = dynamic(
   () => import("@/components/ui/leaflet-map").then((mod) => mod.LeafletMap),
@@ -373,6 +376,27 @@ const ALL_REGISTRATIONS: Registration[] = [
 ]
 
 export default function Map2026Page() {
+  const [isUnlocked, setIsUnlocked] = useState(false)
+  const [passwordInput, setPasswordInput] = useState("")
+  const [passwordError, setPasswordError] = useState(false)
+
+  // Check sessionStorage on mount
+  useEffect(() => {
+    if (typeof window !== "undefined" && sessionStorage.getItem(STORAGE_KEY) === "true") {
+      setIsUnlocked(true)
+    }
+  }, [])
+
+  const handleUnlock = () => {
+    if (passwordInput === MAP_PASSWORD) {
+      sessionStorage.setItem(STORAGE_KEY, "true")
+      setIsUnlocked(true)
+      setPasswordError(false)
+    } else {
+      setPasswordError(true)
+    }
+  }
+
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedRegistration, setSelectedRegistration] = useState<Registration | null>(null)
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([])
@@ -429,6 +453,50 @@ export default function Map2026Page() {
   const handleSelectRegistration = useCallback((reg: Registration) => {
     setSelectedRegistration(reg)
   }, [])
+
+  // Password gate
+  if (!isUnlocked) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <SiteHeader />
+        <main className="flex-1 flex items-center justify-center p-6">
+          <Card className="w-full max-w-md">
+            <CardHeader className="text-center">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+                <Lock className="h-7 w-7 text-primary" />
+              </div>
+              <CardTitle className="text-2xl">Protected Page</CardTitle>
+              <CardDescription>
+                Enter the password to view the Attendee Map
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Input
+                  type="password"
+                  placeholder="Enter password"
+                  value={passwordInput}
+                  onChange={(e) => {
+                    setPasswordInput(e.target.value)
+                    setPasswordError(false)
+                  }}
+                  onKeyDown={(e) => e.key === "Enter" && handleUnlock()}
+                  className={passwordError ? "border-red-500 focus-visible:ring-red-500" : ""}
+                />
+                {passwordError && (
+                  <p className="text-sm text-red-500">Incorrect password. Please try again.</p>
+                )}
+              </div>
+              <Button onClick={handleUnlock} className="w-full">
+                Unlock
+              </Button>
+            </CardContent>
+          </Card>
+        </main>
+        <SiteFooter />
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-background">
