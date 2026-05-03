@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback, useMemo } from "react"
+import Image from "next/image"
 import { 
   Cloud, 
   CloudRain, 
@@ -13,7 +14,35 @@ import {
   Calendar,
   Clock,
   ChevronRight,
-  Megaphone
+  Megaphone,
+  Coffee,
+  Sandwich,
+  Utensils,
+  UtensilsCrossed,
+  ClipboardCheck,
+  Users,
+  Target,
+  Gamepad2,
+  Mountain,
+  Dumbbell,
+  Flame,
+  Camera,
+  Trophy,
+  Hand,
+  Grid3x3,
+  Dice5,
+  Moon,
+  Heart,
+  MapPin,
+  Sunrise,
+  Sunset,
+  Beef,
+  Salad,
+  Cake,
+  CupSoda,
+  Volleyball,
+  CalendarDays,
+  Bed
 } from "lucide-react"
 
 interface Announcement {
@@ -142,37 +171,52 @@ const SCHEDULE_ITEMS: ScheduleItem[] = [
 
 type ViewType = "all" | "weather" | "schedule" | "meal" | "volunteers" | "announcements"
 
-function getEventEmoji(title: string, isMeal?: boolean): string {
+function getEventIcon(title: string, isMeal?: boolean, size: "xs" | "sm" | "md" | "lg" | "xl" | "2xl" = "md") {
   const lowerTitle = title.toLowerCase()
+  const sizeClasses = {
+    xs: "h-7 w-7",
+    sm: "h-9 w-9",
+    md: "h-14 w-14",
+    lg: "h-20 w-20",
+    xl: "h-28 w-28",
+    "2xl": "h-36 w-36",
+  }
+  const className = `${sizeClasses[size]} text-orange-400 shrink-0`
   
   if (isMeal) {
-    if (lowerTitle.includes('breakfast')) return '🍳'
-    if (lowerTitle.includes('lunch')) return '🥪'
-    if (lowerTitle.includes('dinner')) return '🍽️'
-    return '🍴'
+    if (lowerTitle.includes('breakfast')) return <Coffee className={className} />
+    if (lowerTitle.includes('lunch')) return <Sandwich className={className} />
+    if (lowerTitle.includes('dinner')) return <UtensilsCrossed className={className} />
+    return <Utensils className={className} />
   }
   
-if (lowerTitle.includes('check-in') || lowerTitle.includes('checkout')) return '📝'
-  if (lowerTitle.includes('assembly') || lowerTitle.includes('announcement')) return '📣'
-  if (lowerTitle.includes('session') || lowerTitle.includes('meeting')) return '👥'
-  if (lowerTitle.includes('dodgeball')) return '🏐'
-  if (lowerTitle.includes('game') || lowerTitle.includes('knockout')) return '🎯'
-  if (lowerTitle.includes('archery')) return '🎯'
-  if (lowerTitle.includes('obstacle') || lowerTitle.includes('rope')) return '🧱'
-  if (lowerTitle.includes('gym') || lowerTitle.includes('sport')) return '🏀'
-  if (lowerTitle.includes('bonfire') || lowerTitle.includes('fire')) return '🔥'
-  if (lowerTitle.includes('picture') || lowerTitle.includes('photo')) return '📷'
-  if (lowerTitle.includes('award') || lowerTitle.includes('ceremony')) return '🏆'
-  if (lowerTitle.includes('farewell') || lowerTitle.includes('goodbye')) return '👋'
-  if (lowerTitle.includes('ice breaker') || lowerTitle.includes('introduction')) return '🤝'
-  if (lowerTitle.includes('nine square')) return '🔲'
-  if (lowerTitle.includes('table game')) return '🎲'
-  if (lowerTitle.includes('afternoon') || lowerTitle.includes('activities')) return '☀️'
-  if (lowerTitle.includes('evening')) return '🌙'
-  if (lowerTitle.includes('mom') || lowerTitle.includes('family')) return '👨‍👩‍👧'
-  if (lowerTitle.includes('young adult')) return '👥'
+  if (lowerTitle.includes('check-in') || lowerTitle.includes('checkout')) return <ClipboardCheck className={className} />
+  if (lowerTitle.includes('assembly') || lowerTitle.includes('announcement')) return <Megaphone className={className} />
+  if (lowerTitle.includes('archery')) return <Target className={className} />
+  if (lowerTitle.includes('dodgeball')) return <Volleyball className={className} />
+  if (lowerTitle.includes('game') || lowerTitle.includes('knockout')) return <Gamepad2 className={className} />
+  if (lowerTitle.includes('obstacle') || lowerTitle.includes('rope')) return <Mountain className={className} />
+  if (lowerTitle.includes('gym') || lowerTitle.includes('sport')) return <Dumbbell className={className} />
+  if (lowerTitle.includes('bonfire') || lowerTitle.includes('fire')) return <Flame className={className} />
+  if (lowerTitle.includes('picture') || lowerTitle.includes('photo')) return <Camera className={className} />
+  if (lowerTitle.includes('award') || lowerTitle.includes('ceremony')) return <Trophy className={className} />
+  if (lowerTitle.includes('farewell') || lowerTitle.includes('goodbye')) return <Hand className={className} />
+  if (lowerTitle.includes('ice breaker') || lowerTitle.includes('introduction')) return <Users className={className} />
+  if (lowerTitle.includes('nine square')) return <Grid3x3 className={className} />
+  if (lowerTitle.includes('table game')) return <Dice5 className={className} />
+  if (lowerTitle.includes('mom') || lowerTitle.includes('family')) return <Heart className={className} />
+  if (lowerTitle.includes('young adult') || lowerTitle.includes('session') || lowerTitle.includes('meeting')) return <Users className={className} />
+  if (lowerTitle.includes('afternoon') || lowerTitle.includes('activities')) return <Sun className={className} />
+  if (lowerTitle.includes('evening')) return <Moon className={className} />
   
-  return '📌'
+  return <MapPin className={className} />
+}
+
+function getGreetingIcon(hour: number, sizeClass: string = "h-20 w-20") {
+  if (hour >= 5 && hour < 12) return <Sunrise className={`${sizeClass} text-yellow-400 shrink-0`} />
+  if (hour >= 12 && hour < 17) return <Sun className={`${sizeClass} text-yellow-400 shrink-0`} />
+  if (hour >= 17 && hour < 21) return <Sunset className={`${sizeClass} text-orange-400 shrink-0`} />
+  return <Moon className={`${sizeClass} text-blue-300 shrink-0`} />
 }
 
 // TEST MODE: Set to true to simulate the event
@@ -582,13 +626,24 @@ export default function LiveUpdatesPage() {
     <div className="min-h-screen bg-black text-white flex flex-col">
       {/* Header */}
       <header className="flex items-center justify-between px-12 py-6 border-b border-white/10">
-        <div className="flex items-center gap-6">
-          <h1 className="text-3xl font-bold tracking-wide">RENDEZVOUS 2026</h1>
-          <span className="text-white/50 text-2xl">|</span>
-          <span className="text-white/70 text-2xl">Live Updates</span>
+        <div className="flex items-center gap-5">
+          <div className="relative h-16 w-16 shrink-0 rounded-xl bg-white/5 border border-white/10 p-2 flex items-center justify-center">
+            <Image
+              src="/rendezvous-logo.png"
+              alt="Rendezvous Homeschool Family Retreat"
+              width={56}
+              height={56}
+              className="object-contain brightness-0 invert"
+              priority
+            />
+          </div>
+          <div className="flex flex-col">
+            <h1 className="text-3xl font-bold tracking-wide leading-tight">RENDEZVOUS 2026</h1>
+            <span className="text-white/60 text-base tracking-widest uppercase">Live Updates</span>
+          </div>
         </div>
         <div className="text-right">
-          <div className="text-5xl font-light tracking-wider">{formattedTime}</div>
+          <div className="text-5xl font-light tracking-wider tabular-nums">{formattedTime}</div>
           <div className="text-white/60 text-xl">{formattedDate}</div>
         </div>
       </header>
@@ -718,7 +773,7 @@ function ScheduleCard({
               <div className="flex items-start gap-4">
                 <div className="flex items-center gap-3 shrink-0 pt-0.5">
                   {isNow && <span className="w-3 h-3 bg-green-400 rounded-full animate-pulse" />}
-                  <span className="text-2xl">{getEventEmoji(item.title, item.isMeal)}</span>
+                  {getEventIcon(item.title, item.isMeal, "xs")}
                 </div>
                 <div className="flex-1">
                   <p className="font-medium text-lg leading-tight">{item.title}</p>
@@ -820,18 +875,24 @@ const volunteerItems: { label: string; value: string | null; subtitle?: string |
         </div>
         {nextMeal ? (
           <div className="flex flex-col items-center justify-center h-[calc(100%-3rem)] text-center">
-            <div className="text-7xl mb-4">
-              {getEventEmoji(nextMeal.title, true)}
+            <div className="mb-4">
+              {getEventIcon(nextMeal.title, true, "lg")}
             </div>
             <h3 className="text-3xl font-bold mb-2">{nextMeal.title}</h3>
-            <p className="text-white/60 text-xl">⏰ {nextMeal.time}</p>
+            <p className="text-white/60 text-xl flex items-center justify-center gap-2">
+              <Clock className="h-5 w-5" />
+              {nextMeal.time}
+            </p>
             {nextMeal.location && (
-              <p className="text-white/40 text-base mt-2">📍 {nextMeal.location}</p>
+              <p className="text-white/40 text-base mt-2 flex items-center justify-center gap-2">
+                <MapPin className="h-4 w-4" />
+                {nextMeal.location}
+              </p>
             )}
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center h-[calc(100%-3rem)] text-center">
-            <div className="text-5xl mb-4">🍽️</div>
+            <UtensilsCrossed className="h-16 w-16 text-white/30 mb-4" />
             <p className="text-white/50 text-lg">No upcoming meals</p>
           </div>
         )}
@@ -866,26 +927,24 @@ function WeatherView({ weather }: { weather: WeatherData | null }) {
   const centralNow = getCentralTime()
   const hour = centralNow.getHours()
   let greeting = "Welcome to Rendezvous!"
-  let greetingEmoji = "👋"
   
   if (hour >= 5 && hour < 12) {
     greeting = "Good Morning!"
-    greetingEmoji = "☀️"
   } else if (hour >= 12 && hour < 17) {
     greeting = "Good Afternoon!"
-    greetingEmoji = "🌤️"
   } else if (hour >= 17 && hour < 21) {
     greeting = "Good Evening!"
-    greetingEmoji = "🌅"
   } else {
     greeting = "Good Night!"
-    greetingEmoji = "🌙"
   }
 
   if (!weather) {
     return (
       <div className="flex flex-col items-center justify-center h-full">
-        <p className="text-6xl mb-4">{greetingEmoji} {greeting}</p>
+        <div className="flex items-center gap-5 mb-4">
+          {getGreetingIcon(hour, "h-16 w-16")}
+          <p className="text-6xl font-light">{greeting}</p>
+        </div>
         <p className="text-3xl text-white/70 mb-8">Welcome to Rendezvous 2026</p>
         <p className="text-white/50 text-2xl">Loading weather...</p>
       </div>
@@ -896,7 +955,10 @@ function WeatherView({ weather }: { weather: WeatherData | null }) {
     <div className="flex flex-col items-center justify-center h-full">
       {/* Greeting */}
       <div className="text-center mb-10">
-        <p className="text-6xl mb-3">{greetingEmoji} {greeting}</p>
+        <div className="flex items-center justify-center gap-5 mb-3">
+          {getGreetingIcon(hour, "h-16 w-16")}
+          <p className="text-6xl font-light">{greeting}</p>
+        </div>
         <p className="text-2xl text-white/60">Welcome to Rendezvous 2026</p>
       </div>
       
@@ -964,11 +1026,14 @@ function ScheduleView({
               <span className="w-4 h-4 bg-green-400 rounded-full animate-pulse" />
               <span>HAPPENING NOW</span>
             </div>
-            <div className="text-8xl mb-6">{getEventEmoji(nowItem.title, nowItem.isMeal)}</div>
+            <div className="flex justify-center mb-6">{getEventIcon(nowItem.title, nowItem.isMeal, "2xl")}</div>
             <h2 className="text-5xl font-bold mb-4">{nowItem.title}</h2>
             <p className="text-3xl text-white/60 mb-3">{nowItem.time}</p>
             {nowItem.location && (
-              <p className="text-2xl text-white/40">📍 {nowItem.location}</p>
+              <p className="text-2xl text-white/40 flex items-center justify-center gap-2">
+                <MapPin className="h-6 w-6" />
+                {nowItem.location}
+              </p>
             )}
           </div>
         )}
@@ -980,18 +1045,21 @@ function ScheduleView({
               <ChevronRight className="h-6 w-6" />
               <span>UP NEXT</span>
             </div>
-            <div className={`mb-6 ${nowItem ? "text-6xl" : "text-8xl"}`}>{getEventEmoji(nextItem.title, nextItem.isMeal)}</div>
+            <div className="flex justify-center mb-6">{getEventIcon(nextItem.title, nextItem.isMeal, nowItem ? "lg" : "2xl")}</div>
             <h2 className={`font-bold mb-4 ${nowItem ? "text-3xl" : "text-5xl"}`}>{nextItem.title}</h2>
             <p className={`text-white/60 mb-3 ${nowItem ? "text-xl" : "text-3xl"}`}>{nextItem.day} {nextItem.time}</p>
             {nextItem.location && (
-              <p className={`text-white/40 ${nowItem ? "text-lg" : "text-2xl"}`}>📍 {nextItem.location}</p>
+              <p className={`text-white/40 flex items-center justify-center gap-2 ${nowItem ? "text-lg" : "text-2xl"}`}>
+                <MapPin className={nowItem ? "h-4 w-4" : "h-6 w-6"} />
+                {nextItem.location}
+              </p>
             )}
           </div>
         )}
         
         {!nowItem && !nextItem && (
           <div className="text-center">
-            <div className="text-8xl mb-6">😴</div>
+            <Bed className="h-32 w-32 text-white/30 mx-auto mb-6" />
             <h2 className="text-5xl font-bold text-white/60">No Scheduled Events</h2>
             <p className="text-2xl text-white/40 mt-4">Enjoy your free time!</p>
           </div>
@@ -1001,8 +1069,9 @@ function ScheduleView({
       {/* Right side - Upcoming Schedule */}
       {upcoming.length > 0 && (
         <div className="w-[450px] flex flex-col">
-          <h3 className="text-xl font-semibold text-white/60 mb-6 flex items-center gap-3">
-            📅 {showingFuture ? "UPCOMING SCHEDULE" : "TODAY'S SCHEDULE"}
+          <h3 className="text-xl font-semibold text-white/60 mb-6 flex items-center gap-3 uppercase tracking-wider">
+            <CalendarDays className="h-6 w-6 text-orange-400" />
+            {showingFuture ? "Upcoming Schedule" : "Today's Schedule"}
           </h3>
           <div className="flex-1 overflow-y-auto space-y-4 pr-2">
             {upcoming.map((item, index) => (
@@ -1015,7 +1084,7 @@ function ScheduleView({
                 }`}
               >
                 <div className="flex items-center gap-4">
-                  <span className="text-3xl">{getEventEmoji(item.title, item.isMeal)}</span>
+                  {getEventIcon(item.title, item.isMeal, "sm")}
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-lg">{item.title}</p>
                     <p className="text-base text-white/50">
@@ -1037,7 +1106,7 @@ function MealView({ nextMeal, mealData }: { nextMeal: ScheduleItem | null; mealD
   if (!nextMeal) {
     return (
       <div className="flex flex-col items-center justify-center h-full">
-        <div className="text-9xl mb-8">🍽️</div>
+        <UtensilsCrossed className="h-32 w-32 text-white/30 mb-8" />
         <h2 className="text-5xl font-bold text-white/60">No Upcoming Meals</h2>
       </div>
     )
@@ -1045,13 +1114,16 @@ function MealView({ nextMeal, mealData }: { nextMeal: ScheduleItem | null; mealD
 
   return (
     <div className="flex flex-col items-center justify-center h-full">
-      <div className="text-9xl mb-8">
-        {getEventEmoji(nextMeal.title, true)}
+      <div className="mb-8">
+        {getEventIcon(nextMeal.title, true, "2xl")}
       </div>
       <h2 className="text-6xl font-bold mb-4">{nextMeal.title}</h2>
       <p className="text-3xl text-white/60 mb-3">{nextMeal.time}</p>
       {nextMeal.location && (
-        <p className="text-xl text-white/40 mb-10">📍 {nextMeal.location}</p>
+        <p className="text-xl text-white/40 mb-10 flex items-center gap-2">
+          <MapPin className="h-5 w-5" />
+          {nextMeal.location}
+        </p>
       )}
       
       {/* Menu Display */}
@@ -1060,7 +1132,7 @@ function MealView({ nextMeal, mealData }: { nextMeal: ScheduleItem | null; mealD
           <h3 className="text-3xl font-semibold mb-8 text-center border-b border-white/10 pb-6">Menu</h3>
           <div className="space-y-6">
             <div className="flex items-start gap-5">
-              <span className="text-3xl">🍖</span>
+              <Beef className="h-9 w-9 text-orange-400 shrink-0" />
               <div>
                 <p className="text-white/50 text-base uppercase tracking-wider">Main Dish</p>
                 <p className="text-2xl font-medium">{mealData.main_dish}</p>
@@ -1069,7 +1141,7 @@ function MealView({ nextMeal, mealData }: { nextMeal: ScheduleItem | null; mealD
             
             {mealData.sides && mealData.sides.length > 0 && (
               <div className="flex items-start gap-5">
-                <span className="text-3xl">🥗</span>
+                <Salad className="h-9 w-9 text-orange-400 shrink-0" />
                 <div>
                   <p className="text-white/50 text-base uppercase tracking-wider">Sides</p>
                   <p className="text-xl">{mealData.sides.join(", ")}</p>
@@ -1079,7 +1151,7 @@ function MealView({ nextMeal, mealData }: { nextMeal: ScheduleItem | null; mealD
             
             {mealData.dessert && (
               <div className="flex items-start gap-5">
-                <span className="text-3xl">🍰</span>
+                <Cake className="h-9 w-9 text-orange-400 shrink-0" />
                 <div>
                   <p className="text-white/50 text-base uppercase tracking-wider">Dessert</p>
                   <p className="text-xl">{mealData.dessert}</p>
@@ -1089,7 +1161,7 @@ function MealView({ nextMeal, mealData }: { nextMeal: ScheduleItem | null; mealD
             
             {mealData.drinks && mealData.drinks.length > 0 && (
               <div className="flex items-start gap-5">
-                <span className="text-3xl">🥤</span>
+                <CupSoda className="h-9 w-9 text-orange-400 shrink-0" />
                 <div>
                   <p className="text-white/50 text-base uppercase tracking-wider">Beverages</p>
                   <p className="text-xl">{mealData.drinks.join(", ")}</p>
