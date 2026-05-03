@@ -5,7 +5,7 @@ import dynamic from "next/dynamic"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge" // still used in search results badge
-import { MapPin, Search, Mail, Phone, Church, Home, User, Users, X, Sparkles, RefreshCw, Lock } from "lucide-react"
+import { MapPin, Search, Mail, Phone, Church, Home, User, Users, X, Sparkles, RefreshCw, Lock, FileDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
@@ -514,9 +514,19 @@ export default function Map2026Page() {
               <h1 className="mb-4 text-balance text-4xl font-bold tracking-tight text-secondary-foreground md:text-5xl">
                 Attendee Map
               </h1>
-              <p className="text-balance text-lg text-secondary-foreground/70">
+              <p className="mb-6 text-balance text-lg text-secondary-foreground/70">
                 See where Rendezvous 2026 families are coming from across the country
               </p>
+              <Button asChild size="lg" className="gap-2">
+                <a
+                  href="/event-registration.pdf"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <FileDown className="h-5 w-5" />
+                  Download Event Registration PDF
+                </a>
+              </Button>
             </div>
           </div>
         </section>
