@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react"
 import Image from "next/image"
+import { mapLocations } from "@/lib/venue-map-data"
 import { 
   Cloud, 
   CloudRain, 
@@ -168,7 +169,35 @@ const SCHEDULE_ITEMS: ScheduleItem[] = [
   { date: '2026-05-08', day: 'Friday', time: '11:00 AM', startHour: 11, startMinute: 0, title: 'Event Concludes / Checkout', location: 'Various' },
 ]
 
-type ViewType = "all" | "weather" | "schedule" | "meal" | "volunteers" | "announcements"
+type ViewType = "all" | "weather" | "schedule" | "meal" | "volunteers" | "announcements" | "map"
+
+// Match a schedule item to a venue map location id
+function getLocationIdForEvent(item: ScheduleItem | null): string | null {
+  if (!item) return null
+  const title = item.title.toLowerCase()
+  const location = (item.location || "").toLowerCase()
+
+  // Specific activities first
+  if (title.includes("archery")) return "archery"
+  if (title.includes("human foosball")) return "human-foosball"
+  if (title.includes("disc golf")) return "disc-golf"
+  if (title.includes("kickball")) return "rec-field-kickball"
+  if (title.includes("capture the flag")) return "rec-field-kickball"
+  if (title.includes("bonfire")) return "bonfire-site"
+  if (title.includes("hayride")) return "bonfire-site"
+
+  // Location-based fallback
+  if (location.includes("lakeside") || location.includes("dining")) return "lakeside-dining"
+  if (location.includes("bonfire") || location.includes("pavilion")) return "bonfire-site"
+  if (location.includes("rec field") || location.includes("recreation field")) return "rec-field-kickball"
+  if (location.includes("activity center") || location.includes("ac room") || location.includes("activities center")) return "activities-center"
+
+  // Meals → dining hall
+  if (item.isMeal) return "lakeside-dining"
+
+  // Default to activity center for assemblies/sessions
+  return "activities-center"
+}
 
 function getEventIcon(title: string, isMeal?: boolean, size: "xs" | "sm" | "md" | "lg" | "xl" | "2xl" = "md") {
   const lowerTitle = title.toLowerCase()
@@ -299,7 +328,7 @@ export default function LiveUpdatesPage() {
 
   // Conditionally show tabs based on available data
   const availableViews = useMemo<ViewType[]>(() => {
-    const views: ViewType[] = ["all", "weather", "schedule", "meal"]
+    const views: ViewType[] = ["all", "weather", "schedule", "meal", "map"]
     if (hasVolunteerData) {
       views.push("volunteers")
     }
@@ -566,12 +595,16 @@ export default function LiveUpdatesPage() {
           setIsAutoRotating(false)
           break
         case "5":
+          setCurrentView("map")
+          setIsAutoRotating(false)
+          break
+        case "6":
           if (hasVolunteerData) {
             setCurrentView("volunteers")
             setIsAutoRotating(false)
           }
           break
-        case "6":
+        case "7":
           if (announcements.length > 0) {
             setCurrentView("announcements")
             setIsAutoRotating(false)
@@ -671,6 +704,9 @@ export default function LiveUpdatesPage() {
         {currentView === "meal" && (
           <MealView nextMeal={nextMeal} mealData={mealData} />
         )}
+        {currentView === "map" && (
+          <MapView nowItem={nowItem} nextItem={nextItem} />
+        )}
         {currentView === "volunteers" && (
           <VolunteersView volunteerSchedule={volunteerSchedule} volunteerTimeSlot={volunteerTimeSlot} />
         )}
@@ -688,11 +724,12 @@ export default function LiveUpdatesPage() {
           <KeyButton label="2 Weather" active={currentView === "weather"} />
           <KeyButton label="3 Schedule" active={currentView === "schedule"} />
           <KeyButton label="4 Meal" active={currentView === "meal"} />
+          <KeyButton label="5 Map" active={currentView === "map"} />
           {hasVolunteerData && (
-            <KeyButton label="5 Volunteers" active={currentView === "volunteers"} />
+            <KeyButton label="6 Volunteers" active={currentView === "volunteers"} />
           )}
           {announcements.length > 0 && (
-            <KeyButton label="6 Announcements" active={currentView === "announcements"} />
+            <KeyButton label="7 Announcements" active={currentView === "announcements"} />
           )}
           <KeyButton label="0/A Auto" active={isAutoRotating} />
           <KeyButton label="F Fullscreen" active={isFullscreen} />
@@ -1171,6 +1208,166 @@ function MealView({ nextMeal, mealData }: { nextMeal: ScheduleItem | null; mealD
           Menu details coming soon...
         </div>
       )}
+    </div>
+  )
+}
+
+// Map View - Shows the venue map with current/next event location highlighted
+function MapView({ nowItem, nextItem }: { nowItem: ScheduleItem | null; nextItem: ScheduleItem | null }) {
+  // Prefer current event, fall back to next
+  const featuredItem = nowItem || nextItem
+  const isHappeningNow = !!nowItem
+  const featuredLocationId = getLocationIdForEvent(featuredItem)
+  const featuredLocation = featuredLocationId 
+    ? mapLocations.find(l => l.id === featuredLocationId) 
+    : null
+
+  const colorToHex: Record<string, string> = {
+    red: "#ef4444",
+    orange: "#f97316",
+    yellow: "#eab308",
+    green: "#22c55e",
+    blue: "#3b82f6",
+    purple: "#a855f7",
+    pink: "#ec4899",
+  }
+
+  return (
+    <div className="w-full h-full flex gap-8">
+      {/* Left side - Event info */}
+      <div className="w-[420px] flex flex-col justify-center shrink-0">
+        {featuredItem ? (
+          <>
+            <div className="flex items-center gap-3 text-white/50 text-xl mb-6 uppercase tracking-wider">
+              {isHappeningNow ? (
+                <>
+                  <span className="w-3 h-3 bg-green-400 rounded-full animate-pulse" />
+                  <span>Happening Now</span>
+                </>
+              ) : (
+                <>
+                  <ChevronRight className="h-5 w-5" />
+                  <span>Up Next</span>
+                </>
+              )}
+            </div>
+            <div className="mb-6">
+              {getEventIcon(featuredItem.title, featuredItem.isMeal, "xl")}
+            </div>
+            <h2 className="text-4xl font-bold mb-3 leading-tight">{featuredItem.title}</h2>
+            <p className="text-2xl text-white/70 mb-2">
+              {isHappeningNow ? featuredItem.time : `${featuredItem.day} ${featuredItem.time}`}
+            </p>
+            {featuredLocation && (
+              <div className="mt-6 p-5 rounded-xl bg-orange-500/10 border border-orange-500/30">
+                <div className="flex items-start gap-3">
+                  <MapPin className="h-7 w-7 text-orange-400 shrink-0 mt-1" fill="currentColor" />
+                  <div>
+                    <p className="text-orange-400 text-xs uppercase tracking-wider mb-1">Location</p>
+                    <p className="text-2xl font-semibold leading-tight">{featuredLocation.name}</p>
+                    {featuredLocation.description && (
+                      <p className="text-white/60 text-base mt-2 leading-snug">{featuredLocation.description}</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="text-center">
+            <Bed className="h-32 w-32 text-white/30 mx-auto mb-6" />
+            <h2 className="text-4xl font-bold text-white/60">No Active Events</h2>
+            <p className="text-xl text-white/40 mt-3">Free time at the venue</p>
+          </div>
+        )}
+
+        {/* Legend */}
+        <div className="mt-8 grid grid-cols-2 gap-3">
+          <div className="flex items-center gap-2 text-sm text-white/60">
+            <MapPin className="h-4 w-4 text-red-500" fill="currentColor" />
+            <span>Meeting</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-white/60">
+            <MapPin className="h-4 w-4 text-orange-500" fill="currentColor" />
+            <span>Dining</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-white/60">
+            <MapPin className="h-4 w-4 text-purple-500" fill="currentColor" />
+            <span>Activity</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-white/60">
+            <MapPin className="h-4 w-4 text-blue-500" fill="currentColor" />
+            <span>Lodging</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Right side - Venue map */}
+      <div className="flex-1 relative rounded-2xl overflow-hidden border border-white/10 bg-white/5">
+        <div className="relative w-full h-full">
+          <img
+            src="/images/venue-map.jpg"
+            alt="Lake Williamson venue map"
+            className="absolute inset-0 w-full h-full object-contain"
+            draggable={false}
+          />
+
+          {/* Pins overlay */}
+          {mapLocations.map((location) => {
+            const isFeatured = location.id === featuredLocationId
+            const color = location.color || (
+              location.category === "dining" ? "orange"
+              : location.category === "meeting" ? "red"
+              : location.category === "lodging" ? "blue"
+              : "purple"
+            )
+            const hex = colorToHex[color] || "#a855f7"
+            
+            return (
+              <div
+                key={location.id}
+                className="absolute -translate-x-1/2 -translate-y-full pointer-events-none"
+                style={{ 
+                  left: `${location.x}%`, 
+                  top: `${location.y}%`,
+                  zIndex: isFeatured ? 20 : 10,
+                }}
+              >
+                {isFeatured && (
+                  <>
+                    {/* Pulsing ring */}
+                    <div 
+                      className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-16 h-16 rounded-full animate-ping"
+                      style={{ backgroundColor: hex, opacity: 0.4 }}
+                    />
+                    {/* Solid ring */}
+                    <div 
+                      className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-12 h-12 rounded-full"
+                      style={{ backgroundColor: hex, opacity: 0.3 }}
+                    />
+                  </>
+                )}
+                <MapPin
+                  className={`relative drop-shadow-lg transition-all ${
+                    isFeatured ? "h-14 w-14 animate-bounce" : "h-7 w-7 opacity-70"
+                  }`}
+                  style={{ color: hex }}
+                  fill={isFeatured ? hex : "white"}
+                  strokeWidth={2}
+                />
+                {isFeatured && (
+                  <div 
+                    className="absolute left-1/2 -translate-x-1/2 -top-12 px-3 py-1.5 rounded-lg text-sm font-semibold whitespace-nowrap shadow-xl"
+                    style={{ backgroundColor: hex, color: "white" }}
+                  >
+                    {location.name}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
     </div>
   )
 }
