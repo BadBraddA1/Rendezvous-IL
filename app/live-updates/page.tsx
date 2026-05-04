@@ -261,11 +261,15 @@ function getWeatherIcon(weatherId: number, iconCode: string, size: "sm" | "md" |
 // size for each panel across reloads / view rotations.
 // NOTE: bump the version suffix on this key whenever the underlying base sizes
 // change, so previously-saved zoom levels don't compound on top of new defaults
-// and break the layout (which happened with v1 — see git history).
-const ZOOM_STORAGE_KEY = "lu_view_zoom_v2"
-const ZOOM_MIN = 0.8
-const ZOOM_MAX = 1.3
-const ZOOM_STEP = 0.1
+// and break the layout. v1 used a viewport-scaled base (broken). v2 used a
+// reduced range. v3 uses a fixed 16px rem baseline + a zoom multiplier; this
+// is the only approach that produces predictable, readable output across the
+// wildly different screen sizes we see (laptop preview, iPad, 1080p TV, 4K TV).
+const ZOOM_STORAGE_KEY = "lu_view_zoom_v3"
+const ZOOM_BASE_PX = 16 // browser default — Tailwind text-* sizes assume this
+const ZOOM_MIN = 1
+const ZOOM_MAX = 2.5
+const ZOOM_STEP = 0.25
 
 export default function LiveUpdatesPage() {
   const [currentView, setCurrentView] = useState<ViewType>("schedule")
@@ -301,19 +305,21 @@ export default function LiveUpdatesPage() {
   const zoomOut = () => updateZoom(currentZoom - ZOOM_STEP)
   const resetZoom = () => updateZoom(1)
 
-  // Apply the viewport-scaled base size *plus* the user's zoom multiplier
-  // directly to the <html> element. Tailwind's text-*, p-*, h-*, w-*, gap-*
-  // classes are rem-based, and `rem` is anchored to the document root — so
-  // setting fontSize on a wrapper div (as a previous version did) had no
-  // effect on those utility classes. Updating documentElement.style.fontSize
-  // is the only reliable way to scale every rem-based class in lockstep.
+  // Apply the per-view zoom multiplier to the <html> element so every
+  // rem-based Tailwind class (text-*, p-*, h-*, w-*, gap-*) scales in
+  // lockstep. We use a fixed 16px baseline (browser default) so Tailwind's
+  // size classes render at their documented pixel values:
+  //   text-base=16, text-xl=20, text-2xl=24, text-3xl=30, text-4xl=36,
+  //   text-5xl=48, text-6xl=60, text-7xl=72.
+  // The user-controllable zoom multiplier (1× – 2.5×) lets each TV pick a
+  // size that's readable across the room. The previous viewport-scaled
+  // baseline was overshooting badly (~50px at 1080p), making text-2xl
+  // render at 76px and breaking every layout — this is the fix for that.
   useEffect(() => {
     if (typeof document === "undefined") return
     const root = document.documentElement
     const previous = root.style.fontSize
-    // Tuned for 120" 4K TVs viewed from across a large room.
-    // Approx base: 1366×768 → ~18px, 1920×1080 → ~42px, 3840×2160 → ~120px.
-    root.style.fontSize = `calc(clamp(14px, calc(1.6vw + 1.6vh + 2px), 140px) * ${currentZoom})`
+    root.style.fontSize = `${ZOOM_BASE_PX * currentZoom}px`
     return () => {
       root.style.fontSize = previous
     }
@@ -733,8 +739,10 @@ export default function LiveUpdatesPage() {
           </div>
         </div>
 
-        {/* Center: WiFi info — shrinkable so it never pushes the clock off screen */}
-        <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-white/5 border border-white/10 shrink min-w-0">
+        {/* Center: WiFi info — hidden below md so the header never overflows on
+            narrower previews; on TV-class screens (≥ md) it sits between the
+            title and the clock. shrink-0 keeps its labels intact. */}
+        <div className="hidden md:flex items-center gap-3 px-4 py-2 rounded-xl bg-white/5 border border-white/10 shrink-0">
           <Wifi className="h-6 w-6 text-cyan-400 shrink-0" />
           <div className="flex flex-col leading-tight min-w-0">
             <span className="text-sm text-white/60 whitespace-nowrap">WiFi: <span className="text-white font-semibold">LWCC</span></span>
@@ -818,8 +826,8 @@ export default function LiveUpdatesPage() {
             >
               <ZoomOut className="h-4 w-4" />
             </button>
-            <span className="text-white/80 text-base tabular-nums w-12 text-center font-semibold">
-              {Math.round(currentZoom * 100)}%
+  <span className="text-white/80 text-base tabular-nums w-16 text-center font-semibold">
+            {Math.round(currentZoom * 100)}%
             </span>
             <button
               type="button"
@@ -1365,10 +1373,11 @@ function ScheduleView({
       </div>
 
       {/* Right side - Upcoming Schedule
-          Sized to share the viewport with the now/next column without
-          overflowing on smaller TV resolutions. */}
+          Hidden below lg so the now/next column always has enough room on
+          narrow previews, sandbox iframes, and portrait-orientation TVs. On
+          wide displays it shows alongside as a fixed 28rem sidebar. */}
       {upcoming.length > 0 && (
-        <div className="w-[28rem] shrink-0 relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-violet-500/[0.08] via-white/[0.03] to-transparent backdrop-blur-sm p-5 flex flex-col">
+        <div className="hidden lg:flex w-[28rem] shrink-0 relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-violet-500/[0.08] via-white/[0.03] to-transparent backdrop-blur-sm p-5 flex-col">
           <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-violet-500/15 blur-2xl" />
           <div className="relative flex items-center gap-3 mb-5">
             <div className="rounded-xl bg-violet-500/15 p-2 border border-violet-400/20">
