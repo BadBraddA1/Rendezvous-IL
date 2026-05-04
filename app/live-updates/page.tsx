@@ -196,11 +196,32 @@ function getGreetingIcon(hour: number, sizeClass: string = "h-20 w-20") {
 const TEST_MODE = true
 const TEST_DATE = new Date('2026-05-04T12:55:00')
 
+// Central Time helper that works on every device — including older smart-TV
+// browsers and embedded webviews that silently ignore the `timeZone` option in
+// `toLocaleString`. We compute the offset manually instead of trusting Intl.
+//
+// The entire Rendezvous 2026 event (May 4-8) falls inside US Central Daylight
+// Time, which is a fixed UTC-5 offset. We hard-code that offset here so the
+// displayed time and the schedule "now/next" logic are correct on every TV
+// regardless of how that device handles timezone APIs.
+const CDT_OFFSET_MINUTES = -5 * 60 // CDT is UTC-5 for the whole event window
+
 function getCentralTime(): Date {
   if (TEST_MODE) {
     return TEST_DATE
   }
-  return new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' }))
+  // Build a Date whose *local* getters (getHours/getMinutes/getDate/etc.)
+  // return Central Time fields, regardless of the device's timezone setting.
+  const now = new Date()
+  const utcMs = now.getTime()
+  // Shift the real UTC timestamp into Central Time.
+  const centralWallMs = utcMs + CDT_OFFSET_MINUTES * 60 * 1000
+  // `getTimezoneOffset()` returns minutes WEST of UTC for the device's local
+  // zone. Adding it back means a Date created from `centralWallMs + localOffset`
+  // will, when read with local getters, report Central Time fields — even if
+  // the device's clock thinks it's in a different zone.
+  const localOffsetMs = now.getTimezoneOffset() * 60 * 1000
+  return new Date(centralWallMs + localOffsetMs)
 }
 
 function formatTime(timestamp: number): string {
@@ -426,9 +447,12 @@ export default function LiveUpdatesPage() {
   }, [])
 
   // Update current time
+  // Use the device-independent `getCentralTime()` helper so the displayed
+  // clock is correct even on TVs that don't honor Intl `timeZone` options.
   useEffect(() => {
+    setCurrentTime(getCentralTime())
     const interval = setInterval(() => {
-      setCurrentTime(new Date())
+      setCurrentTime(getCentralTime())
     }, 1000)
     return () => clearInterval(interval)
   }, [])
@@ -643,20 +667,22 @@ export default function LiveUpdatesPage() {
     return () => window.removeEventListener("keydown", handleKeyDown)
   }, [toggleFullscreen, availableViews, announcements.length, hasVolunteerData])
 
-  // Format current date/time
-  const formattedTime = currentTime.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-    timeZone: 'America/Chicago',
-  }).replace(' ', '  ')
-  
-  const formattedDate = currentTime.toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-    timeZone: 'America/Chicago',
-  })
+  // Format current date/time.
+  // `currentTime` already represents Central Time (its local getters return
+  // CDT fields), so we deliberately do NOT pass a `timeZone` option here —
+  // some smart-TV browsers ignore that option and would otherwise display
+  // device-local time. Manual formatting from local getters is universally
+  // supported and guaranteed to show Central Time correctly.
+  const _hours24 = currentTime.getHours()
+  const _minutes = currentTime.getMinutes()
+  const _ampm = _hours24 >= 12 ? 'PM' : 'AM'
+  const _hours12 = _hours24 % 12 === 0 ? 12 : _hours24 % 12
+  const formattedTime = `${_hours12}:${String(_minutes).padStart(2, '0')}  ${_ampm}`
+
+  const _weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+  const _months = ['January', 'February', 'March', 'April', 'May', 'June',
+                   'July', 'August', 'September', 'October', 'November', 'December']
+  const formattedDate = `${_weekdays[currentTime.getDay()]}, ${_months[currentTime.getMonth()]} ${currentTime.getDate()}`
 
   return (
     <div 
