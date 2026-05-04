@@ -258,10 +258,13 @@ function getWeatherIcon(weatherId: number, iconCode: string, size: "sm" | "md" |
 }
 
 // Per-view zoom levels persist in localStorage so each TV remembers its preferred
-// size for each panel across reloads / view rotations. Min 0.7, max 1.6, step 0.1.
-const ZOOM_STORAGE_KEY = "lu_view_zoom_v1"
-const ZOOM_MIN = 0.7
-const ZOOM_MAX = 1.6
+// size for each panel across reloads / view rotations.
+// NOTE: bump the version suffix on this key whenever the underlying base sizes
+// change, so previously-saved zoom levels don't compound on top of new defaults
+// and break the layout (which happened with v1 — see git history).
+const ZOOM_STORAGE_KEY = "lu_view_zoom_v2"
+const ZOOM_MIN = 0.8
+const ZOOM_MAX = 1.3
 const ZOOM_STEP = 0.1
 
 export default function LiveUpdatesPage() {
@@ -704,10 +707,17 @@ export default function LiveUpdatesPage() {
 
   return (
     <div className="h-screen max-h-screen overflow-hidden bg-black text-white flex flex-col">
-      {/* Header */}
-      <header className="shrink-0 flex items-center justify-between px-12 py-6 border-b border-white/10">
-        <div className="flex items-center gap-5">
-          <div className="relative h-16 w-16 shrink-0 rounded-xl bg-white/5 border border-white/10 p-2 flex items-center justify-center">
+      {/* Header
+          - All three sections use min-w-0 + shrink so they can collapse on
+            narrower TVs / sandbox previews instead of pushing each other off
+            the right edge (which produced the broken layout shown to the user).
+          - The center WiFi card uses whitespace-nowrap and can shrink if space
+            is tight; the right-side clock is anchored with shrink-0 so the
+            time is always fully readable. */}
+      <header className="shrink-0 flex items-center justify-between gap-6 px-8 py-5 border-b border-white/10">
+        {/* Left: logo + title */}
+        <div className="flex items-center gap-4 min-w-0 shrink">
+          <div className="relative h-14 w-14 shrink-0 rounded-xl bg-white/5 border border-white/10 p-2 flex items-center justify-center">
             <Image
               src="/rendezvous-logo.png"
               alt="Rendezvous Homeschool Family Retreat"
@@ -717,22 +727,25 @@ export default function LiveUpdatesPage() {
               priority
             />
           </div>
-          <div className="flex flex-col">
-            <h1 className="text-3xl font-bold tracking-wide leading-tight">RENDEZVOUS 2026</h1>
-            <span className="text-white/60 text-base tracking-widest uppercase">Live Updates</span>
+          <div className="flex flex-col min-w-0">
+            <h1 className="text-2xl font-bold tracking-wide leading-tight whitespace-nowrap">RENDEZVOUS 2026</h1>
+            <span className="text-white/60 text-sm tracking-widest uppercase whitespace-nowrap">Live Updates</span>
           </div>
         </div>
-        {/* WiFi Info */}
-        <div className="flex items-center gap-3 px-6 py-3 rounded-2xl bg-white/5 border border-white/10">
-          <Wifi className="h-7 w-7 text-cyan-400" />
-          <div className="flex flex-col">
-            <span className="text-lg text-white/60">WiFi: <span className="text-white font-semibold">LWCC</span></span>
-            <span className="text-lg text-white/60">Pass: <span className="text-white font-semibold">wifi4lwcc</span></span>
+
+        {/* Center: WiFi info — shrinkable so it never pushes the clock off screen */}
+        <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-white/5 border border-white/10 shrink min-w-0">
+          <Wifi className="h-6 w-6 text-cyan-400 shrink-0" />
+          <div className="flex flex-col leading-tight min-w-0">
+            <span className="text-sm text-white/60 whitespace-nowrap">WiFi: <span className="text-white font-semibold">LWCC</span></span>
+            <span className="text-sm text-white/60 whitespace-nowrap">Pass: <span className="text-white font-semibold">wifi4lwcc</span></span>
           </div>
         </div>
-        <div className="text-right">
-          <div className="text-5xl font-light tracking-wider tabular-nums">{formattedTime}</div>
-          <div className="text-white/60 text-xl">{formattedDate}</div>
+
+        {/* Right: clock + date — never shrinks so the time is always readable */}
+        <div className="text-right shrink-0">
+          <div className="text-4xl font-light tracking-wider tabular-nums leading-none">{formattedTime}</div>
+          <div className="text-white/60 text-base mt-1 whitespace-nowrap">{formattedDate}</div>
         </div>
       </header>
 
@@ -1310,12 +1323,12 @@ function ScheduleView({
                 </span>
                 <span className="text-xl font-bold uppercase tracking-[0.3em] text-green-400">Happening Now</span>
               </div>
-              <div className="flex justify-center mb-6">{getEventIcon(nowItem.title, nowItem.isMeal, "xl")}</div>
-              <h2 className="text-7xl font-bold mb-5 text-balance leading-tight">{nowItem.title}</h2>
-              <p className="text-4xl text-white/80 mb-3">{nowItem.time}</p>
+              <div className="flex justify-center mb-5">{getEventIcon(nowItem.title, nowItem.isMeal, "lg")}</div>
+              <h2 className="text-5xl font-bold mb-4 text-balance leading-tight">{nowItem.title}</h2>
+              <p className="text-3xl text-white/80 mb-2">{nowItem.time}</p>
               {nowItem.location && (
-                <p className="text-3xl text-white/60 flex items-center justify-center gap-3">
-                  <MapPin className="h-8 w-8 text-violet-300" />
+                <p className="text-2xl text-white/60 flex items-center justify-center gap-2">
+                  <MapPin className="h-7 w-7 text-violet-300" />
                   {nowItem.location}
                 </p>
               )}
@@ -1329,12 +1342,12 @@ function ScheduleView({
                 <ChevronRight className="h-7 w-7 text-violet-300" />
                 <span className="text-xl font-bold uppercase tracking-[0.3em] text-violet-300">Up Next</span>
               </div>
-              <div className="flex justify-center mb-6">{getEventIcon(nextItem.title, nextItem.isMeal, nowItem ? "lg" : "xl")}</div>
-              <h2 className={`font-bold mb-5 text-balance leading-tight ${nowItem ? "text-5xl" : "text-7xl"}`}>{nextItem.title}</h2>
-              <p className={`text-white/80 mb-3 ${nowItem ? "text-3xl" : "text-4xl"}`}>{nextItem.day} {nextItem.time}</p>
+              <div className="flex justify-center mb-5">{getEventIcon(nextItem.title, nextItem.isMeal, nowItem ? "md" : "lg")}</div>
+              <h2 className={`font-bold mb-4 text-balance leading-tight ${nowItem ? "text-3xl" : "text-5xl"}`}>{nextItem.title}</h2>
+              <p className={`text-white/80 mb-2 ${nowItem ? "text-2xl" : "text-3xl"}`}>{nextItem.day} {nextItem.time}</p>
               {nextItem.location && (
-                <p className={`text-white/60 flex items-center justify-center gap-3 ${nowItem ? "text-2xl" : "text-3xl"}`}>
-                  <MapPin className={nowItem ? "h-7 w-7 text-violet-300" : "h-8 w-8 text-violet-300"} />
+                <p className={`text-white/60 flex items-center justify-center gap-2 ${nowItem ? "text-xl" : "text-2xl"}`}>
+                  <MapPin className={nowItem ? "h-6 w-6 text-violet-300" : "h-7 w-7 text-violet-300"} />
                   {nextItem.location}
                 </p>
               )}
@@ -1343,41 +1356,43 @@ function ScheduleView({
 
           {!nowItem && !nextItem && (
             <div className="text-center">
-              <Bed className="h-32 w-32 text-white/30 mx-auto mb-6" />
-              <h2 className="text-6xl font-bold text-white/60">No Scheduled Events</h2>
-              <p className="text-3xl text-white/40 mt-4">Enjoy your free time!</p>
+              <Bed className="h-28 w-28 text-white/30 mx-auto mb-5" />
+              <h2 className="text-4xl font-bold text-white/60">No Scheduled Events</h2>
+              <p className="text-2xl text-white/40 mt-3">Enjoy your free time!</p>
             </div>
           )}
         </div>
       </div>
 
-      {/* Right side - Upcoming Schedule */}
+      {/* Right side - Upcoming Schedule
+          Sized to share the viewport with the now/next column without
+          overflowing on smaller TV resolutions. */}
       {upcoming.length > 0 && (
-        <div className="w-[40rem] relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-violet-500/[0.08] via-white/[0.03] to-transparent backdrop-blur-sm p-7 flex flex-col">
+        <div className="w-[28rem] shrink-0 relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-violet-500/[0.08] via-white/[0.03] to-transparent backdrop-blur-sm p-5 flex flex-col">
           <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-violet-500/15 blur-2xl" />
-          <div className="relative flex items-center gap-3 mb-6">
-            <div className="rounded-xl bg-violet-500/15 p-3 border border-violet-400/20">
-              <CalendarDays className="h-9 w-9 text-violet-300" />
+          <div className="relative flex items-center gap-3 mb-5">
+            <div className="rounded-xl bg-violet-500/15 p-2 border border-violet-400/20">
+              <CalendarDays className="h-6 w-6 text-violet-300" />
             </div>
-            <span className="text-2xl uppercase tracking-[0.2em] font-bold text-violet-300/90">
+            <span className="text-base uppercase tracking-[0.2em] font-bold text-violet-300/90">
               {showingFuture ? "Upcoming" : "Today's Schedule"}
             </span>
           </div>
-          <div className="relative flex-1 min-h-0 flex flex-col gap-3">
+          <div className="relative flex-1 min-h-0 flex flex-col gap-2.5">
             {upcoming.map((item, index) => (
               <div
                 key={index}
-                className={`p-5 rounded-xl border transition-colors ${
+                className={`p-3.5 rounded-xl border transition-colors ${
                   item === nextItem
                     ? "bg-violet-500/15 border-violet-400/40"
                     : "bg-white/[0.03] border-white/10"
                 }`}
               >
-                <div className="flex items-center gap-4">
-                  {getEventIcon(item.title, item.isMeal, "lg")}
+                <div className="flex items-center gap-3">
+                  {getEventIcon(item.title, item.isMeal, "sm")}
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-3xl truncate leading-tight">{item.title}</p>
-                    <p className="text-xl text-white/60 mt-1 truncate">
+                    <p className="font-semibold text-lg truncate leading-tight">{item.title}</p>
+                    <p className="text-sm text-white/60 mt-0.5 truncate">
                       {showingFuture ? `${item.day} ${item.time}` : item.time}
                     </p>
                   </div>
@@ -1385,8 +1400,8 @@ function ScheduleView({
               </div>
             ))}
             {moreCount > 0 && (
-              <div className="mt-auto p-4 rounded-xl border border-violet-400/20 bg-violet-500/5 text-center">
-                <p className="text-xl text-violet-300/90 font-semibold">
+              <div className="mt-auto p-2.5 rounded-xl border border-violet-400/20 bg-violet-500/5 text-center">
+                <p className="text-sm text-violet-300/90 font-semibold">
                   + {moreCount} more event{moreCount === 1 ? "" : "s"}
                 </p>
               </div>
@@ -1429,17 +1444,17 @@ function MealView({
             <div className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-amber-500/15 blur-2xl" />
             <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-300/40 to-transparent" />
             <div className="relative flex flex-col items-center">
-              <div className="mb-6 rounded-3xl bg-white/5 border border-white/10 p-6">
-                {getEventIcon(nextMeal.title, true, "xl")}
+              <div className="mb-5 rounded-3xl bg-white/5 border border-white/10 p-5">
+                {getEventIcon(nextMeal.title, true, "lg")}
               </div>
-              <h2 className="text-7xl font-bold mb-5 leading-tight">{nextMeal.title}</h2>
-              <p className="text-4xl text-white/80 mb-3 flex items-center gap-3">
-                <Clock className="h-9 w-9 text-amber-300" />
+              <h2 className="text-5xl font-bold mb-4 leading-tight">{nextMeal.title}</h2>
+              <p className="text-3xl text-white/80 mb-2 flex items-center gap-2">
+                <Clock className="h-7 w-7 text-amber-300" />
                 {nextMeal.time}
               </p>
               {nextMeal.location && (
-                <p className="text-2xl text-white/60 flex items-center gap-2">
-                  <MapPin className="h-6 w-6 text-amber-300" />
+                <p className="text-xl text-white/60 flex items-center gap-2">
+                  <MapPin className="h-5 w-5 text-amber-300" />
                   {nextMeal.location}
                 </p>
               )}
@@ -1456,38 +1471,38 @@ function MealView({
                 </div>
                 <h3 className="text-2xl font-bold uppercase tracking-[0.15em] text-amber-300/90">Menu</h3>
               </div>
-              <div className="relative space-y-5">
-                <div className="flex items-start gap-5 p-5 rounded-2xl bg-red-500/[0.08] border border-red-500/20">
-                  <Beef className="h-12 w-12 text-red-400 shrink-0" />
+              <div className="relative space-y-4">
+                <div className="flex items-start gap-4 p-4 rounded-2xl bg-red-500/[0.08] border border-red-500/20">
+                  <Beef className="h-9 w-9 text-red-400 shrink-0" />
                   <div>
-                    <p className="text-red-300/90 text-base uppercase tracking-[0.2em] font-bold mb-1">Main Dish</p>
-                    <p className="text-3xl font-semibold">{mealData.main_dish}</p>
+                    <p className="text-red-300/90 text-sm uppercase tracking-[0.2em] font-bold mb-1">Main Dish</p>
+                    <p className="text-2xl font-semibold">{mealData.main_dish}</p>
                   </div>
                 </div>
 
                 {mealData.sides && mealData.sides.length > 0 && (
-                  <div className="flex items-start gap-5 p-5 rounded-2xl bg-green-500/[0.08] border border-green-500/20">
-                    <Salad className="h-12 w-12 text-green-400 shrink-0" />
+                  <div className="flex items-start gap-4 p-4 rounded-2xl bg-green-500/[0.08] border border-green-500/20">
+                    <Salad className="h-9 w-9 text-green-400 shrink-0" />
                     <div>
-                      <p className="text-green-300/90 text-base uppercase tracking-[0.2em] font-bold mb-1">Sides</p>
-                      <p className="text-2xl">{mealData.sides.join(", ")}</p>
+                      <p className="text-green-300/90 text-sm uppercase tracking-[0.2em] font-bold mb-1">Sides</p>
+                      <p className="text-xl">{mealData.sides.join(", ")}</p>
                     </div>
                   </div>
                 )}
 
                 {mealData.drinks && mealData.drinks.length > 0 && (
-                  <div className="flex items-start gap-5 p-5 rounded-2xl bg-cyan-500/[0.08] border border-cyan-500/20">
-                    <CupSoda className="h-12 w-12 text-cyan-400 shrink-0" />
+                  <div className="flex items-start gap-4 p-4 rounded-2xl bg-cyan-500/[0.08] border border-cyan-500/20">
+                    <CupSoda className="h-9 w-9 text-cyan-400 shrink-0" />
                     <div>
-                      <p className="text-cyan-300/90 text-base uppercase tracking-[0.2em] font-bold mb-1">Beverages</p>
-                      <p className="text-2xl">{mealData.drinks.join(", ")}</p>
+                      <p className="text-cyan-300/90 text-sm uppercase tracking-[0.2em] font-bold mb-1">Beverages</p>
+                      <p className="text-xl">{mealData.drinks.join(", ")}</p>
                     </div>
                   </div>
                 )}
 
                 {mealData.notes && (
-                  <div className="pt-5 mt-5 border-t border-white/10 text-center">
-                    <p className="text-white/60 italic text-xl">{mealData.notes}</p>
+                  <div className="pt-4 mt-4 border-t border-white/10 text-center">
+                    <p className="text-white/60 italic text-lg">{mealData.notes}</p>
                   </div>
                 )}
               </div>
