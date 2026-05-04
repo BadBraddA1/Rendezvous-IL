@@ -12,7 +12,8 @@ import {
   UtensilsCrossed, ClipboardCheck, Camera, Music, Gamepad2, Mountain, Trophy, Palette,
   BookOpen, Dumbbell, TreePine, Flame, Tent, Heart, Star, Sparkles, PartyPopper,
   Moon, Beef, CupSoda, Salad, Megaphone, Wifi,
-  Target, Volleyball, Hand, Sunrise, Sunset, Snowflake, Droplets
+  Target, Volleyball, Hand, Sunrise, Sunset, Snowflake, Droplets,
+  ZoomIn, ZoomOut, RotateCcw
 } from "lucide-react"
 
 interface Announcement {
@@ -235,10 +236,46 @@ function getWeatherIcon(weatherId: number, iconCode: string, size: "sm" | "md" |
   return <Cloud className={`${iconClass} text-gray-400`} />
 }
 
+// Per-view zoom levels persist in localStorage so each TV remembers its preferred
+// size for each panel across reloads / view rotations. Min 0.7, max 1.6, step 0.1.
+const ZOOM_STORAGE_KEY = "lu_view_zoom_v1"
+const ZOOM_MIN = 0.7
+const ZOOM_MAX = 1.6
+const ZOOM_STEP = 0.1
+
 export default function LiveUpdatesPage() {
   const [currentView, setCurrentView] = useState<ViewType>("schedule")
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isAutoRotating, setIsAutoRotating] = useState(true)
+  const [viewZoom, setViewZoom] = useState<Record<string, number>>({})
+
+  // Hydrate zoom prefs from localStorage on mount
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    try {
+      const raw = window.localStorage.getItem(ZOOM_STORAGE_KEY)
+      if (raw) setViewZoom(JSON.parse(raw))
+    } catch {
+      // ignore corrupt storage
+    }
+  }, [])
+
+  const currentZoom = viewZoom[currentView] ?? 1
+  const updateZoom = (next: number) => {
+    const clamped = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, Math.round(next * 10) / 10))
+    setViewZoom(prev => {
+      const updated = { ...prev, [currentView]: clamped }
+      try {
+        window.localStorage.setItem(ZOOM_STORAGE_KEY, JSON.stringify(updated))
+      } catch {
+        // ignore storage failures (private mode etc.)
+      }
+      return updated
+    })
+  }
+  const zoomIn = () => updateZoom(currentZoom + ZOOM_STEP)
+  const zoomOut = () => updateZoom(currentZoom - ZOOM_STEP)
+  const resetZoom = () => updateZoom(1)
   const [currentTime, setCurrentTime] = useState(new Date())
   // Admin mode (?admin=1) — gates the ice cream challenge editor.
   // Without this flag, Stephen and Brian will not see any controls or hidden state.
@@ -629,7 +666,9 @@ export default function LiveUpdatesPage() {
         // (text-*, p-*, h-*, w-*, gap-*) grows proportionally with screen size.
         // Tuned for 120" 4K TVs viewed from across a large room.
         // Approx base: 1366×768 → ~18px, 1920×1080 → ~42px, 3840×2160 → ~120px.
-        fontSize: "clamp(14px, calc(1.6vw + 1.6vh + 2px), 140px)",
+        // The user-controllable `currentZoom` multiplier (0.7 - 1.6) lets each TV
+        // dial in extra magnification per-view from the footer +/- buttons.
+        fontSize: `calc(clamp(14px, calc(1.6vw + 1.6vh + 2px), 140px) * ${currentZoom})`,
       }}
     >
       {/* Header */}
@@ -718,6 +757,46 @@ export default function LiveUpdatesPage() {
           )}
           <KeyButton label="0/A Auto" active={isAutoRotating} />
           <KeyButton label="F Fullscreen" active={isFullscreen} />
+
+          {/* Per-view zoom controls — saved to localStorage so each TV remembers
+              its preferred size for each panel. */}
+          <div className="flex items-center gap-2 ml-2 px-3 py-1.5 rounded-lg border border-white/15 bg-white/[0.04]">
+            <span className="text-white/50 text-base mr-1">Size</span>
+            <button
+              type="button"
+              onClick={zoomOut}
+              disabled={currentZoom <= ZOOM_MIN + 0.001}
+              className="flex items-center justify-center h-9 w-9 rounded-md border border-white/15 bg-white/[0.04] hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              aria-label="Decrease size"
+              title="Decrease size"
+            >
+              <ZoomOut className="h-4 w-4" />
+            </button>
+            <span className="text-white/80 text-base tabular-nums w-12 text-center font-semibold">
+              {Math.round(currentZoom * 100)}%
+            </span>
+            <button
+              type="button"
+              onClick={zoomIn}
+              disabled={currentZoom >= ZOOM_MAX - 0.001}
+              className="flex items-center justify-center h-9 w-9 rounded-md border border-white/15 bg-white/[0.04] hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              aria-label="Increase size"
+              title="Increase size"
+            >
+              <ZoomIn className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={resetZoom}
+              disabled={Math.abs(currentZoom - 1) < 0.001}
+              className="flex items-center justify-center h-9 w-9 rounded-md border border-white/15 bg-white/[0.04] hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              aria-label="Reset size"
+              title="Reset size"
+            >
+              <RotateCcw className="h-4 w-4" />
+            </button>
+          </div>
+
           {isAutoRotating && (
             <span className="text-green-400 text-sm flex items-center gap-2 ml-4">
               <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
