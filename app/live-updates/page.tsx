@@ -7,45 +7,13 @@ import { LU_SCHEDULE_ITEMS } from "@/lib/schedule-data"
 import { ViewTransition } from "@/components/view-transition"
 import { IceCreamChallenge } from "@/components/ice-cream-challenge"
 import { 
-  Cloud, 
-  CloudRain, 
-  Sun, 
-  CloudSun, 
-  Snowflake, 
-  CloudLightning, 
-  Wind, 
-  Droplets,
-  Calendar,
-  Clock,
-  ChevronRight,
-  Megaphone,
-  Coffee,
-  Sandwich,
-  Utensils,
-  UtensilsCrossed,
-  ClipboardCheck,
-  Users,
-  Target,
-  Gamepad2,
-  Mountain,
-  Dumbbell,
-  Flame,
-  Camera,
-  Trophy,
-  Hand,
-  Grid3x3,
-  Dice5,
-  Moon,
-  Heart,
-  MapPin,
-  Sunrise,
-  Sunset,
-  Beef,
-  Salad,
-  CupSoda,
-  Volleyball,
-  CalendarDays,
-  Bed
+  Sun, Cloud, CloudRain, CloudSnow, Wind, CloudLightning, CloudFog, Cloudy, CloudSun,
+  Calendar, CalendarDays, MapPin, Clock, ChevronRight, Users, Utensils, Coffee, Sandwich, Bed,
+  UtensilsCrossed, ClipboardCheck, Camera, Music, Gamepad2, Mountain, Trophy, Palette,
+  BookOpen, Dumbbell, TreePine, Flame, Tent, Heart, Star, Sparkles, PartyPopper,
+  Moon, Beef, CupSoda, Salad, Megaphone, Wifi,
+  Target, Volleyball, Hand, Sunrise, Sunset, Snowflake, Droplets,
+  ZoomIn, ZoomOut, RotateCcw
 } from "lucide-react"
 
 interface Announcement {
@@ -223,16 +191,19 @@ function getGreetingIcon(hour: number, sizeClass: string = "h-20 w-20") {
   return <Moon className={`${sizeClass} text-blue-300 shrink-0`} />
 }
 
-// TEST MODE: Set to true to simulate the event
-// Set to just before the first event starts (May 4, 2026 at 12:55 PM - 5 min before Check-in)
-const TEST_MODE = true
+// TEST MODE: Set to true ONLY during development to simulate the event clock.
+// MUST be false in production — when true, the LU page ignores real time and
+// pins to TEST_DATE, which made every device show the wrong time.
+const TEST_MODE = false
 const TEST_DATE = new Date('2026-05-04T12:55:00')
 
+// Use the device's local clock directly. Whatever time the TV / phone /
+// laptop thinks it is, that's what we display. Simple and predictable.
 function getCentralTime(): Date {
   if (TEST_MODE) {
     return TEST_DATE
   }
-  return new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' }))
+  return new Date()
 }
 
 function formatTime(timestamp: number): string {
@@ -268,10 +239,73 @@ function getWeatherIcon(weatherId: number, iconCode: string, size: "sm" | "md" |
   return <Cloud className={`${iconClass} text-gray-400`} />
 }
 
+// Per-view zoom levels persist in localStorage so each TV remembers its preferred
+// size for each panel across reloads / view rotations.
+// NOTE: bump the version suffix on this key whenever the underlying base sizes
+// change, so previously-saved zoom levels don't compound on top of new defaults
+// and break the layout. v1 used a viewport-scaled base (broken). v2 used a
+// reduced range. v3 uses a fixed 16px rem baseline + a zoom multiplier; this
+// is the only approach that produces predictable, readable output across the
+// wildly different screen sizes we see (laptop preview, iPad, 1080p TV, 4K TV).
+const ZOOM_STORAGE_KEY = "lu_view_zoom_v3"
+const ZOOM_BASE_PX = 16 // browser default — Tailwind text-* sizes assume this
+const ZOOM_MIN = 1
+const ZOOM_MAX = 2.5
+const ZOOM_STEP = 0.25
+
 export default function LiveUpdatesPage() {
-  const [currentView, setCurrentView] = useState<ViewType>("all")
+  const [currentView, setCurrentView] = useState<ViewType>("schedule")
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isAutoRotating, setIsAutoRotating] = useState(true)
+  const [viewZoom, setViewZoom] = useState<Record<string, number>>({})
+
+  // Hydrate zoom prefs from localStorage on mount
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    try {
+      const raw = window.localStorage.getItem(ZOOM_STORAGE_KEY)
+      if (raw) setViewZoom(JSON.parse(raw))
+    } catch {
+      // ignore corrupt storage
+    }
+  }, [])
+
+  const currentZoom = viewZoom[currentView] ?? 1
+  const updateZoom = (next: number) => {
+    const clamped = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, Math.round(next * 10) / 10))
+    setViewZoom(prev => {
+      const updated = { ...prev, [currentView]: clamped }
+      try {
+        window.localStorage.setItem(ZOOM_STORAGE_KEY, JSON.stringify(updated))
+      } catch {
+        // ignore storage failures (private mode etc.)
+      }
+      return updated
+    })
+  }
+  const zoomIn = () => updateZoom(currentZoom + ZOOM_STEP)
+  const zoomOut = () => updateZoom(currentZoom - ZOOM_STEP)
+  const resetZoom = () => updateZoom(1)
+
+  // Apply the per-view zoom multiplier to the <html> element so every
+  // rem-based Tailwind class (text-*, p-*, h-*, w-*, gap-*) scales in
+  // lockstep. We use a fixed 16px baseline (browser default) so Tailwind's
+  // size classes render at their documented pixel values:
+  //   text-base=16, text-xl=20, text-2xl=24, text-3xl=30, text-4xl=36,
+  //   text-5xl=48, text-6xl=60, text-7xl=72.
+  // The user-controllable zoom multiplier (1× – 2.5×) lets each TV pick a
+  // size that's readable across the room. The previous viewport-scaled
+  // baseline was overshooting badly (~50px at 1080p), making text-2xl
+  // render at 76px and breaking every layout — this is the fix for that.
+  useEffect(() => {
+    if (typeof document === "undefined") return
+    const root = document.documentElement
+    const previous = root.style.fontSize
+    root.style.fontSize = `${ZOOM_BASE_PX * currentZoom}px`
+    return () => {
+      root.style.fontSize = previous
+    }
+  }, [currentZoom])
   const [currentTime, setCurrentTime] = useState(new Date())
   // Admin mode (?admin=1) — gates the ice cream challenge editor.
   // Without this flag, Stephen and Brian will not see any controls or hidden state.
@@ -312,8 +346,10 @@ export default function LiveUpdatesPage() {
   }, [volunteerSchedule])
 
   // Conditionally show tabs based on available data
+  // Note: "all" view is intentionally excluded from auto-rotation because it shows
+  // too much info at once and is hard to read on a TV. It's still accessible via the "1" key.
   const availableViews = useMemo<ViewType[]>(() => {
-    const views: ViewType[] = ["all", "weather", "schedule", "meal", "map"]
+    const views: ViewType[] = ["schedule", "weather", "meal", "map"]
     if (hasVolunteerData) {
       views.push("volunteers")
     }
@@ -419,12 +455,13 @@ export default function LiveUpdatesPage() {
     return () => clearInterval(interval)
   }, [])
 
-  // Update current time
+  // Update displayed time every second using the device's local clock.
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentTime(new Date())
+    setCurrentTime(getCentralTime())
+    const tick = setInterval(() => {
+      setCurrentTime(getCentralTime())
     }, 1000)
-    return () => clearInterval(interval)
+    return () => clearInterval(tick)
   }, [])
 
   // Calculate schedule
@@ -566,7 +603,7 @@ export default function LiveUpdatesPage() {
         const nextIndex = (currentIndex + 1) % availableViews.length
         return availableViews[nextIndex]
       })
-    }, 10000)
+    }, 15000)
 
     return () => clearInterval(interval)
   }, [isAutoRotating, availableViews])
@@ -637,36 +674,33 @@ export default function LiveUpdatesPage() {
     return () => window.removeEventListener("keydown", handleKeyDown)
   }, [toggleFullscreen, availableViews, announcements.length, hasVolunteerData])
 
-  // Format current date/time
-  const formattedTime = currentTime.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-    timeZone: 'America/Chicago',
-  }).replace(' ', '  ')
-  
-  const formattedDate = currentTime.toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-    timeZone: 'America/Chicago',
-  })
+  // Format current date/time using the device's local clock. We format
+  // manually (from getHours/getMinutes/getDay) instead of toLocaleString so
+  // older smart-TV browsers don't render unexpected locale variants.
+  const _hours24 = currentTime.getHours()
+  const _minutes = currentTime.getMinutes()
+  const _ampm = _hours24 >= 12 ? 'PM' : 'AM'
+  const _hours12 = _hours24 % 12 === 0 ? 12 : _hours24 % 12
+  const formattedTime = `${_hours12}:${String(_minutes).padStart(2, '0')}  ${_ampm}`
+
+  const _weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+  const _months = ['January', 'February', 'March', 'April', 'May', 'June',
+                   'July', 'August', 'September', 'October', 'November', 'December']
+  const formattedDate = `${_weekdays[currentTime.getDay()]}, ${_months[currentTime.getMonth()]} ${currentTime.getDate()}`
 
   return (
-    <div 
-      className="h-screen max-h-screen overflow-hidden bg-black text-white flex flex-col"
-      style={{
-        // Scale the entire UI with viewport size: every rem-based Tailwind class
-        // (text-*, p-*, h-*, w-*, gap-*) grows proportionally with screen size.
-        // Tuned for 120" 4K TVs viewed from across a large room.
-        // Approx base: 1366×768 → ~18px, 1920×1080 → ~42px, 3840×2160 → ~120px.
-        fontSize: "clamp(14px, calc(1.6vw + 1.6vh + 2px), 140px)",
-      }}
-    >
-      {/* Header */}
-      <header className="shrink-0 flex items-center justify-between px-12 py-6 border-b border-white/10">
-        <div className="flex items-center gap-5">
-          <div className="relative h-16 w-16 shrink-0 rounded-xl bg-white/5 border border-white/10 p-2 flex items-center justify-center">
+    <div className="h-screen max-h-screen overflow-hidden bg-black text-white flex flex-col">
+      {/* Header
+          - All three sections use min-w-0 + shrink so they can collapse on
+            narrower TVs / sandbox previews instead of pushing each other off
+            the right edge (which produced the broken layout shown to the user).
+          - The center WiFi card uses whitespace-nowrap and can shrink if space
+            is tight; the right-side clock is anchored with shrink-0 so the
+            time is always fully readable. */}
+      <header className="shrink-0 flex items-center justify-between gap-6 px-8 py-5 border-b border-white/10">
+        {/* Left: logo + title */}
+        <div className="flex items-center gap-4 min-w-0 shrink">
+          <div className="relative h-14 w-14 shrink-0 rounded-xl bg-white/5 border border-white/10 p-2 flex items-center justify-center">
             <Image
               src="/rendezvous-logo.png"
               alt="Rendezvous Homeschool Family Retreat"
@@ -676,14 +710,27 @@ export default function LiveUpdatesPage() {
               priority
             />
           </div>
-          <div className="flex flex-col">
-            <h1 className="text-3xl font-bold tracking-wide leading-tight">RENDEZVOUS 2026</h1>
-            <span className="text-white/60 text-base tracking-widest uppercase">Live Updates</span>
+          <div className="flex flex-col min-w-0">
+            <h1 className="text-2xl font-bold tracking-wide leading-tight whitespace-nowrap">RENDEZVOUS 2026</h1>
+            <span className="text-white/60 text-sm tracking-widest uppercase whitespace-nowrap">Live Updates</span>
           </div>
         </div>
-        <div className="text-right">
-          <div className="text-5xl font-light tracking-wider tabular-nums">{formattedTime}</div>
-          <div className="text-white/60 text-xl">{formattedDate}</div>
+
+        {/* Center: WiFi info — hidden below md so the header never overflows on
+            narrower previews; on TV-class screens (≥ md) it sits between the
+            title and the clock. shrink-0 keeps its labels intact. */}
+        <div className="hidden md:flex items-center gap-3 px-4 py-2 rounded-xl bg-white/5 border border-white/10 shrink-0">
+          <Wifi className="h-6 w-6 text-cyan-400 shrink-0" />
+          <div className="flex flex-col leading-tight min-w-0">
+            <span className="text-sm text-white/60 whitespace-nowrap">WiFi: <span className="text-white font-semibold">LWCC</span></span>
+            <span className="text-sm text-white/60 whitespace-nowrap">Pass: <span className="text-white font-semibold">wifi4lwcc</span></span>
+          </div>
+        </div>
+
+        {/* Right: clock + date — never shrinks so the time is always readable */}
+        <div className="text-right shrink-0">
+          <div className="text-4xl font-light tracking-wider tabular-nums leading-none">{formattedTime}</div>
+          <div className="text-white/60 text-base mt-1 whitespace-nowrap">{formattedDate}</div>
         </div>
       </header>
 
@@ -741,6 +788,46 @@ export default function LiveUpdatesPage() {
           )}
           <KeyButton label="0/A Auto" active={isAutoRotating} />
           <KeyButton label="F Fullscreen" active={isFullscreen} />
+
+          {/* Per-view zoom controls — saved to localStorage so each TV remembers
+              its preferred size for each panel. */}
+          <div className="flex items-center gap-2 ml-2 px-3 py-1.5 rounded-lg border border-white/15 bg-white/[0.04]">
+            <span className="text-white/50 text-base mr-1">Size</span>
+            <button
+              type="button"
+              onClick={zoomOut}
+              disabled={currentZoom <= ZOOM_MIN + 0.001}
+              className="flex items-center justify-center h-9 w-9 rounded-md border border-white/15 bg-white/[0.04] hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              aria-label="Decrease size"
+              title="Decrease size"
+            >
+              <ZoomOut className="h-4 w-4" />
+            </button>
+  <span className="text-white/80 text-base tabular-nums w-16 text-center font-semibold">
+            {Math.round(currentZoom * 100)}%
+            </span>
+            <button
+              type="button"
+              onClick={zoomIn}
+              disabled={currentZoom >= ZOOM_MAX - 0.001}
+              className="flex items-center justify-center h-9 w-9 rounded-md border border-white/15 bg-white/[0.04] hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              aria-label="Increase size"
+              title="Increase size"
+            >
+              <ZoomIn className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={resetZoom}
+              disabled={Math.abs(currentZoom - 1) < 0.001}
+              className="flex items-center justify-center h-9 w-9 rounded-md border border-white/15 bg-white/[0.04] hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              aria-label="Reset size"
+              title="Reset size"
+            >
+              <RotateCcw className="h-4 w-4" />
+            </button>
+          </div>
+
           {isAutoRotating && (
             <span className="text-green-400 text-sm flex items-center gap-2 ml-4">
               <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
@@ -1213,20 +1300,20 @@ function ScheduleView({
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-300/40 to-transparent" />
         <div className="relative">
           {nowItem && (
-            <div className="text-center mb-10">
-              <div className="flex items-center justify-center gap-3 mb-5">
-                <span className="relative flex h-3 w-3">
+            <div className="text-center mb-12">
+              <div className="flex items-center justify-center gap-3 mb-6">
+                <span className="relative flex h-4 w-4">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
-                  <span className="relative inline-flex h-3 w-3 rounded-full bg-green-400" />
+                  <span className="relative inline-flex h-4 w-4 rounded-full bg-green-400" />
                 </span>
-                <span className="text-sm font-bold uppercase tracking-[0.3em] text-green-400">Happening Now</span>
+                <span className="text-xl font-bold uppercase tracking-[0.3em] text-green-400">Happening Now</span>
               </div>
-              <div className="flex justify-center mb-5">{getEventIcon(nowItem.title, nowItem.isMeal, "xl")}</div>
-              <h2 className="text-4xl font-bold mb-3 text-balance">{nowItem.title}</h2>
-              <p className="text-2xl text-white/70 mb-2">{nowItem.time}</p>
+              <div className="flex justify-center mb-5">{getEventIcon(nowItem.title, nowItem.isMeal, "lg")}</div>
+              <h2 className="text-5xl font-bold mb-4 text-balance leading-tight">{nowItem.title}</h2>
+              <p className="text-3xl text-white/80 mb-2">{nowItem.time}</p>
               {nowItem.location && (
-                <p className="text-xl text-white/50 flex items-center justify-center gap-2">
-                  <MapPin className="h-5 w-5 text-violet-300" />
+                <p className="text-2xl text-white/60 flex items-center justify-center gap-2">
+                  <MapPin className="h-7 w-7 text-violet-300" />
                   {nowItem.location}
                 </p>
               )}
@@ -1235,17 +1322,17 @@ function ScheduleView({
 
           {nextItem && (
             <div className="text-center">
-              {nowItem && <div className="w-32 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent mx-auto mb-10" />}
-              <div className="flex items-center justify-center gap-3 mb-5">
-                <ChevronRight className="h-5 w-5 text-violet-300" />
-                <span className="text-sm font-bold uppercase tracking-[0.3em] text-violet-300">Up Next</span>
+              {nowItem && <div className="w-48 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent mx-auto mb-12" />}
+              <div className="flex items-center justify-center gap-3 mb-6">
+                <ChevronRight className="h-7 w-7 text-violet-300" />
+                <span className="text-xl font-bold uppercase tracking-[0.3em] text-violet-300">Up Next</span>
               </div>
-              <div className="flex justify-center mb-5">{getEventIcon(nextItem.title, nextItem.isMeal, nowItem ? "lg" : "xl")}</div>
-              <h2 className={`font-bold mb-3 text-balance ${nowItem ? "text-2xl" : "text-4xl"}`}>{nextItem.title}</h2>
-              <p className={`text-white/70 mb-2 ${nowItem ? "text-lg" : "text-2xl"}`}>{nextItem.day} {nextItem.time}</p>
+              <div className="flex justify-center mb-5">{getEventIcon(nextItem.title, nextItem.isMeal, nowItem ? "md" : "lg")}</div>
+              <h2 className={`font-bold mb-4 text-balance leading-tight ${nowItem ? "text-3xl" : "text-5xl"}`}>{nextItem.title}</h2>
+              <p className={`text-white/80 mb-2 ${nowItem ? "text-2xl" : "text-3xl"}`}>{nextItem.day} {nextItem.time}</p>
               {nextItem.location && (
-                <p className={`text-white/50 flex items-center justify-center gap-2 ${nowItem ? "text-base" : "text-xl"}`}>
-                  <MapPin className={nowItem ? "h-4 w-4 text-violet-300" : "h-5 w-5 text-violet-300"} />
+                <p className={`text-white/60 flex items-center justify-center gap-2 ${nowItem ? "text-xl" : "text-2xl"}`}>
+                  <MapPin className={nowItem ? "h-6 w-6 text-violet-300" : "h-7 w-7 text-violet-300"} />
                   {nextItem.location}
                 </p>
               )}
@@ -1256,21 +1343,24 @@ function ScheduleView({
             <div className="text-center">
               <Bed className="h-28 w-28 text-white/30 mx-auto mb-5" />
               <h2 className="text-4xl font-bold text-white/60">No Scheduled Events</h2>
-              <p className="text-xl text-white/40 mt-3">Enjoy your free time!</p>
+              <p className="text-2xl text-white/40 mt-3">Enjoy your free time!</p>
             </div>
           )}
         </div>
       </div>
 
-      {/* Right side - Upcoming Schedule */}
+      {/* Right side - Upcoming Schedule
+          Hidden below lg so the now/next column always has enough room on
+          narrow previews, sandbox iframes, and portrait-orientation TVs. On
+          wide displays it shows alongside as a fixed 28rem sidebar. */}
       {upcoming.length > 0 && (
-        <div className="w-[28rem] relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-violet-500/[0.08] via-white/[0.03] to-transparent backdrop-blur-sm p-6 flex flex-col">
+        <div className="hidden lg:flex w-[28rem] shrink-0 relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-violet-500/[0.08] via-white/[0.03] to-transparent backdrop-blur-sm p-5 flex-col">
           <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-violet-500/15 blur-2xl" />
           <div className="relative flex items-center gap-3 mb-5">
-            <div className="rounded-xl bg-violet-500/15 p-2.5 border border-violet-400/20">
-              <CalendarDays className="h-5 w-5 text-violet-300" />
+            <div className="rounded-xl bg-violet-500/15 p-2 border border-violet-400/20">
+              <CalendarDays className="h-6 w-6 text-violet-300" />
             </div>
-            <span className="text-sm uppercase tracking-[0.2em] font-bold text-violet-300/90">
+            <span className="text-base uppercase tracking-[0.2em] font-bold text-violet-300/90">
               {showingFuture ? "Upcoming" : "Today's Schedule"}
             </span>
           </div>
@@ -1287,8 +1377,8 @@ function ScheduleView({
                 <div className="flex items-center gap-3">
                   {getEventIcon(item.title, item.isMeal, "sm")}
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-base truncate">{item.title}</p>
-                    <p className="text-sm text-white/50 mt-0.5 truncate">
+                    <p className="font-semibold text-lg truncate leading-tight">{item.title}</p>
+                    <p className="text-sm text-white/60 mt-0.5 truncate">
                       {showingFuture ? `${item.day} ${item.time}` : item.time}
                     </p>
                   </div>
@@ -1298,7 +1388,7 @@ function ScheduleView({
             {moreCount > 0 && (
               <div className="mt-auto p-2.5 rounded-xl border border-violet-400/20 bg-violet-500/5 text-center">
                 <p className="text-sm text-violet-300/90 font-semibold">
-                  + {moreCount} more event{moreCount === 1 ? "" : "s"} on the full schedule
+                  + {moreCount} more event{moreCount === 1 ? "" : "s"}
                 </p>
               </div>
             )}
@@ -1341,16 +1431,16 @@ function MealView({
             <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-300/40 to-transparent" />
             <div className="relative flex flex-col items-center">
               <div className="mb-5 rounded-3xl bg-white/5 border border-white/10 p-5">
-                {getEventIcon(nextMeal.title, true, "xl")}
+                {getEventIcon(nextMeal.title, true, "lg")}
               </div>
-              <h2 className="text-5xl font-bold mb-3">{nextMeal.title}</h2>
-              <p className="text-2xl text-white/70 mb-2 flex items-center gap-2">
-                <Clock className="h-5 w-5 text-amber-300" />
+              <h2 className="text-5xl font-bold mb-4 leading-tight">{nextMeal.title}</h2>
+              <p className="text-3xl text-white/80 mb-2 flex items-center gap-2">
+                <Clock className="h-7 w-7 text-amber-300" />
                 {nextMeal.time}
               </p>
               {nextMeal.location && (
-                <p className="text-lg text-white/50 flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-amber-300" />
+                <p className="text-xl text-white/60 flex items-center gap-2">
+                  <MapPin className="h-5 w-5 text-amber-300" />
                   {nextMeal.location}
                 </p>
               )}
@@ -1367,38 +1457,38 @@ function MealView({
                 </div>
                 <h3 className="text-2xl font-bold uppercase tracking-[0.15em] text-amber-300/90">Menu</h3>
               </div>
-              <div className="relative space-y-5">
-                <div className="flex items-start gap-5 p-4 rounded-2xl bg-red-500/[0.08] border border-red-500/20">
-                  <Beef className="h-8 w-8 text-red-400 shrink-0" />
+              <div className="relative space-y-4">
+                <div className="flex items-start gap-4 p-4 rounded-2xl bg-red-500/[0.08] border border-red-500/20">
+                  <Beef className="h-9 w-9 text-red-400 shrink-0" />
                   <div>
-                    <p className="text-red-300/90 text-xs uppercase tracking-[0.2em] font-bold mb-1">Main Dish</p>
-                    <p className="text-xl font-semibold">{mealData.main_dish}</p>
+                    <p className="text-red-300/90 text-sm uppercase tracking-[0.2em] font-bold mb-1">Main Dish</p>
+                    <p className="text-2xl font-semibold">{mealData.main_dish}</p>
                   </div>
                 </div>
 
                 {mealData.sides && mealData.sides.length > 0 && (
-                  <div className="flex items-start gap-5 p-4 rounded-2xl bg-green-500/[0.08] border border-green-500/20">
-                    <Salad className="h-8 w-8 text-green-400 shrink-0" />
+                  <div className="flex items-start gap-4 p-4 rounded-2xl bg-green-500/[0.08] border border-green-500/20">
+                    <Salad className="h-9 w-9 text-green-400 shrink-0" />
                     <div>
-                      <p className="text-green-300/90 text-xs uppercase tracking-[0.2em] font-bold mb-1">Sides</p>
-                      <p className="text-lg">{mealData.sides.join(", ")}</p>
+                      <p className="text-green-300/90 text-sm uppercase tracking-[0.2em] font-bold mb-1">Sides</p>
+                      <p className="text-xl">{mealData.sides.join(", ")}</p>
                     </div>
                   </div>
                 )}
 
                 {mealData.drinks && mealData.drinks.length > 0 && (
-                  <div className="flex items-start gap-5 p-4 rounded-2xl bg-cyan-500/[0.08] border border-cyan-500/20">
-                    <CupSoda className="h-8 w-8 text-cyan-400 shrink-0" />
+                  <div className="flex items-start gap-4 p-4 rounded-2xl bg-cyan-500/[0.08] border border-cyan-500/20">
+                    <CupSoda className="h-9 w-9 text-cyan-400 shrink-0" />
                     <div>
-                      <p className="text-cyan-300/90 text-xs uppercase tracking-[0.2em] font-bold mb-1">Beverages</p>
-                      <p className="text-lg">{mealData.drinks.join(", ")}</p>
+                      <p className="text-cyan-300/90 text-sm uppercase tracking-[0.2em] font-bold mb-1">Beverages</p>
+                      <p className="text-xl">{mealData.drinks.join(", ")}</p>
                     </div>
                   </div>
                 )}
 
                 {mealData.notes && (
-                  <div className="pt-5 mt-5 border-t border-white/10 text-center">
-                    <p className="text-white/60 italic text-base">{mealData.notes}</p>
+                  <div className="pt-4 mt-4 border-t border-white/10 text-center">
+                    <p className="text-white/60 italic text-lg">{mealData.notes}</p>
                   </div>
                 )}
               </div>
