@@ -7,11 +7,12 @@ import { LU_SCHEDULE_ITEMS } from "@/lib/schedule-data"
 import { ViewTransition } from "@/components/view-transition"
 import { IceCreamChallenge } from "@/components/ice-cream-challenge"
 import { 
-  Sun, Cloud, CloudRain, CloudSnow, Wind, CloudLightning, CloudFog, Cloudy,
-  CalendarDays, MapPin, Clock, ChevronRight, Users, Utensils, Coffee, Sandwich, Bed,
+  Sun, Cloud, CloudRain, CloudSnow, Wind, CloudLightning, CloudFog, Cloudy, CloudSun,
+  Calendar, CalendarDays, MapPin, Clock, ChevronRight, Users, Utensils, Coffee, Sandwich, Bed,
   UtensilsCrossed, ClipboardCheck, Camera, Music, Gamepad2, Mountain, Trophy, Palette,
   BookOpen, Dumbbell, TreePine, Flame, Tent, Heart, Star, Sparkles, PartyPopper,
-  Moon, Beef, CupSoda, Salad, Megaphone, Wifi
+  Moon, Beef, CupSoda, Salad, Megaphone, Wifi,
+  Target, Volleyball, Hand, Sunrise, Sunset, Snowflake, Droplets
 } from "lucide-react"
 
 interface Announcement {
