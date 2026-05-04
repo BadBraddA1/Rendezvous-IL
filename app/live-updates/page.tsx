@@ -197,50 +197,13 @@ function getGreetingIcon(hour: number, sizeClass: string = "h-20 w-20") {
 const TEST_MODE = false
 const TEST_DATE = new Date('2026-05-04T12:55:00')
 
-// Central Time is sourced from the server (`/api/time`) so the LU display is
-// correct even on TVs with miscalibrated system clocks or wrong timezones.
-//
-// `serverTimeOffsetMs` is the delta between the device's `Date.now()` and the
-// "Central Time wall clock" returned by the server. Once that delta is known,
-// we synthesize accurate Central Time by adding it to a fresh `Date.now()` —
-// monotonic interpolation between server polls. This gives per-second smoothness
-// without hammering the API every tick.
-let serverTimeOffsetMs = 0
-let serverTimeReady = false
-
+// Use the device's local clock directly. Whatever time the TV / phone /
+// laptop thinks it is, that's what we display. Simple and predictable.
 function getCentralTime(): Date {
   if (TEST_MODE) {
     return TEST_DATE
   }
-  const now = Date.now()
-  if (!serverTimeReady) {
-    // Pre-sync fallback: assume the device's UTC clock is accurate and apply
-    // a fixed CDT offset (-5h). Correct for the entire May 4-8 event window.
-    const localOffsetMin = new Date().getTimezoneOffset()
-    return new Date(now + (localOffsetMin - 5 * 60) * 60 * 1000)
-  }
-  return new Date(now + serverTimeOffsetMs)
-}
-
-async function syncServerTime(): Promise<void> {
-  try {
-    const sentAt = Date.now()
-    const res = await fetch("/api/time", { cache: "no-store" })
-    if (!res.ok) return
-    const data = await res.json()
-    const c = data?.central
-    if (!c) return
-    // Build a "Central Time wall clock" Date. Constructing with local
-    // (year, monthIndex, day, h, m, s) means our local getters will report
-    // Central fields — which is what every consumer of getCentralTime expects.
-    const centralWall = new Date(c.year, c.month - 1, c.day, c.hour, c.minute, c.second).getTime()
-    // Use the midpoint of (sent, received) to absorb network latency.
-    const midpoint = (sentAt + Date.now()) / 2
-    serverTimeOffsetMs = centralWall - midpoint
-    serverTimeReady = true
-  } catch {
-    // ignore — keep using the existing offset / fallback
-  }
+  return new Date()
 }
 
 function formatTime(timestamp: number): string {
@@ -492,30 +455,13 @@ export default function LiveUpdatesPage() {
     return () => clearInterval(interval)
   }, [])
 
-  // Update current time.
-  // Sources Central Time from `/api/time` so the displayed clock is correct
-  // even on TVs whose system clock or timezone is wrong. We:
-  //   1. Sync immediately on mount (so the first render has accurate time).
-  //   2. Tick the displayed time every second using server-anchored
-  //      `getCentralTime()`.
-  //   3. Re-sync every 5 minutes to correct any clock drift between the
-  //      device and the server.
+  // Update displayed time every second using the device's local clock.
   useEffect(() => {
-    let cancelled = false
-    syncServerTime().then(() => {
-      if (!cancelled) setCurrentTime(getCentralTime())
-    })
+    setCurrentTime(getCentralTime())
     const tick = setInterval(() => {
       setCurrentTime(getCentralTime())
     }, 1000)
-    const resync = setInterval(() => {
-      syncServerTime()
-    }, 5 * 60 * 1000)
-    return () => {
-      cancelled = true
-      clearInterval(tick)
-      clearInterval(resync)
-    }
+    return () => clearInterval(tick)
   }, [])
 
   // Calculate schedule
@@ -728,12 +674,9 @@ export default function LiveUpdatesPage() {
     return () => window.removeEventListener("keydown", handleKeyDown)
   }, [toggleFullscreen, availableViews, announcements.length, hasVolunteerData])
 
-  // Format current date/time.
-  // `currentTime` already represents Central Time (its local getters return
-  // CDT fields), so we deliberately do NOT pass a `timeZone` option here —
-  // some smart-TV browsers ignore that option and would otherwise display
-  // device-local time. Manual formatting from local getters is universally
-  // supported and guaranteed to show Central Time correctly.
+  // Format current date/time using the device's local clock. We format
+  // manually (from getHours/getMinutes/getDay) instead of toLocaleString so
+  // older smart-TV browsers don't render unexpected locale variants.
   const _hours24 = currentTime.getHours()
   const _minutes = currentTime.getMinutes()
   const _ampm = _hours24 >= 12 ? 'PM' : 'AM'
