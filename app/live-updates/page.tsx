@@ -7,45 +7,11 @@ import { LU_SCHEDULE_ITEMS } from "@/lib/schedule-data"
 import { ViewTransition } from "@/components/view-transition"
 import { IceCreamChallenge } from "@/components/ice-cream-challenge"
 import { 
-  Cloud, 
-  CloudRain, 
-  Sun, 
-  CloudSun, 
-  Snowflake, 
-  CloudLightning, 
-  Wind, 
-  Droplets,
-  Calendar,
-  Clock,
-  ChevronRight,
-  Megaphone,
-  Coffee,
-  Sandwich,
-  Utensils,
-  UtensilsCrossed,
-  ClipboardCheck,
-  Users,
-  Target,
-  Gamepad2,
-  Mountain,
-  Dumbbell,
-  Flame,
-  Camera,
-  Trophy,
-  Hand,
-  Grid3x3,
-  Dice5,
-  Moon,
-  Heart,
-  MapPin,
-  Sunrise,
-  Sunset,
-  Beef,
-  Salad,
-  CupSoda,
-  Volleyball,
-  CalendarDays,
-  Bed
+  Sun, Cloud, CloudRain, CloudSnow, Wind, CloudLightning, CloudFog, Cloudy,
+  CalendarDays, MapPin, Clock, ChevronRight, Users, Utensils, Coffee, Sandwich, Bed,
+  UtensilsCrossed, ClipboardCheck, Camera, Music, Gamepad2, Mountain, Trophy, Palette,
+  BookOpen, Dumbbell, TreePine, Flame, Tent, Heart, Star, Sparkles, PartyPopper,
+  Moon, Beef, CupSoda, Salad, Megaphone, Wifi
 } from "lucide-react"
 
 interface Announcement {
@@ -681,6 +647,14 @@ export default function LiveUpdatesPage() {
           <div className="flex flex-col">
             <h1 className="text-3xl font-bold tracking-wide leading-tight">RENDEZVOUS 2026</h1>
             <span className="text-white/60 text-base tracking-widest uppercase">Live Updates</span>
+          </div>
+        </div>
+        {/* WiFi Info */}
+        <div className="flex items-center gap-3 px-6 py-3 rounded-2xl bg-white/5 border border-white/10">
+          <Wifi className="h-7 w-7 text-cyan-400" />
+          <div className="flex flex-col">
+            <span className="text-lg text-white/60">WiFi: <span className="text-white font-semibold">LWCC</span></span>
+            <span className="text-lg text-white/60">Pass: <span className="text-white font-semibold">wifi4lwcc</span></span>
           </div>
         </div>
         <div className="text-right">
