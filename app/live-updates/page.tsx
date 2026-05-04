@@ -297,6 +297,24 @@ export default function LiveUpdatesPage() {
   const zoomIn = () => updateZoom(currentZoom + ZOOM_STEP)
   const zoomOut = () => updateZoom(currentZoom - ZOOM_STEP)
   const resetZoom = () => updateZoom(1)
+
+  // Apply the viewport-scaled base size *plus* the user's zoom multiplier
+  // directly to the <html> element. Tailwind's text-*, p-*, h-*, w-*, gap-*
+  // classes are rem-based, and `rem` is anchored to the document root — so
+  // setting fontSize on a wrapper div (as a previous version did) had no
+  // effect on those utility classes. Updating documentElement.style.fontSize
+  // is the only reliable way to scale every rem-based class in lockstep.
+  useEffect(() => {
+    if (typeof document === "undefined") return
+    const root = document.documentElement
+    const previous = root.style.fontSize
+    // Tuned for 120" 4K TVs viewed from across a large room.
+    // Approx base: 1366×768 → ~18px, 1920×1080 → ~42px, 3840×2160 → ~120px.
+    root.style.fontSize = `calc(clamp(14px, calc(1.6vw + 1.6vh + 2px), 140px) * ${currentZoom})`
+    return () => {
+      root.style.fontSize = previous
+    }
+  }, [currentZoom])
   const [currentTime, setCurrentTime] = useState(new Date())
   // Admin mode (?admin=1) — gates the ice cream challenge editor.
   // Without this flag, Stephen and Brian will not see any controls or hidden state.
@@ -685,18 +703,7 @@ export default function LiveUpdatesPage() {
   const formattedDate = `${_weekdays[currentTime.getDay()]}, ${_months[currentTime.getMonth()]} ${currentTime.getDate()}`
 
   return (
-    <div 
-      className="h-screen max-h-screen overflow-hidden bg-black text-white flex flex-col"
-      style={{
-        // Scale the entire UI with viewport size: every rem-based Tailwind class
-        // (text-*, p-*, h-*, w-*, gap-*) grows proportionally with screen size.
-        // Tuned for 120" 4K TVs viewed from across a large room.
-        // Approx base: 1366×768 → ~18px, 1920×1080 → ~42px, 3840×2160 → ~120px.
-        // The user-controllable `currentZoom` multiplier (0.7 - 1.6) lets each TV
-        // dial in extra magnification per-view from the footer +/- buttons.
-        fontSize: `calc(clamp(14px, calc(1.6vw + 1.6vh + 2px), 140px) * ${currentZoom})`,
-      }}
-    >
+    <div className="h-screen max-h-screen overflow-hidden bg-black text-white flex flex-col">
       {/* Header */}
       <header className="shrink-0 flex items-center justify-between px-12 py-6 border-b border-white/10">
         <div className="flex items-center gap-5">
