@@ -269,7 +269,7 @@ function getWeatherIcon(weatherId: number, iconCode: string, size: "sm" | "md" |
 }
 
 export default function LiveUpdatesPage() {
-  const [currentView, setCurrentView] = useState<ViewType>("all")
+  const [currentView, setCurrentView] = useState<ViewType>("schedule")
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isAutoRotating, setIsAutoRotating] = useState(true)
   const [currentTime, setCurrentTime] = useState(new Date())
@@ -312,8 +312,10 @@ export default function LiveUpdatesPage() {
   }, [volunteerSchedule])
 
   // Conditionally show tabs based on available data
+  // Note: "all" view is intentionally excluded from auto-rotation because it shows
+  // too much info at once and is hard to read on a TV. It's still accessible via the "1" key.
   const availableViews = useMemo<ViewType[]>(() => {
-    const views: ViewType[] = ["all", "weather", "schedule", "meal", "map"]
+    const views: ViewType[] = ["schedule", "weather", "meal", "map"]
     if (hasVolunteerData) {
       views.push("volunteers")
     }
@@ -566,7 +568,7 @@ export default function LiveUpdatesPage() {
         const nextIndex = (currentIndex + 1) % availableViews.length
         return availableViews[nextIndex]
       })
-    }, 10000)
+    }, 15000)
 
     return () => clearInterval(interval)
   }, [isAutoRotating, availableViews])
@@ -1213,20 +1215,20 @@ function ScheduleView({
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-300/40 to-transparent" />
         <div className="relative">
           {nowItem && (
-            <div className="text-center mb-10">
-              <div className="flex items-center justify-center gap-3 mb-5">
-                <span className="relative flex h-3 w-3">
+            <div className="text-center mb-12">
+              <div className="flex items-center justify-center gap-3 mb-6">
+                <span className="relative flex h-4 w-4">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
-                  <span className="relative inline-flex h-3 w-3 rounded-full bg-green-400" />
+                  <span className="relative inline-flex h-4 w-4 rounded-full bg-green-400" />
                 </span>
-                <span className="text-sm font-bold uppercase tracking-[0.3em] text-green-400">Happening Now</span>
+                <span className="text-xl font-bold uppercase tracking-[0.3em] text-green-400">Happening Now</span>
               </div>
-              <div className="flex justify-center mb-5">{getEventIcon(nowItem.title, nowItem.isMeal, "xl")}</div>
-              <h2 className="text-4xl font-bold mb-3 text-balance">{nowItem.title}</h2>
-              <p className="text-2xl text-white/70 mb-2">{nowItem.time}</p>
+              <div className="flex justify-center mb-6">{getEventIcon(nowItem.title, nowItem.isMeal, "xl")}</div>
+              <h2 className="text-7xl font-bold mb-5 text-balance leading-tight">{nowItem.title}</h2>
+              <p className="text-4xl text-white/80 mb-3">{nowItem.time}</p>
               {nowItem.location && (
-                <p className="text-xl text-white/50 flex items-center justify-center gap-2">
-                  <MapPin className="h-5 w-5 text-violet-300" />
+                <p className="text-3xl text-white/60 flex items-center justify-center gap-3">
+                  <MapPin className="h-8 w-8 text-violet-300" />
                   {nowItem.location}
                 </p>
               )}
@@ -1235,17 +1237,17 @@ function ScheduleView({
 
           {nextItem && (
             <div className="text-center">
-              {nowItem && <div className="w-32 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent mx-auto mb-10" />}
-              <div className="flex items-center justify-center gap-3 mb-5">
-                <ChevronRight className="h-5 w-5 text-violet-300" />
-                <span className="text-sm font-bold uppercase tracking-[0.3em] text-violet-300">Up Next</span>
+              {nowItem && <div className="w-48 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent mx-auto mb-12" />}
+              <div className="flex items-center justify-center gap-3 mb-6">
+                <ChevronRight className="h-7 w-7 text-violet-300" />
+                <span className="text-xl font-bold uppercase tracking-[0.3em] text-violet-300">Up Next</span>
               </div>
-              <div className="flex justify-center mb-5">{getEventIcon(nextItem.title, nextItem.isMeal, nowItem ? "lg" : "xl")}</div>
-              <h2 className={`font-bold mb-3 text-balance ${nowItem ? "text-2xl" : "text-4xl"}`}>{nextItem.title}</h2>
-              <p className={`text-white/70 mb-2 ${nowItem ? "text-lg" : "text-2xl"}`}>{nextItem.day} {nextItem.time}</p>
+              <div className="flex justify-center mb-6">{getEventIcon(nextItem.title, nextItem.isMeal, nowItem ? "lg" : "xl")}</div>
+              <h2 className={`font-bold mb-5 text-balance leading-tight ${nowItem ? "text-5xl" : "text-7xl"}`}>{nextItem.title}</h2>
+              <p className={`text-white/80 mb-3 ${nowItem ? "text-3xl" : "text-4xl"}`}>{nextItem.day} {nextItem.time}</p>
               {nextItem.location && (
-                <p className={`text-white/50 flex items-center justify-center gap-2 ${nowItem ? "text-base" : "text-xl"}`}>
-                  <MapPin className={nowItem ? "h-4 w-4 text-violet-300" : "h-5 w-5 text-violet-300"} />
+                <p className={`text-white/60 flex items-center justify-center gap-3 ${nowItem ? "text-2xl" : "text-3xl"}`}>
+                  <MapPin className={nowItem ? "h-7 w-7 text-violet-300" : "h-8 w-8 text-violet-300"} />
                   {nextItem.location}
                 </p>
               )}
@@ -1254,9 +1256,9 @@ function ScheduleView({
 
           {!nowItem && !nextItem && (
             <div className="text-center">
-              <Bed className="h-28 w-28 text-white/30 mx-auto mb-5" />
-              <h2 className="text-4xl font-bold text-white/60">No Scheduled Events</h2>
-              <p className="text-xl text-white/40 mt-3">Enjoy your free time!</p>
+              <Bed className="h-32 w-32 text-white/30 mx-auto mb-6" />
+              <h2 className="text-6xl font-bold text-white/60">No Scheduled Events</h2>
+              <p className="text-3xl text-white/40 mt-4">Enjoy your free time!</p>
             </div>
           )}
         </div>
@@ -1264,31 +1266,31 @@ function ScheduleView({
 
       {/* Right side - Upcoming Schedule */}
       {upcoming.length > 0 && (
-        <div className="w-[28rem] relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-violet-500/[0.08] via-white/[0.03] to-transparent backdrop-blur-sm p-6 flex flex-col">
+        <div className="w-[32rem] relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-violet-500/[0.08] via-white/[0.03] to-transparent backdrop-blur-sm p-7 flex flex-col">
           <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-violet-500/15 blur-2xl" />
-          <div className="relative flex items-center gap-3 mb-5">
-            <div className="rounded-xl bg-violet-500/15 p-2.5 border border-violet-400/20">
-              <CalendarDays className="h-5 w-5 text-violet-300" />
+          <div className="relative flex items-center gap-3 mb-6">
+            <div className="rounded-xl bg-violet-500/15 p-3 border border-violet-400/20">
+              <CalendarDays className="h-7 w-7 text-violet-300" />
             </div>
-            <span className="text-sm uppercase tracking-[0.2em] font-bold text-violet-300/90">
+            <span className="text-lg uppercase tracking-[0.2em] font-bold text-violet-300/90">
               {showingFuture ? "Upcoming" : "Today's Schedule"}
             </span>
           </div>
-          <div className="relative flex-1 min-h-0 flex flex-col gap-2.5">
+          <div className="relative flex-1 min-h-0 flex flex-col gap-3">
             {upcoming.map((item, index) => (
               <div
                 key={index}
-                className={`p-3.5 rounded-xl border transition-colors ${
+                className={`p-4 rounded-xl border transition-colors ${
                   item === nextItem
                     ? "bg-violet-500/15 border-violet-400/40"
                     : "bg-white/[0.03] border-white/10"
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  {getEventIcon(item.title, item.isMeal, "sm")}
+                  {getEventIcon(item.title, item.isMeal, "md")}
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-base truncate">{item.title}</p>
-                    <p className="text-sm text-white/50 mt-0.5 truncate">
+                    <p className="font-semibold text-xl truncate">{item.title}</p>
+                    <p className="text-base text-white/60 mt-0.5 truncate">
                       {showingFuture ? `${item.day} ${item.time}` : item.time}
                     </p>
                   </div>
@@ -1296,9 +1298,9 @@ function ScheduleView({
               </div>
             ))}
             {moreCount > 0 && (
-              <div className="mt-auto p-2.5 rounded-xl border border-violet-400/20 bg-violet-500/5 text-center">
-                <p className="text-sm text-violet-300/90 font-semibold">
-                  + {moreCount} more event{moreCount === 1 ? "" : "s"} on the full schedule
+              <div className="mt-auto p-3 rounded-xl border border-violet-400/20 bg-violet-500/5 text-center">
+                <p className="text-base text-violet-300/90 font-semibold">
+                  + {moreCount} more event{moreCount === 1 ? "" : "s"}
                 </p>
               </div>
             )}
@@ -1340,17 +1342,17 @@ function MealView({
             <div className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-amber-500/15 blur-2xl" />
             <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-300/40 to-transparent" />
             <div className="relative flex flex-col items-center">
-              <div className="mb-5 rounded-3xl bg-white/5 border border-white/10 p-5">
+              <div className="mb-6 rounded-3xl bg-white/5 border border-white/10 p-6">
                 {getEventIcon(nextMeal.title, true, "xl")}
               </div>
-              <h2 className="text-5xl font-bold mb-3">{nextMeal.title}</h2>
-              <p className="text-2xl text-white/70 mb-2 flex items-center gap-2">
-                <Clock className="h-5 w-5 text-amber-300" />
+              <h2 className="text-7xl font-bold mb-5 leading-tight">{nextMeal.title}</h2>
+              <p className="text-4xl text-white/80 mb-3 flex items-center gap-3">
+                <Clock className="h-9 w-9 text-amber-300" />
                 {nextMeal.time}
               </p>
               {nextMeal.location && (
-                <p className="text-lg text-white/50 flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-amber-300" />
+                <p className="text-2xl text-white/60 flex items-center gap-2">
+                  <MapPin className="h-6 w-6 text-amber-300" />
                   {nextMeal.location}
                 </p>
               )}
@@ -1368,37 +1370,37 @@ function MealView({
                 <h3 className="text-2xl font-bold uppercase tracking-[0.15em] text-amber-300/90">Menu</h3>
               </div>
               <div className="relative space-y-5">
-                <div className="flex items-start gap-5 p-4 rounded-2xl bg-red-500/[0.08] border border-red-500/20">
-                  <Beef className="h-8 w-8 text-red-400 shrink-0" />
+                <div className="flex items-start gap-5 p-5 rounded-2xl bg-red-500/[0.08] border border-red-500/20">
+                  <Beef className="h-12 w-12 text-red-400 shrink-0" />
                   <div>
-                    <p className="text-red-300/90 text-xs uppercase tracking-[0.2em] font-bold mb-1">Main Dish</p>
-                    <p className="text-xl font-semibold">{mealData.main_dish}</p>
+                    <p className="text-red-300/90 text-base uppercase tracking-[0.2em] font-bold mb-1">Main Dish</p>
+                    <p className="text-3xl font-semibold">{mealData.main_dish}</p>
                   </div>
                 </div>
 
                 {mealData.sides && mealData.sides.length > 0 && (
-                  <div className="flex items-start gap-5 p-4 rounded-2xl bg-green-500/[0.08] border border-green-500/20">
-                    <Salad className="h-8 w-8 text-green-400 shrink-0" />
+                  <div className="flex items-start gap-5 p-5 rounded-2xl bg-green-500/[0.08] border border-green-500/20">
+                    <Salad className="h-12 w-12 text-green-400 shrink-0" />
                     <div>
-                      <p className="text-green-300/90 text-xs uppercase tracking-[0.2em] font-bold mb-1">Sides</p>
-                      <p className="text-lg">{mealData.sides.join(", ")}</p>
+                      <p className="text-green-300/90 text-base uppercase tracking-[0.2em] font-bold mb-1">Sides</p>
+                      <p className="text-2xl">{mealData.sides.join(", ")}</p>
                     </div>
                   </div>
                 )}
 
                 {mealData.drinks && mealData.drinks.length > 0 && (
-                  <div className="flex items-start gap-5 p-4 rounded-2xl bg-cyan-500/[0.08] border border-cyan-500/20">
-                    <CupSoda className="h-8 w-8 text-cyan-400 shrink-0" />
+                  <div className="flex items-start gap-5 p-5 rounded-2xl bg-cyan-500/[0.08] border border-cyan-500/20">
+                    <CupSoda className="h-12 w-12 text-cyan-400 shrink-0" />
                     <div>
-                      <p className="text-cyan-300/90 text-xs uppercase tracking-[0.2em] font-bold mb-1">Beverages</p>
-                      <p className="text-lg">{mealData.drinks.join(", ")}</p>
+                      <p className="text-cyan-300/90 text-base uppercase tracking-[0.2em] font-bold mb-1">Beverages</p>
+                      <p className="text-2xl">{mealData.drinks.join(", ")}</p>
                     </div>
                   </div>
                 )}
 
                 {mealData.notes && (
                   <div className="pt-5 mt-5 border-t border-white/10 text-center">
-                    <p className="text-white/60 italic text-base">{mealData.notes}</p>
+                    <p className="text-white/60 italic text-xl">{mealData.notes}</p>
                   </div>
                 )}
               </div>
