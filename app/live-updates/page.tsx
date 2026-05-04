@@ -1241,13 +1241,13 @@ function ScheduleView({
 
       {/* Right side - Upcoming Schedule */}
       {upcoming.length > 0 && (
-        <div className="w-[32rem] relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-violet-500/[0.08] via-white/[0.03] to-transparent backdrop-blur-sm p-7 flex flex-col">
+        <div className="w-[40rem] relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-violet-500/[0.08] via-white/[0.03] to-transparent backdrop-blur-sm p-7 flex flex-col">
           <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-violet-500/15 blur-2xl" />
           <div className="relative flex items-center gap-3 mb-6">
             <div className="rounded-xl bg-violet-500/15 p-3 border border-violet-400/20">
-              <CalendarDays className="h-7 w-7 text-violet-300" />
+              <CalendarDays className="h-9 w-9 text-violet-300" />
             </div>
-            <span className="text-lg uppercase tracking-[0.2em] font-bold text-violet-300/90">
+            <span className="text-2xl uppercase tracking-[0.2em] font-bold text-violet-300/90">
               {showingFuture ? "Upcoming" : "Today's Schedule"}
             </span>
           </div>
@@ -1255,17 +1255,17 @@ function ScheduleView({
             {upcoming.map((item, index) => (
               <div
                 key={index}
-                className={`p-4 rounded-xl border transition-colors ${
+                className={`p-5 rounded-xl border transition-colors ${
                   item === nextItem
                     ? "bg-violet-500/15 border-violet-400/40"
                     : "bg-white/[0.03] border-white/10"
                 }`}
               >
-                <div className="flex items-center gap-3">
-                  {getEventIcon(item.title, item.isMeal, "md")}
+                <div className="flex items-center gap-4">
+                  {getEventIcon(item.title, item.isMeal, "lg")}
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-xl truncate">{item.title}</p>
-                    <p className="text-base text-white/60 mt-0.5 truncate">
+                    <p className="font-semibold text-3xl truncate leading-tight">{item.title}</p>
+                    <p className="text-xl text-white/60 mt-1 truncate">
                       {showingFuture ? `${item.day} ${item.time}` : item.time}
                     </p>
                   </div>
@@ -1273,8 +1273,8 @@ function ScheduleView({
               </div>
             ))}
             {moreCount > 0 && (
-              <div className="mt-auto p-3 rounded-xl border border-violet-400/20 bg-violet-500/5 text-center">
-                <p className="text-base text-violet-300/90 font-semibold">
+              <div className="mt-auto p-4 rounded-xl border border-violet-400/20 bg-violet-500/5 text-center">
+                <p className="text-xl text-violet-300/90 font-semibold">
                   + {moreCount} more event{moreCount === 1 ? "" : "s"}
                 </p>
               </div>
