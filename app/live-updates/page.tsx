@@ -241,16 +241,19 @@ function getWeatherIcon(weatherId: number, iconCode: string, size: "sm" | "md" |
 
 // Per-view zoom levels persist in localStorage so each TV remembers its preferred
 // size for each panel across reloads / view rotations.
-// NOTE: bump the version suffix on this key whenever the underlying base sizes
+// NOTE: bump the version suffix on this key whenever the underlying defaults
 // change, so previously-saved zoom levels don't compound on top of new defaults
-// and break the layout. v1 used a viewport-scaled base (broken). v2 used a
-// reduced range. v3 uses a fixed 16px rem baseline + a zoom multiplier; this
-// is the only approach that produces predictable, readable output across the
-// wildly different screen sizes we see (laptop preview, iPad, 1080p TV, 4K TV).
-const ZOOM_STORAGE_KEY = "lu_view_zoom_v3"
-const ZOOM_BASE_PX = 16 // browser default — Tailwind text-* sizes assume this
-const ZOOM_MIN = 1
-const ZOOM_MAX = 2.5
+// and break the layout.
+//   v1: viewport-scaled base (broken — overshooting at 1080p).
+//   v2: reduced range.
+//   v3: fixed 16px rem + zoom multiplier (1× default — too small for projection).
+//   v4: starts at 1.75× by default and goes up to 4× so the page is readable
+//       on classroom projectors / TVs across the room out of the box.
+const ZOOM_STORAGE_KEY = "lu_view_zoom_v4"
+const ZOOM_BASE_PX = 16          // browser default — Tailwind text-* sizes assume this
+const ZOOM_DEFAULT = 1.75        // out-of-the-box magnification — readable on projectors
+const ZOOM_MIN = 0.75
+const ZOOM_MAX = 4
 const ZOOM_STEP = 0.25
 
 export default function LiveUpdatesPage() {
@@ -270,9 +273,11 @@ export default function LiveUpdatesPage() {
     }
   }, [])
 
-  const currentZoom = viewZoom[currentView] ?? 1
+  const currentZoom = viewZoom[currentView] ?? ZOOM_DEFAULT
   const updateZoom = (next: number) => {
-    const clamped = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, Math.round(next * 10) / 10))
+    // Round to the nearest ZOOM_STEP so the displayed % is always tidy
+    const stepped = Math.round(next / ZOOM_STEP) * ZOOM_STEP
+    const clamped = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, stepped))
     setViewZoom(prev => {
       const updated = { ...prev, [currentView]: clamped }
       try {
@@ -285,7 +290,7 @@ export default function LiveUpdatesPage() {
   }
   const zoomIn = () => updateZoom(currentZoom + ZOOM_STEP)
   const zoomOut = () => updateZoom(currentZoom - ZOOM_STEP)
-  const resetZoom = () => updateZoom(1)
+  const resetZoom = () => updateZoom(ZOOM_DEFAULT)
 
   // Apply the per-view zoom multiplier to the <html> element so every
   // rem-based Tailwind class (text-*, p-*, h-*, w-*, gap-*) scales in
@@ -789,42 +794,47 @@ export default function LiveUpdatesPage() {
           <KeyButton label="0/A Auto" active={isAutoRotating} />
           <KeyButton label="F Fullscreen" active={isFullscreen} />
 
-          {/* Per-view zoom controls — saved to localStorage so each TV remembers
-              its preferred size for each panel. */}
-          <div className="flex items-center gap-2 ml-2 px-3 py-1.5 rounded-lg border border-white/15 bg-white/[0.04]">
-            <span className="text-white/50 text-base mr-1">Size</span>
+          {/* Per-view zoom controls — saved to localStorage so each TV
+              remembers its preferred size for each panel. The widget is
+              intentionally larger / brighter than the keyboard hints so it's
+              easy to find on a projection screen. The label includes the
+              current view name so it's obvious that resizing is per-page. */}
+          <div className="flex items-center gap-2 ml-2 px-4 py-2 rounded-xl border border-cyan-400/30 bg-cyan-400/[0.06] shadow-[0_0_24px_-8px_theme(colors.cyan.400/0.4)]">
+            <span className="text-cyan-200 text-base font-semibold uppercase tracking-wider mr-1">
+              {currentView} size
+            </span>
             <button
               type="button"
               onClick={zoomOut}
               disabled={currentZoom <= ZOOM_MIN + 0.001}
-              className="flex items-center justify-center h-9 w-9 rounded-md border border-white/15 bg-white/[0.04] hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="flex items-center justify-center h-12 w-12 rounded-lg border border-white/20 bg-white/[0.06] hover:bg-white/15 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-lg"
               aria-label="Decrease size"
               title="Decrease size"
             >
-              <ZoomOut className="h-4 w-4" />
+              <ZoomOut className="h-6 w-6" />
             </button>
-  <span className="text-white/80 text-base tabular-nums w-16 text-center font-semibold">
-            {Math.round(currentZoom * 100)}%
+            <span className="text-white text-xl tabular-nums w-20 text-center font-bold">
+              {Math.round(currentZoom * 100)}%
             </span>
             <button
               type="button"
               onClick={zoomIn}
               disabled={currentZoom >= ZOOM_MAX - 0.001}
-              className="flex items-center justify-center h-9 w-9 rounded-md border border-white/15 bg-white/[0.04] hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="flex items-center justify-center h-12 w-12 rounded-lg border border-white/20 bg-white/[0.06] hover:bg-white/15 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-lg"
               aria-label="Increase size"
               title="Increase size"
             >
-              <ZoomIn className="h-4 w-4" />
+              <ZoomIn className="h-6 w-6" />
             </button>
             <button
               type="button"
               onClick={resetZoom}
-              disabled={Math.abs(currentZoom - 1) < 0.001}
-              className="flex items-center justify-center h-9 w-9 rounded-md border border-white/15 bg-white/[0.04] hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              disabled={Math.abs(currentZoom - ZOOM_DEFAULT) < 0.001}
+              className="flex items-center justify-center h-12 w-12 rounded-lg border border-white/20 bg-white/[0.06] hover:bg-white/15 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               aria-label="Reset size"
               title="Reset size"
             >
-              <RotateCcw className="h-4 w-4" />
+              <RotateCcw className="h-5 w-5" />
             </button>
           </div>
 
