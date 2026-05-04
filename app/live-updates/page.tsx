@@ -191,37 +191,56 @@ function getGreetingIcon(hour: number, sizeClass: string = "h-20 w-20") {
   return <Moon className={`${sizeClass} text-blue-300 shrink-0`} />
 }
 
-// TEST MODE: Set to true to simulate the event
-// Set to just before the first event starts (May 4, 2026 at 12:55 PM - 5 min before Check-in)
-const TEST_MODE = true
+// TEST MODE: Set to true ONLY during development to simulate the event clock.
+// MUST be false in production — when true, the LU page ignores real time and
+// pins to TEST_DATE, which made every device show the wrong time.
+const TEST_MODE = false
 const TEST_DATE = new Date('2026-05-04T12:55:00')
 
-// Central Time helper that works on every device — including older smart-TV
-// browsers and embedded webviews that silently ignore the `timeZone` option in
-// `toLocaleString`. We compute the offset manually instead of trusting Intl.
+// Central Time is sourced from the server (`/api/time`) so the LU display is
+// correct even on TVs with miscalibrated system clocks or wrong timezones.
 //
-// The entire Rendezvous 2026 event (May 4-8) falls inside US Central Daylight
-// Time, which is a fixed UTC-5 offset. We hard-code that offset here so the
-// displayed time and the schedule "now/next" logic are correct on every TV
-// regardless of how that device handles timezone APIs.
-const CDT_OFFSET_MINUTES = -5 * 60 // CDT is UTC-5 for the whole event window
+// `serverTimeOffsetMs` is the delta between the device's `Date.now()` and the
+// "Central Time wall clock" returned by the server. Once that delta is known,
+// we synthesize accurate Central Time by adding it to a fresh `Date.now()` —
+// monotonic interpolation between server polls. This gives per-second smoothness
+// without hammering the API every tick.
+let serverTimeOffsetMs = 0
+let serverTimeReady = false
 
 function getCentralTime(): Date {
   if (TEST_MODE) {
     return TEST_DATE
   }
-  // Build a Date whose *local* getters (getHours/getMinutes/getDate/etc.)
-  // return Central Time fields, regardless of the device's timezone setting.
-  const now = new Date()
-  const utcMs = now.getTime()
-  // Shift the real UTC timestamp into Central Time.
-  const centralWallMs = utcMs + CDT_OFFSET_MINUTES * 60 * 1000
-  // `getTimezoneOffset()` returns minutes WEST of UTC for the device's local
-  // zone. Adding it back means a Date created from `centralWallMs + localOffset`
-  // will, when read with local getters, report Central Time fields — even if
-  // the device's clock thinks it's in a different zone.
-  const localOffsetMs = now.getTimezoneOffset() * 60 * 1000
-  return new Date(centralWallMs + localOffsetMs)
+  const now = Date.now()
+  if (!serverTimeReady) {
+    // Pre-sync fallback: assume the device's UTC clock is accurate and apply
+    // a fixed CDT offset (-5h). Correct for the entire May 4-8 event window.
+    const localOffsetMin = new Date().getTimezoneOffset()
+    return new Date(now + (localOffsetMin - 5 * 60) * 60 * 1000)
+  }
+  return new Date(now + serverTimeOffsetMs)
+}
+
+async function syncServerTime(): Promise<void> {
+  try {
+    const sentAt = Date.now()
+    const res = await fetch("/api/time", { cache: "no-store" })
+    if (!res.ok) return
+    const data = await res.json()
+    const c = data?.central
+    if (!c) return
+    // Build a "Central Time wall clock" Date. Constructing with local
+    // (year, monthIndex, day, h, m, s) means our local getters will report
+    // Central fields — which is what every consumer of getCentralTime expects.
+    const centralWall = new Date(c.year, c.month - 1, c.day, c.hour, c.minute, c.second).getTime()
+    // Use the midpoint of (sent, received) to absorb network latency.
+    const midpoint = (sentAt + Date.now()) / 2
+    serverTimeOffsetMs = centralWall - midpoint
+    serverTimeReady = true
+  } catch {
+    // ignore — keep using the existing offset / fallback
+  }
 }
 
 function formatTime(timestamp: number): string {
@@ -473,15 +492,30 @@ export default function LiveUpdatesPage() {
     return () => clearInterval(interval)
   }, [])
 
-  // Update current time
-  // Use the device-independent `getCentralTime()` helper so the displayed
-  // clock is correct even on TVs that don't honor Intl `timeZone` options.
+  // Update current time.
+  // Sources Central Time from `/api/time` so the displayed clock is correct
+  // even on TVs whose system clock or timezone is wrong. We:
+  //   1. Sync immediately on mount (so the first render has accurate time).
+  //   2. Tick the displayed time every second using server-anchored
+  //      `getCentralTime()`.
+  //   3. Re-sync every 5 minutes to correct any clock drift between the
+  //      device and the server.
   useEffect(() => {
-    setCurrentTime(getCentralTime())
-    const interval = setInterval(() => {
+    let cancelled = false
+    syncServerTime().then(() => {
+      if (!cancelled) setCurrentTime(getCentralTime())
+    })
+    const tick = setInterval(() => {
       setCurrentTime(getCentralTime())
     }, 1000)
-    return () => clearInterval(interval)
+    const resync = setInterval(() => {
+      syncServerTime()
+    }, 5 * 60 * 1000)
+    return () => {
+      cancelled = true
+      clearInterval(tick)
+      clearInterval(resync)
+    }
   }, [])
 
   // Calculate schedule
