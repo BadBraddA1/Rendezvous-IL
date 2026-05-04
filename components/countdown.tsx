@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
+import { PartyPopper } from "lucide-react"
 
 interface TimeLeft {
   days: number
@@ -13,6 +14,7 @@ interface TimeLeft {
 export function Countdown() {
   const [timeLeft, setTimeLeft] = useState<TimeLeft>({ days: 0, hours: 0, minutes: 0, seconds: 0 })
   const [mounted, setMounted] = useState(false)
+  const [eventStarted, setEventStarted] = useState(false)
 
   useEffect(() => {
     setMounted(true)
@@ -23,6 +25,7 @@ export function Countdown() {
       const difference = targetDate - now
 
       if (difference > 0) {
+        setEventStarted(false)
         return {
           days: Math.floor(difference / (1000 * 60 * 60 * 24)),
           hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
@@ -31,6 +34,7 @@ export function Countdown() {
         }
       }
 
+      setEventStarted(true)
       return { days: 0, hours: 0, minutes: 0, seconds: 0 }
     }
 
@@ -62,6 +66,30 @@ export function Countdown() {
         <div className="mt-4 text-center">
           <p className="text-ring">May 4, 2026 at 1:00 PM Central Time</p>
         </div>
+      </div>
+    )
+  }
+
+  // Event has started - show celebration message
+  if (eventStarted) {
+    return (
+      <div className="w-full">
+        <Card className="border-secondary-foreground/20 bg-primary text-background overflow-hidden">
+          <CardContent className="p-6 sm:p-8 text-center">
+            <div className="flex justify-center mb-4">
+              <PartyPopper className="h-12 w-12 sm:h-16 sm:w-16 text-yellow-400" />
+            </div>
+            <h3 className="text-2xl sm:text-3xl font-bold text-secondary-foreground mb-2">
+              Rendezvous 2026 is Happening!
+            </h3>
+            <p className="text-lg text-secondary-foreground/80">
+              Welcome to Lake Williamson Christian Center
+            </p>
+            <p className="mt-4 text-sm text-secondary-foreground/60">
+              May 4-8, 2026
+            </p>
+          </CardContent>
+        </Card>
       </div>
     )
   }

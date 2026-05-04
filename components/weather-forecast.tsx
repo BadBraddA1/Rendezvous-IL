@@ -352,9 +352,12 @@ export function InlineWeather({ date, hour }: { date: string; hour: number }) {
 
   if (!weather) return null
 
-  // Parse the target date and hour
+  // Parse the target date and hour in Central Time
+  // Create date in local timezone first, then adjust
   const [year, month, day] = date.split('-').map(Number)
-  const targetDate = new Date(year, month - 1, day, hour, 0, 0, 0)
+  
+  // Create target date - use Chicago timezone for consistency
+  const targetDate = new Date(`${date}T${String(hour).padStart(2, '0')}:00:00-05:00`)
   const targetTimestamp = Math.floor(targetDate.getTime() / 1000)
 
   // Find the forecast closest to the target date+time
@@ -370,10 +373,11 @@ export function InlineWeather({ date, hour }: { date: string; hour: number }) {
     }
   }
 
-  // Only show if forecast is within 3 hours of target time (data is available)
-  // If target is too far in the future, hide the badge entirely
-  const threeHoursInSeconds = 3 * 60 * 60
-  if (smallestDiff > threeHoursInSeconds) {
+  // Only show if forecast is within 2 hours of target time (data is available)
+  // The 2.5 API gives 3-hour intervals, so 2 hours ensures we catch valid data
+  // If target is too far in the future (beyond 5-day forecast), hide the badge
+  const twoHoursInSeconds = 2 * 60 * 60
+  if (smallestDiff > twoHoursInSeconds) {
     return null
   }
 
