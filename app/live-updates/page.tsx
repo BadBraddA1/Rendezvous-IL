@@ -5,14 +5,14 @@ import Image from "next/image"
 import { mapLocations, mapPaths } from "@/lib/venue-map-data"
 import { LU_SCHEDULE_ITEMS } from "@/lib/schedule-data"
 import { ViewTransition } from "@/components/view-transition"
-import { IceCreamChallenge } from "@/components/ice-cream-challenge"
+
 import { 
   Sun, Cloud, CloudRain, CloudSnow, Wind, CloudLightning, CloudFog, Cloudy, CloudSun,
-  Calendar, CalendarDays, MapPin, Clock, ChevronRight, Users, Utensils, Coffee, Sandwich, Bed,
+  Calendar, MapPin, Clock, ChevronRight, Users, Utensils, Coffee, Sandwich, Bed,
   UtensilsCrossed, ClipboardCheck, Camera, Music, Gamepad2, Mountain, Trophy, Palette,
   BookOpen, Dumbbell, TreePine, Flame, Tent, Heart, Star, Sparkles, PartyPopper,
-  Moon, Beef, CupSoda, Salad, Megaphone, Wifi,
-  Target, Volleyball, Hand, Sunrise, Sunset, Snowflake, Droplets,
+  Moon, Megaphone, Wifi,
+  Target, Volleyball, Hand, Snowflake, Droplets,
   ZoomIn, ZoomOut, RotateCcw
 } from "lucide-react"
 
@@ -104,7 +104,7 @@ interface MealData {
 // downloadable PDF, and this Live Updates page will stay in sync.
 const SCHEDULE_ITEMS: ScheduleItem[] = LU_SCHEDULE_ITEMS as ScheduleItem[]
 
-type ViewType = "all" | "weather" | "schedule" | "meal" | "volunteers" | "announcements" | "map"
+type ViewType = "all" | "weather" | "schedule" | "meal" | "volunteers" | "announcements" | "map" | "wifi"
 
 // Match a schedule item to a venue map location id
 function getLocationIdForEvent(item: ScheduleItem | null): string | null {
@@ -182,13 +182,6 @@ function getEventIcon(
   if (lowerTitle.includes('evening')) return <Moon className={`${base} ${c("text-indigo-300")}`} />
   
   return <MapPin className={`${base} ${c("text-orange-400")}`} />
-}
-
-function getGreetingIcon(hour: number, sizeClass: string = "h-20 w-20") {
-  if (hour >= 5 && hour < 12) return <Sunrise className={`${sizeClass} text-yellow-400 shrink-0`} />
-  if (hour >= 12 && hour < 17) return <Sun className={`${sizeClass} text-yellow-400 shrink-0`} />
-  if (hour >= 17 && hour < 21) return <Sunset className={`${sizeClass} text-orange-400 shrink-0`} />
-  return <Moon className={`${sizeClass} text-blue-300 shrink-0`} />
 }
 
 // TEST MODE: Set to true ONLY during development to simulate the event clock.
@@ -354,7 +347,7 @@ export default function LiveUpdatesPage() {
   // Note: "all" view is intentionally excluded from auto-rotation because it shows
   // too much info at once and is hard to read on a TV. It's still accessible via the "1" key.
   const availableViews = useMemo<ViewType[]>(() => {
-    const views: ViewType[] = ["schedule", "weather", "meal", "map"]
+    const views: ViewType[] = ["schedule", "weather", "meal", "map", "wifi"]
     if (hasVolunteerData) {
       views.push("volunteers")
     }
@@ -394,39 +387,50 @@ export default function LiveUpdatesPage() {
     return () => clearInterval(interval)
   }, [])
 
-  // Fetch meal data based on next meal
+  // Fetch meal data for the next upcoming meal.
+  //
+  // - Uses `nextMeal.date` (YYYY-MM-DD) directly so the lookup is correct
+  //   even when "next meal" is tomorrow morning.
+  // - Re-fetches every 2 minutes while the next meal is pinned, so the LU
+  //   page recovers from transient API failures (TVs on flaky WiFi).
+  // - Does NOT clear `mealData` on error — we keep the last good payload
+  //   so a brief network blip never reverts the screen to "coming soon".
   useEffect(() => {
+    if (!nextMeal || !nextMeal.isMeal) {
+      setMealData(null)
+      return
+    }
+
+    let cancelled = false
+
+    // Determine meal type from title (matches /schedule page conventions).
+    const title = nextMeal.title.toLowerCase()
+    let mealType = "dinner"
+    if (title.includes("breakfast")) mealType = "breakfast"
+    else if (title.includes("lunch")) mealType = "lunch"
+
+    const url = `/api/meals?date=${nextMeal.date}&mealType=${mealType}`
+
     const fetchMealData = async () => {
-      if (!nextMeal) {
-        setMealData(null)
-        return
-      }
-      
       try {
-        const centralNow = getCentralTime()
-        const year = centralNow.getFullYear()
-        const month = String(centralNow.getMonth() + 1).padStart(2, '0')
-        const day = String(centralNow.getDate()).padStart(2, '0')
-        const centralDateStr = `${year}-${month}-${day}`
-        
-        // Determine meal type from title
-        const title = nextMeal.title.toLowerCase()
-        let mealType = 'dinner'
-        if (title.includes('breakfast')) mealType = 'breakfast'
-        else if (title.includes('lunch')) mealType = 'lunch'
-        
-        const res = await fetch(`/api/meals?date=${centralDateStr}&mealType=${mealType}`)
+        const res = await fetch(url, { cache: "no-store" })
+        if (!res.ok) return
         const data = await res.json()
-        if (data.meals && data.meals.length > 0) {
+        if (cancelled) return
+        if (data?.meals && data.meals.length > 0) {
           setMealData(data.meals[0])
-        } else {
-          setMealData(null)
         }
       } catch {
-        setMealData(null)
+        // keep last good data
       }
     }
+
     fetchMealData()
+    const interval = setInterval(fetchMealData, 2 * 60 * 1000)
+    return () => {
+      cancelled = true
+      clearInterval(interval)
+    }
   }, [nextMeal])
 
   // Fetch volunteer schedule
@@ -649,6 +653,10 @@ export default function LiveUpdatesPage() {
             setIsAutoRotating(false)
           }
           break
+        case "8":
+          setCurrentView("wifi")
+          setIsAutoRotating(false)
+          break
         case "0":
         case "a":
         case "A":
@@ -695,44 +703,26 @@ export default function LiveUpdatesPage() {
 
   return (
     <div className="h-screen max-h-screen overflow-hidden bg-black text-white flex flex-col">
-      {/* Header
-          - All three sections use min-w-0 + shrink so they can collapse on
-            narrower TVs / sandbox previews instead of pushing each other off
-            the right edge (which produced the broken layout shown to the user).
-          - The center WiFi card uses whitespace-nowrap and can shrink if space
-            is tight; the right-side clock is anchored with shrink-0 so the
-            time is always fully readable. */}
-      <header className="shrink-0 flex items-center justify-between gap-6 px-8 py-5 border-b border-white/10">
-        {/* Left: logo + title */}
-        <div className="flex items-center gap-4 min-w-0 shrink">
-          <div className="relative h-14 w-14 shrink-0 rounded-xl bg-white/5 border border-white/10 p-2 flex items-center justify-center">
+      {/* Header — kept minimal: a tiny logo + the clock. Everything else
+          (WiFi, branding tagline, etc.) was removed so the views below get
+          maximum vertical space and aren't competing with header noise. */}
+      <header className="shrink-0 flex items-center justify-between gap-6 px-8 py-4 border-b border-white/10">
+        <div className="flex items-center gap-3 min-w-0 shrink">
+          <div className="relative h-11 w-11 shrink-0 rounded-lg bg-white/5 border border-white/10 p-1.5 flex items-center justify-center">
             <Image
               src="/rendezvous-logo.png"
               alt="Rendezvous Homeschool Family Retreat"
-              width={56}
-              height={56}
+              width={44}
+              height={44}
               className="object-contain brightness-0 invert"
               priority
             />
           </div>
-          <div className="flex flex-col min-w-0">
-            <h1 className="text-2xl font-bold tracking-wide leading-tight whitespace-nowrap">RENDEZVOUS 2026</h1>
-            <span className="text-white/60 text-sm tracking-widest uppercase whitespace-nowrap">Live Updates</span>
-          </div>
+          <h1 className="text-xl font-bold tracking-wide whitespace-nowrap">
+            RENDEZVOUS 2026
+          </h1>
         </div>
 
-        {/* Center: WiFi info — hidden below md so the header never overflows on
-            narrower previews; on TV-class screens (≥ md) it sits between the
-            title and the clock. shrink-0 keeps its labels intact. */}
-        <div className="hidden md:flex items-center gap-3 px-4 py-2 rounded-xl bg-white/5 border border-white/10 shrink-0">
-          <Wifi className="h-6 w-6 text-cyan-400 shrink-0" />
-          <div className="flex flex-col leading-tight min-w-0">
-            <span className="text-sm text-white/60 whitespace-nowrap">WiFi: <span className="text-white font-semibold">LWCC</span></span>
-            <span className="text-sm text-white/60 whitespace-nowrap">Pass: <span className="text-white font-semibold">wifi4lwcc</span></span>
-          </div>
-        </div>
-
-        {/* Right: clock + date — never shrinks so the time is always readable */}
         <div className="text-right shrink-0">
           <div className="text-4xl font-light tracking-wider tabular-nums leading-none">{formattedTime}</div>
           <div className="text-white/60 text-base mt-1 whitespace-nowrap">{formattedDate}</div>
@@ -772,6 +762,9 @@ export default function LiveUpdatesPage() {
           {currentView === "announcements" && (
             <AnnouncementsView announcements={announcements} />
           )}
+          {currentView === "wifi" && (
+            <WifiView />
+          )}
         </ViewTransition>
       </main>
 
@@ -791,6 +784,7 @@ export default function LiveUpdatesPage() {
           {announcements.length > 0 && (
             <KeyButton label="7 Announcements" active={currentView === "announcements"} />
           )}
+          <KeyButton label="8 WiFi" active={currentView === "wifi"} />
           <KeyButton label="0/A Auto" active={isAutoRotating} />
           <KeyButton label="F Fullscreen" active={isFullscreen} />
 
@@ -1186,22 +1180,61 @@ function AllView({
 }
 
 // Weather View - Full screen weather
-function WeatherView({ weather }: { weather: WeatherData | null }) {
-  // Get time-based greeting
-  const centralNow = getCentralTime()
-  const hour = centralNow.getHours()
-  let greeting = "Welcome to Rendezvous!"
-  
-  if (hour >= 5 && hour < 12) {
-    greeting = "Good Morning!"
-  } else if (hour >= 12 && hour < 17) {
-    greeting = "Good Afternoon!"
-  } else if (hour >= 17 && hour < 21) {
-    greeting = "Good Evening!"
-  } else {
-    greeting = "Good Night!"
-  }
+// Weather View — minimal: just temp, condition, and a single line of secondary
+// stats (humidity + wind). The hourly forecast strip and the lengthy welcome
+// greeting were removed so the temp can be HUGE on TVs/projectors.
+// Wifi View — minimal full-screen panel showing only the network name and
+// password in extra-large monospaced text so attendees can read it from the
+// back of the room. Mirrors the styling language of the other LU views
+// (rounded glow card, ambient orbs) but hard-leans on legibility.
+function WifiView() {
+  return (
+    <div className="relative w-full h-full flex items-center justify-center">
+      {/* Ambient cyan glow orbs */}
+      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute -top-40 -left-40 h-[28rem] w-[28rem] rounded-full bg-cyan-500/15 blur-3xl animate-pulse" style={{ animationDuration: "6s" }} />
+        <div className="absolute -bottom-40 -right-40 h-[32rem] w-[32rem] rounded-full bg-sky-500/10 blur-3xl animate-pulse" style={{ animationDuration: "8s", animationDelay: "2s" }} />
+      </div>
 
+      <div className="relative w-full max-w-5xl rounded-3xl border border-white/10 bg-gradient-to-br from-cyan-500/[0.10] via-white/[0.04] to-transparent backdrop-blur-sm p-12 text-center">
+        <div className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-cyan-500/15 blur-2xl" />
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-300/40 to-transparent" />
+
+        <div className="relative flex flex-col items-center">
+          <div className="mb-8 rounded-3xl bg-cyan-500/15 border border-cyan-400/30 p-6">
+            <Wifi className="h-20 w-20 text-cyan-300" />
+          </div>
+
+          <p className="text-3xl uppercase tracking-[0.3em] font-bold text-cyan-300/90 mb-10">
+            Free WiFi
+          </p>
+
+          <div className="w-full max-w-3xl space-y-6">
+            <div className="rounded-2xl border border-white/15 bg-white/[0.04] px-8 py-6">
+              <p className="text-2xl uppercase tracking-[0.25em] font-bold text-white/50 mb-3">
+                Network
+              </p>
+              <p className="text-7xl font-mono font-bold leading-none tracking-wide">
+                LWCC
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-white/15 bg-white/[0.04] px-8 py-6">
+              <p className="text-2xl uppercase tracking-[0.25em] font-bold text-white/50 mb-3">
+                Password
+              </p>
+              <p className="text-7xl font-mono font-bold leading-none tracking-wide">
+                wifi4lwcc
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function WeatherView({ weather }: { weather: WeatherData | null }) {
   return (
     <div className="relative w-full h-full flex items-center justify-center">
       {/* Ambient sky-blue glow orbs */}
@@ -1210,309 +1243,242 @@ function WeatherView({ weather }: { weather: WeatherData | null }) {
         <div className="absolute -bottom-40 -right-40 h-[32rem] w-[32rem] rounded-full bg-cyan-500/10 blur-3xl animate-pulse" style={{ animationDuration: "8s", animationDelay: "2s" }} />
       </div>
 
-      <div className="relative w-full h-full flex flex-col items-center justify-center">
-        {/* Glow card panel */}
-        <div className="relative w-full overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-sky-500/[0.10] via-white/[0.04] to-transparent backdrop-blur-sm p-10">
-          <div className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-sky-500/15 blur-2xl" />
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sky-300/40 to-transparent" />
+      <div className="relative w-full max-w-5xl rounded-3xl border border-white/10 bg-gradient-to-br from-sky-500/[0.10] via-white/[0.04] to-transparent backdrop-blur-sm p-12">
+        <div className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-sky-500/15 blur-2xl" />
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sky-300/40 to-transparent" />
 
-          <div className="relative flex flex-col items-center justify-center">
-            {/* Greeting */}
-            <div className="text-center mb-8">
-              <div className="flex items-center justify-center gap-5 mb-2">
-                {getGreetingIcon(hour, "h-14 w-14")}
-                <p className="text-5xl font-light">{greeting}</p>
+        <div className="relative flex flex-col items-center justify-center">
+          {!weather ? (
+            <p className="text-white/50 text-3xl">Loading weather...</p>
+          ) : (
+            <>
+              <div className="flex items-center gap-12 mb-6">
+                {getWeatherIcon(weather.current.weather[0].id, weather.current.weather[0].icon, "lg")}
+                <span className="text-[12rem] font-light leading-none tabular-nums">
+                  {Math.round(weather.current.temp)}°
+                </span>
               </div>
-              <p className="text-xl text-white/60">Welcome to Rendezvous 2026</p>
-            </div>
 
-            {!weather ? (
-              <p className="text-white/50 text-2xl">Loading weather...</p>
-            ) : (
-              <>
-                <div className="flex items-center gap-10 mb-4">
-                  {getWeatherIcon(weather.current.weather[0].id, weather.current.weather[0].icon, "lg")}
-                  <span className="text-[10rem] font-light leading-none tabular-nums">{Math.round(weather.current.temp)}°</span>
-                </div>
-                <p className="text-3xl text-white/80 capitalize mb-8">{weather.current.weather[0].description}</p>
+              <p className="text-5xl text-white/85 capitalize mb-10 text-center text-balance">
+                {weather.current.weather[0].description}
+              </p>
 
-                <div className="flex items-center gap-12 text-xl text-white/60 mb-10">
-                  <span className="flex items-center gap-3">
-                    <Droplets className="h-6 w-6 text-sky-300" />
-                    {weather.current.humidity}% Humidity
-                  </span>
-                  <span className="flex items-center gap-3">
-                    <Wind className="h-6 w-6 text-sky-300" />
-                    {Math.round(weather.current.wind_speed)} mph Wind
-                  </span>
-                </div>
-
-                <div className="flex gap-4">
-                  {weather.hourly.slice(0, 6).map((hour) => (
-                    <div 
-                      key={hour.dt} 
-                      className="text-center p-5 rounded-2xl bg-gradient-to-br from-sky-500/[0.08] via-white/[0.03] to-transparent border border-white/10 min-w-[110px]"
-                    >
-                      <p className="text-sm text-white/50 mb-2 font-medium">{formatTime(hour.dt)}</p>
-                      <div className="flex justify-center mb-2">
-                        {getWeatherIcon(hour.weather[0].id, hour.weather[0].icon, "sm")}
-                      </div>
-                      <p className="text-2xl font-semibold mb-1 tabular-nums">{Math.round(hour.temp)}°</p>
-                      {hour.pop > 0.1 && (
-                        <p className="text-sm text-sky-300 flex items-center justify-center gap-1">
-                          <Droplets className="h-3.5 w-3.5" />
-                          {Math.round(hour.pop * 100)}%
-                        </p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
+              <div className="flex items-center gap-16 text-3xl text-white/70">
+                <span className="flex items-center gap-3">
+                  <Droplets className="h-9 w-9 text-sky-300" />
+                  {weather.current.humidity}%
+                </span>
+                <span className="flex items-center gap-3">
+                  <Wind className="h-9 w-9 text-sky-300" />
+                  {Math.round(weather.current.wind_speed)} mph
+                </span>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
   )
 }
 
-// Schedule View - Full screen schedule with all upcoming events
-function ScheduleView({ 
-  nowItem, 
+// Schedule View — minimal: just shows ONE thing at a time.
+//   - "Happening Now" if there's an active event
+//   - else "Up Next" if there's a future event
+//   - else a friendly idle state
+// Sidebar lists, "Today's Schedule" rolls, and any other secondary info were
+// removed so the single visible event can use the full width and the largest
+// possible text. Auto-rotation cycles to other views (Weather, Meal, etc.) so
+// users still see additional context without us cramming the schedule page.
+function ScheduleView({
+  nowItem,
   nextItem,
-  upcomingToday,
-  upcomingAll
-}: { 
+}: {
   nowItem: ScheduleItem | null
   nextItem: ScheduleItem | null
-  upcomingToday: ScheduleItem[]
-  upcomingAll: ScheduleItem[]
+  // Accept (and ignore) the legacy upcoming props so the parent call site
+  // doesn't need to change. Marked optional so TS doesn't complain.
+  upcomingToday?: ScheduleItem[]
+  upcomingAll?: ScheduleItem[]
 }) {
-  // Use upcoming events - today if available, else all upcoming
-  const upcomingSource = upcomingToday.length > 0 ? upcomingToday : upcomingAll
-  // Cap to a number that always fits in the panel without clipping any row
-  const MAX_UPCOMING = 7
-  const upcoming = upcomingSource.slice(0, MAX_UPCOMING)
-  const moreCount = Math.max(0, upcomingSource.length - MAX_UPCOMING)
-  const showingFuture = upcomingToday.length === 0 && upcomingAll.length > 0
+  const showNow = !!nowItem
+  const showNext = !nowItem && !!nextItem
+  const item = nowItem ?? nextItem
 
   return (
-    <div className="relative w-full h-full flex gap-6">
+    <div className="relative w-full h-full flex items-center justify-center">
       {/* Ambient violet glow orbs */}
       <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
         <div className="absolute -top-40 -left-40 h-[28rem] w-[28rem] rounded-full bg-violet-500/15 blur-3xl animate-pulse" style={{ animationDuration: "6s" }} />
         <div className="absolute -bottom-40 right-1/4 h-96 w-96 rounded-full bg-fuchsia-500/10 blur-3xl animate-pulse" style={{ animationDuration: "8s", animationDelay: "2s" }} />
       </div>
 
-      {/* Left side - Happening Now / Up Next */}
-      <div className="flex-1 relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-violet-500/[0.10] via-white/[0.04] to-transparent backdrop-blur-sm p-8 flex flex-col justify-center">
+      <div className="relative w-full max-w-6xl rounded-3xl border border-white/10 bg-gradient-to-br from-violet-500/[0.10] via-white/[0.04] to-transparent backdrop-blur-sm p-12 text-center">
         <div className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-violet-500/15 blur-2xl" />
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-300/40 to-transparent" />
-        <div className="relative">
-          {nowItem && (
-            <div className="text-center mb-12">
-              <div className="flex items-center justify-center gap-3 mb-6">
-                <span className="relative flex h-4 w-4">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
-                  <span className="relative inline-flex h-4 w-4 rounded-full bg-green-400" />
-                </span>
-                <span className="text-xl font-bold uppercase tracking-[0.3em] text-green-400">Happening Now</span>
-              </div>
-              <div className="flex justify-center mb-5">{getEventIcon(nowItem.title, nowItem.isMeal, "lg")}</div>
-              <h2 className="text-5xl font-bold mb-4 text-balance leading-tight">{nowItem.title}</h2>
-              <p className="text-3xl text-white/80 mb-2">{nowItem.time}</p>
-              {nowItem.location && (
-                <p className="text-2xl text-white/60 flex items-center justify-center gap-2">
-                  <MapPin className="h-7 w-7 text-violet-300" />
-                  {nowItem.location}
-                </p>
+
+        {item ? (
+          <div className="relative">
+            {/* Status label — Now or Up Next */}
+            <div className="flex items-center justify-center gap-4 mb-10">
+              {showNow ? (
+                <>
+                  <span className="relative flex h-5 w-5">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
+                    <span className="relative inline-flex h-5 w-5 rounded-full bg-green-400" />
+                  </span>
+                  <span className="text-3xl font-bold uppercase tracking-[0.3em] text-green-400">Happening Now</span>
+                </>
+              ) : (
+                <>
+                  <ChevronRight className="h-9 w-9 text-violet-300" />
+                  <span className="text-3xl font-bold uppercase tracking-[0.3em] text-violet-300">Up Next</span>
+                </>
               )}
             </div>
-          )}
 
-          {nextItem && (
-            <div className="text-center">
-              {nowItem && <div className="w-48 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent mx-auto mb-12" />}
-              <div className="flex items-center justify-center gap-3 mb-6">
-                <ChevronRight className="h-7 w-7 text-violet-300" />
-                <span className="text-xl font-bold uppercase tracking-[0.3em] text-violet-300">Up Next</span>
-              </div>
-              <div className="flex justify-center mb-5">{getEventIcon(nextItem.title, nextItem.isMeal, nowItem ? "md" : "lg")}</div>
-              <h2 className={`font-bold mb-4 text-balance leading-tight ${nowItem ? "text-3xl" : "text-5xl"}`}>{nextItem.title}</h2>
-              <p className={`text-white/80 mb-2 ${nowItem ? "text-2xl" : "text-3xl"}`}>{nextItem.day} {nextItem.time}</p>
-              {nextItem.location && (
-                <p className={`text-white/60 flex items-center justify-center gap-2 ${nowItem ? "text-xl" : "text-2xl"}`}>
-                  <MapPin className={nowItem ? "h-6 w-6 text-violet-300" : "h-7 w-7 text-violet-300"} />
-                  {nextItem.location}
-                </p>
-              )}
+            <div className="flex justify-center mb-8">
+              {getEventIcon(item.title, item.isMeal, "xl")}
             </div>
-          )}
 
-          {!nowItem && !nextItem && (
-            <div className="text-center">
-              <Bed className="h-28 w-28 text-white/30 mx-auto mb-5" />
-              <h2 className="text-4xl font-bold text-white/60">No Scheduled Events</h2>
-              <p className="text-2xl text-white/40 mt-3">Enjoy your free time!</p>
-            </div>
-          )}
-        </div>
-      </div>
+            <h2 className="text-7xl font-bold mb-6 text-balance leading-tight">
+              {item.title}
+            </h2>
 
-      {/* Right side - Upcoming Schedule
-          Hidden below lg so the now/next column always has enough room on
-          narrow previews, sandbox iframes, and portrait-orientation TVs. On
-          wide displays it shows alongside as a fixed 28rem sidebar. */}
-      {upcoming.length > 0 && (
-        <div className="hidden lg:flex w-[28rem] shrink-0 relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-violet-500/[0.08] via-white/[0.03] to-transparent backdrop-blur-sm p-5 flex-col">
-          <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-violet-500/15 blur-2xl" />
-          <div className="relative flex items-center gap-3 mb-5">
-            <div className="rounded-xl bg-violet-500/15 p-2 border border-violet-400/20">
-              <CalendarDays className="h-6 w-6 text-violet-300" />
-            </div>
-            <span className="text-base uppercase tracking-[0.2em] font-bold text-violet-300/90">
-              {showingFuture ? "Upcoming" : "Today's Schedule"}
-            </span>
-          </div>
-          <div className="relative flex-1 min-h-0 flex flex-col gap-2.5">
-            {upcoming.map((item, index) => (
-              <div
-                key={index}
-                className={`p-3.5 rounded-xl border transition-colors ${
-                  item === nextItem
-                    ? "bg-violet-500/15 border-violet-400/40"
-                    : "bg-white/[0.03] border-white/10"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  {getEventIcon(item.title, item.isMeal, "sm")}
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-lg truncate leading-tight">{item.title}</p>
-                    <p className="text-sm text-white/60 mt-0.5 truncate">
-                      {showingFuture ? `${item.day} ${item.time}` : item.time}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))}
-            {moreCount > 0 && (
-              <div className="mt-auto p-2.5 rounded-xl border border-violet-400/20 bg-violet-500/5 text-center">
-                <p className="text-sm text-violet-300/90 font-semibold">
-                  + {moreCount} more event{moreCount === 1 ? "" : "s"}
-                </p>
-              </div>
+            <p className="text-5xl text-white/85 mb-4">
+              {showNext && item === nextItem ? `${item.day} ` : ""}{item.time}
+            </p>
+
+            {item.location && (
+              <p className="text-3xl text-white/60 flex items-center justify-center gap-3 mt-6">
+                <MapPin className="h-9 w-9 text-violet-300" />
+                {item.location}
+              </p>
             )}
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="relative">
+            <Bed className="h-32 w-32 text-white/30 mx-auto mb-6" />
+            <h2 className="text-6xl font-bold text-white/60">No Scheduled Events</h2>
+            <p className="text-3xl text-white/40 mt-4">Enjoy your free time!</p>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
 
-// Meal View - Full screen meal display with menu
-function MealView({ 
-  nextMeal, 
-  mealData, 
-  adminMode = false 
-}: { 
+// Meal View — the menu IS the hero.
+// Layout (top → bottom): small meal-type chip, GIANT menu text, small time.
+// Earlier versions led with the meal title ("Breakfast") at text-7xl which
+// pushed the actual food info below the fold and made it the dominant element
+// — exactly the wrong priority for a sign telling people what to expect on
+// the table. The food now uses the largest type on screen.
+function MealView({
+  nextMeal,
+  mealData,
+}: {
   nextMeal: ScheduleItem | null
   mealData: MealData | null
+  // Accept (and ignore) the legacy adminMode prop so the parent call site
+  // doesn't need to change.
   adminMode?: boolean
 }) {
+  // Friendly time-of-day label that matches the meal — "Tonight's" was hard-
+  // coded before, which read wrong for breakfast / lunch.
+  const mealLabel = (() => {
+    if (!nextMeal) return "Coming Up"
+    const t = nextMeal.title.toLowerCase()
+    if (t.includes("breakfast")) return "This Morning"
+    if (t.includes("lunch")) return "For Lunch"
+    if (t.includes("dinner") || t.includes("supper")) return "Tonight"
+    return "Coming Up"
+  })()
+
+  // Strip dietary parentheticals like "(GF)", "(DF, GF)", "(V)", "(GF/DF)"
+  // from any menu text. Per the kitchen team, those tags clutter the LU
+  // display — anyone with dietary needs already has them on a printed sheet
+  // — so we render clean dish names only.
+  const stripDietaryTags = (s: string) =>
+    s
+      .replace(/\s*\(\s*(?:GF|DF|V|VG|VEGAN|VEGETARIAN|N|NF|SF|EF)(?:\s*[,/&]\s*(?:GF|DF|V|VG|VEGAN|VEGETARIAN|N|NF|SF|EF))*\s*\)/gi, "")
+      .replace(/\s+/g, " ")
+      .trim()
+
+  const cleanMain = mealData?.main_dish ? stripDietaryTags(mealData.main_dish) : ""
+  const cleanSides =
+    mealData?.sides && mealData.sides.length > 0
+      ? mealData.sides.map(stripDietaryTags).filter(Boolean)
+      : []
+  const hasMenu = !!cleanMain || cleanSides.length > 0
+
   return (
-    <div className="relative w-full h-full flex items-center justify-center">
+    <div className="relative w-full h-full flex items-center justify-center select-none">
       {/* Ambient amber glow orbs */}
       <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
         <div className="absolute -top-40 -left-40 h-[28rem] w-[28rem] rounded-full bg-amber-500/15 blur-3xl animate-pulse" style={{ animationDuration: "6s" }} />
         <div className="absolute -bottom-40 -right-40 h-[32rem] w-[32rem] rounded-full bg-orange-500/10 blur-3xl animate-pulse" style={{ animationDuration: "8s", animationDelay: "2s" }} />
       </div>
 
-      {!nextMeal ? (
-        <div className="relative w-full max-w-2xl rounded-3xl border border-white/10 bg-gradient-to-br from-amber-500/[0.10] via-white/[0.04] to-transparent backdrop-blur-sm p-12 flex flex-col items-center justify-center">
-          <div className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-amber-500/15 blur-2xl" />
-          <UtensilsCrossed className="h-24 w-24 text-white/30 mb-6 relative" />
-          <h2 className="text-4xl font-bold text-white/60 relative">No Upcoming Meals</h2>
-        </div>
-      ) : (
-        <div className="relative w-full max-w-7xl flex flex-col items-center justify-center">
-          {/* Meal hero panel */}
-          <div className="w-full relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-amber-500/[0.10] via-white/[0.04] to-transparent backdrop-blur-sm p-8 flex flex-col items-center text-center">
-            <div className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-amber-500/15 blur-2xl" />
-            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-300/40 to-transparent" />
-            <div className="relative flex flex-col items-center">
-              <div className="mb-5 rounded-3xl bg-white/5 border border-white/10 p-5">
-                {getEventIcon(nextMeal.title, true, "lg")}
+      <div className="relative w-full max-w-6xl rounded-3xl border border-white/10 bg-gradient-to-br from-amber-500/[0.10] via-white/[0.04] to-transparent backdrop-blur-sm p-12 text-center">
+        <div className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-amber-500/15 blur-2xl" />
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-300/40 to-transparent" />
+
+        {!nextMeal ? (
+          <div className="relative flex flex-col items-center">
+            <UtensilsCrossed className="h-32 w-32 text-white/30 mb-6" />
+            <h2 className="text-5xl font-bold text-white/60">No Upcoming Meals</h2>
+          </div>
+        ) : (
+          <div className="relative flex flex-col items-center">
+            {/* Top: small label chip combining the time-of-day phrase and meal
+                type ("Tonight • Dinner"). Intentionally small so the menu
+                content below is the dominant element. */}
+            <div className="inline-flex items-center gap-3 px-5 py-2 rounded-full border border-amber-400/30 bg-amber-500/10 mb-8">
+              {getEventIcon(nextMeal.title, true, "sm")}
+              <span className="text-2xl uppercase tracking-[0.25em] font-bold text-amber-300/90">
+                {mealLabel} · {nextMeal.title}
+              </span>
+            </div>
+
+            {/* Hero: the menu itself. Main dish at the top in the largest
+                possible type; sides on a single line below at a step smaller
+                so the visual hierarchy reads instantly from across the room. */}
+            {hasMenu ? (
+              <div className="mb-10 max-w-5xl">
+                {cleanMain && (
+                  <p className="text-8xl font-bold leading-[1.05] text-balance">
+                    {cleanMain}
+                  </p>
+                )}
+                {cleanSides.length > 0 && (
+                  <p
+                    className={
+                      cleanMain
+                        ? "mt-6 text-4xl text-white/75 leading-snug text-balance"
+                        : "text-7xl font-semibold leading-tight text-balance"
+                    }
+                  >
+                    {cleanMain && (
+                      <span className="text-amber-300/70 mr-2">with</span>
+                    )}
+                    {cleanSides.join(", ")}
+                  </p>
+                )}
               </div>
-              <h2 className="text-5xl font-bold mb-4 leading-tight">{nextMeal.title}</h2>
-              <p className="text-3xl text-white/80 mb-2 flex items-center gap-2">
-                <Clock className="h-7 w-7 text-amber-300" />
-                {nextMeal.time}
+            ) : (
+              <p className="text-5xl font-semibold text-white/40 mb-10">
+                Menu coming soon
               </p>
-              {nextMeal.location && (
-                <p className="text-xl text-white/60 flex items-center gap-2">
-                  <MapPin className="h-5 w-5 text-amber-300" />
-                  {nextMeal.location}
-                </p>
-              )}
-            </div>
+            )}
+
+            {/* Bottom: serving time, de-emphasized. */}
+            <p className="text-3xl text-white/60 flex items-center gap-3">
+              <Clock className="h-8 w-8 text-amber-300/70" />
+              Served at {nextMeal.time}
+            </p>
           </div>
-
-          {/* Menu Display */}
-          {mealData ? (
-            <div className="mt-5 w-full relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-amber-500/[0.06] via-white/[0.03] to-transparent backdrop-blur-sm p-8">
-              <div className="absolute -top-10 -left-10 h-40 w-40 rounded-full bg-amber-500/10 blur-2xl" />
-              <div className="relative flex items-center gap-3 mb-6 pb-5 border-b border-white/10">
-                <div className="rounded-xl bg-amber-500/15 p-2.5 border border-amber-400/20">
-                  <UtensilsCrossed className="h-5 w-5 text-amber-300" />
-                </div>
-                <h3 className="text-2xl font-bold uppercase tracking-[0.15em] text-amber-300/90">Menu</h3>
-              </div>
-              <div className="relative space-y-4">
-                <div className="flex items-start gap-4 p-4 rounded-2xl bg-red-500/[0.08] border border-red-500/20">
-                  <Beef className="h-9 w-9 text-red-400 shrink-0" />
-                  <div>
-                    <p className="text-red-300/90 text-sm uppercase tracking-[0.2em] font-bold mb-1">Main Dish</p>
-                    <p className="text-2xl font-semibold">{mealData.main_dish}</p>
-                  </div>
-                </div>
-
-                {mealData.sides && mealData.sides.length > 0 && (
-                  <div className="flex items-start gap-4 p-4 rounded-2xl bg-green-500/[0.08] border border-green-500/20">
-                    <Salad className="h-9 w-9 text-green-400 shrink-0" />
-                    <div>
-                      <p className="text-green-300/90 text-sm uppercase tracking-[0.2em] font-bold mb-1">Sides</p>
-                      <p className="text-xl">{mealData.sides.join(", ")}</p>
-                    </div>
-                  </div>
-                )}
-
-                {mealData.drinks && mealData.drinks.length > 0 && (
-                  <div className="flex items-start gap-4 p-4 rounded-2xl bg-cyan-500/[0.08] border border-cyan-500/20">
-                    <CupSoda className="h-9 w-9 text-cyan-400 shrink-0" />
-                    <div>
-                      <p className="text-cyan-300/90 text-sm uppercase tracking-[0.2em] font-bold mb-1">Beverages</p>
-                      <p className="text-xl">{mealData.drinks.join(", ")}</p>
-                    </div>
-                  </div>
-                )}
-
-                {mealData.notes && (
-                  <div className="pt-4 mt-4 border-t border-white/10 text-center">
-                    <p className="text-white/60 italic text-lg">{mealData.notes}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          ) : (
-            <p className="mt-8 text-white/40 text-lg">Menu details coming soon...</p>
-          )}
-
-          {/* Ice Cream Challenge — hidden until admin reveals it */}
-          <div className="mt-5 w-full">
-            <IceCreamChallenge adminMode={adminMode} />
-          </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }
@@ -1882,40 +1848,43 @@ function VolunteersView({
       </div>
 
       {!volunteerSchedule ? (
-        <div className="relative w-full max-w-2xl rounded-3xl border border-white/10 bg-gradient-to-br from-rose-500/[0.10] via-white/[0.04] to-transparent backdrop-blur-sm p-12 flex flex-col items-center justify-center">
+        <div className="relative w-full max-w-3xl rounded-3xl border border-white/10 bg-gradient-to-br from-rose-500/[0.10] via-white/[0.04] to-transparent backdrop-blur-sm p-12 flex flex-col items-center justify-center">
           <div className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-rose-500/15 blur-2xl" />
-          <Users className="h-24 w-24 text-white/30 mb-6 relative" />
-          <h2 className="text-4xl font-bold text-white/60 relative">No Volunteer Schedule</h2>
+          <Users className="h-32 w-32 text-white/30 mb-8 relative" />
+          <h2 className="text-5xl font-bold text-white/60 relative">No Volunteer Schedule</h2>
         </div>
       ) : (
         <div className="relative w-full max-w-7xl flex flex-col items-center">
-          {/* Header panel */}
-          <div className="relative w-full overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-rose-500/[0.10] via-white/[0.04] to-transparent backdrop-blur-sm p-8 mb-5 text-center">
+          {/* Header panel — bigger time-slot title and tagline so it reads
+              clearly from the back of the room. */}
+          <div className="relative w-full overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-rose-500/[0.10] via-white/[0.04] to-transparent backdrop-blur-sm p-10 mb-6 text-center">
             <div className="absolute -top-12 left-1/2 -translate-x-1/2 h-48 w-96 rounded-full bg-rose-500/15 blur-3xl" />
             <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-rose-300/40 to-transparent" />
-            <div className="relative flex items-center justify-center gap-4 mb-2">
-              <div className="rounded-xl bg-rose-500/15 p-3 border border-rose-400/20">
-                <Users className="h-7 w-7 text-rose-300" />
+            <div className="relative flex items-center justify-center gap-5 mb-3">
+              <div className="rounded-2xl bg-rose-500/15 p-4 border border-rose-400/20">
+                <Users className="h-10 w-10 text-rose-300" />
               </div>
-              <h2 className="text-4xl font-bold">{volunteerTimeSlot}</h2>
+              <h2 className="text-6xl font-bold">{volunteerTimeSlot}</h2>
             </div>
-            <p className="text-lg text-rose-300/80 uppercase tracking-[0.3em] font-bold">Devotional Assignments</p>
+            <p className="text-2xl text-rose-300/80 uppercase tracking-[0.3em] font-bold">Devotional Assignments</p>
           </div>
 
-          {/* Roles grid */}
+          {/* Roles grid — every role card scaled up so the assignee name is
+              the dominant element. Labels are still de-emphasized but now
+              large enough to be legible across the room. */}
           <div className="relative w-full overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-rose-500/[0.06] via-white/[0.03] to-transparent backdrop-blur-sm p-8">
             <div className="absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-rose-500/10 blur-2xl" />
             <div className="absolute -top-10 -right-10 h-40 w-40 rounded-full bg-pink-500/10 blur-2xl" />
-            <div className="relative grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="relative grid grid-cols-1 md:grid-cols-2 gap-5">
               {roles.map((role, index) => (
-                <div 
-                  key={index} 
-                  className="p-4 rounded-2xl bg-gradient-to-br from-rose-500/[0.06] via-white/[0.02] to-transparent border border-white/10"
+                <div
+                  key={index}
+                  className="p-6 rounded-2xl bg-gradient-to-br from-rose-500/[0.06] via-white/[0.02] to-transparent border border-white/10"
                 >
-                  <p className="text-rose-300/80 text-xs uppercase tracking-[0.2em] font-bold mb-1.5">{role.label}</p>
-                  <p className="text-xl font-semibold">{role.value}</p>
+                  <p className="text-rose-300/80 text-lg uppercase tracking-[0.2em] font-bold mb-3">{role.label}</p>
+                  <p className="text-4xl font-semibold leading-tight text-balance">{role.value}</p>
                   {role.subtitle && (
-                    <p className="text-white/50 text-sm italic mt-1">({role.subtitle})</p>
+                    <p className="text-white/55 text-xl italic mt-2 text-balance">({role.subtitle})</p>
                   )}
                 </div>
               ))}
