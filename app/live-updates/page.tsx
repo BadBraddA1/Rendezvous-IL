@@ -435,29 +435,58 @@ export default function LiveUpdatesPage() {
     }
   }, [nextMeal])
 
-  // Fetch volunteer schedule
+  // Fetch volunteer schedule for the NEXT upcoming devotion.
+  //
+  // Devotion times (from lib/schedule-data.ts):
+  //   - Morning assembly: 9:00 AM (~1 hr)
+  //   - Evening assembly: 7:00 PM (~1 hr)
+  //
+  // Cutoff rules — advance to the next devotion once the current one has
+  // ended (with a buffer past the typical end time):
+  //   - Before 10:30 AM:  today's Morning Devotion
+  //   - 10:30 AM – 8:30 PM:  today's Evening Devotion
+  //   - After 8:30 PM:  tomorrow's Morning Devotion
+  //
+  // Previously the cutoff was a flat noon, so the volunteer card stayed on
+  // "Morning Devotion" for hours after morning devotion was over and never
+  // advanced past evening devotion — this fixes both cases.
   useEffect(() => {
     const fetchVolunteerSchedule = async () => {
       try {
         const centralNow = getCentralTime()
-        const centralHour = centralNow.getHours()
-        // Format date as YYYY-MM-DD
-        const year = centralNow.getFullYear()
-        const month = String(centralNow.getMonth() + 1).padStart(2, '0')
-        const day = String(centralNow.getDate()).padStart(2, '0')
-        const centralDateStr = `${year}-${month}-${day}`
-        
-        // Morning Devotion: before noon, Evening Devotion: after noon
-        const timeSlot = centralHour < 12 ? "Morning Devotion" : "Evening Devotion"
-        // Prefix with the weekday so the LU clearly shows which day's devotion
-        // is being displayed (e.g. "Monday Evening Devotion").
-        const dayName = centralNow.toLocaleDateString("en-US", { weekday: "long" })
+        const minutes = centralNow.getHours() * 60 + centralNow.getMinutes()
+        const MORNING_END = 10 * 60 + 30  // 10:30 AM
+        const EVENING_END = 20 * 60 + 30  // 8:30 PM
+
+        // Pick the date + slot for the *next* upcoming devotion.
+        const targetDate = new Date(centralNow)
+        let timeSlot: "Morning Devotion" | "Evening Devotion"
+        if (minutes < MORNING_END) {
+          timeSlot = "Morning Devotion"
+        } else if (minutes < EVENING_END) {
+          timeSlot = "Evening Devotion"
+        } else {
+          // Past evening cutoff — roll over to tomorrow's morning.
+          targetDate.setDate(targetDate.getDate() + 1)
+          timeSlot = "Morning Devotion"
+        }
+
+        const year = targetDate.getFullYear()
+        const month = String(targetDate.getMonth() + 1).padStart(2, "0")
+        const day = String(targetDate.getDate()).padStart(2, "0")
+        const targetDateStr = `${year}-${month}-${day}`
+
+        const dayName = targetDate.toLocaleDateString("en-US", { weekday: "long" })
         setVolunteerTimeSlot(`${dayName} ${timeSlot}`)
-        
-        const res = await fetch(`/api/volunteer-schedule?date=${centralDateStr}&timeSlot=${encodeURIComponent(timeSlot)}`)
+
+        const res = await fetch(`/api/volunteer-schedule?date=${targetDateStr}&timeSlot=${encodeURIComponent(timeSlot)}`)
         const data = await res.json()
         if (data.schedule) {
           setVolunteerSchedule(data.schedule)
+        } else {
+          // Clear stale data if there's no schedule for the new target slot
+          // (e.g. tomorrow morning hasn't been entered yet).
+          setVolunteerSchedule(null)
         }
       } catch {}
     }
