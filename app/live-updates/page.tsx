@@ -11,7 +11,7 @@ import {
   Calendar, MapPin, Clock, ChevronRight, Users, Utensils, Coffee, Sandwich, Bed,
   UtensilsCrossed, ClipboardCheck, Camera, Music, Gamepad2, Mountain, Trophy, Palette,
   BookOpen, Dumbbell, TreePine, Flame, Tent, Heart, Star, Sparkles, PartyPopper,
-  Moon, Megaphone,
+  Moon, Megaphone, Wifi,
   Target, Volleyball, Hand, Snowflake, Droplets,
   ZoomIn, ZoomOut, RotateCcw
 } from "lucide-react"
@@ -104,7 +104,7 @@ interface MealData {
 // downloadable PDF, and this Live Updates page will stay in sync.
 const SCHEDULE_ITEMS: ScheduleItem[] = LU_SCHEDULE_ITEMS as ScheduleItem[]
 
-type ViewType = "all" | "weather" | "schedule" | "meal" | "volunteers" | "announcements" | "map"
+type ViewType = "all" | "weather" | "schedule" | "meal" | "volunteers" | "announcements" | "map" | "wifi"
 
 // Match a schedule item to a venue map location id
 function getLocationIdForEvent(item: ScheduleItem | null): string | null {
@@ -347,7 +347,7 @@ export default function LiveUpdatesPage() {
   // Note: "all" view is intentionally excluded from auto-rotation because it shows
   // too much info at once and is hard to read on a TV. It's still accessible via the "1" key.
   const availableViews = useMemo<ViewType[]>(() => {
-    const views: ViewType[] = ["schedule", "weather", "meal", "map"]
+    const views: ViewType[] = ["schedule", "weather", "meal", "map", "wifi"]
     if (hasVolunteerData) {
       views.push("volunteers")
     }
@@ -643,6 +643,10 @@ export default function LiveUpdatesPage() {
             setIsAutoRotating(false)
           }
           break
+        case "8":
+          setCurrentView("wifi")
+          setIsAutoRotating(false)
+          break
         case "0":
         case "a":
         case "A":
@@ -748,6 +752,9 @@ export default function LiveUpdatesPage() {
           {currentView === "announcements" && (
             <AnnouncementsView announcements={announcements} />
           )}
+          {currentView === "wifi" && (
+            <WifiView />
+          )}
         </ViewTransition>
       </main>
 
@@ -767,6 +774,7 @@ export default function LiveUpdatesPage() {
           {announcements.length > 0 && (
             <KeyButton label="7 Announcements" active={currentView === "announcements"} />
           )}
+          <KeyButton label="8 WiFi" active={currentView === "wifi"} />
           <KeyButton label="0/A Auto" active={isAutoRotating} />
           <KeyButton label="F Fullscreen" active={isFullscreen} />
 
@@ -1165,6 +1173,57 @@ function AllView({
 // Weather View — minimal: just temp, condition, and a single line of secondary
 // stats (humidity + wind). The hourly forecast strip and the lengthy welcome
 // greeting were removed so the temp can be HUGE on TVs/projectors.
+// Wifi View — minimal full-screen panel showing only the network name and
+// password in extra-large monospaced text so attendees can read it from the
+// back of the room. Mirrors the styling language of the other LU views
+// (rounded glow card, ambient orbs) but hard-leans on legibility.
+function WifiView() {
+  return (
+    <div className="relative w-full h-full flex items-center justify-center">
+      {/* Ambient cyan glow orbs */}
+      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute -top-40 -left-40 h-[28rem] w-[28rem] rounded-full bg-cyan-500/15 blur-3xl animate-pulse" style={{ animationDuration: "6s" }} />
+        <div className="absolute -bottom-40 -right-40 h-[32rem] w-[32rem] rounded-full bg-sky-500/10 blur-3xl animate-pulse" style={{ animationDuration: "8s", animationDelay: "2s" }} />
+      </div>
+
+      <div className="relative w-full max-w-5xl rounded-3xl border border-white/10 bg-gradient-to-br from-cyan-500/[0.10] via-white/[0.04] to-transparent backdrop-blur-sm p-12 text-center">
+        <div className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-cyan-500/15 blur-2xl" />
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-300/40 to-transparent" />
+
+        <div className="relative flex flex-col items-center">
+          <div className="mb-8 rounded-3xl bg-cyan-500/15 border border-cyan-400/30 p-6">
+            <Wifi className="h-20 w-20 text-cyan-300" />
+          </div>
+
+          <p className="text-3xl uppercase tracking-[0.3em] font-bold text-cyan-300/90 mb-10">
+            Free WiFi
+          </p>
+
+          <div className="w-full max-w-3xl space-y-6">
+            <div className="rounded-2xl border border-white/15 bg-white/[0.04] px-8 py-6">
+              <p className="text-2xl uppercase tracking-[0.25em] font-bold text-white/50 mb-3">
+                Network
+              </p>
+              <p className="text-7xl font-mono font-bold leading-none tracking-wide">
+                LWCC
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-white/15 bg-white/[0.04] px-8 py-6">
+              <p className="text-2xl uppercase tracking-[0.25em] font-bold text-white/50 mb-3">
+                Password
+              </p>
+              <p className="text-7xl font-mono font-bold leading-none tracking-wide">
+                wifi4lwcc
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function WeatherView({ weather }: { weather: WeatherData | null }) {
   return (
     <div className="relative w-full h-full flex items-center justify-center">
