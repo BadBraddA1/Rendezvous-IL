@@ -104,7 +104,7 @@ interface MealData {
 // downloadable PDF, and this Live Updates page will stay in sync.
 const SCHEDULE_ITEMS: ScheduleItem[] = LU_SCHEDULE_ITEMS as ScheduleItem[]
 
-type ViewType = "all" | "weather" | "schedule" | "meal" | "volunteers" | "announcements" | "map" | "wifi"
+type ViewType = "all" | "weather" | "schedule" | "meal" | "volunteers" | "announcements" | "map" | "wifi" | "upcoming"
 
 // Match a schedule item to a venue map location id
 function getLocationIdForEvent(item: ScheduleItem | null): string | null {
@@ -349,7 +349,7 @@ export default function LiveUpdatesPage() {
   // Note: "all" view is intentionally excluded from auto-rotation because it shows
   // too much info at once and is hard to read on a TV. It's still accessible via the "1" key.
   const availableViews = useMemo<ViewType[]>(() => {
-    const views: ViewType[] = ["schedule", "weather", "meal", "map", "wifi"]
+    const views: ViewType[] = ["schedule", "weather", "meal", "map", "wifi", "upcoming"]
     if (hasVolunteerData) {
       views.push("volunteers")
     }
@@ -691,6 +691,10 @@ export default function LiveUpdatesPage() {
           setCurrentView("wifi")
           setIsAutoRotating(false)
           break
+        case "9":
+          setCurrentView("upcoming")
+          setIsAutoRotating(false)
+          break
         case "0":
         case "a":
         case "A":
@@ -799,6 +803,9 @@ export default function LiveUpdatesPage() {
           {currentView === "wifi" && (
             <WifiView />
           )}
+          {currentView === "upcoming" && (
+            <UpcomingView nowItem={nowItem} upcomingToday={upcomingToday} upcomingAll={upcomingAll} />
+          )}
         </ViewTransition>
       </main>
 
@@ -819,6 +826,7 @@ export default function LiveUpdatesPage() {
             <KeyButton label="7 Announcements" active={currentView === "announcements"} />
           )}
           <KeyButton label="8 WiFi" active={currentView === "wifi"} />
+          <KeyButton label="9 Up Next" active={currentView === "upcoming"} />
           <KeyButton label="0/A Auto" active={isAutoRotating} />
           <KeyButton label="F Fullscreen" active={isFullscreen} />
 
@@ -1262,6 +1270,115 @@ function WifiView() {
               </p>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Upcoming View — shows the next 3 events in large, readable cards.
+// Uses the same upcomingToday / upcomingAll data the ScheduleView has access
+// to, so the list is consistent with the now/next logic elsewhere.
+function UpcomingView({
+  nowItem,
+  upcomingToday,
+  upcomingAll,
+}: {
+  nowItem: ScheduleItem | null
+  upcomingToday: ScheduleItem[]
+  upcomingAll: ScheduleItem[]
+}) {
+  // Build a list of up to 3 upcoming events. If something is happening now,
+  // include it as the first item with a "now" badge. Fill the rest from
+  // upcomingToday (or upcomingAll if today is empty).
+  const upcoming = upcomingToday.length > 0 ? upcomingToday : upcomingAll
+  const events: { item: ScheduleItem; isNow: boolean }[] = []
+
+  if (nowItem) {
+    events.push({ item: nowItem, isNow: true })
+  }
+  for (const item of upcoming) {
+    if (events.length >= 3) break
+    // Skip if it's the same as nowItem (already added)
+    if (nowItem && item.title === nowItem.title && item.time === nowItem.time && item.date === nowItem.date) continue
+    events.push({ item, isNow: false })
+  }
+
+  return (
+    <div className="relative w-full h-full flex items-center justify-center select-none">
+      {/* Ambient indigo glow orbs */}
+      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute -top-40 -left-40 h-[28rem] w-[28rem] rounded-full bg-indigo-500/15 blur-3xl animate-pulse" style={{ animationDuration: "6s" }} />
+        <div className="absolute -bottom-40 -right-40 h-[32rem] w-[32rem] rounded-full bg-purple-500/10 blur-3xl animate-pulse" style={{ animationDuration: "8s", animationDelay: "2s" }} />
+      </div>
+
+      <div className="relative w-full max-w-6xl rounded-3xl border border-white/10 bg-gradient-to-br from-indigo-500/[0.10] via-white/[0.04] to-transparent backdrop-blur-sm p-10">
+        <div className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-indigo-500/15 blur-2xl" />
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-indigo-300/40 to-transparent" />
+
+        <div className="relative">
+          {/* Header */}
+          <div className="flex items-center justify-center gap-4 mb-8">
+            <div className="rounded-2xl bg-indigo-500/15 p-4 border border-indigo-400/20">
+              <Calendar className="h-10 w-10 text-indigo-300" />
+            </div>
+            <h2 className="text-5xl font-bold">Up Next</h2>
+          </div>
+
+          {events.length === 0 ? (
+            <div className="text-center py-12">
+              <Bed className="h-24 w-24 text-white/30 mx-auto mb-6" />
+              <p className="text-4xl font-semibold text-white/50">No upcoming events</p>
+            </div>
+          ) : (
+            <div className="space-y-5">
+              {events.map(({ item, isNow }, idx) => (
+                <div
+                  key={idx}
+                  className={`flex items-center gap-6 p-6 rounded-2xl border transition-colors ${
+                    isNow
+                      ? "bg-green-500/[0.12] border-green-400/40"
+                      : "bg-white/[0.03] border-white/10"
+                  }`}
+                >
+                  {/* Icon */}
+                  <div className="shrink-0">
+                    {getEventIcon(item.title, item.isMeal, "lg", isNow ? "text-green-400" : "text-indigo-300")}
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-4 mb-2">
+                      {isNow && (
+                        <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/20 border border-green-400/30">
+                          <span className="relative flex h-3 w-3">
+                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
+                            <span className="relative inline-flex h-3 w-3 rounded-full bg-green-400" />
+                          </span>
+                          <span className="text-lg font-bold uppercase tracking-wider text-green-400">Now</span>
+                        </span>
+                      )}
+                    </div>
+                    <h3 className="text-4xl font-bold leading-tight text-balance mb-2">
+                      {item.title}
+                    </h3>
+                    <div className="flex items-center gap-6 text-2xl text-white/70">
+                      <span className="flex items-center gap-2">
+                        <Clock className="h-6 w-6 text-indigo-300/70" />
+                        {item.day} {item.time}
+                      </span>
+                      {item.location && (
+                        <span className="flex items-center gap-2">
+                          <MapPin className="h-6 w-6 text-indigo-300/70" />
+                          {item.location}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
