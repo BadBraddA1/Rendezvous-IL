@@ -389,38 +389,48 @@ export default function LiveUpdatesPage() {
 
   // Fetch meal data for the next upcoming meal.
   //
-  // Earlier this used `getCentralTime()` to derive the date — which broke
-  // late at night when "next meal" was tomorrow's breakfast (it queried
-  // today's date and got nothing). The /schedule page works because each
-  // <MealMenu /> hard-codes the meal's actual date, so we mirror that here:
-  // every ScheduleItem already carries a `date` field (YYYY-MM-DD), so we
-  // just use it directly.
+  // - Uses `nextMeal.date` (YYYY-MM-DD) directly so the lookup is correct
+  //   even when "next meal" is tomorrow morning.
+  // - Re-fetches every 2 minutes while the next meal is pinned, so the LU
+  //   page recovers from transient API failures (TVs on flaky WiFi).
+  // - Does NOT clear `mealData` on error — we keep the last good payload
+  //   so a brief network blip never reverts the screen to "coming soon".
   useEffect(() => {
+    if (!nextMeal || !nextMeal.isMeal) {
+      setMealData(null)
+      return
+    }
+
+    let cancelled = false
+
+    // Determine meal type from title (matches /schedule page conventions).
+    const title = nextMeal.title.toLowerCase()
+    let mealType = "dinner"
+    if (title.includes("breakfast")) mealType = "breakfast"
+    else if (title.includes("lunch")) mealType = "lunch"
+
+    const url = `/api/meals?date=${nextMeal.date}&mealType=${mealType}`
+
     const fetchMealData = async () => {
-      if (!nextMeal || !nextMeal.isMeal) {
-        setMealData(null)
-        return
-      }
-
       try {
-        // Determine meal type from title (matches /schedule page conventions).
-        const title = nextMeal.title.toLowerCase()
-        let mealType = "dinner"
-        if (title.includes("breakfast")) mealType = "breakfast"
-        else if (title.includes("lunch")) mealType = "lunch"
-
-        const res = await fetch(`/api/meals?date=${nextMeal.date}&mealType=${mealType}`)
+        const res = await fetch(url, { cache: "no-store" })
+        if (!res.ok) return
         const data = await res.json()
-        if (data.meals && data.meals.length > 0) {
+        if (cancelled) return
+        if (data?.meals && data.meals.length > 0) {
           setMealData(data.meals[0])
-        } else {
-          setMealData(null)
         }
       } catch {
-        setMealData(null)
+        // keep last good data
       }
     }
+
     fetchMealData()
+    const interval = setInterval(fetchMealData, 2 * 60 * 1000)
+    return () => {
+      cancelled = true
+      clearInterval(interval)
+    }
   }, [nextMeal])
 
   // Fetch volunteer schedule
@@ -1404,13 +1414,20 @@ function MealView({
               {nextMeal.time}
             </p>
 
-            {mealData?.main_dish ? (
+            {/* Show whatever menu fields the API returned. We render the main
+                dish if it's set, then fall back to the meal's `title` field
+                (e.g. "Tuesday Breakfast"), and finally to a list of sides — so
+                the LU never shows a bare "coming soon" when the DB row exists
+                with at least some content. */}
+            {mealData && (mealData.main_dish || mealData.title || (mealData.sides && mealData.sides.length > 0)) ? (
               <div className="w-full max-w-3xl rounded-2xl border border-amber-400/30 bg-amber-500/[0.08] px-8 py-6">
                 <p className="text-amber-300/90 text-xl uppercase tracking-[0.25em] font-bold mb-3">
-                  Tonight&apos;s Main
+                  On The Menu
                 </p>
                 <p className="text-5xl font-semibold leading-tight text-balance">
-                  {mealData.main_dish}
+                  {mealData.main_dish ||
+                    mealData.title ||
+                    (mealData.sides && mealData.sides.join(", "))}
                 </p>
               </div>
             ) : (
