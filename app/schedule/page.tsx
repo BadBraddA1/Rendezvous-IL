@@ -28,19 +28,14 @@ export default function SchedulePage() {
     e.preventDefault()
     setActiveDay(day)
 
-    setTimeout(() => {
-      const element = document.getElementById(day)
-      if (element) {
-        const offset = 100
-        const elementPosition = element.getBoundingClientRect().top
-        const offsetPosition = elementPosition + window.pageYOffset - offset
-
-        window.scrollTo({
-          top: offsetPosition,
-          behavior: "smooth",
-        })
-      }
-    }, 100)
+    // Use scrollIntoView which respects the CSS scroll-margin-top (scroll-mt-24)
+    // set on each section. This is more reliable than manual offset calculation
+    // which was computing the wrong position due to timing issues and the
+    // deprecated window.pageYOffset.
+    const element = document.getElementById(day)
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth", block: "start" })
+    }
   }
 
   return (
