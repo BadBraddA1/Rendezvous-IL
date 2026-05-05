@@ -242,9 +242,11 @@ function getWeatherIcon(weatherId: number, iconCode: string, size: "sm" | "md" |
 //   v3: fixed 16px rem + zoom multiplier (1× default — too small for projection).
 //   v4: starts at 1.75× by default and goes up to 4× so the page is readable
 //       on classroom projectors / TVs across the room out of the box.
-const ZOOM_STORAGE_KEY = "lu_view_zoom_v4"
+//   v5: defaults back to 1× per user request — they want to opt in to bigger
+//       sizing per device rather than getting it automatically.
+const ZOOM_STORAGE_KEY = "lu_view_zoom_v5"
 const ZOOM_BASE_PX = 16          // browser default — Tailwind text-* sizes assume this
-const ZOOM_DEFAULT = 1.75        // out-of-the-box magnification — readable on projectors
+const ZOOM_DEFAULT = 1            // 100% out of the box; bump up per-view as needed
 const ZOOM_MIN = 0.75
 const ZOOM_MAX = 4
 const ZOOM_STEP = 0.25
