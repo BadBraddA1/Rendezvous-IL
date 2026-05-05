@@ -359,6 +359,36 @@ export default function LiveUpdatesPage() {
     return views
   }, [hasVolunteerData, announcements.length])
 
+  // Auto-refresh when a new deployment is detected.
+  //
+  // The /api/version endpoint returns a BUILD_TIME that changes on each deploy.
+  // We store the version we loaded with and poll every 30 seconds — when the
+  // server's version differs from ours, we reload the page so the TVs pick up
+  // the new code automatically without anyone having to manually refresh.
+  useEffect(() => {
+    let initialVersion: string | null = null
+
+    const checkVersion = async () => {
+      try {
+        const res = await fetch("/api/version", { cache: "no-store" })
+        const data = await res.json()
+        if (!initialVersion) {
+          // First load — record the version we started with.
+          initialVersion = data.version
+        } else if (data.version !== initialVersion) {
+          // Server version changed — a new deploy happened. Reload.
+          window.location.reload()
+        }
+      } catch {
+        // Network blip — ignore and try again next interval.
+      }
+    }
+
+    checkVersion()
+    const interval = setInterval(checkVersion, 30 * 1000) // every 30s
+    return () => clearInterval(interval)
+  }, [])
+
   // Fetch weather
   useEffect(() => {
     const fetchWeather = async () => {
