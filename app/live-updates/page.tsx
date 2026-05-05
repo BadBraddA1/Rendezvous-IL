@@ -387,28 +387,29 @@ export default function LiveUpdatesPage() {
     return () => clearInterval(interval)
   }, [])
 
-  // Fetch meal data based on next meal
+  // Fetch meal data for the next upcoming meal.
+  //
+  // Earlier this used `getCentralTime()` to derive the date — which broke
+  // late at night when "next meal" was tomorrow's breakfast (it queried
+  // today's date and got nothing). The /schedule page works because each
+  // <MealMenu /> hard-codes the meal's actual date, so we mirror that here:
+  // every ScheduleItem already carries a `date` field (YYYY-MM-DD), so we
+  // just use it directly.
   useEffect(() => {
     const fetchMealData = async () => {
-      if (!nextMeal) {
+      if (!nextMeal || !nextMeal.isMeal) {
         setMealData(null)
         return
       }
-      
+
       try {
-        const centralNow = getCentralTime()
-        const year = centralNow.getFullYear()
-        const month = String(centralNow.getMonth() + 1).padStart(2, '0')
-        const day = String(centralNow.getDate()).padStart(2, '0')
-        const centralDateStr = `${year}-${month}-${day}`
-        
-        // Determine meal type from title
+        // Determine meal type from title (matches /schedule page conventions).
         const title = nextMeal.title.toLowerCase()
-        let mealType = 'dinner'
-        if (title.includes('breakfast')) mealType = 'breakfast'
-        else if (title.includes('lunch')) mealType = 'lunch'
-        
-        const res = await fetch(`/api/meals?date=${centralDateStr}&mealType=${mealType}`)
+        let mealType = "dinner"
+        if (title.includes("breakfast")) mealType = "breakfast"
+        else if (title.includes("lunch")) mealType = "lunch"
+
+        const res = await fetch(`/api/meals?date=${nextMeal.date}&mealType=${mealType}`)
         const data = await res.json()
         if (data.meals && data.meals.length > 0) {
           setMealData(data.meals[0])
