@@ -1414,16 +1414,12 @@ function MealView({
   // doesn't need to change.
   adminMode?: boolean
 }) {
-  // Friendly time-of-day label that matches the meal — "Tonight's" was hard-
-  // coded before, which read wrong for breakfast / lunch.
-  const mealLabel = (() => {
-    if (!nextMeal) return "Coming Up"
-    const t = nextMeal.title.toLowerCase()
-    if (t.includes("breakfast")) return "This Morning"
-    if (t.includes("lunch")) return "For Lunch"
-    if (t.includes("dinner") || t.includes("supper")) return "Tonight"
-    return "Coming Up"
-  })()
+  // Always use "Next Meal" as the leading label. Earlier versions tried to
+  // be clever with "This Morning" / "Tonight" phrases, but those read wrong
+  // when checked at the wrong time of day (e.g. seeing "This Morning ·
+  // Breakfast" at 11 PM the night before). "Next Meal" is unambiguous in
+  // every timeline scenario.
+  const mealLabel = "Next Meal"
 
   // Strip dietary parentheticals like "(GF)", "(DF, GF)", "(V)", "(GF/DF)"
   // from any menu text. Per the kitchen team, those tags clutter the LU
