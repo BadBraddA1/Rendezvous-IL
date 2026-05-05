@@ -1367,11 +1367,12 @@ function ScheduleView({
   )
 }
 
-// Meal View - Full screen meal display with menu
-// Meal View — minimal: meal name + time + main dish only. Sides, beverages,
-// notes, location, and the ice-cream challenge were removed so the essentials
-// can use giant readable text. Detail-level menu info still lives on /schedule
-// for anyone who wants to drill in on a phone.
+// Meal View — the menu IS the hero.
+// Layout (top → bottom): small meal-type chip, GIANT menu text, small time.
+// Earlier versions led with the meal title ("Breakfast") at text-7xl which
+// pushed the actual food info below the fold and made it the dominant element
+// — exactly the wrong priority for a sign telling people what to expect on
+// the table. The food now uses the largest type on screen.
 function MealView({
   nextMeal,
   mealData,
@@ -1382,15 +1383,33 @@ function MealView({
   // doesn't need to change.
   adminMode?: boolean
 }) {
+  // Friendly time-of-day label that matches the meal — "Tonight's" was hard-
+  // coded before, which read wrong for breakfast / lunch.
+  const mealLabel = (() => {
+    if (!nextMeal) return "Coming Up"
+    const t = nextMeal.title.toLowerCase()
+    if (t.includes("breakfast")) return "This Morning"
+    if (t.includes("lunch")) return "For Lunch"
+    if (t.includes("dinner") || t.includes("supper")) return "Tonight"
+    return "Coming Up"
+  })()
+
+  // Pull whatever menu content we have, in priority order. Falling back to
+  // sides means the screen never goes blank when only partial data is filled.
+  const menuText =
+    mealData?.main_dish ||
+    mealData?.title ||
+    (mealData?.sides && mealData.sides.length > 0 ? mealData.sides.join(", ") : null)
+
   return (
-    <div className="relative w-full h-full flex items-center justify-center">
+    <div className="relative w-full h-full flex items-center justify-center select-none">
       {/* Ambient amber glow orbs */}
       <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
         <div className="absolute -top-40 -left-40 h-[28rem] w-[28rem] rounded-full bg-amber-500/15 blur-3xl animate-pulse" style={{ animationDuration: "6s" }} />
         <div className="absolute -bottom-40 -right-40 h-[32rem] w-[32rem] rounded-full bg-orange-500/10 blur-3xl animate-pulse" style={{ animationDuration: "8s", animationDelay: "2s" }} />
       </div>
 
-      <div className="relative w-full max-w-5xl rounded-3xl border border-white/10 bg-gradient-to-br from-amber-500/[0.10] via-white/[0.04] to-transparent backdrop-blur-sm p-12 text-center">
+      <div className="relative w-full max-w-6xl rounded-3xl border border-white/10 bg-gradient-to-br from-amber-500/[0.10] via-white/[0.04] to-transparent backdrop-blur-sm p-12 text-center">
         <div className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-amber-500/15 blur-2xl" />
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-300/40 to-transparent" />
 
@@ -1401,38 +1420,32 @@ function MealView({
           </div>
         ) : (
           <div className="relative flex flex-col items-center">
-            <div className="mb-6 rounded-3xl bg-white/5 border border-white/10 p-5">
-              {getEventIcon(nextMeal.title, true, "lg")}
+            {/* Top: small label chip combining the time-of-day phrase and meal
+                type ("Tonight • Dinner"). Intentionally small so the menu
+                content below is the dominant element. */}
+            <div className="inline-flex items-center gap-3 px-5 py-2 rounded-full border border-amber-400/30 bg-amber-500/10 mb-8">
+              {getEventIcon(nextMeal.title, true, "sm")}
+              <span className="text-2xl uppercase tracking-[0.25em] font-bold text-amber-300/90">
+                {mealLabel} · {nextMeal.title}
+              </span>
             </div>
 
-            <h2 className="text-7xl font-bold mb-6 leading-tight text-balance">
-              {nextMeal.title}
-            </h2>
-
-            <p className="text-4xl text-white/85 mb-10 flex items-center gap-3">
-              <Clock className="h-10 w-10 text-amber-300" />
-              {nextMeal.time}
-            </p>
-
-            {/* Show whatever menu fields the API returned. We render the main
-                dish if it's set, then fall back to the meal's `title` field
-                (e.g. "Tuesday Breakfast"), and finally to a list of sides — so
-                the LU never shows a bare "coming soon" when the DB row exists
-                with at least some content. */}
-            {mealData && (mealData.main_dish || mealData.title || (mealData.sides && mealData.sides.length > 0)) ? (
-              <div className="w-full max-w-3xl rounded-2xl border border-amber-400/30 bg-amber-500/[0.08] px-8 py-6">
-                <p className="text-amber-300/90 text-xl uppercase tracking-[0.25em] font-bold mb-3">
-                  On The Menu
-                </p>
-                <p className="text-5xl font-semibold leading-tight text-balance">
-                  {mealData.main_dish ||
-                    mealData.title ||
-                    (mealData.sides && mealData.sides.join(", "))}
-                </p>
-              </div>
+            {/* Hero: the menu itself. */}
+            {menuText ? (
+              <p className="text-8xl font-bold leading-[1.05] text-balance mb-10 max-w-5xl">
+                {menuText}
+              </p>
             ) : (
-              <p className="text-2xl text-white/40">Menu details coming soon</p>
+              <p className="text-5xl font-semibold text-white/40 mb-10">
+                Menu coming soon
+              </p>
             )}
+
+            {/* Bottom: serving time, de-emphasized. */}
+            <p className="text-3xl text-white/60 flex items-center gap-3">
+              <Clock className="h-8 w-8 text-amber-300/70" />
+              Served at {nextMeal.time}
+            </p>
           </div>
         )}
       </div>
