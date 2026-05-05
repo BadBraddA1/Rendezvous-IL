@@ -1394,12 +1394,22 @@ function MealView({
     return "Coming Up"
   })()
 
-  // Pull whatever menu content we have, in priority order. Falling back to
-  // sides means the screen never goes blank when only partial data is filled.
-  const menuText =
-    mealData?.main_dish ||
-    mealData?.title ||
-    (mealData?.sides && mealData.sides.length > 0 ? mealData.sides.join(", ") : null)
+  // Strip dietary parentheticals like "(GF)", "(DF, GF)", "(V)", "(GF/DF)"
+  // from any menu text. Per the kitchen team, those tags clutter the LU
+  // display — anyone with dietary needs already has them on a printed sheet
+  // — so we render clean dish names only.
+  const stripDietaryTags = (s: string) =>
+    s
+      .replace(/\s*\(\s*(?:GF|DF|V|VG|VEGAN|VEGETARIAN|N|NF|SF|EF)(?:\s*[,/&]\s*(?:GF|DF|V|VG|VEGAN|VEGETARIAN|N|NF|SF|EF))*\s*\)/gi, "")
+      .replace(/\s+/g, " ")
+      .trim()
+
+  const cleanMain = mealData?.main_dish ? stripDietaryTags(mealData.main_dish) : ""
+  const cleanSides =
+    mealData?.sides && mealData.sides.length > 0
+      ? mealData.sides.map(stripDietaryTags).filter(Boolean)
+      : []
+  const hasMenu = !!cleanMain || cleanSides.length > 0
 
   return (
     <div className="relative w-full h-full flex items-center justify-center select-none">
@@ -1430,11 +1440,31 @@ function MealView({
               </span>
             </div>
 
-            {/* Hero: the menu itself. */}
-            {menuText ? (
-              <p className="text-8xl font-bold leading-[1.05] text-balance mb-10 max-w-5xl">
-                {menuText}
-              </p>
+            {/* Hero: the menu itself. Main dish at the top in the largest
+                possible type; sides on a single line below at a step smaller
+                so the visual hierarchy reads instantly from across the room. */}
+            {hasMenu ? (
+              <div className="mb-10 max-w-5xl">
+                {cleanMain && (
+                  <p className="text-8xl font-bold leading-[1.05] text-balance">
+                    {cleanMain}
+                  </p>
+                )}
+                {cleanSides.length > 0 && (
+                  <p
+                    className={
+                      cleanMain
+                        ? "mt-6 text-4xl text-white/75 leading-snug text-balance"
+                        : "text-7xl font-semibold leading-tight text-balance"
+                    }
+                  >
+                    {cleanMain && (
+                      <span className="text-amber-300/70 mr-2">with</span>
+                    )}
+                    {cleanSides.join(", ")}
+                  </p>
+                )}
+              </div>
             ) : (
               <p className="text-5xl font-semibold text-white/40 mb-10">
                 Menu coming soon
