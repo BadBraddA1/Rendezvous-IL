@@ -437,46 +437,50 @@ export default function LiveUpdatesPage() {
 
   // Fetch volunteer schedule for the NEXT upcoming devotion.
   //
-  // Devotion times (from lib/schedule-data.ts):
-  //   - Morning assembly: 9:00 AM (~1 hr)
-  //   - Evening assembly: 7:00 PM (~1 hr)
+  // Earlier versions hard-coded clock cutoffs (e.g. "before 10:30 AM →
+  // Morning Devotion"), which broke on days that don't have both slots —
+  // notably Monday, which has no Morning Devotion at all. The card would
+  // ask the API for `Monday Morning Devotion`, get nothing, and show a
+  // stale or empty schedule.
   //
-  // Cutoff rules — advance to the next devotion once the current one has
-  // ended (with a buffer past the typical end time):
-  //   - Before 10:30 AM:  today's Morning Devotion
-  //   - 10:30 AM – 8:30 PM:  today's Evening Devotion
-  //   - After 8:30 PM:  tomorrow's Morning Devotion
-  //
-  // Previously the cutoff was a flat noon, so the volunteer card stayed on
-  // "Morning Devotion" for hours after morning devotion was over and never
-  // advanced past evening devotion — this fixes both cases.
+  // We now drive the slot directly off SCHEDULE_ITEMS (the same data the
+  // Schedule view uses): scan for the next "assembly" event whose end time
+  // is still in the future, and use its date + start-time to choose the
+  // volunteer slot. That guarantees we only ever ask the API for a slot
+  // that actually exists on the schedule.
   useEffect(() => {
     const fetchVolunteerSchedule = async () => {
       try {
         const centralNow = getCentralTime()
-        const minutes = centralNow.getHours() * 60 + centralNow.getMinutes()
-        const MORNING_END = 10 * 60 + 30  // 10:30 AM
-        const EVENING_END = 20 * 60 + 30  // 8:30 PM
 
-        // Pick the date + slot for the *next* upcoming devotion.
-        const targetDate = new Date(centralNow)
-        let timeSlot: "Morning Devotion" | "Evening Devotion"
-        if (minutes < MORNING_END) {
-          timeSlot = "Morning Devotion"
-        } else if (minutes < EVENING_END) {
-          timeSlot = "Evening Devotion"
-        } else {
-          // Past evening cutoff — roll over to tomorrow's morning.
-          targetDate.setDate(targetDate.getDate() + 1)
-          timeSlot = "Morning Devotion"
+        // Find the next assembly item that hasn't ended yet.
+        const nextAssembly = SCHEDULE_ITEMS.find((item) => {
+          if (!/assembly/i.test(item.title)) return false
+          const [y, m, d] = item.date.split("-").map(Number)
+          // Use end time when available, else assume the assembly runs ~1hr.
+          const endH = item.endHour ?? item.startHour + 1
+          const endM = item.endMinute ?? item.startMinute
+          const endsAt = new Date(y, m - 1, d, endH, endM)
+          return endsAt.getTime() > centralNow.getTime()
+        })
+
+        if (!nextAssembly) {
+          // No upcoming assemblies left in the schedule at all.
+          setVolunteerSchedule(null)
+          setVolunteerTimeSlot("")
+          return
         }
 
-        const year = targetDate.getFullYear()
-        const month = String(targetDate.getMonth() + 1).padStart(2, "0")
-        const day = String(targetDate.getDate()).padStart(2, "0")
-        const targetDateStr = `${year}-${month}-${day}`
+        const timeSlot: "Morning Devotion" | "Evening Devotion" =
+          nextAssembly.startHour < 12 ? "Morning Devotion" : "Evening Devotion"
 
-        const dayName = targetDate.toLocaleDateString("en-US", { weekday: "long" })
+        const targetDateStr = nextAssembly.date
+
+        // Friendly label like "Tuesday Morning Devotion" — derived from the
+        // ScheduleItem's own `date` so it always matches the row we'll
+        // request from the API.
+        const [y, m, d] = targetDateStr.split("-").map(Number)
+        const dayName = new Date(y, m - 1, d).toLocaleDateString("en-US", { weekday: "long" })
         setVolunteerTimeSlot(`${dayName} ${timeSlot}`)
 
         const res = await fetch(`/api/volunteer-schedule?date=${targetDateStr}&timeSlot=${encodeURIComponent(timeSlot)}`)
@@ -484,8 +488,7 @@ export default function LiveUpdatesPage() {
         if (data.schedule) {
           setVolunteerSchedule(data.schedule)
         } else {
-          // Clear stale data if there's no schedule for the new target slot
-          // (e.g. tomorrow morning hasn't been entered yet).
+          // Clear stale data if no schedule exists for the new target slot.
           setVolunteerSchedule(null)
         }
       } catch {}
