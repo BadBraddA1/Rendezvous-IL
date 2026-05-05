@@ -1,9 +1,13 @@
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db"
 import { NextResponse } from "next/server"
 
+// Use the shared `lib/db` client so the route works regardless of whether
+// the env var is named `NEON_DATABASE_URL` or `DATABASE_URL` — when the
+// Neon integration is added via Vercel Marketplace, only `DATABASE_URL` /
+// `POSTGRES_URL` are set, which previously made this route 500 silently
+// and caused the LU "Next Meal" panel to show no menu data.
 export async function GET(request: Request) {
   try {
-    const sql = neon(process.env.NEON_DATABASE_URL!)
     const { searchParams } = new URL(request.url)
     const date = searchParams.get("date")
     const mealType = searchParams.get("mealType")
@@ -34,7 +38,6 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const sql = neon(process.env.NEON_DATABASE_URL!)
     const body = await request.json()
     const { date, meal_type, main_dish, sides, dessert, drinks, notes, title } = body
 

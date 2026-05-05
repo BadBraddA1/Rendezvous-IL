@@ -1,12 +1,14 @@
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db"
 import { NextResponse } from "next/server"
 
+// Uses shared `lib/db` so the route works whether the connection string is in
+// `NEON_DATABASE_URL` or `DATABASE_URL` (Vercel Marketplace integrations only
+// set the latter, which previously caused this route to 500 silently).
 export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const sql = neon(process.env.NEON_DATABASE_URL!)
     const { id } = await params
 
     await sql`DELETE FROM meals WHERE id = ${parseInt(id)}`
@@ -23,7 +25,6 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const sql = neon(process.env.NEON_DATABASE_URL!)
     const { id } = await params
     const body = await request.json()
     const { main_dish, side_dishes, dessert, beverages, notes } = body
