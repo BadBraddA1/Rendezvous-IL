@@ -5,7 +5,7 @@ import dynamic from "next/dynamic"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge" // still used in search results badge
-import { MapPin, Search, Mail, Phone, Church, Home, User, Users, X, Sparkles, RefreshCw, Lock, FileDown } from "lucide-react"
+import { MapPin, Search, Mail, Phone, Church, Home, User, Users, X, Sparkles, RefreshCw, Lock, FileDown, ChevronUp, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
@@ -454,6 +454,36 @@ export default function Map2026Page() {
     setSelectedRegistration(reg)
   }, [])
 
+  // Keyboard navigation: Arrow Down/Up to cycle through families
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't intercept if user is typing in the search box
+      if (document.activeElement?.tagName === "INPUT") return
+
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault()
+        const list = filteredRegistrations
+        if (list.length === 0) return
+
+        const currentIndex = selectedRegistration
+          ? list.findIndex((r) => r.id === selectedRegistration.id)
+          : -1
+
+        let nextIndex: number
+        if (e.key === "ArrowDown") {
+          nextIndex = currentIndex < list.length - 1 ? currentIndex + 1 : 0
+        } else {
+          nextIndex = currentIndex > 0 ? currentIndex - 1 : list.length - 1
+        }
+
+        setSelectedRegistration(list[nextIndex])
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [filteredRegistrations, selectedRegistration])
+
   // Password gate
   if (!isUnlocked) {
     return (
@@ -696,8 +726,15 @@ export default function Map2026Page() {
                       <MapPin className="h-5 w-5 text-primary" />
                       All Attendees
                     </CardTitle>
-                    <CardDescription>
-                      {filteredRegistrations.length} {filteredRegistrations.length === 1 ? "family" : "families"} — click to view details
+                    <CardDescription className="flex items-center justify-between gap-2 flex-wrap">
+                      <span>
+                        {filteredRegistrations.length} {filteredRegistrations.length === 1 ? "family" : "families"} — click to view details
+                      </span>
+                      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground/70">
+                        <ChevronUp className="h-3 w-3" />
+                        <ChevronDown className="h-3 w-3" />
+                        to navigate
+                      </span>
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="p-0">
