@@ -1805,40 +1805,43 @@ function VolunteersView({
       </div>
 
       {!volunteerSchedule ? (
-        <div className="relative w-full max-w-2xl rounded-3xl border border-white/10 bg-gradient-to-br from-rose-500/[0.10] via-white/[0.04] to-transparent backdrop-blur-sm p-12 flex flex-col items-center justify-center">
+        <div className="relative w-full max-w-3xl rounded-3xl border border-white/10 bg-gradient-to-br from-rose-500/[0.10] via-white/[0.04] to-transparent backdrop-blur-sm p-12 flex flex-col items-center justify-center">
           <div className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-rose-500/15 blur-2xl" />
-          <Users className="h-24 w-24 text-white/30 mb-6 relative" />
-          <h2 className="text-4xl font-bold text-white/60 relative">No Volunteer Schedule</h2>
+          <Users className="h-32 w-32 text-white/30 mb-8 relative" />
+          <h2 className="text-5xl font-bold text-white/60 relative">No Volunteer Schedule</h2>
         </div>
       ) : (
         <div className="relative w-full max-w-7xl flex flex-col items-center">
-          {/* Header panel */}
-          <div className="relative w-full overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-rose-500/[0.10] via-white/[0.04] to-transparent backdrop-blur-sm p-8 mb-5 text-center">
+          {/* Header panel — bigger time-slot title and tagline so it reads
+              clearly from the back of the room. */}
+          <div className="relative w-full overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-rose-500/[0.10] via-white/[0.04] to-transparent backdrop-blur-sm p-10 mb-6 text-center">
             <div className="absolute -top-12 left-1/2 -translate-x-1/2 h-48 w-96 rounded-full bg-rose-500/15 blur-3xl" />
             <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-rose-300/40 to-transparent" />
-            <div className="relative flex items-center justify-center gap-4 mb-2">
-              <div className="rounded-xl bg-rose-500/15 p-3 border border-rose-400/20">
-                <Users className="h-7 w-7 text-rose-300" />
+            <div className="relative flex items-center justify-center gap-5 mb-3">
+              <div className="rounded-2xl bg-rose-500/15 p-4 border border-rose-400/20">
+                <Users className="h-10 w-10 text-rose-300" />
               </div>
-              <h2 className="text-4xl font-bold">{volunteerTimeSlot}</h2>
+              <h2 className="text-6xl font-bold">{volunteerTimeSlot}</h2>
             </div>
-            <p className="text-lg text-rose-300/80 uppercase tracking-[0.3em] font-bold">Devotional Assignments</p>
+            <p className="text-2xl text-rose-300/80 uppercase tracking-[0.3em] font-bold">Devotional Assignments</p>
           </div>
 
-          {/* Roles grid */}
+          {/* Roles grid — every role card scaled up so the assignee name is
+              the dominant element. Labels are still de-emphasized but now
+              large enough to be legible across the room. */}
           <div className="relative w-full overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-rose-500/[0.06] via-white/[0.03] to-transparent backdrop-blur-sm p-8">
             <div className="absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-rose-500/10 blur-2xl" />
             <div className="absolute -top-10 -right-10 h-40 w-40 rounded-full bg-pink-500/10 blur-2xl" />
-            <div className="relative grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="relative grid grid-cols-1 md:grid-cols-2 gap-5">
               {roles.map((role, index) => (
-                <div 
-                  key={index} 
-                  className="p-4 rounded-2xl bg-gradient-to-br from-rose-500/[0.06] via-white/[0.02] to-transparent border border-white/10"
+                <div
+                  key={index}
+                  className="p-6 rounded-2xl bg-gradient-to-br from-rose-500/[0.06] via-white/[0.02] to-transparent border border-white/10"
                 >
-                  <p className="text-rose-300/80 text-xs uppercase tracking-[0.2em] font-bold mb-1.5">{role.label}</p>
-                  <p className="text-xl font-semibold">{role.value}</p>
+                  <p className="text-rose-300/80 text-lg uppercase tracking-[0.2em] font-bold mb-3">{role.label}</p>
+                  <p className="text-4xl font-semibold leading-tight text-balance">{role.value}</p>
                   {role.subtitle && (
-                    <p className="text-white/50 text-sm italic mt-1">({role.subtitle})</p>
+                    <p className="text-white/55 text-xl italic mt-2 text-balance">({role.subtitle})</p>
                   )}
                 </div>
               ))}
