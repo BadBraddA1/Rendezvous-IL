@@ -366,25 +366,49 @@ export default function LiveUpdatesPage() {
   // server's version differs from ours, we reload the page so the TVs pick up
   // the new code automatically without anyone having to manually refresh.
   //
-  // We also preserve fullscreen state across the reload: before reloading we
-  // stash a flag in sessionStorage, and on mount we check for it and re-enter
-  // fullscreen automatically (requires a user gesture, so we simulate a click).
+  // We preserve both fullscreen AND the current view/slide across the reload
+  // so the experience is seamless — the page comes back to exactly where it was.
   const FULLSCREEN_RESTORE_KEY = "lu_restore_fullscreen"
+  const VIEW_RESTORE_KEY = "lu_restore_view"
+  const AUTO_ROTATE_RESTORE_KEY = "lu_restore_auto_rotate"
+  const ZOOM_RESTORE_KEY = "lu_restore_zoom"
 
-  // On mount, check if we need to restore fullscreen after a deploy-reload.
+  // On mount, check if we need to restore state after a deploy-reload.
   useEffect(() => {
     if (typeof window === "undefined") return
-    const shouldRestore = sessionStorage.getItem(FULLSCREEN_RESTORE_KEY)
-    if (shouldRestore === "true") {
+
+    // Restore view
+    const savedView = sessionStorage.getItem(VIEW_RESTORE_KEY) as ViewType | null
+    if (savedView) {
+      sessionStorage.removeItem(VIEW_RESTORE_KEY)
+      setCurrentView(savedView)
+    }
+
+    // Restore auto-rotate state
+    const savedAutoRotate = sessionStorage.getItem(AUTO_ROTATE_RESTORE_KEY)
+    if (savedAutoRotate !== null) {
+      sessionStorage.removeItem(AUTO_ROTATE_RESTORE_KEY)
+      setIsAutoRotating(savedAutoRotate === "true")
+    }
+
+    // Restore zoom
+    const savedZoom = sessionStorage.getItem(ZOOM_RESTORE_KEY)
+    if (savedZoom) {
+      sessionStorage.removeItem(ZOOM_RESTORE_KEY)
+      setZoomLevel(parseFloat(savedZoom))
+    }
+
+    // Restore fullscreen (with delay to let page settle)
+    const shouldRestoreFullscreen = sessionStorage.getItem(FULLSCREEN_RESTORE_KEY)
+    if (shouldRestoreFullscreen === "true") {
       sessionStorage.removeItem(FULLSCREEN_RESTORE_KEY)
-      // Small delay to let the page settle, then request fullscreen.
       // Note: some browsers block this without a user gesture, but most TV
       // browsers (and Chrome in kiosk mode) allow it.
       setTimeout(() => {
         document.documentElement.requestFullscreen?.().catch(() => {
           // Browser blocked it — user will need to press F again.
         })
-      }, 500)
+      }, 300)
     }
   }, [])
 
@@ -400,7 +424,10 @@ export default function LiveUpdatesPage() {
           initialVersion = data.version
         } else if (data.version !== initialVersion) {
           // Server version changed — a new deploy happened.
-          // Stash fullscreen state so we can restore it after reload.
+          // Stash ALL UI state so we can restore it after reload.
+          sessionStorage.setItem(VIEW_RESTORE_KEY, currentView)
+          sessionStorage.setItem(AUTO_ROTATE_RESTORE_KEY, String(isAutoRotating))
+          sessionStorage.setItem(ZOOM_RESTORE_KEY, String(zoomLevel))
           if (document.fullscreenElement) {
             sessionStorage.setItem(FULLSCREEN_RESTORE_KEY, "true")
           }
@@ -414,7 +441,7 @@ export default function LiveUpdatesPage() {
     checkVersion()
     const interval = setInterval(checkVersion, 30 * 1000) // every 30s
     return () => clearInterval(interval)
-  }, [])
+  }, [currentView, isAutoRotating, zoomLevel])
 
   // Fetch weather
   useEffect(() => {
