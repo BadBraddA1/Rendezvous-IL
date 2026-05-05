@@ -391,11 +391,16 @@ export default function LiveUpdatesPage() {
       setIsAutoRotating(savedAutoRotate === "true")
     }
 
-    // Restore zoom
+    // Restore zoom (the entire viewZoom object, not just a single number)
     const savedZoom = sessionStorage.getItem(ZOOM_RESTORE_KEY)
     if (savedZoom) {
       sessionStorage.removeItem(ZOOM_RESTORE_KEY)
-      setZoomLevel(parseFloat(savedZoom))
+      try {
+        const parsed = JSON.parse(savedZoom)
+        setViewZoom(parsed)
+      } catch {
+        // ignore corrupt data
+      }
     }
 
     // Restore fullscreen (with delay to let page settle)
@@ -427,7 +432,7 @@ export default function LiveUpdatesPage() {
           // Stash ALL UI state so we can restore it after reload.
           sessionStorage.setItem(VIEW_RESTORE_KEY, currentView)
           sessionStorage.setItem(AUTO_ROTATE_RESTORE_KEY, String(isAutoRotating))
-          sessionStorage.setItem(ZOOM_RESTORE_KEY, String(zoomLevel))
+          sessionStorage.setItem(ZOOM_RESTORE_KEY, JSON.stringify(viewZoom))
           if (document.fullscreenElement) {
             sessionStorage.setItem(FULLSCREEN_RESTORE_KEY, "true")
           }
@@ -441,7 +446,7 @@ export default function LiveUpdatesPage() {
     checkVersion()
     const interval = setInterval(checkVersion, 30 * 1000) // every 30s
     return () => clearInterval(interval)
-  }, [currentView, isAutoRotating, zoomLevel])
+  }, [currentView, isAutoRotating, viewZoom])
 
   // Fetch weather
   useEffect(() => {
