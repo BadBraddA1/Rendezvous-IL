@@ -381,6 +381,9 @@ export default function SchedulePage() {
                       <span className="font-semibold text-foreground">2:30 PM</span> Gaga Ball Tournament
                     </p>
                     <p>
+                      <span className="font-semibold text-foreground">2:30 PM</span> <a href="/scrabble" className="text-primary hover:underline">Scrabble Tournament</a> in <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>AC Room 205/206</LocationLink>
+                    </p>
+                    <p>
                       <span className="font-semibold text-foreground">3:30 PM</span> Kids&apos; movie & craft (Painting rocks) in <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>AC Room 207</LocationLink>
                     </p>
                     <p>

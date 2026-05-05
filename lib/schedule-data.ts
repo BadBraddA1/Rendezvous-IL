@@ -118,6 +118,7 @@ export const scheduleData: ScheduleDay[] = [
       { time: "12:00 PM", title: "Lunch", location: "Lakeside Dining Room" },
       { time: "1:30 PM", title: "Kickball", location: "Rec Field" },
       { time: "2:30 PM", title: "Gaga Ball Tournament", location: "Outdoor" },
+      { time: "2:30 PM", title: "Scrabble Tournament", location: "AC Room 205/206" },
       { time: "3:30 PM", title: "Kids' movie & craft (Painting rocks)", location: "AC Room 207" },
       { time: "3:30 PM", title: "Disc golf", location: "Begins behind Activity Center" },
       { time: "5:30 PM", title: "Dinner", location: "Lakeside Dining Room" },
