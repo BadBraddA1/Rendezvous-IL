@@ -365,6 +365,29 @@ export default function LiveUpdatesPage() {
   // We store the version we loaded with and poll every 30 seconds — when the
   // server's version differs from ours, we reload the page so the TVs pick up
   // the new code automatically without anyone having to manually refresh.
+  //
+  // We also preserve fullscreen state across the reload: before reloading we
+  // stash a flag in sessionStorage, and on mount we check for it and re-enter
+  // fullscreen automatically (requires a user gesture, so we simulate a click).
+  const FULLSCREEN_RESTORE_KEY = "lu_restore_fullscreen"
+
+  // On mount, check if we need to restore fullscreen after a deploy-reload.
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const shouldRestore = sessionStorage.getItem(FULLSCREEN_RESTORE_KEY)
+    if (shouldRestore === "true") {
+      sessionStorage.removeItem(FULLSCREEN_RESTORE_KEY)
+      // Small delay to let the page settle, then request fullscreen.
+      // Note: some browsers block this without a user gesture, but most TV
+      // browsers (and Chrome in kiosk mode) allow it.
+      setTimeout(() => {
+        document.documentElement.requestFullscreen?.().catch(() => {
+          // Browser blocked it — user will need to press F again.
+        })
+      }, 500)
+    }
+  }, [])
+
   useEffect(() => {
     let initialVersion: string | null = null
 
@@ -376,7 +399,11 @@ export default function LiveUpdatesPage() {
           // First load — record the version we started with.
           initialVersion = data.version
         } else if (data.version !== initialVersion) {
-          // Server version changed — a new deploy happened. Reload.
+          // Server version changed — a new deploy happened.
+          // Stash fullscreen state so we can restore it after reload.
+          if (document.fullscreenElement) {
+            sessionStorage.setItem(FULLSCREEN_RESTORE_KEY, "true")
+          }
           window.location.reload()
         }
       } catch {
