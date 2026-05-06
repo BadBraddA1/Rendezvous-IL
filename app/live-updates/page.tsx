@@ -256,6 +256,8 @@ export default function LiveUpdatesPage() {
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isAutoRotating, setIsAutoRotating] = useState(true)
   const [viewZoom, setViewZoom] = useState<Record<string, number>>({})
+  // Hide the bottom control bar for a cleaner TV display. Toggle with "H" key.
+  const [showControls, setShowControls] = useState(true)
 
   // Hydrate zoom prefs from localStorage on mount
   useEffect(() => {
@@ -372,6 +374,7 @@ export default function LiveUpdatesPage() {
   const VIEW_RESTORE_KEY = "lu_restore_view"
   const AUTO_ROTATE_RESTORE_KEY = "lu_restore_auto_rotate"
   const ZOOM_RESTORE_KEY = "lu_restore_zoom"
+  const CONTROLS_RESTORE_KEY = "lu_restore_controls"
 
   // On mount, check if we need to restore state after a deploy-reload.
   useEffect(() => {
@@ -401,6 +404,13 @@ export default function LiveUpdatesPage() {
       } catch {
         // ignore corrupt data
       }
+    }
+
+    // Restore controls visibility — hide controls on restore for clean TV display
+    const savedControls = sessionStorage.getItem(CONTROLS_RESTORE_KEY)
+    if (savedControls !== null) {
+      sessionStorage.removeItem(CONTROLS_RESTORE_KEY)
+      setShowControls(savedControls === "true")
     }
 
     // Restore fullscreen (with delay to let page settle)
@@ -433,6 +443,7 @@ export default function LiveUpdatesPage() {
           sessionStorage.setItem(VIEW_RESTORE_KEY, currentView)
           sessionStorage.setItem(AUTO_ROTATE_RESTORE_KEY, String(isAutoRotating))
           sessionStorage.setItem(ZOOM_RESTORE_KEY, JSON.stringify(viewZoom))
+          sessionStorage.setItem(CONTROLS_RESTORE_KEY, String(showControls))
           if (document.fullscreenElement) {
             sessionStorage.setItem(FULLSCREEN_RESTORE_KEY, "true")
           }
@@ -446,7 +457,7 @@ export default function LiveUpdatesPage() {
     checkVersion()
     const interval = setInterval(checkVersion, 30 * 1000) // every 30s
     return () => clearInterval(interval)
-  }, [currentView, isAutoRotating, viewZoom])
+  }, [currentView, isAutoRotating, viewZoom, showControls])
 
   // Fetch weather
   useEffect(() => {
@@ -793,6 +804,10 @@ export default function LiveUpdatesPage() {
         case "F":
           toggleFullscreen()
           break
+        case "h":
+        case "H":
+          setShowControls(prev => !prev)
+          break
         case "ArrowRight":
           setCurrentView(prev => {
             const currentIndex = availableViews.indexOf(prev)
@@ -898,8 +913,8 @@ export default function LiveUpdatesPage() {
         </ViewTransition>
       </main>
 
-      {/* Keyboard Controls Footer - hidden in fullscreen */}
-      {!isFullscreen && (
+      {/* Keyboard Controls Footer - hidden in fullscreen or when controls are hidden (press H to toggle) */}
+      {!isFullscreen && showControls && (
       <footer className="shrink-0 px-12 py-6 border-t border-white/10">
         <div className="flex items-center gap-6 justify-center flex-wrap">
           <span className="text-white/50 text-lg">Keyboard Controls:</span>
