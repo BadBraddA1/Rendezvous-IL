@@ -136,8 +136,8 @@ export default function AboutPage() {
                         { year: 2023, attendees: 174, theme: "2 Corinthians" },
                         { year: 2024, attendees: 124, theme: "Joshua" },
                         { year: 2025, attendees: 118, theme: "Judges" },
-                        { year: 2026, attendees: "?", theme: "Galatians & Ephesians" },
-                        { year: 2027, attendees: "?", theme: "1 Samuel 1" },
+                        { year: 2026, attendees: 136, theme: "Galatians & Ephesians" },
+                        { year: 2027, attendees: "?", theme: "1 Samuel" },
                       ].map((row, idx) => (
                         <tr
                           key={row.year}
