@@ -30,12 +30,12 @@ export async function GET() {
   // === Header ===
   doc.setFont("helvetica", "bold")
   doc.setFontSize(22)
-  doc.text("Rendezvous 2026 Schedule", pageWidth / 2, yPos, { align: "center" })
+  doc.text("Rendezvous 2027 Schedule", pageWidth / 2, yPos, { align: "center" })
   yPos += 8
 
   doc.setFont("helvetica", "normal")
   doc.setFontSize(12)
-  doc.text("May 4-8, 2026", pageWidth / 2, yPos, { align: "center" })
+  doc.text("May 3-7, 2027", pageWidth / 2, yPos, { align: "center" })
   yPos += 6
 
   doc.setFontSize(10)
@@ -131,7 +131,7 @@ export async function GET() {
     doc.setFontSize(8)
     doc.setTextColor(100)
     doc.text(
-      "Rendezvous 2026 - Lake Williamson Christian Center - Carlinville, IL",
+      "Rendezvous 2027 - Lake Williamson Christian Center - Carlinville, IL",
       pageWidth / 2,
       pageHeight - 10,
       { align: "center" },
@@ -144,7 +144,7 @@ export async function GET() {
   return new Response(pdfBuffer, {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": 'attachment; filename="rendezvous-2026-schedule.pdf"',
+      "Content-Disposition": 'attachment; filename="rendezvous-2027-schedule.pdf"',
       "Cache-Control": "no-store",
     },
   })

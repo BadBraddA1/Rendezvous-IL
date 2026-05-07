@@ -336,7 +336,7 @@ export function RainAlertBanner() {
 }
 
 // Component to show inline weather for a specific date and time
-// date format: "2026-05-07" (YYYY-MM-DD)
+// date format: "2027-05-07" (YYYY-MM-DD)
 // hour: 14 for 2 PM, 17 for 5 PM, etc.
 export function InlineWeather({ date, hour }: { date: string; hour: number }) {
   const [weather, setWeather] = useState<WeatherData | null>(null)

@@ -386,8 +386,8 @@ export function RegistrationEditModal({ registration, open, onClose, onSave }: P
                   <Textarea
                     placeholder="Add payment details, transaction IDs, check numbers, dates received, etc.
 Example:
-- 1/15/2026: Received $50 reg fee via check #1234
-- 2/1/2026: Paid remaining balance via Venmo (@johndoe)"
+- 1/15/2027: Received $50 reg fee via check #1234
+- 2/1/2027: Paid remaining balance via Venmo (@johndoe)"
                     value={paymentHistory}
                     onChange={(e) => setPaymentHistory(e.target.value)}
                     rows={6}

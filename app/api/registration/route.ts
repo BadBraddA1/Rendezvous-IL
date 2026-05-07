@@ -4,9 +4,9 @@ import { generateRegistrationConfirmationEmail, generateAdminNotificationEmail }
 import { resend } from "@/lib/resend"
 
 export async function POST(request: Request) {
-  // Registration is closed as of April 15, 2026
+  // Registration opens January 1, 2027
   return NextResponse.json(
-    { error: "Registration for Rendezvous 2026 has closed. If you have any questions, please contact the event organizers." },
+    { error: "Registration for Rendezvous 2027 opens January 1, 2027. Stay tuned!" },
     { status: 403 }
   )
 
@@ -115,9 +115,9 @@ export async function POST(request: Request) {
       const emailHtml = generateRegistrationConfirmationEmail(data, registrationId)
 
       await resend.emails.send({
-        from: "Rendezvous 2026 <noreply@braddcorp.com>",
+        from: "Rendezvous 2027 <noreply@braddcorp.com>",
         to: data.email,
-        subject: `Registration Confirmation - Rendezvous 2026 (${data.familyLastName} Family)`,
+        subject: `Registration Confirmation - Rendezvous 2027 (${data.familyLastName} Family)`,
         html: emailHtml,
       })
 
@@ -130,9 +130,9 @@ export async function POST(request: Request) {
       const adminEmailHtml = generateAdminNotificationEmail(data, registrationId)
 
       await resend.emails.send({
-        from: "Rendezvous 2026 <noreply@braddcorp.com>",
+        from: "Rendezvous 2027 <noreply@braddcorp.com>",
         to: ["sbradd@rocketmail.com", "adin@braddcorp.com"],
-        subject: `New Registration: ${data.familyLastName} Family - Rendezvous 2026`,
+        subject: `New Registration: ${data.familyLastName} Family - Rendezvous 2027`,
         html: adminEmailHtml,
       })
 

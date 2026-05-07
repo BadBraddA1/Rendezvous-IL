@@ -10,8 +10,8 @@ import { Button } from "@/components/ui/button"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 
-const MAP_PASSWORD = "Rendezvous2026"
-const STORAGE_KEY = "map2026_unlocked"
+const MAP_PASSWORD = "Rendezvous2027"
+const STORAGE_KEY = "map2027_unlocked"
 
 const LeafletMap = dynamic(
   () => import("@/components/ui/leaflet-map").then((mod) => mod.LeafletMap),
@@ -545,7 +545,7 @@ export default function Map2026Page() {
                 Attendee Map
               </h1>
               <p className="mb-6 text-balance text-lg text-secondary-foreground/70">
-                See where Rendezvous 2026 families are coming from across the country
+                See where Rendezvous 2027 families are coming from across the country
               </p>
               <Button asChild size="lg" className="gap-2">
                 <a

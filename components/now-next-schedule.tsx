@@ -33,13 +33,13 @@ function getCentralTime(): Date {
 // Helper to get the day anchor ID from a date
 function getDayAnchorId(dateStr: string): string {
   const dayMap: Record<string, string> = {
-    '2026-05-04': 'monday',
-    '2026-05-05': 'tuesday',
-    '2026-05-06': 'wednesday',
-    '2026-05-07': 'thursday',
-    '2026-05-08': 'friday',
+    '2027-05-03': 'saturday',
+    '2027-05-04': 'sunday',
+    '2027-05-05': 'monday',
+    '2027-05-06': 'tuesday',
+    '2027-05-07': 'wednesday',
   }
-  return dayMap[dateStr] || 'monday'
+  return dayMap[dateStr] || 'saturday'
 }
 
 // Scroll to the current activity on the schedule
@@ -74,48 +74,48 @@ function createCentralDate(year: number, month: number, day: number, hour: numbe
 }
 
 const SCHEDULE_ITEMS: ScheduleItem[] = [
-  // Monday May 4
-  { date: '2026-05-04', day: 'Monday', time: '1:00 PM - 5:15 PM', startHour: 13, startMinute: 0, endHour: 17, endMinute: 15, title: 'Check-in at Activity Center', location: 'Activity Center' },
-  { date: '2026-05-04', day: 'Monday', time: '4:00 PM - 5:00 PM', startHour: 16, startMinute: 0, endHour: 17, endMinute: 0, title: 'Ice Breaker Game', location: 'AC Room 205/206' },
-  { date: '2026-05-04', day: 'Monday', time: '5:30 PM', startHour: 17, startMinute: 30, title: 'Dinner', location: 'Lakeside Dining Room' },
-  { date: '2026-05-04', day: 'Monday', time: '7:00 PM', startHour: 19, startMinute: 0, title: 'Evening Assembly & Introductions', location: 'AC Room 207' },
-  { date: '2026-05-04', day: 'Monday', time: '8:00 PM', startHour: 20, startMinute: 0, title: 'Black-light Dodgeball & Games', location: 'Activity Center' },
-  { date: '2026-05-04', day: 'Monday', time: '9:00 PM', startHour: 21, startMinute: 0, title: 'Nine Square & Knockout', location: 'Activity Center' },
+  // Saturday May 3
+  { date: '2027-05-03', day: 'Saturday', time: '1:00 PM - 5:15 PM', startHour: 13, startMinute: 0, endHour: 17, endMinute: 15, title: 'Check-in at Activity Center', location: 'Activity Center' },
+  { date: '2027-05-03', day: 'Saturday', time: '4:00 PM - 5:00 PM', startHour: 16, startMinute: 0, endHour: 17, endMinute: 0, title: 'Ice Breaker Game', location: 'AC Room 205/206' },
+  { date: '2027-05-03', day: 'Saturday', time: '5:30 PM', startHour: 17, startMinute: 30, title: 'Dinner', location: 'Lakeside Dining Room' },
+  { date: '2027-05-03', day: 'Saturday', time: '7:00 PM', startHour: 19, startMinute: 0, title: 'Evening Assembly & Introductions', location: 'AC Room 207' },
+  { date: '2027-05-03', day: 'Saturday', time: '8:00 PM', startHour: 20, startMinute: 0, title: 'Black-light Dodgeball & Games', location: 'Activity Center' },
+  { date: '2027-05-03', day: 'Saturday', time: '9:00 PM', startHour: 21, startMinute: 0, title: 'Nine Square & Knockout', location: 'Activity Center' },
 
-  // Tuesday May 5
-  { date: '2026-05-05', day: 'Tuesday', time: '7:30 AM', startHour: 7, startMinute: 30, title: 'Breakfast', location: 'Lakeside Dining Room' },
-  { date: '2026-05-05', day: 'Tuesday', time: '9:00 AM', startHour: 9, startMinute: 0, title: 'Morning Assembly & Announcements', location: 'AC Room 207' },
-  { date: '2026-05-05', day: 'Tuesday', time: '10:00 AM', startHour: 10, startMinute: 0, title: 'Young Adult & Mom\'s Session', location: 'Activity Center' },
-  { date: '2026-05-05', day: 'Tuesday', time: '12:00 PM', startHour: 12, startMinute: 0, title: 'Lunch', location: 'Lakeside Dining Room' },
-  { date: '2026-05-05', day: 'Tuesday', time: '1:30 PM', startHour: 13, startMinute: 30, title: 'Archery, Obstacle Course & Rope Games', location: 'Various' },
-  { date: '2026-05-05', day: 'Tuesday', time: '5:30 PM', startHour: 17, startMinute: 30, title: 'Dinner', location: 'Lakeside Dining Room' },
-  { date: '2026-05-05', day: 'Tuesday', time: '7:00 PM', startHour: 19, startMinute: 0, title: 'Evening Assembly & Announcements', location: 'AC Room 207' },
-  { date: '2026-05-05', day: 'Tuesday', time: '8:00 PM', startHour: 20, startMinute: 0, title: 'Gym Time & Table Games', location: 'Activity Center' },
+  // Sunday May 4
+  { date: '2027-05-04', day: 'Sunday', time: '7:30 AM', startHour: 7, startMinute: 30, title: 'Breakfast', location: 'Lakeside Dining Room' },
+  { date: '2027-05-04', day: 'Sunday', time: '9:00 AM', startHour: 9, startMinute: 0, title: 'Morning Assembly & Announcements', location: 'AC Room 207' },
+  { date: '2027-05-04', day: 'Sunday', time: '10:00 AM', startHour: 10, startMinute: 0, title: 'Young Adult & Mom\'s Session', location: 'Activity Center' },
+  { date: '2027-05-04', day: 'Sunday', time: '12:00 PM', startHour: 12, startMinute: 0, title: 'Lunch', location: 'Lakeside Dining Room' },
+  { date: '2027-05-04', day: 'Sunday', time: '1:30 PM', startHour: 13, startMinute: 30, title: 'Archery, Obstacle Course & Rope Games', location: 'Various' },
+  { date: '2027-05-04', day: 'Sunday', time: '5:30 PM', startHour: 17, startMinute: 30, title: 'Dinner', location: 'Lakeside Dining Room' },
+  { date: '2027-05-04', day: 'Sunday', time: '7:00 PM', startHour: 19, startMinute: 0, title: 'Evening Assembly & Announcements', location: 'AC Room 207' },
+  { date: '2027-05-04', day: 'Sunday', time: '8:00 PM', startHour: 20, startMinute: 0, title: 'Gym Time & Table Games', location: 'Activity Center' },
 
-  // Wednesday May 6
-  { date: '2026-05-06', day: 'Wednesday', time: '7:30 AM', startHour: 7, startMinute: 30, title: 'Breakfast', location: 'Lakeside Dining Room' },
-  { date: '2026-05-06', day: 'Wednesday', time: '9:00 AM', startHour: 9, startMinute: 0, title: 'Morning Assembly & Group Picture', location: 'AC Room 207' },
-  { date: '2026-05-06', day: 'Wednesday', time: '10:00 AM', startHour: 10, startMinute: 0, title: 'General / Family Session', location: 'Activity Center' },
-  { date: '2026-05-06', day: 'Wednesday', time: '12:00 PM', startHour: 12, startMinute: 0, title: 'Lunch', location: 'Lakeside Dining Room' },
-  { date: '2026-05-06', day: 'Wednesday', time: '1:30 PM', startHour: 13, startMinute: 30, title: 'Afternoon Activities', location: 'Various' },
-  { date: '2026-05-06', day: 'Wednesday', time: '5:30 PM', startHour: 17, startMinute: 30, title: 'Dinner', location: 'Lakeside Dining Room' },
-  { date: '2026-05-06', day: 'Wednesday', time: '7:00 PM', startHour: 19, startMinute: 0, title: 'Evening Assembly & Announcements', location: 'AC Room 207' },
-  { date: '2026-05-06', day: 'Wednesday', time: '8:00 PM', startHour: 20, startMinute: 0, title: 'Game Night & Bonfire', location: 'Activity Center' },
+  // Monday May 5
+  { date: '2027-05-05', day: 'Monday', time: '7:30 AM', startHour: 7, startMinute: 30, title: 'Breakfast', location: 'Lakeside Dining Room' },
+  { date: '2027-05-05', day: 'Monday', time: '9:00 AM', startHour: 9, startMinute: 0, title: 'Morning Assembly & Group Picture', location: 'AC Room 207' },
+  { date: '2027-05-05', day: 'Monday', time: '10:00 AM', startHour: 10, startMinute: 0, title: 'General / Family Session', location: 'Activity Center' },
+  { date: '2027-05-05', day: 'Monday', time: '12:00 PM', startHour: 12, startMinute: 0, title: 'Lunch', location: 'Lakeside Dining Room' },
+  { date: '2027-05-05', day: 'Monday', time: '1:30 PM', startHour: 13, startMinute: 30, title: 'Afternoon Activities', location: 'Various' },
+  { date: '2027-05-05', day: 'Monday', time: '5:30 PM', startHour: 17, startMinute: 30, title: 'Dinner', location: 'Lakeside Dining Room' },
+  { date: '2027-05-05', day: 'Monday', time: '7:00 PM', startHour: 19, startMinute: 0, title: 'Evening Assembly & Announcements', location: 'AC Room 207' },
+  { date: '2027-05-05', day: 'Monday', time: '8:00 PM', startHour: 20, startMinute: 0, title: 'Game Night & Bonfire', location: 'Activity Center' },
 
-  // Thursday May 7
-  { date: '2026-05-07', day: 'Thursday', time: '7:30 AM', startHour: 7, startMinute: 30, title: 'Breakfast', location: 'Lakeside Dining Room' },
-  { date: '2026-05-07', day: 'Thursday', time: '9:00 AM', startHour: 9, startMinute: 0, title: 'Morning Assembly & Announcements', location: 'AC Room 207' },
-  { date: '2026-05-07', day: 'Thursday', time: '10:00 AM', startHour: 10, startMinute: 0, title: 'Session Time', location: 'Activity Center' },
-  { date: '2026-05-07', day: 'Thursday', time: '12:00 PM', startHour: 12, startMinute: 0, title: 'Lunch', location: 'Lakeside Dining Room' },
-  { date: '2026-05-07', day: 'Thursday', time: '1:30 PM', startHour: 13, startMinute: 30, title: 'Afternoon Activities', location: 'Various' },
-  { date: '2026-05-07', day: 'Thursday', time: '5:30 PM', startHour: 17, startMinute: 30, title: 'Dinner & Awards Ceremony', location: 'Lakeside Dining Room' },
-  { date: '2026-05-07', day: 'Thursday', time: '7:00 PM', startHour: 19, startMinute: 0, title: 'Evening Assembly', location: 'AC Room 207' },
-  { date: '2026-05-07', day: 'Thursday', time: '8:00 PM', startHour: 20, startMinute: 0, title: 'Evening Activities', location: 'Activity Center' },
+  // Tuesday May 6
+  { date: '2027-05-06', day: 'Tuesday', time: '7:30 AM', startHour: 7, startMinute: 30, title: 'Breakfast', location: 'Lakeside Dining Room' },
+  { date: '2027-05-06', day: 'Tuesday', time: '9:00 AM', startHour: 9, startMinute: 0, title: 'Morning Assembly & Announcements', location: 'AC Room 207' },
+  { date: '2027-05-06', day: 'Tuesday', time: '10:00 AM', startHour: 10, startMinute: 0, title: 'Session Time', location: 'Activity Center' },
+  { date: '2027-05-06', day: 'Tuesday', time: '12:00 PM', startHour: 12, startMinute: 0, title: 'Lunch', location: 'Lakeside Dining Room' },
+  { date: '2027-05-06', day: 'Tuesday', time: '1:30 PM', startHour: 13, startMinute: 30, title: 'Afternoon Activities', location: 'Various' },
+  { date: '2027-05-06', day: 'Tuesday', time: '5:30 PM', startHour: 17, startMinute: 30, title: 'Dinner & Awards Ceremony', location: 'Lakeside Dining Room' },
+  { date: '2027-05-06', day: 'Tuesday', time: '7:00 PM', startHour: 19, startMinute: 0, title: 'Evening Assembly', location: 'AC Room 207' },
+  { date: '2027-05-06', day: 'Tuesday', time: '8:00 PM', startHour: 20, startMinute: 0, title: 'Evening Activities', location: 'Activity Center' },
 
-  // Friday May 8
-  { date: '2026-05-08', day: 'Friday', time: '7:30 AM', startHour: 7, startMinute: 30, title: 'Breakfast', location: 'Lakeside Dining Room' },
-  { date: '2026-05-08', day: 'Friday', time: '9:00 AM', startHour: 9, startMinute: 0, title: 'Final Assembly & Farewell', location: 'AC Room 207' },
-  { date: '2026-05-08', day: 'Friday', time: '11:00 AM', startHour: 11, startMinute: 0, title: 'Event Concludes / Checkout', location: 'Various' },
+  // Wednesday May 7
+  { date: '2027-05-07', day: 'Wednesday', time: '7:30 AM', startHour: 7, startMinute: 30, title: 'Breakfast', location: 'Lakeside Dining Room' },
+  { date: '2027-05-07', day: 'Wednesday', time: '9:00 AM', startHour: 9, startMinute: 0, title: 'Final Assembly & Farewell', location: 'AC Room 207' },
+  { date: '2027-05-07', day: 'Wednesday', time: '11:00 AM', startHour: 11, startMinute: 0, title: 'Event Concludes / Checkout', location: 'Various' },
 ]
 
 export function NowNextSchedule() {
@@ -129,7 +129,7 @@ export function NowNextSchedule() {
     setMounted(true)
 
     const calculateTimeLeft = (): TimeLeft => {
-      const targetDate = Date.UTC(2026, 4, 4, 18, 0, 0) // May 4, 2026 at 1:00 PM Central Time
+      const targetDate = Date.UTC(2027, 4, 3, 18, 0, 0) // May 3, 2027 at 1:00 PM Central Time
       const now = Date.now()
       const difference = targetDate - now
 
@@ -154,10 +154,10 @@ export function NowNextSchedule() {
 
       setTimeLeft(calculateTimeLeft())
 
-      // Event start: May 4, 2026 at 1:00 PM Central
-      // Event end: May 8, 2026 at 11:00 AM Central
-      const eventStartDate = '2026-05-04'
-      const eventEndDate = '2026-05-08'
+      // Event start: May 3, 2027 at 1:00 PM Central
+      // Event end: May 7, 2027 at 11:00 AM Central
+      const eventStartDate = '2027-05-03'
+      const eventEndDate = '2027-05-07'
 
       // Check if before event
       if (centralDateStr < eventStartDate || (centralDateStr === eventStartDate && (centralHour < 13 || (centralHour === 13 && centralMinute === 0)))) {
@@ -338,7 +338,7 @@ export function NowNextSchedule() {
     return (
       <Card className="border-secondary/50">
         <CardHeader>
-          <CardTitle className="text-lg text-center">Rendezvous 2026 Has Concluded</CardTitle>
+          <CardTitle className="text-lg text-center">Rendezvous 2027 Has Concluded</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground text-center">
