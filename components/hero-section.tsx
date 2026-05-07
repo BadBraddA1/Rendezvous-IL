@@ -40,20 +40,15 @@ export function HeroSection() {
 
   return (
     <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden">
-      {/* Background with gradient overlay */}
+      {/* Light background with subtle gradient like the screenshot */}
       <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-secondary animate-gradient" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent" />
-        {/* Subtle pattern overlay */}
-        <div className="absolute inset-0 opacity-5" style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
-        }} />
+        <div className="absolute inset-0 bg-gradient-to-br from-white via-gray-100 to-gray-200" />
       </div>
 
       <div className="relative z-10 container mx-auto px-6 text-center">
         {/* Date badge */}
         <div className="mb-8 animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
-          <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-6 py-2 text-sm font-medium text-primary backdrop-blur-sm">
+          <span className="inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white/80 px-6 py-2 text-sm font-medium text-gray-700 backdrop-blur-sm shadow-sm">
             May 3-7, 2027
           </span>
         </div>
@@ -88,7 +83,7 @@ export function HeroSection() {
         {/* Dynamic Tagline */}
         <div className="h-16 mb-8 flex items-center justify-center animate-fade-in-up" style={{ animationDelay: "0.4s" }}>
           <p 
-            className={`text-2xl md:text-3xl lg:text-4xl font-light text-muted-foreground transition-all duration-500 ${
+            className={`text-2xl md:text-3xl lg:text-4xl font-light text-gray-500 transition-all duration-500 ${
               isVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"
             }`}
           >
@@ -97,7 +92,7 @@ export function HeroSection() {
         </div>
 
         {/* Location */}
-        <p className="mb-12 text-lg text-muted-foreground animate-fade-in-up" style={{ animationDelay: "0.5s" }}>
+        <p className="mb-12 text-lg text-gray-500 animate-fade-in-up" style={{ animationDelay: "0.5s" }}>
           Lake Williamson Christian Center, Carlinville, IL
         </p>
 
@@ -126,7 +121,7 @@ export function HeroSection() {
       {/* Scroll indicator - positioned at very bottom with proper z-index */}
       <button 
         onClick={scrollToContent}
-        className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1 text-muted-foreground hover:text-primary transition-colors cursor-pointer bg-background/50 backdrop-blur-sm px-4 py-2 rounded-full"
+        className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors cursor-pointer bg-white/70 backdrop-blur-sm px-4 py-2 rounded-full shadow-sm"
         aria-label="Scroll to content"
       >
         <span className="text-xs font-medium">Scroll</span>
