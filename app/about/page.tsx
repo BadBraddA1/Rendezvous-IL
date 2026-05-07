@@ -137,11 +137,12 @@ export default function AboutPage() {
                         { year: 2024, attendees: 124, theme: "Joshua" },
                         { year: 2025, attendees: 118, theme: "Judges" },
                         { year: 2026, attendees: "?", theme: "Galatians & Ephesians" },
+                        { year: 2027, attendees: "?", theme: "1 Samuel 1" },
                       ].map((row, idx) => (
                         <tr
                           key={row.year}
                           className={`border-b transition-colors hover:bg-muted/50 ${
-                            row.year === 2026 ? "bg-primary/5 font-semibold" : ""
+                            row.year === 2027 ? "bg-primary/5 font-semibold" : ""
                           }`}
                         >
                           <td className="p-4">{row.year}</td>

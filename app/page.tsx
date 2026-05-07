@@ -273,12 +273,12 @@ export default function HomePage() {
                   <p className="text-muted-foreground">January 1, 2027</p>
                 </div>
                 <div className="rounded-xl border border-border/50 bg-card p-6 hover:border-primary/30 transition-colors">
-                  <h3 className="font-semibold text-foreground mb-2">Same Great Location</h3>
-                  <p className="text-muted-foreground">Lake Williamson Christian Center, Carlinville, IL</p>
+                  <h3 className="font-semibold text-foreground mb-2">2027 Theme</h3>
+                  <p className="text-muted-foreground">1 Samuel 1 - Hannah&apos;s Prayer & Dedication</p>
                 </div>
                 <div className="rounded-xl border border-border/50 bg-card p-6 hover:border-primary/30 transition-colors">
-                  <h3 className="font-semibold text-foreground mb-2">Stay Connected</h3>
-                  <p className="text-muted-foreground">Join our Facebook group for updates</p>
+                  <h3 className="font-semibold text-foreground mb-2">Same Great Location</h3>
+                  <p className="text-muted-foreground">Lake Williamson Christian Center, Carlinville, IL</p>
                 </div>
               </div>
             </div>

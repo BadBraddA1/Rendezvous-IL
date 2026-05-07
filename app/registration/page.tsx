@@ -21,10 +21,10 @@ export default function RegistrationPage() {
               <Clock className="h-10 w-10 text-muted-foreground" />
             </div>
             <h1 className="mb-4 text-balance text-4xl font-bold tracking-tight md:text-5xl">
-              Registration Closed
+              Registration Opens Soon!
             </h1>
             <p className="text-balance text-lg text-muted-foreground">
-              Registration for Rendezvous 2026 has closed as of April 15, 2026.
+              Registration for Rendezvous 2027 opens January 1, 2027.
             </p>
           </div>
 
@@ -34,18 +34,18 @@ export default function RegistrationPage() {
               <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
                 <Calendar className="h-6 w-6 text-primary" />
               </div>
-              <CardTitle>See You at the Event!</CardTitle>
+              <CardTitle>Mark Your Calendars!</CardTitle>
               <CardDescription>
-                If you have already registered, we look forward to seeing you at Rendezvous 2026.
+                Rendezvous 2027 is coming! Theme: 1 Samuel 1
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="rounded-lg bg-muted p-4 text-center">
-                <p className="font-semibold">May 4-8, 2026</p>
+                <p className="font-semibold">May 3-7, 2027</p>
                 <p className="text-sm text-muted-foreground">Lake Williamson Christian Center, Carlinville, IL</p>
               </div>
               <p className="text-sm text-muted-foreground text-center">
-                For any questions or concerns about your registration, please contact us through the Facebook group or reach out to the event organizers directly.
+                Stay tuned for registration details. Join our Facebook group for updates!
               </p>
             </CardContent>
           </Card>

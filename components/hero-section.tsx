@@ -12,6 +12,7 @@ const taglines = [
   "5 Days of Unforgettable Memories",
   "Grow Together in Faith",
   "Building Lifelong Friendships",
+  "Theme: 1 Samuel 1 - Hannah's Prayer",
 ]
 
 export function HeroSection() {
