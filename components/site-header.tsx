@@ -3,109 +3,85 @@
 import Link from "next/link"
 import Image from "next/image"
 import { useState } from "react"
-import { Menu } from "lucide-react"
+import { Menu, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+
+const navLinks = [
+  { href: "/", label: "Home" },
+  { href: "/schedule", label: "Schedule" },
+  { href: "/about", label: "About" },
+  { href: "/biblebowl", label: "Bible Bowl" },
+  { href: "/faq", label: "FAQ" },
+  { href: "/calculator", label: "Calculator" },
+  { href: "/map2026", label: "Attendee" },
+]
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false)
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-xl">
-      <nav className="container mx-auto flex h-20 items-center justify-between px-6">
+    <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/20 bg-background/80 backdrop-blur-xl">
+      <nav className="container mx-auto flex h-16 md:h-20 items-center justify-between px-6">
         <Link href="/" className="flex items-center transition-opacity hover:opacity-80">
           <Image
             src="/rendezvous-logo.png"
             alt="Rendezvous Homeschool Family Retreat"
-            width={180}
-            height={60}
-            className="h-14 w-auto"
+            width={160}
+            height={53}
+            className="h-10 md:h-12 w-auto"
             priority
           />
         </Link>
 
-        <div className="ml-auto hidden items-center gap-8 md:flex">
-          <Link href="/" className="text-sm font-medium transition-colors hover:text-primary">
-            Home
-          </Link>
-          <Link href="/schedule" className="text-sm font-medium transition-colors hover:text-primary">
-            Schedule
-          </Link>
-          <Link href="/about" className="text-sm font-medium transition-colors hover:text-primary">
-            About
-          </Link>
-          <Link href="/biblebowl" className="text-sm font-medium transition-colors hover:text-primary">
-            Bible Bowl
-          </Link>
-          <Link href="/faq" className="text-sm font-medium transition-colors hover:text-primary">
-            FAQ
-          </Link>
-          <Link href="/calculator" className="text-sm font-medium transition-colors hover:text-primary">
-            Calculator
-          </Link>
-          <Link href="/map2026" className="text-sm font-medium transition-colors hover:text-primary">
-            Attendee
-          </Link>
+        <div className="ml-auto hidden items-center gap-1 lg:flex">
+          {navLinks.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground rounded-lg hover:bg-secondary/50"
+            >
+              {link.label}
+            </Link>
+          ))}
         </div>
 
         <Sheet open={open} onOpenChange={setOpen}>
-          <SheetTrigger asChild className="md:hidden">
-            <Button variant="ghost" size="icon" aria-label="Open menu">
+          <SheetTrigger asChild className="lg:hidden">
+            <Button variant="ghost" size="icon" aria-label="Open menu" className="text-foreground">
               <Menu className="h-6 w-6" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="right" className="w-[300px] sm:w-[400px]">
-            <nav className="flex flex-col items-center gap-8 pt-16">
-              <Link
-                href="/"
-                className="text-xl font-medium text-center transition-colors hover:text-primary"
-                onClick={() => setOpen(false)}
-              >
-                Home
-              </Link>
-              <Link
-                href="/schedule"
-                className="text-xl font-medium text-center transition-colors hover:text-primary"
-                onClick={() => setOpen(false)}
-              >
-                Schedule
-              </Link>
-              <Link
-                href="/about"
-                className="text-xl font-medium text-center transition-colors hover:text-primary"
-                onClick={() => setOpen(false)}
-              >
-                About
-              </Link>
-              <Link
-                href="/biblebowl"
-                className="text-xl font-medium text-center transition-colors hover:text-primary"
-                onClick={() => setOpen(false)}
-              >
-                Bible Bowl
-              </Link>
-              <Link
-                href="/faq"
-                className="text-xl font-medium text-center transition-colors hover:text-primary"
-                onClick={() => setOpen(false)}
-              >
-                FAQ
-              </Link>
-              <Link
-                href="/calculator"
-                className="text-xl font-medium text-center transition-colors hover:text-primary"
-                onClick={() => setOpen(false)}
-              >
-                Calculator
-              </Link>
-              <Link
-                href="/map2026"
-                className="text-xl font-medium text-center transition-colors hover:text-primary"
-                onClick={() => setOpen(false)}
-              >
-                Attendee
-              </Link>
+          <SheetContent side="right" className="w-full sm:w-[400px] bg-background border-border">
+            <div className="flex items-center justify-between mb-8">
+              <Image
+                src="/rendezvous-logo.png"
+                alt="Rendezvous"
+                width={140}
+                height={47}
+                className="h-10 w-auto"
+              />
+            </div>
+            <nav className="flex flex-col gap-2">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="flex items-center px-4 py-3 text-lg font-medium text-foreground transition-colors hover:text-primary hover:bg-secondary/50 rounded-lg"
+                  onClick={() => setOpen(false)}
+                >
+                  {link.label}
+                </Link>
+              ))}
             </nav>
+            <div className="mt-8 pt-8 border-t border-border">
+              <p className="text-sm text-muted-foreground text-center">
+                May 3-7, 2027
+              </p>
+              <p className="text-xs text-muted-foreground text-center mt-1">
+                Lake Williamson Christian Center
+              </p>
+            </div>
           </SheetContent>
         </Sheet>
       </nav>

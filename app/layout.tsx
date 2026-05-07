@@ -14,9 +14,9 @@ const _dancingScript = Dancing_Script({ subsets: ["latin"], variable: "--font-ha
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://rendezvousil.com"),
-  title: "Rendezvous 2026 — Christian Homeschool Family Retreat",
+  title: "Rendezvous 2027 — Christian Homeschool Family Retreat",
   description:
-    "A 5 day / 4 night retreat filled with fellowship, worship, recreation, and encouragement for Christian families who educate their children at home. May 5-9, 2026 at Lake Williamson Christian Center, Carlinville, IL.",
+    "A 5 day / 4 night retreat filled with fellowship, worship, recreation, and encouragement for Christian families who educate their children at home. May 3-7, 2027 at Lake Williamson Christian Center, Carlinville, IL. Registration opens January 1, 2027.",
   generator: "v0.app",
   icons: {
     icon: "/rendezvous-logo.png",
@@ -26,24 +26,24 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_US",
     url: "https://rendezvousil.com",
-    siteName: "Rendezvous 2026",
-    title: "Rendezvous 2026 — Christian Homeschool Family Retreat",
+    siteName: "Rendezvous 2027",
+    title: "Rendezvous 2027 — Christian Homeschool Family Retreat",
     description:
-      "A 5 day / 4 night retreat filled with fellowship, worship, recreation, and encouragement for Christian families who educate their children at home. May 5-9, 2026 at Lake Williamson Christian Center, Carlinville, IL.",
+      "A 5 day / 4 night retreat filled with fellowship, worship, recreation, and encouragement for Christian families who educate their children at home. May 3-7, 2027 at Lake Williamson Christian Center, Carlinville, IL. Registration opens January 1, 2027.",
     images: [
       {
         url: "/rendezvous-logo.png",
         width: 1200,
         height: 630,
-        alt: "Rendezvous 2026 Logo",
+        alt: "Rendezvous 2027 Logo",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Rendezvous 2026 — Christian Homeschool Family Retreat",
+    title: "Rendezvous 2027 — Christian Homeschool Family Retreat",
     description:
-      "A 5 day / 4 night retreat filled with fellowship, worship, recreation, and encouragement for Christian families who educate their children at home. May 5-9, 2026 at Lake Williamson Christian Center, Carlinville, IL.",
+      "A 5 day / 4 night retreat filled with fellowship, worship, recreation, and encouragement for Christian families who educate their children at home. May 3-7, 2027 at Lake Williamson Christian Center, Carlinville, IL. Registration opens January 1, 2027.",
     images: ["/rendezvous-logo.png"],
   },
 }
@@ -54,7 +54,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className="bg-background">
       <body className="font-sans antialiased">
         <ScrollToTop />
         <OneSignalProvider />
