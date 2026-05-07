@@ -97,8 +97,8 @@ export function HeroSection() {
         </p>
 
         {/* CTA Buttons */}
-        <div className="flex flex-wrap items-center justify-center gap-4 animate-fade-in-up" style={{ animationDelay: "0.6s" }}>
-          <Button size="lg" className="h-14 px-8 text-base font-semibold" asChild>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up" style={{ animationDelay: "0.6s" }}>
+          <Button size="lg" className="h-14 px-8 text-base font-semibold w-full sm:w-auto" asChild>
             <Link href="/about">
               Learn More
               <ArrowRight className="ml-2 h-5 w-5" />
@@ -107,22 +107,25 @@ export function HeroSection() {
           <Button 
             size="lg" 
             variant="outline" 
-            className="h-14 px-8 text-base font-semibold border-primary/30 hover:bg-primary/10"
+            className="h-14 px-8 text-base font-semibold border-primary/30 hover:bg-primary/10 w-full sm:w-auto"
             asChild
           >
             <Link href="/schedule">View Schedule</Link>
           </Button>
         </div>
+
+        {/* Spacer to ensure content doesn't overlap with scroll indicator */}
+        <div className="h-24" />
       </div>
 
-      {/* Scroll indicator */}
+      {/* Scroll indicator - positioned at very bottom with proper z-index */}
       <button 
         onClick={scrollToContent}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2 text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+        className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1 text-muted-foreground hover:text-primary transition-colors cursor-pointer bg-background/50 backdrop-blur-sm px-4 py-2 rounded-full"
         aria-label="Scroll to content"
       >
-        <span className="text-sm font-medium">Discover More</span>
-        <ChevronDown className="h-6 w-6 animate-bounce" />
+        <span className="text-xs font-medium">Scroll</span>
+        <ChevronDown className="h-5 w-5 animate-bounce" />
       </button>
     </section>
   )
