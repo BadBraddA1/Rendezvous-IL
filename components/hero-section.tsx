@@ -39,16 +39,11 @@ export function HeroSection() {
   }
 
   return (
-    <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden">
-      {/* Light background with subtle gradient like the screenshot */}
-      <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-white via-gray-100 to-gray-200" />
-      </div>
-
+    <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-background via-secondary to-muted">
       <div className="relative z-10 container mx-auto px-6 text-center">
         {/* Date badge */}
         <div className="mb-8 animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
-          <span className="inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white/80 px-6 py-2 text-sm font-medium text-gray-700 backdrop-blur-sm shadow-sm">
+          <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-6 py-2 text-sm font-medium text-foreground backdrop-blur-sm shadow-sm">
             May 3-7, 2027
           </span>
         </div>
@@ -83,7 +78,7 @@ export function HeroSection() {
         {/* Dynamic Tagline */}
         <div className="h-16 mb-8 flex items-center justify-center animate-fade-in-up" style={{ animationDelay: "0.4s" }}>
           <p 
-            className={`text-2xl md:text-3xl lg:text-4xl font-light text-gray-500 transition-all duration-500 ${
+            className={`text-2xl md:text-3xl lg:text-4xl font-light text-muted-foreground transition-all duration-500 ${
               isVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"
             }`}
           >
@@ -92,7 +87,7 @@ export function HeroSection() {
         </div>
 
         {/* Location */}
-        <p className="mb-12 text-lg text-gray-500 animate-fade-in-up" style={{ animationDelay: "0.5s" }}>
+        <p className="mb-12 text-lg text-muted-foreground animate-fade-in-up" style={{ animationDelay: "0.5s" }}>
           Lake Williamson Christian Center, Carlinville, IL
         </p>
 
@@ -121,7 +116,7 @@ export function HeroSection() {
       {/* Scroll indicator - positioned at very bottom with proper z-index */}
       <button 
         onClick={scrollToContent}
-        className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors cursor-pointer bg-white/70 backdrop-blur-sm px-4 py-2 rounded-full shadow-sm"
+        className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1 text-muted-foreground hover:text-foreground transition-colors cursor-pointer bg-card/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-sm"
         aria-label="Scroll to content"
       >
         <span className="text-xs font-medium">Scroll</span>
