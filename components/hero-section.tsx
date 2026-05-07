@@ -62,7 +62,7 @@ export function HeroSection() {
 
         {/* Giant 2027 Text with Teal-to-Coral Gradient */}
         <h1 
-          className="mb-4 text-7xl md:text-8xl lg:text-9xl font-black tracking-tighter text-foreground animate-fade-in-up"
+          className="mb-2 text-7xl md:text-8xl lg:text-9xl font-black tracking-tighter text-foreground animate-fade-in-up"
           style={{ animationDelay: "0.3s" }}
         >
           <span 
@@ -74,6 +74,16 @@ export function HeroSection() {
             2027
           </span>
         </h1>
+
+        {/* Theme / Bible Bowl */}
+        <div className="mb-6 animate-fade-in-up" style={{ animationDelay: "0.35s" }}>
+          <p className="text-xl md:text-2xl font-semibold text-foreground">
+            Theme: 1 Samuel 1
+          </p>
+          <p className="text-sm md:text-base text-muted-foreground mt-1">
+            Hannah&apos;s Prayer &amp; Dedication — Next Bible Bowl Study
+          </p>
+        </div>
 
         {/* Dynamic Tagline */}
         <div className="h-16 mb-8 flex items-center justify-center animate-fade-in-up" style={{ animationDelay: "0.4s" }}>
