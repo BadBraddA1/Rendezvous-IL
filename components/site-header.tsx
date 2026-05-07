@@ -21,7 +21,7 @@ export function SiteHeader() {
   const [open, setOpen] = useState(false)
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/20 bg-background/80 backdrop-blur-xl">
+    <header className="fixed top-0 left-0 right-0 z-50 border-b border-gray-200 bg-white/90 backdrop-blur-xl">
       <nav className="container mx-auto flex h-16 md:h-20 items-center justify-between px-6">
         <Link href="/" className="flex items-center transition-opacity hover:opacity-80">
           <Image
@@ -39,7 +39,7 @@ export function SiteHeader() {
             <Link
               key={link.href}
               href={link.href}
-              className="px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground rounded-lg hover:bg-secondary/50"
+              className="px-4 py-2 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900 rounded-lg hover:bg-gray-100"
             >
               {link.label}
             </Link>
@@ -48,7 +48,7 @@ export function SiteHeader() {
 
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild className="lg:hidden">
-            <Button variant="ghost" size="icon" aria-label="Open menu" className="text-foreground">
+            <Button variant="ghost" size="icon" aria-label="Open menu" className="text-gray-700">
               <Menu className="h-6 w-6" />
             </Button>
           </SheetTrigger>
