@@ -40,7 +40,7 @@ export function RegistrationPopup() {
           <DialogDescription className="text-center text-base">
             Registration opens January 1, 2027 for Rendezvous 2027 at Lake Williamson Christian Center.
             <br />
-            <span className="mt-2 block font-semibold text-foreground">May 3-7, 2027 | Theme: 1 Samuel 1</span>
+            <span className="mt-2 block font-semibold text-foreground">May 3-7, 2027 | Theme: 1 Samuel</span>
           </DialogDescription>
         </DialogHeader>
 

@@ -17,7 +17,7 @@ export default function BibleBowlPage() {
           <h1 className="mb-6 text-4xl font-bold tracking-tight text-foreground md:text-5xl">Bible Bowl Information</h1>
           <div className="mb-8 text-lg text-muted-foreground space-y-4">
             <p>The Bible Bowl will be open to anyone who wants to participate (from toddlers - adult).</p>
-            <p>For 2027, our lessons &amp; memory work will be from the book of <strong>1 Samuel 1</strong> - the story of Hannah&apos;s faith, prayer, and dedication of Samuel to the Lord.</p>
+            <p>For 2027, our lessons &amp; memory work will be from the book of <strong>1 Samuel</strong>.</p>
             <p>There will be 3 levels of the test available covering the chapter summaries above:</p>
             <p>
               (1) a blank sheet of paper to be filled out, (2) a matching page, or (3) a verbal quiz for those unable to
