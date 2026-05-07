@@ -78,7 +78,7 @@ export function HeroSection() {
           <span 
             className="bg-clip-text text-transparent"
             style={{
-              backgroundImage: "linear-gradient(to right, #5ec8b4, #8dd4c4, #c9b49c, #e8927c, #e07860)"
+              backgroundImage: "linear-gradient(to right, #e07860, #e8927c, #c9b49c, #8dd4c4, #5ec8b4)"
             }}
           >
             2027
