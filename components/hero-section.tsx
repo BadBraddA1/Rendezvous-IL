@@ -70,12 +70,17 @@ export function HeroSection() {
           />
         </div>
 
-        {/* Giant RENDEZVOUS Text */}
+        {/* Giant 2027 Text with Teal-to-Coral Gradient */}
         <h1 
           className="mb-4 text-7xl md:text-8xl lg:text-9xl font-black tracking-tighter text-foreground animate-fade-in-up"
           style={{ animationDelay: "0.3s" }}
         >
-          <span className="bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
+          <span 
+            className="bg-clip-text text-transparent"
+            style={{
+              backgroundImage: "linear-gradient(to right, #5ec8b4, #8dd4c4, #c9b49c, #e8927c, #e07860)"
+            }}
+          >
             2027
           </span>
         </h1>
