@@ -38,7 +38,7 @@ export function HeroSection() {
   }
 
   return (
-    <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-background via-secondary to-muted">
+    <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-background via-secondary to-muted pt-20 md:pt-24">
       <div className="relative z-10 container mx-auto px-6 text-center">
         {/* Date badge */}
         <div className="mb-8 animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
