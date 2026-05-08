@@ -6,20 +6,36 @@ const isAdminRoute = createRouteMatcher(["/admin(.*)"])
 // Routes that require any authenticated user
 const isProtectedRoute = createRouteMatcher(["/registration(.*)"])
 
+// Public routes that should never redirect
+const isPublicRoute = createRouteMatcher([
+  "/",
+  "/schedule(.*)",
+  "/about(.*)",
+  "/sign-in(.*)",
+  "/sign-up(.*)",
+  "/login(.*)",
+  "/auth-redirect(.*)",
+  "/api(.*)",
+])
+
 export default clerkMiddleware(async (auth, request) => {
   const { userId, sessionClaims } = await auth()
+  const url = new URL(request.url)
+
+  // Skip auth check for public routes
+  if (isPublicRoute(request)) {
+    return
+  }
 
   // Admin routes require admin role in publicMetadata
   if (isAdminRoute(request)) {
-    // Check if user is authenticated
     if (!userId) {
-      return auth.redirectToSignIn()
+      return Response.redirect(new URL("/sign-in", request.url))
     }
     
     // Check for admin role in publicMetadata
     const role = sessionClaims?.metadata?.role
     if (role !== "admin") {
-      // Redirect non-admins to home page
       return Response.redirect(new URL("/", request.url))
     }
   }
@@ -27,7 +43,7 @@ export default clerkMiddleware(async (auth, request) => {
   // Registration requires login (any authenticated user)
   if (isProtectedRoute(request)) {
     if (!userId) {
-      return auth.redirectToSignIn()
+      return Response.redirect(new URL("/sign-in", request.url))
     }
   }
 })
