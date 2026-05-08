@@ -1,13 +1,18 @@
+import { currentUser } from "@clerk/nextjs/server"
 import { redirect } from "next/navigation"
-import { checkAdminAuth } from "@/lib/admin-auth"
 import { RegistrationsTable } from "@/components/admin/registrations-table"
 import { AdminNav } from "@/components/admin/admin-nav"
 
 export default async function RegistrationsPage() {
-  const admin = await checkAdminAuth()
+  const user = await currentUser()
 
-  if (!admin) {
-    redirect("/admin/login")
+  if (!user) {
+    redirect("/sign-in")
+  }
+
+  const admin = {
+    email: user.emailAddresses[0]?.emailAddress || "admin@braddcorp.com",
+    fullName: user.firstName ? `${user.firstName} ${user.lastName || ""}`.trim() : "Admin"
   }
 
   return (

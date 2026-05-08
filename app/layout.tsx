@@ -1,6 +1,7 @@
 import type React from "react"
 import type { Metadata } from "next"
 import { Geist, Geist_Mono, Dancing_Script } from "next/font/google"
+import { ClerkProvider } from "@clerk/nextjs"
 import { Analytics } from "@vercel/analytics/react"
 import { ScrollToTop } from "@/components/scroll-to-top"
 import { OneSignalProvider } from "@/components/onesignal-provider"
@@ -54,14 +55,16 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="bg-background">
-      <body className="font-sans antialiased">
-        <ScrollToTop />
-        <OneSignalProvider />
-        {children}
-        <BackToTop />
-        <Analytics />
-      </body>
-    </html>
+    <ClerkProvider afterSignOutUrl="/">
+      <html lang="en" className="bg-background">
+        <body className="font-sans antialiased">
+          <ScrollToTop />
+          <OneSignalProvider />
+          {children}
+          <BackToTop />
+          <Analytics />
+        </body>
+      </html>
+    </ClerkProvider>
   )
 }

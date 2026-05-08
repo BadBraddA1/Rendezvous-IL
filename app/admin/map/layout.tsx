@@ -1,13 +1,18 @@
 import type React from "react"
+import { currentUser } from "@clerk/nextjs/server"
 import { redirect } from "next/navigation"
 import { AdminNav } from "@/components/admin/admin-nav"
-import { checkAdminAuth } from "@/lib/admin-auth"
 
 export default async function AdminMapLayout({ children }: { children: React.ReactNode }) {
-  const admin = await checkAdminAuth()
+  const user = await currentUser()
 
-  if (!admin) {
-    redirect("/admin/login")
+  if (!user) {
+    redirect("/sign-in")
+  }
+
+  const admin = {
+    email: user.emailAddresses[0]?.emailAddress || "admin@braddcorp.com",
+    fullName: user.firstName ? `${user.firstName} ${user.lastName || ""}`.trim() : "Admin"
   }
 
   return (

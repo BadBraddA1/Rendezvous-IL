@@ -1,17 +1,18 @@
+import { currentUser } from "@clerk/nextjs/server"
 import { redirect } from "next/navigation"
-import { checkAdminAuth } from "@/lib/admin-auth"
 import { AdminNav } from "@/components/admin/admin-nav"
 import { AuditLogs } from "@/components/admin/audit-logs"
 
 export default async function AuditPage() {
-  const admin = await checkAdminAuth()
+  const user = await currentUser()
 
-  if (!admin) {
-    redirect("/admin/login")
+  if (!user) {
+    redirect("/sign-in")
   }
 
-  if (admin.role === "viewer") {
-    redirect("/admin")
+  const admin = {
+    email: user.emailAddresses[0]?.emailAddress || "admin@braddcorp.com",
+    fullName: user.firstName ? `${user.firstName} ${user.lastName || ""}`.trim() : "Admin"
   }
 
   return (
