@@ -119,7 +119,7 @@ export default function SchedulePage() {
                   activeDay === "sunday" ? "bg-primary/20 ring-2 ring-primary" : ""
                 }`}
               >
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-base font-bold text-primary-foreground lg:h-10 lg:w-10 lg:text-sm bg-[rgba(18,27,41,1)]">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-base font-bold text-primary-foreground lg:h-10 lg:w-10 lg:text-sm bg-primary">
                   Su
                 </div>
                 <span className="text-xs font-medium lg:text-sm lg:whitespace-nowrap">Sunday</span>
@@ -143,7 +143,7 @@ export default function SchedulePage() {
                   activeDay === "tuesday" ? "bg-primary/20 ring-2 ring-primary" : ""
                 }`}
               >
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-base font-bold text-primary-foreground lg:h-10 lg:w-10 lg:text-sm bg-[rgba(18,27,41,1)]">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-base font-bold text-primary-foreground lg:h-10 lg:w-10 lg:text-sm bg-primary">
                   T
                 </div>
                 <span className="text-xs font-medium lg:text-sm lg:whitespace-nowrap">Tuesday</span>
@@ -232,7 +232,7 @@ export default function SchedulePage() {
               className="scroll-mt-24 rounded-xl border-2 border-primary/20 bg-card p-4 shadow-sm md:p-6"
             >
               <div className="mb-4 flex items-center gap-2 md:mb-6 md:gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full text-base font-bold text-primary-foreground md:h-12 md:w-12 md:text-lg bg-[rgba(18,27,41,1)]">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full text-base font-bold text-primary-foreground md:h-12 md:w-12 md:text-lg bg-primary">
                   Su
                 </div>
                 <h2 className="text-xl font-bold md:text-2xl">May 4 (Sunday)</h2>
@@ -424,7 +424,7 @@ export default function SchedulePage() {
               className="scroll-mt-24 rounded-xl border-2 border-primary/20 bg-card p-4 shadow-sm md:p-6"
             >
               <div className="mb-4 flex items-center gap-2 md:mb-6 md:gap-3">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-base font-bold text-primary-foreground lg:h-10 lg:w-10 lg:text-sm bg-[rgba(18,27,41,1)]">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full text-base font-bold text-primary-foreground md:h-12 md:w-12 md:text-lg bg-primary">
                   T
                 </div>
                 <h2 className="text-xl font-bold md:text-2xl">May 6 (Tuesday)</h2>
