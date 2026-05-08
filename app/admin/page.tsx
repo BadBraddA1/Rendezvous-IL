@@ -14,6 +14,12 @@ export default async function AdminDashboard() {
     redirect("/sign-in")
   }
 
+  // Check for admin role
+  const role = user.publicMetadata?.role as string | undefined
+  if (role !== "admin") {
+    redirect("/")
+  }
+
   const admin = { 
     email: user.emailAddresses[0]?.emailAddress || "admin@braddcorp.com",
     fullName: user.firstName ? `${user.firstName} ${user.lastName || ""}`.trim() : "Admin"
