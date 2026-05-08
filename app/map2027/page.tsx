@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 
-const MAP_PASSWORD = "Rendezvous2027"
+const MAP_PASSWORD = "Rendezvous2026"
 const STORAGE_KEY = "map2027_unlocked"
 
 const LeafletMap = dynamic(
