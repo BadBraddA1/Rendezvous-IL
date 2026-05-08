@@ -50,6 +50,10 @@ export default function SchedulePage() {
         </div>
 
         <div className="mb-8 text-center md:mb-12">
+          {/* 2026 Schedule Notice */}
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-800">
+            Based on 2026 Schedule — May change slightly for 2027
+          </div>
           <h1 className="mb-3 text-balance text-3xl font-bold tracking-tight text-foreground md:mb-4 md:text-5xl">
             Rendezvous 2027 Schedule
           </h1>
