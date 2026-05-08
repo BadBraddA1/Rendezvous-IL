@@ -16,7 +16,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <SiteHeader />
+      <SiteHeader isHomepage />
 
       <main>
         {/* Full-screen Hero */}
