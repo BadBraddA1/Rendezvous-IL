@@ -291,7 +291,7 @@
 
 .animate-gradient-x {
   background-size: 200% auto;
-  animation: gradient-x 4s ease infinite;
+  animation: gradient-x 8s ease infinite;
 }
 
 /* Subtle float animation */
