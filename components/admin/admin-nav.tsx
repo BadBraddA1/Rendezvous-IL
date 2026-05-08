@@ -1,23 +1,32 @@
 "use client"
 
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { LayoutDashboard, Users, Settings, FileText, MapPin, MessageSquare, Utensils } from "lucide-react"
+import { LayoutDashboard, Users, Settings, FileText, LogOut, MapPin, MessageSquare, Utensils } from "lucide-react"
 
 interface AdminNavProps {
   currentPage: string
-  admin: { email: string; fullName?: string }
+  admin: { email: string; role: string }
 }
 
 export function AdminNav({ currentPage, admin }: AdminNavProps) {
+  const router = useRouter()
+
+  const handleLogout = async () => {
+    await fetch("/api/admin/logout", { method: "POST" })
+    router.push("/admin/login")
+    router.refresh()
+  }
+
   const navItems = [
     { href: "/admin", label: "Dashboard", icon: LayoutDashboard, page: "dashboard" },
     { href: "/admin/registrations", label: "Registrations", icon: Users, page: "registrations" },
     { href: "/admin/messaging", label: "Messaging", icon: MessageSquare, page: "messaging" },
     { href: "/admin/meals", label: "Meals", icon: Utensils, page: "meals" },
     { href: "/admin/map", label: "Map", icon: MapPin, page: "map" },
-    { href: "/admin/settings", label: "Settings", icon: Settings, page: "settings" },
-    { href: "/admin/audit", label: "Audit Logs", icon: FileText, page: "audit" },
+    { href: "/admin/settings", label: "Settings", icon: Settings, page: "settings", requireAdmin: true },
+    { href: "/admin/audit", label: "Audit Logs", icon: FileText, page: "audit", requireAdmin: true },
   ]
 
   return (
@@ -27,6 +36,8 @@ export function AdminNav({ currentPage, admin }: AdminNavProps) {
           <h1 className="text-lg font-semibold">Rendezvous Admin</h1>
           <nav className="flex gap-1">
             {navItems.map((item) => {
+              if (item.requireAdmin && admin.role === "viewer") return null
+
               const Icon = item.icon
               const isActive = currentPage === item.page || (currentPage === "" && item.page === "dashboard")
 
@@ -44,9 +55,13 @@ export function AdminNav({ currentPage, admin }: AdminNavProps) {
 
         <div className="flex items-center gap-4">
           <div className="text-right">
-            <p className="text-sm font-medium">{admin.fullName || admin.email}</p>
-            <p className="text-xs text-muted-foreground">{admin.email}</p>
+            <p className="text-sm font-medium">{admin.email}</p>
+            <p className="text-xs text-muted-foreground capitalize">{admin.role}</p>
           </div>
+          <Button variant="outline" size="sm" onClick={handleLogout} className="gap-2 bg-transparent">
+            <LogOut className="h-4 w-4" />
+            Logout
+          </Button>
         </div>
       </div>
     </header>

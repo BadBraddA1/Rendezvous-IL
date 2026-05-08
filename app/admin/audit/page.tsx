@@ -1,10 +1,17 @@
+import { redirect } from "next/navigation"
+import { checkAdminAuth } from "@/lib/admin-auth"
 import { AdminNav } from "@/components/admin/admin-nav"
 import { AuditLogs } from "@/components/admin/audit-logs"
 
 export default async function AuditPage() {
-  const admin = {
-    email: "admin@braddcorp.com",
-    fullName: "Admin"
+  const admin = await checkAdminAuth()
+
+  if (!admin) {
+    redirect("/admin/login")
+  }
+
+  if (admin.role === "viewer") {
+    redirect("/admin")
   }
 
   return (

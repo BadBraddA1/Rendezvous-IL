@@ -1,10 +1,17 @@
+import { redirect } from "next/navigation"
+import { checkAdminAuth } from "@/lib/admin-auth"
 import { AdminNav } from "@/components/admin/admin-nav"
 import { SystemSettings } from "@/components/admin/system-settings"
 
 export default async function SettingsPage() {
-  const admin = {
-    email: "admin@braddcorp.com",
-    fullName: "Admin"
+  const admin = await checkAdminAuth()
+
+  if (!admin) {
+    redirect("/admin/login")
+  }
+
+  if (admin.role === "viewer") {
+    redirect("/admin")
   }
 
   return (
@@ -18,7 +25,7 @@ export default async function SettingsPage() {
             <p className="text-muted-foreground">Configure registration settings and event parameters</p>
           </div>
 
-          <SystemSettings adminRole="admin" />
+          <SystemSettings adminRole={admin.role} />
         </div>
       </main>
     </div>

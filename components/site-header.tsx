@@ -3,7 +3,7 @@
 import Link from "next/link"
 import Image from "next/image"
 import { useState } from "react"
-import { Menu } from "lucide-react"
+import { Menu, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 
@@ -44,7 +44,6 @@ export function SiteHeader() {
               {link.label}
             </Link>
           ))}
-
         </div>
 
         <Sheet open={open} onOpenChange={setOpen}>
@@ -75,8 +74,7 @@ export function SiteHeader() {
                 </Link>
               ))}
             </nav>
-
-            <div className="mt-6 pt-6 border-t border-border">
+            <div className="mt-8 pt-8 border-t border-border">
               <p className="text-sm text-muted-foreground text-center">
                 May 3-7, 2027
               </p>

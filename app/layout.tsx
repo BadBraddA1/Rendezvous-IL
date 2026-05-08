@@ -1,7 +1,6 @@
 import type React from "react"
 import type { Metadata } from "next"
 import { Geist, Geist_Mono, Dancing_Script } from "next/font/google"
-
 import { Analytics } from "@vercel/analytics/react"
 import { ScrollToTop } from "@/components/scroll-to-top"
 import { OneSignalProvider } from "@/components/onesignal-provider"
@@ -31,14 +30,21 @@ export const metadata: Metadata = {
     title: "Rendezvous 2027 — Christian Homeschool Family Retreat",
     description:
       "A 5 day / 4 night retreat filled with fellowship, worship, recreation, and encouragement for Christian families who educate their children at home. May 3-7, 2027 at Lake Williamson Christian Center, Carlinville, IL. Registration opens January 1, 2027.",
-    // Dynamic OG image is auto-generated from app/opengraph-image.tsx
+    images: [
+      {
+        url: "/rendezvous-logo.png",
+        width: 1200,
+        height: 630,
+        alt: "Rendezvous 2027 Logo",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Rendezvous 2027 — Christian Homeschool Family Retreat",
     description:
       "A 5 day / 4 night retreat filled with fellowship, worship, recreation, and encouragement for Christian families who educate their children at home. May 3-7, 2027 at Lake Williamson Christian Center, Carlinville, IL. Registration opens January 1, 2027.",
-    // Dynamic Twitter image is auto-generated from app/twitter-image.tsx
+    images: ["/rendezvous-logo.png"],
   },
 }
 

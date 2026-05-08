@@ -1,10 +1,13 @@
+import { redirect } from "next/navigation"
+import { checkAdminAuth } from "@/lib/admin-auth"
 import { RegistrationsTable } from "@/components/admin/registrations-table"
 import { AdminNav } from "@/components/admin/admin-nav"
 
 export default async function RegistrationsPage() {
-  const admin = {
-    email: "admin@braddcorp.com",
-    fullName: "Admin"
+  const admin = await checkAdminAuth()
+
+  if (!admin) {
+    redirect("/admin/login")
   }
 
   return (
