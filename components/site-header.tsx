@@ -3,8 +3,7 @@
 import Link from "next/link"
 import Image from "next/image"
 import { useState } from "react"
-import { Menu, LogIn } from "lucide-react"
-import { useAuth, UserButton } from "@clerk/nextjs"
+import { Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 
@@ -20,7 +19,6 @@ const navLinks = [
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false)
-  const { isSignedIn } = useAuth()
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-card/90 backdrop-blur-xl">
@@ -46,18 +44,7 @@ export function SiteHeader() {
               {link.label}
             </Link>
           ))}
-          {!isSignedIn ? (
-            <Link href="/sign-in">
-              <Button variant="default" size="sm" className="ml-2 gap-2">
-                <LogIn className="h-4 w-4" />
-                Login
-              </Button>
-            </Link>
-          ) : (
-            <div className="ml-3">
-              <UserButton afterSignOutUrl="/" />
-            </div>
-          )}
+
         </div>
 
         <Sheet open={open} onOpenChange={setOpen}>
@@ -88,21 +75,7 @@ export function SiteHeader() {
                 </Link>
               ))}
             </nav>
-            <div className="mt-6 pt-6 border-t border-border">
-              {!isSignedIn ? (
-                <Link href="/sign-in" onClick={() => setOpen(false)}>
-                  <Button variant="default" className="w-full gap-2">
-                    <LogIn className="h-4 w-4" />
-                    Login / Sign Up
-                  </Button>
-                </Link>
-              ) : (
-                <div className="flex items-center justify-center gap-3">
-                  <UserButton afterSignOutUrl="/" />
-                  <span className="text-sm text-muted-foreground">My Account</span>
-                </div>
-              )}
-            </div>
+
             <div className="mt-6 pt-6 border-t border-border">
               <p className="text-sm text-muted-foreground text-center">
                 May 3-7, 2027

@@ -1,58 +1,14 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server"
+// Middleware disabled - Clerk removed for now
+// Will add auth back later
 
-// Routes that require admin role
-const isAdminRoute = createRouteMatcher(["/admin(.*)"])
-
-// Routes that require any authenticated user
-const isProtectedRoute = createRouteMatcher(["/registration(.*)"])
-
-// Public routes that should never redirect
-const isPublicRoute = createRouteMatcher([
-  "/",
-  "/schedule(.*)",
-  "/about(.*)",
-  "/sign-in(.*)",
-  "/sign-up(.*)",
-  "/login(.*)",
-  "/auth-redirect(.*)",
-  "/api(.*)",
-])
-
-export default clerkMiddleware(async (auth, request) => {
-  const { userId, sessionClaims } = await auth()
-  const url = new URL(request.url)
-
-  // Skip auth check for public routes
-  if (isPublicRoute(request)) {
-    return
-  }
-
-  // Admin routes require admin role in publicMetadata
-  if (isAdminRoute(request)) {
-    if (!userId) {
-      return Response.redirect(new URL("/sign-in", request.url))
-    }
-    
-    // Check for admin role in publicMetadata
-    const role = sessionClaims?.metadata?.role
-    if (role !== "admin") {
-      return Response.redirect(new URL("/", request.url))
-    }
-  }
-
-  // Registration requires login (any authenticated user)
-  if (isProtectedRoute(request)) {
-    if (!userId) {
-      return Response.redirect(new URL("/sign-in", request.url))
-    }
-  }
-})
+export default function middleware(request) {
+  // No-op middleware - allow all requests through
+  return
+}
 
 export const config = {
   matcher: [
-    // Skip Next.js internals and all static files, unless found in search params
+    // Skip Next.js internals and all static files
     "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
-    // Always run for API routes
-    "/(api|trpc)(.*)",
   ],
 }

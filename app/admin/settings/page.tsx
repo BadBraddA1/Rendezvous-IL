@@ -1,18 +1,10 @@
-import { currentUser } from "@clerk/nextjs/server"
-import { redirect } from "next/navigation"
 import { AdminNav } from "@/components/admin/admin-nav"
 import { SystemSettings } from "@/components/admin/system-settings"
 
 export default async function SettingsPage() {
-  const user = await currentUser()
-
-  if (!user) {
-    redirect("/sign-in")
-  }
-
   const admin = {
-    email: user.emailAddresses[0]?.emailAddress || "admin@braddcorp.com",
-    fullName: user.firstName ? `${user.firstName} ${user.lastName || ""}`.trim() : "Admin"
+    email: "admin@braddcorp.com",
+    fullName: "Admin"
   }
 
   return (

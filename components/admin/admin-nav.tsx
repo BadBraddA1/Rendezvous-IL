@@ -1,7 +1,6 @@
 "use client"
 
 import Link from "next/link"
-import { UserButton } from "@clerk/nextjs"
 import { Button } from "@/components/ui/button"
 import { LayoutDashboard, Users, Settings, FileText, MapPin, MessageSquare, Utensils } from "lucide-react"
 
@@ -48,14 +47,6 @@ export function AdminNav({ currentPage, admin }: AdminNavProps) {
             <p className="text-sm font-medium">{admin.fullName || admin.email}</p>
             <p className="text-xs text-muted-foreground">{admin.email}</p>
           </div>
-          <UserButton 
-            afterSignOutUrl="/"
-            appearance={{
-              elements: {
-                avatarBox: "h-9 w-9"
-              }
-            }}
-          />
         </div>
       </div>
     </header>
