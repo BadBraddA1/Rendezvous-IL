@@ -4,7 +4,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { useState } from "react"
 import { Menu, LogIn } from "lucide-react"
-import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs"
+import { useAuth, UserButton } from "@clerk/nextjs"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 
@@ -20,6 +20,7 @@ const navLinks = [
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false)
+  const { isSignedIn } = useAuth()
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-card/90 backdrop-blur-xl">
@@ -45,19 +46,18 @@ export function SiteHeader() {
               {link.label}
             </Link>
           ))}
-          <SignedOut>
+          {!isSignedIn ? (
             <Link href="/sign-in">
               <Button variant="default" size="sm" className="ml-2 gap-2">
                 <LogIn className="h-4 w-4" />
                 Login
               </Button>
             </Link>
-          </SignedOut>
-          <SignedIn>
+          ) : (
             <div className="ml-3">
               <UserButton afterSignOutUrl="/" />
             </div>
-          </SignedIn>
+          )}
         </div>
 
         <Sheet open={open} onOpenChange={setOpen}>
@@ -89,20 +89,19 @@ export function SiteHeader() {
               ))}
             </nav>
             <div className="mt-6 pt-6 border-t border-border">
-              <SignedOut>
+              {!isSignedIn ? (
                 <Link href="/sign-in" onClick={() => setOpen(false)}>
                   <Button variant="default" className="w-full gap-2">
                     <LogIn className="h-4 w-4" />
                     Login / Sign Up
                   </Button>
                 </Link>
-              </SignedOut>
-              <SignedIn>
+              ) : (
                 <div className="flex items-center justify-center gap-3">
                   <UserButton afterSignOutUrl="/" />
                   <span className="text-sm text-muted-foreground">My Account</span>
                 </div>
-              </SignedIn>
+              )}
             </div>
             <div className="mt-6 pt-6 border-t border-border">
               <p className="text-sm text-muted-foreground text-center">
