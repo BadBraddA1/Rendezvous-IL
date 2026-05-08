@@ -150,7 +150,12 @@ export function NowNextSchedule() {
       const centralNow = getCentralTime()
       const centralHour = centralNow.getHours()
       const centralMinute = centralNow.getMinutes()
-      const centralDateStr = centralNow.toISOString().split('T')[0]
+      // Use local date parts, NOT toISOString() which converts to UTC and can
+      // shift the date forward by a day in the evening (Central is UTC-5/6).
+      const year = centralNow.getFullYear()
+      const month = String(centralNow.getMonth() + 1).padStart(2, '0')
+      const day = String(centralNow.getDate()).padStart(2, '0')
+      const centralDateStr = `${year}-${month}-${day}`
 
       setTimeLeft(calculateTimeLeft())
 
