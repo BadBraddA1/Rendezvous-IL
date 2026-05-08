@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { ArrowRight, ChevronDown } from "lucide-react"
+import { ArrowRight } from "lucide-react"
 
 const taglines = [
   "Fellowship. Faith. Family.",
@@ -33,13 +33,6 @@ export function HeroSection() {
 
     return () => clearInterval(interval)
   }, [])
-
-  const scrollToContent = () => {
-    window.scrollTo({
-      top: window.innerHeight,
-      behavior: "smooth",
-    })
-  }
 
   return (
     <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-background via-secondary to-muted pt-20 md:pt-24">
@@ -158,17 +151,6 @@ export function HeroSection() {
         {/* Spacer */}
         <div className="h-20" />
       </div>
-
-      {/* Scroll indicator - Fade in last */}
-      <button 
-        onClick={scrollToContent}
-        className={`absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1 text-muted-foreground hover:text-foreground transition-all duration-300 cursor-pointer bg-card/80 backdrop-blur-sm px-5 py-3 rounded-full shadow-lg hover:shadow-xl hover:-translate-y-1 ${mounted ? 'animate-fade-in-up' : 'opacity-0'}`}
-        style={{ animationDelay: "1.8s" }}
-        aria-label="Scroll to content"
-      >
-        <span className="text-xs font-medium">Scroll</span>
-        <ChevronDown className="h-5 w-5 animate-bounce" />
-      </button>
     </section>
   )
 }
