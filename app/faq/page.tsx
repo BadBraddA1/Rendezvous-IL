@@ -102,8 +102,8 @@ function VideoCard({ video, isPlaying, onPlay }: {
           </button>
         ) : (
           <iframe
-            src={`https://player.mux.com/${video.id}?autoplay=1`}
-            className="h-full w-full"
+            src={`https://player.mux.com/${video.id}?autoplay=true&muted=false`}
+            className="h-full w-full border-0"
             allow="autoplay; fullscreen; picture-in-picture"
             allowFullScreen
           />
