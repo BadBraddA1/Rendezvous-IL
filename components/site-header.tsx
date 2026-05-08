@@ -3,7 +3,8 @@
 import Link from "next/link"
 import Image from "next/image"
 import { useState } from "react"
-import { Menu, X } from "lucide-react"
+import { Menu, LogIn } from "lucide-react"
+import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 
@@ -44,6 +45,19 @@ export function SiteHeader() {
               {link.label}
             </Link>
           ))}
+          <SignedOut>
+            <Link href="/sign-in">
+              <Button variant="default" size="sm" className="ml-2 gap-2">
+                <LogIn className="h-4 w-4" />
+                Login
+              </Button>
+            </Link>
+          </SignedOut>
+          <SignedIn>
+            <div className="ml-3">
+              <UserButton afterSignOutUrl="/" />
+            </div>
+          </SignedIn>
         </div>
 
         <Sheet open={open} onOpenChange={setOpen}>
@@ -74,7 +88,23 @@ export function SiteHeader() {
                 </Link>
               ))}
             </nav>
-            <div className="mt-8 pt-8 border-t border-border">
+            <div className="mt-6 pt-6 border-t border-border">
+              <SignedOut>
+                <Link href="/sign-in" onClick={() => setOpen(false)}>
+                  <Button variant="default" className="w-full gap-2">
+                    <LogIn className="h-4 w-4" />
+                    Login / Sign Up
+                  </Button>
+                </Link>
+              </SignedOut>
+              <SignedIn>
+                <div className="flex items-center justify-center gap-3">
+                  <UserButton afterSignOutUrl="/" />
+                  <span className="text-sm text-muted-foreground">My Account</span>
+                </div>
+              </SignedIn>
+            </div>
+            <div className="mt-6 pt-6 border-t border-border">
               <p className="text-sm text-muted-foreground text-center">
                 May 3-7, 2027
               </p>
