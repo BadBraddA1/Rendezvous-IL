@@ -13,7 +13,7 @@ export default function BibleBowlPage() {
       <SiteHeader />
 
       <main className="flex-1">
-        <div className="container mx-auto px-6 py-16 text-center">
+        <div className="container mx-auto px-6 pt-24 md:pt-28 pb-16 text-center">
           <h1 className="mb-6 text-4xl font-bold tracking-tight text-foreground md:text-5xl">Bible Bowl Information</h1>
           <div className="mb-8 text-lg text-muted-foreground space-y-4">
             <p>The Bible Bowl will be open to anyone who wants to participate (from toddlers - adult).</p>

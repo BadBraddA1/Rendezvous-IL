@@ -1,8 +1,9 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { CalendarClock, Bell } from "lucide-react"
+import { CalendarClock, Bell, Mail } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 
 interface TimeLeft {
   days: number
@@ -15,6 +16,9 @@ export function RegistrationCountdown2027() {
   const [timeLeft, setTimeLeft] = useState<TimeLeft>({ days: 0, hours: 0, minutes: 0, seconds: 0 })
   const [mounted, setMounted] = useState(false)
   const [registrationOpen, setRegistrationOpen] = useState(false)
+  const [email, setEmail] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitMessage, setSubmitMessage] = useState("")
 
   useEffect(() => {
     setMounted(true)
@@ -47,6 +51,36 @@ export function RegistrationCountdown2027() {
 
     return () => clearInterval(timer)
   }, [])
+
+  const handleEmailSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    
+    if (!email || !email.includes("@")) {
+      setSubmitMessage("Please enter a valid email address")
+      return
+    }
+
+    setIsSubmitting(true)
+    setSubmitMessage("")
+
+    try {
+      const response = await fetch("/api/notifications/email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, notification_type: "registration_opening" }),
+      })
+
+      if (!response.ok) throw new Error("Failed to submit email")
+
+      setSubmitMessage("✓ Thank you! We'll notify you when registration opens.")
+      setEmail("")
+      setTimeout(() => setSubmitMessage(""), 4000)
+    } catch (error) {
+      setSubmitMessage("Something went wrong. Please try again.")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   const TimeBlock = ({ value, label }: { value: number; label: string }) => (
     <div className="flex flex-col items-center">
@@ -127,17 +161,44 @@ export function RegistrationCountdown2027() {
             <TimeBlock value={timeLeft.seconds} label="Seconds" />
           </div>
 
-          <p className="text-sm text-muted-foreground">
-            Get notified when registration opens by joining our{" "}
-            <a 
-              href="https://www.facebook.com/groups/RendezvousIL" 
-              target="_blank" 
-              rel="noreferrer noopener"
-              className="text-primary hover:underline font-medium"
-            >
-              Facebook Group
-            </a>
-          </p>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Get notified when registration opens by joining our{" "}
+              <a 
+                href="https://www.facebook.com/groups/RendezvousIL" 
+                target="_blank" 
+                rel="noreferrer noopener"
+                className="text-primary hover:underline font-medium"
+              >
+                Facebook Group
+              </a>
+            </p>
+
+            <form onSubmit={handleEmailSubmit} className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+              <Input
+                type="email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={isSubmitting}
+                className="flex-1"
+              />
+              <Button 
+                type="submit"
+                disabled={isSubmitting}
+                className="flex items-center justify-center gap-2 whitespace-nowrap"
+              >
+                <Mail className="h-4 w-4" />
+                {isSubmitting ? "Subscribing..." : "Notify Me"}
+              </Button>
+            </form>
+
+            {submitMessage && (
+              <p className={`text-sm ${submitMessage.includes("✓") ? "text-green-600" : "text-amber-600"}`}>
+                {submitMessage}
+              </p>
+            )}
+          </div>
         </div>
       </div>
     </section>
