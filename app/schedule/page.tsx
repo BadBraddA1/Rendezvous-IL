@@ -103,11 +103,11 @@ export default function SchedulePage() {
               <a
                 href="#monday"
                 onClick={(e) => handleDayClick(e, "monday")}
-                className={`flex flex-col items-center gap-2 rounded-lg p-3 transition-all hover:bg-secondary/10 lg:flex-row lg:gap-3 ${
-                  activeDay === "monday" ? "bg-secondary/20 ring-2 ring-secondary" : ""
+                className={`flex flex-col items-center gap-2 rounded-lg p-3 transition-all hover:bg-primary/10 lg:flex-row lg:gap-3 ${
+                  activeDay === "monday" ? "bg-primary/20 ring-2 ring-primary" : ""
                 }`}
               >
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-secondary text-base font-bold text-secondary-foreground lg:h-10 lg:w-10 lg:text-sm">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary text-base font-bold text-primary-foreground lg:h-10 lg:w-10 lg:text-sm">
                   M
                 </div>
                 <span className="text-xs font-medium lg:text-sm lg:whitespace-nowrap">Monday</span>
@@ -127,11 +127,11 @@ export default function SchedulePage() {
               <a
                 href="#wednesday"
                 onClick={(e) => handleDayClick(e, "wednesday")}
-                className={`flex flex-col items-center gap-2 rounded-lg p-3 transition-all hover:bg-foreground/10 lg:flex-row lg:gap-3 ${
-                  activeDay === "wednesday" ? "bg-foreground/20 ring-2 ring-foreground" : ""
+                className={`flex flex-col items-center gap-2 rounded-lg p-3 transition-all hover:bg-primary/10 lg:flex-row lg:gap-3 ${
+                  activeDay === "wednesday" ? "bg-primary/20 ring-2 ring-primary" : ""
                 }`}
               >
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-foreground text-base font-bold text-background lg:h-10 lg:w-10 lg:text-sm">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary text-base font-bold text-primary-foreground lg:h-10 lg:w-10 lg:text-sm">
                   W
                 </div>
                 <span className="text-xs font-medium lg:text-sm lg:whitespace-nowrap">Wednesday</span>
@@ -151,11 +151,11 @@ export default function SchedulePage() {
               <a
                 href="#friday"
                 onClick={(e) => handleDayClick(e, "friday")}
-                className={`flex flex-col items-center gap-2 rounded-lg p-3 transition-all hover:bg-secondary/10 lg:flex-row lg:gap-3 ${
-                  activeDay === "friday" ? "bg-secondary/20 ring-2 ring-secondary" : ""
+                className={`flex flex-col items-center gap-2 rounded-lg p-3 transition-all hover:bg-primary/10 lg:flex-row lg:gap-3 ${
+                  activeDay === "friday" ? "bg-primary/20 ring-2 ring-primary" : ""
                 }`}
               >
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-secondary text-base font-bold text-secondary-foreground lg:h-10 lg:w-10 lg:text-sm">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary text-base font-bold text-primary-foreground lg:h-10 lg:w-10 lg:text-sm">
                   F
                 </div>
                 <span className="text-xs font-medium lg:text-sm lg:whitespace-nowrap">Friday</span>
