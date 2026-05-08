@@ -188,7 +188,7 @@ function getEventIcon(
 // MUST be false in production — when true, the LU page ignores real time and
 // pins to TEST_DATE, which made every device show the wrong time.
 const TEST_MODE = false
-const TEST_DATE = new Date('2026-05-04T12:55:00')
+const TEST_DATE = new Date('2027-05-03T12:55:00')
 
 // Use the device's local clock directly. Whatever time the TV / phone /
 // laptop thinks it is, that's what we display. Simple and predictable.

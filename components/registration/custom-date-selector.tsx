@@ -213,7 +213,7 @@ export function CustomDateSelector({ value, onChange, isOver18, onOver18Change, 
             {/* Over 18 option */}
             <div className="pt-2 border-t">
               <Button variant="outline" className="w-full bg-transparent" onClick={handleOver18}>
-                I Am 18+ / I Will Be 18 as of May 4, 2026 (Adult)
+                I Am 18+ / I Will Be 18 as of May 3, 2027 (Adult)
               </Button>
             </div>
           </div>

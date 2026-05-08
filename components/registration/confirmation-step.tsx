@@ -146,7 +146,7 @@ export function ConfirmationStep({ data, onBack, onEditStep }: Props) {
               <div>
                 <p className="font-medium">Check-In Information</p>
                 <p className="text-sm text-muted-foreground">
-                  Check-in is Monday, May 4, 2026 from 1:00-5:15 PM at the Activity Center meeting room.
+                  Check-in is Saturday, May 3, 2027 from 1:00-5:15 PM at the Activity Center meeting room.
                 </p>
               </div>
             </div>

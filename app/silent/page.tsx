@@ -212,7 +212,7 @@ export default function SilentPhonePage() {
 
       {/* Footer */}
       <footer className="p-4 text-center text-white/40 text-sm border-t border-white/10">
-        Rendezvous 2026
+        Rendezvous 2027
       </footer>
     </div>
   )

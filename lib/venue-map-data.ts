@@ -1,6 +1,6 @@
 // Location data for interactive map markers
 // Coordinates are percentages (0-100) relative to the map image dimensions
-// Only includes locations from the Rendezvous 2026 schedule
+// Only includes locations from the Rendezvous 2027 schedule
 
 export interface MapLocation {
   id: string
@@ -182,7 +182,7 @@ export const mapPaths: MapPath[] = [
   }
 ]
 
-// Schedule events matching the actual Rendezvous 2026 schedule
+// Schedule events matching the actual Rendezvous 2027 schedule
 export const scheduleEvents: ScheduleEvent[] = [
   // Monday, May 4
   { id: "mon-1", time: "1:00 - 5:15 PM", title: "Check-in", locationId: "activities-center", day: "monday", date: "May 4" },

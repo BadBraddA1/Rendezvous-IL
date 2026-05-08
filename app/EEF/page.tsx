@@ -266,7 +266,7 @@ export default function EndOfEventFeedbackPage() {
                 you taking the time to share your thoughts.
               </p>
               <p className="text-muted-foreground">
-                See you at Rendezvous 2027!
+                See you at Rendezvous 2028!
               </p>
             </CardContent>
           </Card>
@@ -283,7 +283,7 @@ export default function EndOfEventFeedbackPage() {
       <main className="container mx-auto px-4 py-8 md:py-12">
         <div className="mb-8 text-center">
           <h1 className="mb-3 text-balance text-3xl font-bold tracking-tight md:text-4xl">
-            Rendezvous 2026 Feedback
+            Rendezvous 2027 Feedback
           </h1>
           <p className="text-balance text-muted-foreground">
             Help us make future Rendezvous events even better!
@@ -332,7 +332,7 @@ export default function EndOfEventFeedbackPage() {
                   </div>
                   <h2 className="mb-2 text-2xl font-bold">Welcome to the Feedback Form</h2>
                   <p className="text-muted-foreground">
-                    We would love to hear about your Rendezvous 2026 experience. Your honest feedback helps us plan
+                    We would love to hear about your Rendezvous 2027 experience. Your honest feedback helps us plan
                     better events in the future.
                   </p>
                 </div>
@@ -394,7 +394,7 @@ export default function EndOfEventFeedbackPage() {
                 <div className="space-y-6">
                   <div className="space-y-3">
                     <Label className="text-base font-medium">
-                      How would you rate your overall Rendezvous 2026 experience?
+                      How would you rate your overall Rendezvous 2027 experience?
                     </Label>
                     <RatingRadio
                       name="overallRating"

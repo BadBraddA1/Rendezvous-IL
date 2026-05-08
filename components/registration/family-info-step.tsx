@@ -66,7 +66,7 @@ export function FamilyInfoStep({ data, updateData }: Props) {
   const calculateAge = (dob: string) => {
     if (!dob) return 0
     const birthDate = new Date(dob)
-    const eventDate = new Date("2026-05-04")
+    const eventDate = new Date("2027-05-03")
     let age = eventDate.getFullYear() - birthDate.getFullYear()
     const monthDiff = eventDate.getMonth() - birthDate.getMonth()
     if (monthDiff < 0 || (monthDiff === 0 && eventDate.getDate() < birthDate.getDate())) {
@@ -280,7 +280,7 @@ export function FamilyInfoStep({ data, updateData }: Props) {
 
                   {member.age >= 0 && !member.isOver18 && member.dateOfBirth && (
                     <p className="text-sm text-muted-foreground">
-                      Age on May 4, 2026: {member.age} {member.age === 1 ? "year" : "years"} old
+                      Age on May 3, 2027: {member.age} {member.age === 1 ? "year" : "years"} old
                     </p>
                   )}
                 </div>

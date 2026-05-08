@@ -36,11 +36,11 @@ export function RegistrationPopup() {
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
             <Calendar className="h-8 w-8 text-primary" />
           </div>
-          <DialogTitle className="text-center text-2xl font-bold">Registration is Open!</DialogTitle>
+          <DialogTitle className="text-center text-2xl font-bold">Rendezvous 2027 is Coming!</DialogTitle>
           <DialogDescription className="text-center text-base">
-            Secure your spot for Rendezvous 2026 at Lake Williamson Christian Center.
+            Registration opens January 1, 2027 for Rendezvous 2027 at Lake Williamson Christian Center.
             <br />
-            <span className="mt-2 block font-semibold text-foreground">May 4-8, 2026</span>
+            <span className="mt-2 block font-semibold text-foreground">May 3-7, 2027 | Theme: 1 Samuel</span>
           </DialogDescription>
         </DialogHeader>
 

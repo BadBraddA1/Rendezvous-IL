@@ -8,7 +8,7 @@ export default function PrintableSchedulePage() {
       <div className="fixed top-4 right-4 z-50">
         <a
           href="/api/schedule/pdf"
-          download="rendezvous-2026-schedule.pdf"
+          download="rendezvous-2027-schedule.pdf"
           className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors shadow-lg"
         >
           <Download className="h-4 w-4" />
@@ -30,8 +30,8 @@ export default function PrintableSchedulePage() {
       <div className="max-w-4xl mx-auto p-8 print:p-4 print:max-w-none">
         {/* Header */}
         <header className="text-center mb-8 print:mb-6 border-b-2 border-gray-900 pb-4">
-          <h1 className="text-3xl font-bold text-gray-900 print:text-2xl">Rendezvous 2026 Schedule</h1>
-          <p className="text-lg text-gray-600 mt-1 print:text-base">May 4-8, 2026</p>
+          <h1 className="text-3xl font-bold text-gray-900 print:text-2xl">Rendezvous 2027 Schedule</h1>
+          <p className="text-lg text-gray-600 mt-1 print:text-base">May 3-7, 2027</p>
           <p className="text-gray-500 print:text-sm">Lake Williamson Christian Center, Carlinville, IL</p>
         </header>
 
@@ -79,7 +79,7 @@ export default function PrintableSchedulePage() {
 
         {/* Footer */}
         <footer className="mt-8 pt-4 border-t border-gray-300 text-center text-xs text-gray-500 print:mt-4">
-          <p>Rendezvous 2026 &bull; Lake Williamson Christian Center &bull; Carlinville, IL</p>
+          <p>Rendezvous 2027 &bull; Lake Williamson Christian Center &bull; Carlinville, IL</p>
           <p className="mt-1">Visit rendezvous-il.vercel.app for live updates and announcements</p>
         </footer>
       </div>

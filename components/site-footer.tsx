@@ -15,7 +15,7 @@ export function SiteFooter() {
             </a>
           </div>
           <div className="border-t pt-8 text-center text-sm text-muted-foreground space-y-2">
-            <p>© 2025 RendezvousIL. All rights reserved.</p>
+            <p>© {new Date().getFullYear()} RendezvousIL. All rights reserved.</p>
             <p>
               <Link href="/privacy" className="hover:text-primary hover:underline">
                 Privacy Policy

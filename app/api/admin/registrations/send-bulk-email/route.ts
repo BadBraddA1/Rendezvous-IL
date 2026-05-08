@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
         subject: subject,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #f97316;">Rendezvous 2026</h2>
+            <h2 style="color: #f97316;">Rendezvous 2027</h2>
             <p>Hello ${reg.family_last_name} Family,</p>
             <div style="margin: 20px 0; line-height: 1.6;">
               ${message.split("\n").join("<br>")}

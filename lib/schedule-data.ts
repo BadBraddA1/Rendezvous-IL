@@ -23,7 +23,7 @@ export type ScheduleDay = {
 export const scheduleData: ScheduleDay[] = [
   {
     day: "Monday",
-    date: "May 4",
+    date: "May 3",
     color: "secondary",
     events: [
       {
@@ -55,7 +55,7 @@ export const scheduleData: ScheduleDay[] = [
   },
   {
     day: "Tuesday",
-    date: "May 5",
+    date: "May 4",
     color: "primary",
     events: [
       { time: "7:30 AM", title: "Breakfast", location: "Lakeside Dining Room" },
@@ -100,7 +100,7 @@ export const scheduleData: ScheduleDay[] = [
   },
   {
     day: "Wednesday",
-    date: "May 6",
+    date: "May 5",
     color: "foreground",
     events: [
       { time: "7:30 AM", title: "Breakfast", location: "Lakeside Dining Room" },
@@ -138,7 +138,7 @@ export const scheduleData: ScheduleDay[] = [
   },
   {
     day: "Thursday",
-    date: "May 7",
+    date: "May 6",
     color: "primary",
     events: [
       { time: "7:30 AM", title: "Breakfast", location: "Lakeside Dining Room" },
@@ -190,7 +190,7 @@ export const scheduleData: ScheduleDay[] = [
   },
   {
     day: "Friday",
-    date: "May 8",
+    date: "May 7",
     color: "secondary",
     events: [
       { time: "7:30 AM", title: "Breakfast", location: "Lakeside Dining Room" },
@@ -239,11 +239,11 @@ export interface LUScheduleItem {
 }
 
 const DAY_TO_DATE: Record<string, string> = {
-  Monday: "2026-05-04",
-  Tuesday: "2026-05-05",
-  Wednesday: "2026-05-06",
-  Thursday: "2026-05-07",
-  Friday: "2026-05-08",
+  Monday: "2027-05-03",
+  Tuesday: "2027-05-04",
+  Wednesday: "2027-05-05",
+  Thursday: "2027-05-06",
+  Friday: "2027-05-07",
 }
 
 /** Parse a single time chunk like "5:30 PM", "10", "10:00 AM". */
@@ -302,13 +302,13 @@ function formatTimeForDisplay(hour: number, minute: number): string {
 // at lunch and people are heading home.
 const GOOD_NIGHT_ENTRIES: Array<{ date: string; day: string; startHour: number; startMinute: number }> = [
   // Monday: last real event is 9:00 PM Nine Square (default 60-min ends 10 PM)
-  { date: "2026-05-04", day: "Monday", startHour: 22, startMinute: 0 },
+  { date: "2027-05-03", day: "Monday", startHour: 22, startMinute: 0 },
   // Tuesday: pool runs until 10 PM
-  { date: "2026-05-05", day: "Tuesday", startHour: 22, startMinute: 15 },
+  { date: "2027-05-04", day: "Tuesday", startHour: 22, startMinute: 15 },
   // Wednesday: pool runs until 10 PM
-  { date: "2026-05-06", day: "Wednesday", startHour: 22, startMinute: 15 },
+  { date: "2027-05-05", day: "Wednesday", startHour: 22, startMinute: 15 },
   // Thursday: Racquetball Court Singing starts at 10 PM (default 60-min ends 11 PM)
-  { date: "2026-05-07", day: "Thursday", startHour: 23, startMinute: 0 },
+  { date: "2027-05-06", day: "Thursday", startHour: 23, startMinute: 0 },
 ]
 
 export const LU_SCHEDULE_ITEMS: LUScheduleItem[] = (() => {

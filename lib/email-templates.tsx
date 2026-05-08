@@ -29,11 +29,11 @@ export function generateRegistrationConfirmationEmail(data: RegistrationData, re
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Rendezvous 2026 Registration Confirmation</title>
+  <title>Rendezvous 2027 Registration Confirmation</title>
 </head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
   <div style="background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
-    <h1 style="color: white; margin: 0; font-size: 28px;">Rendezvous 2026</h1>
+    <h1 style="color: white; margin: 0; font-size: 28px;">Rendezvous 2027</h1>
     <p style="color: white; margin: 10px 0 0 0; font-size: 16px;">Registration Confirmation</p>
   </div>
   
@@ -42,7 +42,7 @@ export function generateRegistrationConfirmationEmail(data: RegistrationData, re
     
     <p>Dear ${data.familyLastName} Family,</p>
     
-    <p>Your registration for Rendezvous 2026 has been successfully submitted. Below is a summary of your registration for your records.</p>
+    <p>Your registration for Rendezvous 2027 has been successfully submitted. Below is a summary of your registration for your records.</p>
     
     <div style="background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
       <h2 style="color: #f97316; font-size: 20px; margin-top: 0;">Registration Details</h2>
@@ -148,18 +148,18 @@ export function generateRegistrationConfirmationEmail(data: RegistrationData, re
     <div style="margin: 30px 0; padding: 20px; background: #fef3c7; border-radius: 8px; border-left: 4px solid #f59e0b;">
       <h3 style="color: #92400e; margin-top: 0;">Important Information</h3>
       <ul style="margin: 10px 0; padding-left: 20px;">
-        <li>Registration fee must be paid via Venmo before April 15, 2026</li>
+        <li>Registration fee must be paid via Venmo before April 15, 2027</li>
         <li>Lodging & meals will be collected at check-in</li>
-        <li>Check-in: Monday, May 4, 2026 from 1:00-5:15 PM at the Activity Center</li>
+        <li>Check-in: Saturday, May 3, 2027 from 1:00-5:15 PM at the Activity Center</li>
         <li>Keep this email for your records</li>
         <li>Questions? Need to make a change to your registration? Contact Stephen Bradd at (217) 935-5058 or Stephen@Bradd.us</li>
       </ul>
     </div>
     
-    <p style="margin-top: 30px;">We look forward to seeing you at Rendezvous 2026!</p>
+    <p style="margin-top: 30px;">We look forward to seeing you at Rendezvous 2027!</p>
     
     <p style="color: #6b7280; font-size: 14px; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
-      This is an automated confirmation email from Rendezvous 2026.<br>
+      This is an automated confirmation email from Rendezvous 2027.<br>
       If you did not register for this event, please contact us immediately.
     </p>
   </div>
@@ -201,7 +201,7 @@ export function generateAdminNotificationEmail(data: RegistrationData, registrat
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 700px; margin: 0 auto; padding: 20px; background: #f9fafb;">
   <div style="background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%); padding: 25px; text-align: center; border-radius: 8px 8px 0 0;">
     <h1 style="color: white; margin: 0; font-size: 24px;">🎉 New Registration Received</h1>
-    <p style="color: white; margin: 8px 0 0 0; font-size: 14px;">Rendezvous 2026 Admin Notification</p>
+    <p style="color: white; margin: 8px 0 0 0; font-size: 14px;">Rendezvous 2027 Admin Notification</p>
   </div>
   
   <div style="background: white; padding: 25px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
@@ -335,7 +335,7 @@ export function generateAdminNotificationEmail(data: RegistrationData, registrat
     </div>
 
     <p style="color: #6b7280; font-size: 12px; margin-top: 25px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center;">
-      This is an automated admin notification for Rendezvous 2026 registrations
+      This is an automated admin notification for Rendezvous 2027 registrations
     </p>
   </div>
 </body>

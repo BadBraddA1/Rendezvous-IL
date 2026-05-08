@@ -20,7 +20,8 @@ export function Countdown() {
     setMounted(true)
 
     const calculateTimeLeft = (): TimeLeft => {
-      const targetDate = Date.UTC(2026, 4, 4, 18, 0, 0) // May 4, 2026 at 1:00 PM Central Time
+      // May 3, 2027 at 1:00 PM Central Time (CDT is UTC-5)
+      const targetDate = Date.UTC(2027, 4, 3, 18, 0, 0) // UTC time for 1:00 PM CDT
       const now = Date.now()
       const difference = targetDate - now
 
@@ -51,20 +52,20 @@ export function Countdown() {
     return (
       <div className="w-full">
         <div className="mb-4 text-center">
-          <h3 className="text-2xl font-bold text-ring">Event Starts In</h3>
+          <h3 className="text-2xl font-bold text-primary">Event Starts In</h3>
         </div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
           {["Days", "Hours", "Minutes", "Seconds"].map((label) => (
-            <Card key={label} className="border-secondary-foreground/20 bg-primary text-background">
+            <Card key={label} className="border-border/50 bg-card">
               <CardContent className="p-4 sm:p-6 text-center">
-                <div className="text-3xl sm:text-4xl font-bold text-secondary-foreground mb-2">--</div>
-                <div className="text-xs sm:text-sm text-secondary-foreground/70">{label}</div>
+                <div className="text-3xl sm:text-4xl font-bold text-foreground mb-2">--</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">{label}</div>
               </CardContent>
             </Card>
           ))}
         </div>
         <div className="mt-4 text-center">
-          <p className="text-ring">May 4, 2026 at 1:00 PM Central Time</p>
+          <p className="text-muted-foreground">May 3, 2027 at 1:00 PM Central Time</p>
         </div>
       </div>
     )
@@ -74,19 +75,19 @@ export function Countdown() {
   if (eventStarted) {
     return (
       <div className="w-full">
-        <Card className="border-secondary-foreground/20 bg-primary text-background overflow-hidden">
+        <Card className="border-primary/30 bg-card overflow-hidden">
           <CardContent className="p-6 sm:p-8 text-center">
             <div className="flex justify-center mb-4">
-              <PartyPopper className="h-12 w-12 sm:h-16 sm:w-16 text-yellow-400" />
+              <PartyPopper className="h-12 w-12 sm:h-16 sm:w-16 text-primary" />
             </div>
-            <h3 className="text-2xl sm:text-3xl font-bold text-secondary-foreground mb-2">
-              Rendezvous 2026 is Happening!
+            <h3 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
+              Rendezvous 2027 is Happening!
             </h3>
-            <p className="text-lg text-secondary-foreground/80">
+            <p className="text-lg text-muted-foreground">
               Welcome to Lake Williamson Christian Center
             </p>
-            <p className="mt-4 text-sm text-secondary-foreground/60">
-              May 4-8, 2026
+            <p className="mt-4 text-sm text-muted-foreground">
+              May 3-7, 2027
             </p>
           </CardContent>
         </Card>
@@ -97,7 +98,7 @@ export function Countdown() {
   return (
     <div className="w-full">
       <div className="mb-4 text-center">
-        <h3 className="text-2xl font-bold text-ring">Event Starts In</h3>
+        <h3 className="text-2xl font-bold text-primary">Event Starts In</h3>
       </div>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
         {[
@@ -106,18 +107,18 @@ export function Countdown() {
           { label: "Minutes", value: timeLeft.minutes },
           { label: "Seconds", value: timeLeft.seconds },
         ].map((item) => (
-          <Card key={item.label} className="border-secondary-foreground/20 bg-primary text-background">
+          <Card key={item.label} className="border-border/50 bg-card">
             <CardContent className="p-4 sm:p-6 text-center">
-              <div className="text-3xl sm:text-4xl font-bold text-secondary-foreground mb-2">
+              <div className="text-3xl sm:text-4xl font-bold text-foreground mb-2">
                 {String(item.value).padStart(2, "0")}
               </div>
-              <div className="text-xs sm:text-sm text-secondary-foreground/70">{item.label}</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">{item.label}</div>
             </CardContent>
           </Card>
         ))}
       </div>
       <div className="mt-4 text-center">
-        <p className="text-ring">May 4, 2026 at 1:00 PM Central Time</p>
+        <p className="text-muted-foreground">May 3, 2027 at 1:00 PM Central Time</p>
       </div>
     </div>
   )
