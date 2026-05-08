@@ -101,37 +101,13 @@ export default function SchedulePage() {
           <aside className="lg:sticky lg:top-24 lg:w-64 shrink-0">
             <nav className="grid grid-cols-2 gap-2 rounded-xl border bg-card p-3 md:grid-cols-5 lg:flex lg:flex-col lg:gap-2 lg:p-4 justify-items-center">
               <a
-                href="#saturday"
-                onClick={(e) => handleDayClick(e, "saturday")}
+                href="#monday"
+                onClick={(e) => handleDayClick(e, "monday")}
                 className={`flex flex-col items-center gap-2 rounded-lg p-3 transition-all hover:bg-secondary/10 lg:flex-row lg:gap-3 ${
-                  activeDay === "saturday" ? "bg-secondary/20 ring-2 ring-secondary" : ""
+                  activeDay === "monday" ? "bg-secondary/20 ring-2 ring-secondary" : ""
                 }`}
               >
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-secondary text-base font-bold text-secondary-foreground lg:h-10 lg:w-10 lg:text-sm">
-                  S
-                </div>
-                <span className="text-xs font-medium lg:text-sm lg:whitespace-nowrap">Saturday</span>
-              </a>
-              <a
-                href="#sunday"
-                onClick={(e) => handleDayClick(e, "sunday")}
-                className={`flex flex-col items-center gap-2 rounded-lg p-3 transition-all hover:bg-primary/10 lg:flex-row lg:gap-3 ${
-                  activeDay === "sunday" ? "bg-primary/20 ring-2 ring-primary" : ""
-                }`}
-              >
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-base font-bold text-primary-foreground lg:h-10 lg:w-10 lg:text-sm bg-primary">
-                  Su
-                </div>
-                <span className="text-xs font-medium lg:text-sm lg:whitespace-nowrap">Sunday</span>
-              </a>
-              <a
-                href="#monday"
-                onClick={(e) => handleDayClick(e, "monday")}
-                className={`flex flex-col items-center gap-2 rounded-lg p-3 transition-all hover:bg-foreground/10 lg:flex-row lg:gap-3 ${
-                  activeDay === "monday" ? "bg-foreground/20 ring-2 ring-foreground" : ""
-                }`}
-              >
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-foreground text-base font-bold text-background lg:h-10 lg:w-10 lg:text-sm">
                   M
                 </div>
                 <span className="text-xs font-medium lg:text-sm lg:whitespace-nowrap">Monday</span>
@@ -151,29 +127,53 @@ export default function SchedulePage() {
               <a
                 href="#wednesday"
                 onClick={(e) => handleDayClick(e, "wednesday")}
-                className={`flex flex-col items-center gap-2 rounded-lg p-3 transition-all hover:bg-secondary/10 lg:flex-row lg:gap-3 ${
-                  activeDay === "wednesday" ? "bg-secondary/20 ring-2 ring-secondary" : ""
+                className={`flex flex-col items-center gap-2 rounded-lg p-3 transition-all hover:bg-foreground/10 lg:flex-row lg:gap-3 ${
+                  activeDay === "wednesday" ? "bg-foreground/20 ring-2 ring-foreground" : ""
                 }`}
               >
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-secondary text-base font-bold text-secondary-foreground lg:h-10 lg:w-10 lg:text-sm">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-foreground text-base font-bold text-background lg:h-10 lg:w-10 lg:text-sm">
                   W
                 </div>
                 <span className="text-xs font-medium lg:text-sm lg:whitespace-nowrap">Wednesday</span>
+              </a>
+              <a
+                href="#thursday"
+                onClick={(e) => handleDayClick(e, "thursday")}
+                className={`flex flex-col items-center gap-2 rounded-lg p-3 transition-all hover:bg-primary/10 lg:flex-row lg:gap-3 ${
+                  activeDay === "thursday" ? "bg-primary/20 ring-2 ring-primary" : ""
+                }`}
+              >
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-base font-bold text-primary-foreground lg:h-10 lg:w-10 lg:text-sm bg-primary">
+                  Th
+                </div>
+                <span className="text-xs font-medium lg:text-sm lg:whitespace-nowrap">Thursday</span>
+              </a>
+              <a
+                href="#friday"
+                onClick={(e) => handleDayClick(e, "friday")}
+                className={`flex flex-col items-center gap-2 rounded-lg p-3 transition-all hover:bg-secondary/10 lg:flex-row lg:gap-3 ${
+                  activeDay === "friday" ? "bg-secondary/20 ring-2 ring-secondary" : ""
+                }`}
+              >
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-secondary text-base font-bold text-secondary-foreground lg:h-10 lg:w-10 lg:text-sm">
+                  F
+                </div>
+                <span className="text-xs font-medium lg:text-sm lg:whitespace-nowrap">Friday</span>
               </a>
             </nav>
           </aside>
 
           <div className="flex-1 space-y-6 lg:space-y-8">
-            {/* Saturday */}
+            {/* Monday */}
             <section
-              id="saturday"
+              id="monday"
               className="scroll-mt-24 rounded-xl border-2 border-secondary/20 bg-card p-4 shadow-sm md:p-6"
             >
               <div className="mb-4 flex items-center gap-2 md:mb-6 md:gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-base font-bold text-secondary-foreground md:h-12 md:w-12 md:text-lg">
-                  S
+                  M
                 </div>
-                <h2 className="text-xl font-bold md:text-2xl">May 3 (Saturday)</h2>
+                <h2 className="text-xl font-bold md:text-2xl">May 3 (Monday)</h2>
               </div>
               <dl className="space-y-4 md:space-y-6">
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
@@ -226,16 +226,16 @@ export default function SchedulePage() {
               </dl>
             </section>
 
-            {/* Sunday */}
+            {/* Tuesday */}
             <section
-              id="sunday"
+              id="tuesday"
               className="scroll-mt-24 rounded-xl border-2 border-primary/20 bg-card p-4 shadow-sm md:p-6"
             >
               <div className="mb-4 flex items-center gap-2 md:mb-6 md:gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full text-base font-bold text-primary-foreground md:h-12 md:w-12 md:text-lg bg-primary">
-                  Su
+                  T
                 </div>
-                <h2 className="text-xl font-bold md:text-2xl">May 4 (Sunday)</h2>
+                <h2 className="text-xl font-bold md:text-2xl">May 4 (Tuesday)</h2>
               </div>
               <dl className="space-y-4 md:space-y-6">
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
@@ -325,16 +325,16 @@ export default function SchedulePage() {
               </dl>
             </section>
 
-            {/* Monday */}
+            {/* Wednesday */}
             <section
-              id="monday"
+              id="wednesday"
               className="scroll-mt-24 rounded-xl border-2 border-foreground/20 bg-card p-4 shadow-sm md:p-6"
             >
               <div className="mb-4 flex items-center gap-2 md:mb-6 md:gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-foreground text-base font-bold text-background md:h-12 md:w-12 md:text-lg">
-                  M
+                  W
                 </div>
-                <h2 className="text-xl font-bold md:text-2xl">May 5 (Monday)</h2>
+                <h2 className="text-xl font-bold md:text-2xl">May 5 (Wednesday)</h2>
               </div>
               <dl className="space-y-4 md:space-y-6">
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
@@ -418,16 +418,16 @@ export default function SchedulePage() {
               </dl>
             </section>
 
-            {/* Tuesday */}
+            {/* Thursday */}
             <section
-              id="tuesday"
+              id="thursday"
               className="scroll-mt-24 rounded-xl border-2 border-primary/20 bg-card p-4 shadow-sm md:p-6"
             >
               <div className="mb-4 flex items-center gap-2 md:mb-6 md:gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full text-base font-bold text-primary-foreground md:h-12 md:w-12 md:text-lg bg-primary">
-                  T
+                  Th
                 </div>
-                <h2 className="text-xl font-bold md:text-2xl">May 6 (Tuesday)</h2>
+                <h2 className="text-xl font-bold md:text-2xl">May 6 (Thursday)</h2>
               </div>
               <dl className="space-y-4 md:space-y-6">
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">
@@ -541,16 +541,16 @@ export default function SchedulePage() {
               </dl>
             </section>
 
-            {/* Wednesday */}
+            {/* Friday */}
             <section
-              id="wednesday"
+              id="friday"
               className="scroll-mt-24 rounded-xl border-2 border-secondary/20 bg-card p-4 shadow-sm md:p-6"
             >
               <div className="mb-4 flex items-center gap-2 md:mb-6 md:gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-base font-bold text-secondary-foreground md:h-12 md:w-12 md:text-lg">
-                  W
+                  F
                 </div>
-                <h2 className="text-xl font-bold md:text-2xl">May 7 (Wednesday)</h2>
+                <h2 className="text-xl font-bold md:text-2xl">May 7 (Friday)</h2>
               </div>
               <dl className="space-y-4 md:space-y-6">
                 <div className="rounded-lg border border-border/50 bg-background/50 p-3 md:p-4">

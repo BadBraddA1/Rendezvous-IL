@@ -22,7 +22,7 @@ export type ScheduleDay = {
 
 export const scheduleData: ScheduleDay[] = [
   {
-    day: "Saturday",
+    day: "Monday",
     date: "May 3",
     color: "secondary",
     events: [
@@ -54,7 +54,7 @@ export const scheduleData: ScheduleDay[] = [
     ],
   },
   {
-    day: "Sunday",
+    day: "Tuesday",
     date: "May 4",
     color: "primary",
     events: [
@@ -99,7 +99,7 @@ export const scheduleData: ScheduleDay[] = [
     ],
   },
   {
-    day: "Monday",
+    day: "Wednesday",
     date: "May 5",
     color: "foreground",
     events: [
@@ -137,7 +137,7 @@ export const scheduleData: ScheduleDay[] = [
     ],
   },
   {
-    day: "Tuesday",
+    day: "Thursday",
     date: "May 6",
     color: "primary",
     events: [
@@ -189,7 +189,7 @@ export const scheduleData: ScheduleDay[] = [
     ],
   },
   {
-    day: "Wednesday",
+    day: "Friday",
     date: "May 7",
     color: "secondary",
     events: [
@@ -239,11 +239,11 @@ export interface LUScheduleItem {
 }
 
 const DAY_TO_DATE: Record<string, string> = {
-  Saturday: "2027-05-03",
-  Sunday: "2027-05-04",
-  Monday: "2027-05-05",
-  Tuesday: "2027-05-06",
-  Wednesday: "2027-05-07",
+  Monday: "2027-05-03",
+  Tuesday: "2027-05-04",
+  Wednesday: "2027-05-05",
+  Thursday: "2027-05-06",
+  Friday: "2027-05-07",
 }
 
 /** Parse a single time chunk like "5:30 PM", "10", "10:00 AM". */
@@ -301,14 +301,14 @@ function formatTimeForDisplay(hour: number, minute: number): string {
 // the last real activity each evening. Friday is omitted because the event ends
 // at lunch and people are heading home.
 const GOOD_NIGHT_ENTRIES: Array<{ date: string; day: string; startHour: number; startMinute: number }> = [
-  // Saturday: last real event is 9:00 PM Nine Square (default 60-min ends 10 PM)
-  { date: "2027-05-03", day: "Saturday", startHour: 22, startMinute: 0 },
-  // Sunday: pool runs until 10 PM
-  { date: "2027-05-04", day: "Sunday", startHour: 22, startMinute: 15 },
-  // Monday: pool runs until 10 PM
-  { date: "2027-05-05", day: "Monday", startHour: 22, startMinute: 15 },
-  // Tuesday: Racquetball Court Singing starts at 10 PM (default 60-min ends 11 PM)
-  { date: "2027-05-06", day: "Tuesday", startHour: 23, startMinute: 0 },
+  // Monday: last real event is 9:00 PM Nine Square (default 60-min ends 10 PM)
+  { date: "2027-05-03", day: "Monday", startHour: 22, startMinute: 0 },
+  // Tuesday: pool runs until 10 PM
+  { date: "2027-05-04", day: "Tuesday", startHour: 22, startMinute: 15 },
+  // Wednesday: pool runs until 10 PM
+  { date: "2027-05-05", day: "Wednesday", startHour: 22, startMinute: 15 },
+  // Thursday: Racquetball Court Singing starts at 10 PM (default 60-min ends 11 PM)
+  { date: "2027-05-06", day: "Thursday", startHour: 23, startMinute: 0 },
 ]
 
 export const LU_SCHEDULE_ITEMS: LUScheduleItem[] = (() => {

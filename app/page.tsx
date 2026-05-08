@@ -266,7 +266,7 @@ export default function HomePage() {
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="rounded-xl border border-border/50 bg-card p-6 hover:border-primary/30 transition-colors">
                   <h3 className="font-semibold text-foreground mb-2">New Dates</h3>
-                  <p className="text-muted-foreground">May 3-7, 2027 (Saturday - Wednesday)</p>
+                  <p className="text-muted-foreground">May 3-7, 2027 (Monday - Friday)</p>
                 </div>
                 <div className="rounded-xl border border-border/50 bg-card p-6 hover:border-primary/30 transition-colors">
                   <h3 className="font-semibold text-foreground mb-2">Registration Opens</h3>
