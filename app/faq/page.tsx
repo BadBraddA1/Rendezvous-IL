@@ -162,11 +162,14 @@ export default function FAQPage() {
         {/* Videos Section */}
         <section className="border-t bg-secondary/30 py-16 md:py-24">
           <div className="container mx-auto px-6">
-            <div className="mb-12 flex items-center gap-3">
-              <Video className="h-6 w-6 text-primary" />
-              <h2 className="text-2xl font-bold md:text-3xl">
-                Hear From Our Community
-              </h2>
+            <div className="mb-12">
+              <div className="flex items-center gap-3">
+                <Video className="h-6 w-6 text-primary" />
+                <h2 className="text-2xl font-bold md:text-3xl">
+                  Hear From Our Retreat Organizers
+                </h2>
+              </div>
+              <p className="mt-2 text-muted-foreground">Click any video to play</p>
             </div>
             
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
