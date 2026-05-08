@@ -6,12 +6,10 @@ import Link from "next/link"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { useState } from "react"
-import { NowNextSchedule } from "@/components/now-next-schedule"
 import { VolunteerSchedule } from "@/components/volunteer-schedule"
-import { InlineWeather, WeatherForecast } from "@/components/weather-forecast"
+import { InlineWeather } from "@/components/weather-forecast"
 import { ScheduleMap } from "@/components/schedule-map"
 import { LocationLink } from "@/components/location-link"
-import { ScheduleAnnouncements } from "@/components/schedule-announcements"
 import { MealMenu } from "@/components/meal-menu"
 
 export default function SchedulePage() {
@@ -42,13 +40,7 @@ export default function SchedulePage() {
     <div className="min-h-screen bg-background">
       <SiteHeader />
 
-      <main className="container mx-auto px-4 py-8 md:py-12">
-        <div className="mb-8 space-y-4">
-          <WeatherForecast />
-          <ScheduleAnnouncements />
-          <NowNextSchedule />
-        </div>
-
+      <main className="container mx-auto px-4 py-8 pt-24 md:py-12 md:pt-28">
         <div className="mb-8 text-center md:mb-12">
           {/* 2026 Schedule Notice */}
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-800">
