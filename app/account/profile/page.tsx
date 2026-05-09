@@ -45,9 +45,7 @@ import {
   Phone, 
   MapPin, 
   Church,
-  Edit,
   Save,
-  X,
   Plus,
   Trash2,
   Clock,
@@ -105,7 +103,7 @@ export default function FamilyProfilePage() {
   const [pendingChanges, setPendingChanges] = useState<PendingChange[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [isEditing, setIsEditing] = useState(false)
+  const [isEditing, setIsEditing] = useState(true)
   const [editedFamily, setEditedFamily] = useState<Partial<Family>>({})
   const [memberDialogOpen, setMemberDialogOpen] = useState(false)
   const [editingMember, setEditingMember] = useState<FamilyMember | null>(null)
@@ -121,15 +119,17 @@ export default function FamilyProfilePage() {
 
   async function fetchProfile() {
     try {
+      console.log("[v0] Fetching family profile...")
       const response = await fetch("/api/family/profile")
       const data = await response.json()
+      console.log("[v0] Profile data received:", data)
       setFamily(data.family)
       setPendingChanges(data.pendingChanges || [])
       if (data.family) {
         setEditedFamily(data.family)
       }
     } catch (error) {
-      console.error("Error fetching profile:", error)
+      console.error("[v0] Error fetching profile:", error)
     } finally {
       setLoading(false)
     }
@@ -337,47 +337,24 @@ export default function FamilyProfilePage() {
                 </CardTitle>
                 <CardDescription>Contact details and address</CardDescription>
               </div>
-              {!isEditing ? (
-                <Button variant="outline" onClick={() => setIsEditing(true)}>
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit
-                </Button>
-              ) : (
-                <div className="flex gap-2">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => {
-                      setIsEditing(false)
-                      setEditedFamily(family)
-                    }}
-                  >
-                    <X className="h-4 w-4 mr-2" />
-                    Cancel
-                  </Button>
-                  <Button onClick={handleSaveProfile} disabled={saving}>
-                    {saving ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <Save className="h-4 w-4 mr-2" />
-                    )}
-                    Submit
-                  </Button>
-                </div>
-              )}
+              <Button onClick={handleSaveProfile} disabled={saving}>
+                {saving ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4 mr-2" />
+                )}
+                Save Changes
+              </Button>
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Family Name */}
             <div className="space-y-2">
               <Label>Family Name</Label>
-              {isEditing ? (
-                <Input
-                  value={editedFamily.family_last_name || ""}
-                  onChange={(e) => setEditedFamily({ ...editedFamily, family_last_name: e.target.value })}
-                />
-              ) : (
-                <p className="text-sm py-2 px-3 bg-muted rounded-md">{family.family_last_name}</p>
-              )}
+              <Input
+                value={editedFamily.family_last_name || ""}
+                onChange={(e) => setEditedFamily({ ...editedFamily, family_last_name: e.target.value })}
+              />
             </div>
 
             <Separator />
@@ -391,42 +368,30 @@ export default function FamilyProfilePage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
-                  {isEditing ? (
-                    <Input
-                      id="email"
-                      type="email"
-                      value={editedFamily.email || ""}
-                      onChange={(e) => setEditedFamily({ ...editedFamily, email: e.target.value })}
-                    />
-                  ) : (
-                    <p className="text-sm py-2 px-3 bg-muted rounded-md">{family.email}</p>
-                  )}
+                  <Input
+                    id="email"
+                    type="email"
+                    value={editedFamily.email || ""}
+                    onChange={(e) => setEditedFamily({ ...editedFamily, email: e.target.value })}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="husband_phone">Husband&apos;s Phone</Label>
-                  {isEditing ? (
-                    <Input
-                      id="husband_phone"
-                      type="tel"
-                      value={editedFamily.husband_phone || ""}
-                      onChange={(e) => setEditedFamily({ ...editedFamily, husband_phone: e.target.value })}
-                    />
-                  ) : (
-                    <p className="text-sm py-2 px-3 bg-muted rounded-md">{family.husband_phone || "—"}</p>
-                  )}
+                  <Input
+                    id="husband_phone"
+                    type="tel"
+                    value={editedFamily.husband_phone || ""}
+                    onChange={(e) => setEditedFamily({ ...editedFamily, husband_phone: e.target.value })}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="wife_phone">Wife&apos;s Phone</Label>
-                  {isEditing ? (
-                    <Input
-                      id="wife_phone"
-                      type="tel"
-                      value={editedFamily.wife_phone || ""}
-                      onChange={(e) => setEditedFamily({ ...editedFamily, wife_phone: e.target.value })}
-                    />
-                  ) : (
-                    <p className="text-sm py-2 px-3 bg-muted rounded-md">{family.wife_phone || "—"}</p>
-                  )}
+                  <Input
+                    id="wife_phone"
+                    type="tel"
+                    value={editedFamily.wife_phone || ""}
+                    onChange={(e) => setEditedFamily({ ...editedFamily, wife_phone: e.target.value })}
+                  />
                 </div>
               </div>
             </div>
@@ -442,52 +407,36 @@ export default function FamilyProfilePage() {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="street">Street Address</Label>
-                  {isEditing ? (
-                    <Input
-                      id="street"
-                      value={editedFamily.street || ""}
-                      onChange={(e) => setEditedFamily({ ...editedFamily, street: e.target.value })}
-                    />
-                  ) : (
-                    <p className="text-sm py-2 px-3 bg-muted rounded-md">{family.street || "—"}</p>
-                  )}
+                  <Input
+                    id="street"
+                    value={editedFamily.street || ""}
+                    onChange={(e) => setEditedFamily({ ...editedFamily, street: e.target.value })}
+                  />
                 </div>
                 <div className="grid gap-4 sm:grid-cols-3">
                   <div className="space-y-2">
                     <Label htmlFor="city">City</Label>
-                    {isEditing ? (
-                      <Input
-                        id="city"
-                        value={editedFamily.city || ""}
-                        onChange={(e) => setEditedFamily({ ...editedFamily, city: e.target.value })}
-                      />
-                    ) : (
-                      <p className="text-sm py-2 px-3 bg-muted rounded-md">{family.city}</p>
-                    )}
+                    <Input
+                      id="city"
+                      value={editedFamily.city || ""}
+                      onChange={(e) => setEditedFamily({ ...editedFamily, city: e.target.value })}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="state">State</Label>
-                    {isEditing ? (
-                      <Input
-                        id="state"
-                        value={editedFamily.state || ""}
-                        onChange={(e) => setEditedFamily({ ...editedFamily, state: e.target.value })}
-                      />
-                    ) : (
-                      <p className="text-sm py-2 px-3 bg-muted rounded-md">{family.state}</p>
-                    )}
+                    <Input
+                      id="state"
+                      value={editedFamily.state || ""}
+                      onChange={(e) => setEditedFamily({ ...editedFamily, state: e.target.value })}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="zip">ZIP Code</Label>
-                    {isEditing ? (
-                      <Input
-                        id="zip"
-                        value={editedFamily.zip || ""}
-                        onChange={(e) => setEditedFamily({ ...editedFamily, zip: e.target.value })}
-                      />
-                    ) : (
-                      <p className="text-sm py-2 px-3 bg-muted rounded-md">{family.zip}</p>
-                    )}
+                    <Input
+                      id="zip"
+                      value={editedFamily.zip || ""}
+                      onChange={(e) => setEditedFamily({ ...editedFamily, zip: e.target.value })}
+                    />
                   </div>
                 </div>
               </div>
@@ -501,15 +450,11 @@ export default function FamilyProfilePage() {
                 <Church className="h-4 w-4" />
                 Home Congregation
               </Label>
-              {isEditing ? (
-                <Input
-                  id="congregation"
-                  value={editedFamily.home_congregation || ""}
-                  onChange={(e) => setEditedFamily({ ...editedFamily, home_congregation: e.target.value })}
-                />
-              ) : (
-                <p className="text-sm py-2 px-3 bg-muted rounded-md">{family.home_congregation || "—"}</p>
-              )}
+              <Input
+                id="congregation"
+                value={editedFamily.home_congregation || ""}
+                onChange={(e) => setEditedFamily({ ...editedFamily, home_congregation: e.target.value })}
+              />
             </div>
           </CardContent>
         </Card>
