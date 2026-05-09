@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { action, year, rateId, amount, copyFromYear, setActive } = body
+    const { action, year, rateId, amount, copyFromYear, chartId, deadline } = body
 
     if (action === "create_year") {
       // Create new year's rate chart
@@ -85,6 +85,23 @@ export async function POST(request: Request) {
       // Deactivate all, then activate the selected year
       await sql`UPDATE rate_charts SET is_active = false`
       await sql`UPDATE rate_charts SET is_active = true WHERE year = ${year}`
+      return NextResponse.json({ success: true })
+    }
+
+    if (action === "set_deadline") {
+      if (deadline) {
+        await sql`
+          UPDATE rate_charts 
+          SET early_reg_deadline = ${deadline}, updated_at = NOW()
+          WHERE id = ${chartId}
+        `
+      } else {
+        await sql`
+          UPDATE rate_charts 
+          SET early_reg_deadline = NULL, updated_at = NOW()
+          WHERE id = ${chartId}
+        `
+      }
       return NextResponse.json({ success: true })
     }
 

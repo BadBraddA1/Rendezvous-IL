@@ -41,10 +41,38 @@ export async function GET(request: Request) {
       groupedRates[rate.category].push(rate)
     }
     
+    // Determine which registration fee to use based on deadline
+    let registrationFee = 0
+    let isLateRegistration = false
+    
+    if (groupedRates.registration) {
+      const earlyFee = groupedRates.registration.find(r => r.name === "early_registration")
+      const lateFee = groupedRates.registration.find(r => r.name === "late_registration")
+      
+      if (rateChart.early_reg_deadline) {
+        const deadline = new Date(rateChart.early_reg_deadline)
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+        
+        if (today > deadline) {
+          isLateRegistration = true
+          registrationFee = lateFee ? parseFloat(lateFee.amount) : 0
+        } else {
+          registrationFee = earlyFee ? parseFloat(earlyFee.amount) : 0
+        }
+      } else {
+        // No deadline set, use early fee
+        registrationFee = earlyFee ? parseFloat(earlyFee.amount) : 0
+      }
+    }
+    
     return NextResponse.json({
       rateChart,
       rates: groupedRates,
-      allRates: rates
+      allRates: rates,
+      registrationFee,
+      isLateRegistration,
+      earlyRegDeadline: rateChart.early_reg_deadline
     })
   } catch (error) {
     console.error("Error fetching rates:", error)

@@ -31,7 +31,9 @@ import {
   Home,
   Tent,
   Users,
-  Star
+  Star,
+  Calendar,
+  Clock
 } from "lucide-react"
 
 interface Rate {
@@ -49,10 +51,12 @@ interface RateChart {
   id: number
   year: number
   is_active: boolean
+  early_reg_deadline: string | null
   rates: Rate[]
 }
 
 const categoryIcons: Record<string, typeof DollarSign> = {
+  registration: Calendar,
   lodging: Users,
   site_fee: Home,
   extra: Star,
@@ -60,6 +64,7 @@ const categoryIcons: Record<string, typeof DollarSign> = {
 }
 
 const categoryLabels: Record<string, string> = {
+  registration: "Registration Fees",
   lodging: "Lodging Rates (Per Person)",
   site_fee: "Site Fees",
   extra: "Extras",
@@ -75,6 +80,8 @@ export function RatesClient() {
   const [newYear, setNewYear] = useState("")
   const [copyFromYear, setCopyFromYear] = useState("")
   const [creating, setCreating] = useState(false)
+  const [savingDeadline, setSavingDeadline] = useState<number | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     fetchRates()
@@ -146,8 +153,9 @@ export function RatesClient() {
     if (!newYear) return
     
     setCreating(true)
+    setError(null)
     try {
-      await fetch("/api/admin/rates", {
+      const response = await fetch("/api/admin/rates", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -156,14 +164,44 @@ export function RatesClient() {
           copyFromYear: copyFromYear ? parseInt(copyFromYear) : null,
         }),
       })
+      const data = await response.json()
+      if (!response.ok) {
+        setError(data.error || "Failed to create year")
+        return
+      }
       setNewYearDialogOpen(false)
       setNewYear("")
       setCopyFromYear("")
       await fetchRates()
-    } catch (error) {
-      console.error("Error creating year:", error)
+    } catch (err) {
+      console.error("Error creating year:", err)
+      setError("Failed to create year")
     } finally {
       setCreating(false)
+    }
+  }
+
+  async function handleSaveDeadline(chartId: number, deadline: string) {
+    setSavingDeadline(chartId)
+    try {
+      await fetch("/api/admin/rates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "set_deadline",
+          chartId,
+          deadline: deadline || null,
+        }),
+      })
+      
+      // Update local state
+      setRateCharts(prev => prev.map(chart => 
+        chart.id === chartId ? { ...chart, early_reg_deadline: deadline || null } : chart
+      ))
+    } catch (err) {
+      console.error("Error saving deadline:", err)
+    } finally {
+      setSavingDeadline(null)
     }
   }
 
@@ -237,8 +275,13 @@ export function RatesClient() {
                 </Select>
               </div>
             </div>
+            {error && (
+              <div className="text-sm text-red-500 bg-red-50 p-2 rounded">
+                {error}
+              </div>
+            )}
             <DialogFooter>
-              <Button variant="outline" onClick={() => setNewYearDialogOpen(false)}>
+              <Button variant="outline" onClick={() => { setNewYearDialogOpen(false); setError(null); }}>
                 Cancel
               </Button>
               <Button onClick={handleCreateYear} disabled={!newYear || creating}>
@@ -301,6 +344,30 @@ export function RatesClient() {
                     : "Click 'Set as Active' to use these rates for new registrations"
                   }
                 </CardDescription>
+                
+                {/* Early Registration Deadline */}
+                <div className="mt-4 p-4 rounded-lg bg-muted/50 border">
+                  <div className="flex items-center gap-4 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <Label className="text-sm font-medium">Early Registration Deadline:</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="date"
+                        value={chart.early_reg_deadline?.split('T')[0] || ""}
+                        onChange={(e) => handleSaveDeadline(chart.id, e.target.value)}
+                        className="w-auto"
+                      />
+                      {savingDeadline === chart.id && (
+                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground w-full">
+                      Registrations after this date will be charged the late registration fee
+                    </p>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent className="space-y-6">
                 {Object.entries(groupedRates).map(([category, rates]) => {
