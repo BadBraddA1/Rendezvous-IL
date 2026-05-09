@@ -6,6 +6,7 @@ import { ClerkProvider } from "@clerk/nextjs"
 import { ScrollToTop } from "@/components/scroll-to-top"
 import { OneSignalProvider } from "@/components/onesignal-provider"
 import { BackToTop } from "@/components/back-to-top"
+import { Toaster } from "@/components/ui/toaster"
 
 import "./globals.css"
 
@@ -62,6 +63,7 @@ export default function RootLayout({
           <OneSignalProvider />
           {children}
           <BackToTop />
+          <Toaster />
           <Analytics />
         </ClerkProvider>
       </body>
