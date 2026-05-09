@@ -1,30 +1,12 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server"
 
-// Define protected routes
-const isAdminRoute = createRouteMatcher(["/admin(.*)"])
+// Only protect account routes at the middleware level
+// Admin routes handle their own auth to avoid redirect loops
 const isAccountRoute = createRouteMatcher(["/account(.*)"])
-const isPublicRoute = createRouteMatcher([
-  "/admin/login(.*)",
-  "/admin/unauthorized(.*)",
-  "/sign-in(.*)",
-  "/sign-up(.*)",
-  "/api/webhooks(.*)",
-])
 
 export default clerkMiddleware(async (auth, req) => {
-  const { pathname } = req.nextUrl
-
-  // Skip auth for public routes
-  if (isPublicRoute(req)) {
-    return
-  }
-
-  // Protect admin routes - require authentication
-  if (isAdminRoute(req)) {
-    await auth.protect()
-  }
-
-  // Protect account routes - require authentication
+  // Only require auth for account routes
+  // Admin pages handle their own auth checks in-page
   if (isAccountRoute(req)) {
     await auth.protect()
   }
