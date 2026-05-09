@@ -3,7 +3,8 @@
 import Link from "next/link"
 import Image from "next/image"
 import { useState, useEffect } from "react"
-import { Menu } from "lucide-react"
+import { Menu, User, Users, Shield } from "lucide-react"
+import { Show, UserButton } from "@clerk/nextjs"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 
@@ -14,7 +15,7 @@ const navLinks = [
   { href: "/biblebowl", label: "Bible Bowl" },
   { href: "/faq", label: "FAQ" },
   { href: "/calculator", label: "Calculator" },
-  { href: "/map2027", label: "Attendee" },
+  { href: "/map2026", label: "Attendee" },
 ]
 
 interface SiteHeaderProps {
@@ -79,7 +80,41 @@ export function SiteHeader({ isHomepage = false }: SiteHeaderProps) {
                 </Link>
               ))}
             </nav>
-            <div className="mt-8 pt-8 border-t border-border">
+            <div className="mt-6 pt-6 border-t border-border">
+              <Show when="signed-in">
+                <div className="flex items-center gap-3 px-4 py-3">
+                  <UserButton 
+                    afterSignOutUrl="/"
+                    appearance={{
+                      elements: {
+                        avatarBox: "h-10 w-10"
+                      }
+                    }}
+                  />
+                  <div>
+                    <p className="text-sm font-medium">My Account</p>
+                    <Link 
+                      href="/account" 
+                      className="text-xs text-primary hover:underline"
+                      onClick={() => setOpen(false)}
+                    >
+                      View Dashboard
+                    </Link>
+                  </div>
+                </div>
+              </Show>
+              <Show when="signed-out">
+                <Link
+                  href="/sign-in"
+                  className="flex items-center gap-2 px-4 py-3 text-lg font-medium text-primary transition-colors hover:bg-secondary/50 rounded-lg"
+                  onClick={() => setOpen(false)}
+                >
+                  <User className="h-5 w-5" />
+                  Sign In
+                </Link>
+              </Show>
+            </div>
+            <div className="mt-4 pt-4 border-t border-border">
               <p className="text-sm text-muted-foreground text-center">
                 May 3-7, 2027
               </p>
@@ -117,6 +152,32 @@ export function SiteHeader({ isHomepage = false }: SiteHeaderProps) {
               {link.label}
             </Link>
           ))}
+          <div className="ml-2 pl-2 border-l border-border">
+            <Show when="signed-in">
+              <UserButton 
+                afterSignOutUrl="/"
+                appearance={{
+                  elements: {
+                    avatarBox: "h-9 w-9"
+                  }
+                }}
+              >
+                <UserButton.MenuItems>
+                  <UserButton.Link label="Dashboard" href="/account" labelIcon={<User className="h-4 w-4" />} />
+                  <UserButton.Link label="Family Profile" href="/account/profile" labelIcon={<Users className="h-4 w-4" />} />
+                  <UserButton.Link label="Admin Dashboard" href="/admin" labelIcon={<Shield className="h-4 w-4" />} />
+                </UserButton.MenuItems>
+              </UserButton>
+            </Show>
+            <Show when="signed-out">
+              <Link href="/sign-in">
+                <Button variant="ghost" size="sm" className="gap-2">
+                  <User className="h-4 w-4" />
+                  Sign In
+                </Button>
+              </Link>
+            </Show>
+          </div>
         </div>
 
         <Sheet open={open} onOpenChange={setOpen}>
@@ -147,7 +208,41 @@ export function SiteHeader({ isHomepage = false }: SiteHeaderProps) {
                 </Link>
               ))}
             </nav>
-            <div className="mt-8 pt-8 border-t border-border">
+            <div className="mt-6 pt-6 border-t border-border">
+              <Show when="signed-in">
+                <div className="flex items-center gap-3 px-4 py-3">
+                  <UserButton 
+                    afterSignOutUrl="/"
+                    appearance={{
+                      elements: {
+                        avatarBox: "h-10 w-10"
+                      }
+                    }}
+                  />
+                  <div>
+                    <p className="text-sm font-medium">My Account</p>
+                    <Link 
+                      href="/account" 
+                      className="text-xs text-primary hover:underline"
+                      onClick={() => setOpen(false)}
+                    >
+                      View Dashboard
+                    </Link>
+                  </div>
+                </div>
+              </Show>
+              <Show when="signed-out">
+                <Link
+                  href="/sign-in"
+                  className="flex items-center gap-2 px-4 py-3 text-lg font-medium text-primary transition-colors hover:bg-secondary/50 rounded-lg"
+                  onClick={() => setOpen(false)}
+                >
+                  <User className="h-5 w-5" />
+                  Sign In
+                </Link>
+              </Show>
+            </div>
+            <div className="mt-4 pt-4 border-t border-border">
               <p className="text-sm text-muted-foreground text-center">
                 May 3-7, 2027
               </p>

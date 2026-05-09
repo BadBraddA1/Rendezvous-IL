@@ -1,21 +1,21 @@
 import { redirect } from "next/navigation"
-import { cookies } from "next/headers"
 import { AdminNav } from "@/components/admin/admin-nav"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Users, DollarSign, Tent, UserPlus } from "lucide-react"
 import Link from "next/link"
 import { sql } from "@/lib/db"
+import { getCurrentAdmin, requireAdmin } from "@/lib/clerk-auth"
 
 export default async function AdminDashboard() {
-  const cookieStore = await cookies()
-  const sessionCookie = cookieStore.get("admin_session")
-
-  if (!sessionCookie || sessionCookie.value !== "authenticated") {
-    redirect("/admin/login")
+  // Require admin access - redirects if not authenticated or not an admin
+  await requireAdmin()
+  
+  const admin = await getCurrentAdmin()
+  
+  if (!admin) {
+    redirect("/sign-in?redirect_url=/admin")
   }
-
-  const admin = { email: "admin@braddcorp.com" }
 
   // Fetch stats directly in the server component
   let stats = {

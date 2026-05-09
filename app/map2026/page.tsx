@@ -11,7 +11,8 @@ import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 
 const MAP_PASSWORD = "Rendezvous2026"
-const STORAGE_KEY = "map2027_unlocked"
+const STORAGE_KEY = "map2026_unlocked"
+const MAP_YEAR = 2026
 
 const LeafletMap = dynamic(
   () => import("@/components/ui/leaflet-map").then((mod) => mod.LeafletMap),
@@ -377,14 +378,36 @@ const ALL_REGISTRATIONS: Registration[] = [
 
 export default function Map2026Page() {
   const [isUnlocked, setIsUnlocked] = useState(false)
+  const [isCheckingAttendee, setIsCheckingAttendee] = useState(true)
   const [passwordInput, setPasswordInput] = useState("")
   const [passwordError, setPasswordError] = useState(false)
 
-  // Check sessionStorage on mount
+  // Check if user has attended this year (bypass password) or check sessionStorage
   useEffect(() => {
-    if (typeof window !== "undefined" && sessionStorage.getItem(STORAGE_KEY) === "true") {
-      setIsUnlocked(true)
+    async function checkAccess() {
+      // First check sessionStorage for password unlock
+      if (typeof window !== "undefined" && sessionStorage.getItem(STORAGE_KEY) === "true") {
+        setIsUnlocked(true)
+        setIsCheckingAttendee(false)
+        return
+      }
+
+      // Then check if user is a registered attendee for this year
+      try {
+        const response = await fetch(`/api/auth/check-attendee?year=${MAP_YEAR}`)
+        const data = await response.json()
+        if (data.hasAttended) {
+          setIsUnlocked(true)
+        }
+      } catch (error) {
+        // If check fails, user will need password
+        console.error("[Map] Error checking attendee status:", error)
+      }
+      
+      setIsCheckingAttendee(false)
     }
+
+    checkAccess()
   }, [])
 
   const handleUnlock = () => {
@@ -484,7 +507,30 @@ export default function Map2026Page() {
     return () => window.removeEventListener("keydown", handleKeyDown)
   }, [filteredRegistrations, selectedRegistration])
 
-  // Password gate
+  // Loading state while checking attendee status
+  if (isCheckingAttendee) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <SiteHeader />
+        <main className="flex-1 flex items-center justify-center p-6">
+          <Card className="w-full max-w-md">
+            <CardHeader className="text-center">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+                <RefreshCw className="h-7 w-7 text-primary animate-spin" />
+              </div>
+              <CardTitle className="text-2xl">Checking Access</CardTitle>
+              <CardDescription>
+                Verifying your attendee status...
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </main>
+        <SiteFooter />
+      </div>
+    )
+  }
+
+  // Password gate (only shown if not a registered attendee)
   if (!isUnlocked) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
@@ -497,7 +543,7 @@ export default function Map2026Page() {
               </div>
               <CardTitle className="text-2xl">Protected Page</CardTitle>
               <CardDescription>
-                Enter the password to view the Attendee Map
+                Enter the password to view the Attendee Map, or sign in if you&apos;re a registered attendee.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">

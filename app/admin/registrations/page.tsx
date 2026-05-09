@@ -7,7 +7,7 @@ export default async function RegistrationsPage() {
   const admin = await checkAdminAuth()
 
   if (!admin) {
-    redirect("/admin/login")
+    redirect("/sign-in?redirect_url=/admin/registrations")
   }
 
   return (
