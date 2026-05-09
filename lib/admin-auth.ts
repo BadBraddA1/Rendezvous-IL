@@ -18,22 +18,23 @@ export async function checkAdminAuth(): Promise<{
   fullName: string
   role: AdminRole
 } | null> {
-  const { userId, sessionClaims } = await auth()
+  const { userId } = await auth()
 
   if (!userId) {
-    return null
-  }
-
-  // Check for role in public metadata
-  const role = sessionClaims?.metadata?.role as AdminRole | undefined
-
-  if (!role || !["admin", "editor", "viewer"].includes(role)) {
     return null
   }
 
   const user = await currentUser()
 
   if (!user) {
+    return null
+  }
+
+  // Check for role in public metadata (same as other pages)
+  const publicMetadata = user.publicMetadata as { role?: string } | undefined
+  const role = publicMetadata?.role as AdminRole | undefined
+
+  if (!role || !["admin", "editor", "viewer"].includes(role)) {
     return null
   }
 
