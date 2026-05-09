@@ -107,6 +107,20 @@ export async function isFullAdmin(): Promise<boolean> {
 }
 
 /**
+ * Require admin access for API routes
+ * Returns admin info or throws an error (for use in route handlers)
+ */
+export async function requireAdminApi() {
+  const admin = await getCurrentAdmin()
+
+  if (!admin) {
+    throw new Error("Unauthorized - admin access required")
+  }
+
+  return admin
+}
+
+/**
  * Log an audit action for admin activities
  */
 export async function logAuditAction(
