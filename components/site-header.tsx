@@ -83,17 +83,21 @@ export function SiteHeader({ isHomepage = false }: SiteHeaderProps) {
             </nav>
             <div className="mt-6 pt-6 border-t border-border">
               <Show when="signed-in">
-                <div className="flex items-center gap-3 px-4 py-3">
-                  <UserMenuButton size="md" afterSignOutUrl="/" />
-                  <div>
-                    <p className="text-sm font-medium">My Account</p>
-                    <Link 
-                      href="/account" 
-                      className="text-xs text-primary hover:underline"
-                      onClick={() => setOpen(false)}
-                    >
-                      View Dashboard
-                    </Link>
+                <div className="space-y-3 px-4 py-3">
+                  <Link 
+                    href="/account" 
+                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-secondary/50 transition-colors"
+                    onClick={() => setOpen(false)}
+                  >
+                    <User className="h-5 w-5 text-primary" />
+                    <div>
+                      <p className="text-sm font-medium">My Account</p>
+                      <p className="text-xs text-muted-foreground">View your dashboard</p>
+                    </div>
+                  </Link>
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                    <p className="text-sm text-muted-foreground">Signed in</p>
+                    <UserMenuButton size="md" afterSignOutUrl="/" />
                   </div>
                 </div>
               </Show>
@@ -191,17 +195,21 @@ export function SiteHeader({ isHomepage = false }: SiteHeaderProps) {
             </nav>
             <div className="mt-6 pt-6 border-t border-border">
               <Show when="signed-in">
-                <div className="flex items-center gap-3 px-4 py-3">
-                  <UserMenuButton size="md" afterSignOutUrl="/" />
-                  <div>
-                    <p className="text-sm font-medium">My Account</p>
-                    <Link 
-                      href="/account" 
-                      className="text-xs text-primary hover:underline"
-                      onClick={() => setOpen(false)}
-                    >
-                      View Dashboard
-                    </Link>
+                <div className="space-y-3 px-4 py-3">
+                  <Link 
+                    href="/account" 
+                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-secondary/50 transition-colors"
+                    onClick={() => setOpen(false)}
+                  >
+                    <User className="h-5 w-5 text-primary" />
+                    <div>
+                      <p className="text-sm font-medium">My Account</p>
+                      <p className="text-xs text-muted-foreground">View your dashboard</p>
+                    </div>
+                  </Link>
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                    <p className="text-sm text-muted-foreground">Signed in</p>
+                    <UserMenuButton size="md" afterSignOutUrl="/" />
                   </div>
                 </div>
               </Show>
