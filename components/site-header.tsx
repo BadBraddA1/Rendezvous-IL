@@ -3,7 +3,8 @@
 import Link from "next/link"
 import Image from "next/image"
 import { useState, useEffect } from "react"
-import { Menu } from "lucide-react"
+import { Menu, LogIn } from "lucide-react"
+import { SignedIn, SignedOut, UserButton, SignInButton } from "@clerk/nextjs"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 
@@ -117,6 +118,19 @@ export function SiteHeader({ isHomepage = false }: SiteHeaderProps) {
               {link.label}
             </Link>
           ))}
+          <SignedOut>
+            <SignInButton mode="modal">
+              <Button variant="default" size="sm" className="ml-2 gap-2">
+                <LogIn className="h-4 w-4" />
+                Login
+              </Button>
+            </SignInButton>
+          </SignedOut>
+          <SignedIn>
+            <div className="ml-3">
+              <UserButton />
+            </div>
+          </SignedIn>
         </div>
 
         <Sheet open={open} onOpenChange={setOpen}>
@@ -147,7 +161,23 @@ export function SiteHeader({ isHomepage = false }: SiteHeaderProps) {
                 </Link>
               ))}
             </nav>
-            <div className="mt-8 pt-8 border-t border-border">
+            <div className="mt-6 pt-6 border-t border-border">
+              <SignedOut>
+                <SignInButton mode="modal">
+                  <Button variant="default" className="w-full gap-2" onClick={() => setOpen(false)}>
+                    <LogIn className="h-4 w-4" />
+                    Login / Sign Up
+                  </Button>
+                </SignInButton>
+              </SignedOut>
+              <SignedIn>
+                <div className="flex items-center justify-center gap-3">
+                  <UserButton />
+                  <span className="text-sm text-muted-foreground">My Account</span>
+                </div>
+              </SignedIn>
+            </div>
+            <div className="mt-6 pt-6 border-t border-border">
               <p className="text-sm text-muted-foreground text-center">
                 May 3-7, 2027
               </p>
