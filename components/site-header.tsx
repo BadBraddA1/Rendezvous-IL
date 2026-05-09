@@ -3,9 +3,10 @@
 import Link from "next/link"
 import Image from "next/image"
 import { useState, useEffect } from "react"
-import { Menu, User, Users, Shield } from "lucide-react"
-import { Show, UserButton } from "@clerk/nextjs"
+import { Menu, User } from "lucide-react"
+import { Show } from "@clerk/nextjs"
 import { Button } from "@/components/ui/button"
+import { UserMenuButton } from "@/components/user-menu-button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 
 const navLinks = [
@@ -83,14 +84,7 @@ export function SiteHeader({ isHomepage = false }: SiteHeaderProps) {
             <div className="mt-6 pt-6 border-t border-border">
               <Show when="signed-in">
                 <div className="flex items-center gap-3 px-4 py-3">
-                  <UserButton 
-                    afterSignOutUrl="/"
-                    appearance={{
-                      elements: {
-                        avatarBox: "h-10 w-10"
-                      }
-                    }}
-                  />
+                  <UserMenuButton size="md" afterSignOutUrl="/" />
                   <div>
                     <p className="text-sm font-medium">My Account</p>
                     <Link 
@@ -154,20 +148,7 @@ export function SiteHeader({ isHomepage = false }: SiteHeaderProps) {
           ))}
           <div className="ml-2 pl-2 border-l border-border">
             <Show when="signed-in">
-              <UserButton 
-                afterSignOutUrl="/"
-                appearance={{
-                  elements: {
-                    avatarBox: "h-9 w-9"
-                  }
-                }}
-              >
-                <UserButton.MenuItems>
-                  <UserButton.Link label="Dashboard" href="/account" labelIcon={<User className="h-4 w-4" />} />
-                  <UserButton.Link label="Family Profile" href="/account/profile" labelIcon={<Users className="h-4 w-4" />} />
-                  <UserButton.Link label="Admin Dashboard" href="/admin" labelIcon={<Shield className="h-4 w-4" />} />
-                </UserButton.MenuItems>
-              </UserButton>
+              <UserMenuButton size="sm" afterSignOutUrl="/" />
             </Show>
             <Show when="signed-out">
               <Link href="/sign-in">
@@ -211,14 +192,7 @@ export function SiteHeader({ isHomepage = false }: SiteHeaderProps) {
             <div className="mt-6 pt-6 border-t border-border">
               <Show when="signed-in">
                 <div className="flex items-center gap-3 px-4 py-3">
-                  <UserButton 
-                    afterSignOutUrl="/"
-                    appearance={{
-                      elements: {
-                        avatarBox: "h-10 w-10"
-                      }
-                    }}
-                  />
+                  <UserMenuButton size="md" afterSignOutUrl="/" />
                   <div>
                     <p className="text-sm font-medium">My Account</p>
                     <Link 
