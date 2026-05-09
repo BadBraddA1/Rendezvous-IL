@@ -4,7 +4,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { useState, useEffect } from "react"
 import { Menu, User } from "lucide-react"
-import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs"
+import { Show, UserButton } from "@clerk/nextjs"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 
@@ -81,7 +81,7 @@ export function SiteHeader({ isHomepage = false }: SiteHeaderProps) {
               ))}
             </nav>
             <div className="mt-6 pt-6 border-t border-border">
-              <SignedIn>
+              <Show when="signed-in">
                 <div className="flex items-center gap-3 px-4 py-3">
                   <UserButton 
                     afterSignOutUrl="/"
@@ -102,8 +102,8 @@ export function SiteHeader({ isHomepage = false }: SiteHeaderProps) {
                     </Link>
                   </div>
                 </div>
-              </SignedIn>
-              <SignedOut>
+              </Show>
+              <Show when="signed-out">
                 <Link
                   href="/sign-in"
                   className="flex items-center gap-2 px-4 py-3 text-lg font-medium text-primary transition-colors hover:bg-secondary/50 rounded-lg"
@@ -112,7 +112,7 @@ export function SiteHeader({ isHomepage = false }: SiteHeaderProps) {
                   <User className="h-5 w-5" />
                   Sign In
                 </Link>
-              </SignedOut>
+              </Show>
             </div>
             <div className="mt-4 pt-4 border-t border-border">
               <p className="text-sm text-muted-foreground text-center">
@@ -153,7 +153,7 @@ export function SiteHeader({ isHomepage = false }: SiteHeaderProps) {
             </Link>
           ))}
           <div className="ml-2 pl-2 border-l border-border">
-            <SignedIn>
+            <Show when="signed-in">
               <UserButton 
                 afterSignOutUrl="/"
                 appearance={{
@@ -162,15 +162,15 @@ export function SiteHeader({ isHomepage = false }: SiteHeaderProps) {
                   }
                 }}
               />
-            </SignedIn>
-            <SignedOut>
+            </Show>
+            <Show when="signed-out">
               <Link href="/sign-in">
                 <Button variant="ghost" size="sm" className="gap-2">
                   <User className="h-4 w-4" />
                   Sign In
                 </Button>
               </Link>
-            </SignedOut>
+            </Show>
           </div>
         </div>
 
@@ -203,7 +203,7 @@ export function SiteHeader({ isHomepage = false }: SiteHeaderProps) {
               ))}
             </nav>
             <div className="mt-6 pt-6 border-t border-border">
-              <SignedIn>
+              <Show when="signed-in">
                 <div className="flex items-center gap-3 px-4 py-3">
                   <UserButton 
                     afterSignOutUrl="/"
@@ -224,8 +224,8 @@ export function SiteHeader({ isHomepage = false }: SiteHeaderProps) {
                     </Link>
                   </div>
                 </div>
-              </SignedIn>
-              <SignedOut>
+              </Show>
+              <Show when="signed-out">
                 <Link
                   href="/sign-in"
                   className="flex items-center gap-2 px-4 py-3 text-lg font-medium text-primary transition-colors hover:bg-secondary/50 rounded-lg"
@@ -234,7 +234,7 @@ export function SiteHeader({ isHomepage = false }: SiteHeaderProps) {
                   <User className="h-5 w-5" />
                   Sign In
                 </Link>
-              </SignedOut>
+              </Show>
             </div>
             <div className="mt-4 pt-4 border-t border-border">
               <p className="text-sm text-muted-foreground text-center">
