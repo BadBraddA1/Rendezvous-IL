@@ -56,7 +56,7 @@ export default function PrivacyPage() {
           <section>
             <h2 className="mb-3 text-xl font-semibold">The Attendee Map</h2>
             <p className="leading-relaxed text-muted-foreground">
-              Registered families are shown on a map at <strong>/map2027</strong>. This map displays your family last
+              Registered families are shown on a map at <strong>/map2026</strong>. This map displays your family last
               name, contact name, address, email, and family member names to other registered attendees. This map is
               intended for use by Rendezvous participants only. If you have concerns about your information appearing on
               the map, please contact us directly.

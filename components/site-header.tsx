@@ -15,7 +15,7 @@ const navLinks = [
   { href: "/biblebowl", label: "Bible Bowl" },
   { href: "/faq", label: "FAQ" },
   { href: "/calculator", label: "Calculator" },
-  { href: "/map2027", label: "Attendee" },
+  { href: "/map2026", label: "Attendee" },
 ]
 
 interface SiteHeaderProps {

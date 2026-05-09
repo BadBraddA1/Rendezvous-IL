@@ -295,7 +295,7 @@ export default async function AccountPage() {
             <CardContent>
               <div className="grid gap-3 sm:grid-cols-2">
                 {/* Show map access for each year they have a registration */}
-                {Array.from(new Set(registrations.map(() => 2027))).map((year) => (
+                {Array.from(new Set(registrations.map(() => 2026))).map((year) => (
                   <Link 
                     key={year}
                     href={`/map${year}`}
