@@ -11,6 +11,7 @@ export async function getAdminRole(): Promise<AdminRole | null> {
   const { userId } = await auth()
 
   if (!userId) {
+    console.log("[v0] getAdminRole: No userId found")
     return null
   }
 
@@ -18,17 +19,21 @@ export async function getAdminRole(): Promise<AdminRole | null> {
   const user = await currentUser()
   
   if (!user) {
+    console.log("[v0] getAdminRole: No user found for userId:", userId)
     return null
   }
 
   // Check for role in public metadata (set via Clerk Dashboard or API)
   const publicMetadata = user.publicMetadata as { role?: string } | undefined
+  console.log("[v0] getAdminRole: publicMetadata:", JSON.stringify(publicMetadata))
   const role = publicMetadata?.role as AdminRole | undefined
 
   if (!role || !["admin", "editor", "viewer"].includes(role)) {
+    console.log("[v0] getAdminRole: No valid role found, role value:", role)
     return null
   }
 
+  console.log("[v0] getAdminRole: Found role:", role)
   return role
 }
 
