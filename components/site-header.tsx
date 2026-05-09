@@ -3,7 +3,8 @@
 import Link from "next/link"
 import Image from "next/image"
 import { useState, useEffect } from "react"
-import { Menu } from "lucide-react"
+import { Menu, User } from "lucide-react"
+import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 
@@ -79,7 +80,41 @@ export function SiteHeader({ isHomepage = false }: SiteHeaderProps) {
                 </Link>
               ))}
             </nav>
-            <div className="mt-8 pt-8 border-t border-border">
+            <div className="mt-6 pt-6 border-t border-border">
+              <SignedIn>
+                <div className="flex items-center gap-3 px-4 py-3">
+                  <UserButton 
+                    afterSignOutUrl="/"
+                    appearance={{
+                      elements: {
+                        avatarBox: "h-10 w-10"
+                      }
+                    }}
+                  />
+                  <div>
+                    <p className="text-sm font-medium">My Account</p>
+                    <Link 
+                      href="/account" 
+                      className="text-xs text-primary hover:underline"
+                      onClick={() => setOpen(false)}
+                    >
+                      View Dashboard
+                    </Link>
+                  </div>
+                </div>
+              </SignedIn>
+              <SignedOut>
+                <Link
+                  href="/sign-in"
+                  className="flex items-center gap-2 px-4 py-3 text-lg font-medium text-primary transition-colors hover:bg-secondary/50 rounded-lg"
+                  onClick={() => setOpen(false)}
+                >
+                  <User className="h-5 w-5" />
+                  Sign In
+                </Link>
+              </SignedOut>
+            </div>
+            <div className="mt-4 pt-4 border-t border-border">
               <p className="text-sm text-muted-foreground text-center">
                 May 3-7, 2027
               </p>
@@ -117,6 +152,26 @@ export function SiteHeader({ isHomepage = false }: SiteHeaderProps) {
               {link.label}
             </Link>
           ))}
+          <div className="ml-2 pl-2 border-l border-border">
+            <SignedIn>
+              <UserButton 
+                afterSignOutUrl="/"
+                appearance={{
+                  elements: {
+                    avatarBox: "h-9 w-9"
+                  }
+                }}
+              />
+            </SignedIn>
+            <SignedOut>
+              <Link href="/sign-in">
+                <Button variant="ghost" size="sm" className="gap-2">
+                  <User className="h-4 w-4" />
+                  Sign In
+                </Button>
+              </Link>
+            </SignedOut>
+          </div>
         </div>
 
         <Sheet open={open} onOpenChange={setOpen}>
@@ -147,7 +202,41 @@ export function SiteHeader({ isHomepage = false }: SiteHeaderProps) {
                 </Link>
               ))}
             </nav>
-            <div className="mt-8 pt-8 border-t border-border">
+            <div className="mt-6 pt-6 border-t border-border">
+              <SignedIn>
+                <div className="flex items-center gap-3 px-4 py-3">
+                  <UserButton 
+                    afterSignOutUrl="/"
+                    appearance={{
+                      elements: {
+                        avatarBox: "h-10 w-10"
+                      }
+                    }}
+                  />
+                  <div>
+                    <p className="text-sm font-medium">My Account</p>
+                    <Link 
+                      href="/account" 
+                      className="text-xs text-primary hover:underline"
+                      onClick={() => setOpen(false)}
+                    >
+                      View Dashboard
+                    </Link>
+                  </div>
+                </div>
+              </SignedIn>
+              <SignedOut>
+                <Link
+                  href="/sign-in"
+                  className="flex items-center gap-2 px-4 py-3 text-lg font-medium text-primary transition-colors hover:bg-secondary/50 rounded-lg"
+                  onClick={() => setOpen(false)}
+                >
+                  <User className="h-5 w-5" />
+                  Sign In
+                </Link>
+              </SignedOut>
+            </div>
+            <div className="mt-4 pt-4 border-t border-border">
               <p className="text-sm text-muted-foreground text-center">
                 May 3-7, 2027
               </p>

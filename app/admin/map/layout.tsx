@@ -7,7 +7,7 @@ export default async function AdminMapLayout({ children }: { children: React.Rea
   const admin = await checkAdminAuth()
 
   if (!admin) {
-    redirect("/admin/login")
+    redirect("/sign-in?redirect_url=/admin/map")
   }
 
   return (

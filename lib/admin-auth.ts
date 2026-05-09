@@ -1,35 +1,70 @@
-import { cookies } from "next/headers"
+/**
+ * Admin authentication utilities using Clerk
+ * This file provides a compatibility layer for the old admin auth system
+ */
 
-const ADMIN_USERS = [
-  { email: "adin@braddcorp.com", fullName: "Adin Bradd", role: "admin" },
-  { email: "stephen@bradd.us", fullName: "Stephen Bradd", role: "admin" },
-]
+import { auth, currentUser } from "@clerk/nextjs/server"
 
-export async function checkAdminAuth() {
-  const cookieStore = await cookies()
-  const adminSession = cookieStore.get("admin_session")
+export type AdminRole = "admin" | "editor" | "viewer"
 
-  console.log("[v0] Checking admin auth, cookie exists:", !!adminSession)
-  console.log("[v0] Cookie value:", adminSession?.value)
+/**
+ * Check admin authentication and return admin details
+ * Returns null if user is not authenticated or not an admin
+ * 
+ * This replaces the old cookie-based checkAdminAuth function
+ */
+export async function checkAdminAuth(): Promise<{
+  email: string
+  fullName: string
+  role: AdminRole
+} | null> {
+  const { userId, sessionClaims } = await auth()
 
-  if (!adminSession || adminSession.value !== "authenticated") {
-    console.log("[v0] No valid session cookie")
+  if (!userId) {
     return null
   }
 
-  console.log("[v0] Valid session found, returning default admin")
-  // Return the first admin user as the authenticated admin
-  return ADMIN_USERS[0]
+  // Check for role in public metadata
+  const role = sessionClaims?.metadata?.role as AdminRole | undefined
+
+  if (!role || !["admin", "editor", "viewer"].includes(role)) {
+    return null
+  }
+
+  const user = await currentUser()
+
+  if (!user) {
+    return null
+  }
+
+  return {
+    email: user.emailAddresses[0]?.emailAddress || "",
+    fullName: `${user.firstName || ""} ${user.lastName || ""}`.trim(),
+    role,
+  }
 }
 
+/**
+ * Log an audit action
+ * TODO: Store in database for production use
+ */
 export async function logAuditAction(
   adminEmail: string,
   action: string,
   resourceType?: string,
   resourceId?: number,
-  details?: any,
+  details?: Record<string, unknown>,
   ipAddress?: string,
   userAgent?: string,
 ) {
-  console.log("[v0] Audit log:", { adminEmail, action, resourceType, resourceId, details })
+  console.log("[Audit]", {
+    timestamp: new Date().toISOString(),
+    adminEmail,
+    action,
+    resourceType,
+    resourceId,
+    details,
+    ipAddress,
+    userAgent,
+  })
 }

@@ -7,10 +7,11 @@ export default async function AuditPage() {
   const admin = await checkAdminAuth()
 
   if (!admin) {
-    redirect("/admin/login")
+    redirect("/sign-in?redirect_url=/admin/audit")
   }
 
-  if (admin.role === "viewer") {
+  // Only admins can access audit logs
+  if (admin.role !== "admin") {
     redirect("/admin")
   }
 

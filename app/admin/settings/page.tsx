@@ -7,10 +7,11 @@ export default async function SettingsPage() {
   const admin = await checkAdminAuth()
 
   if (!admin) {
-    redirect("/admin/login")
+    redirect("/sign-in?redirect_url=/admin/settings")
   }
 
-  if (admin.role === "viewer") {
+  // Only admins can access settings
+  if (admin.role !== "admin") {
     redirect("/admin")
   }
 
