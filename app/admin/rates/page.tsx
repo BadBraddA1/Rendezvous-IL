@@ -1,6 +1,6 @@
 import { auth, currentUser } from "@clerk/nextjs/server"
 import { AdminNav } from "@/components/admin/admin-nav"
-import { UsersClient } from "./users-client"
+import { RatesClient } from "./rates-client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ShieldAlert, LogIn, Home } from "lucide-react"
@@ -29,7 +29,7 @@ async function getAdminInfo() {
   }
 }
 
-export default async function AdminUsersPage() {
+export default async function AdminRatesPage() {
   const { userId } = await auth()
   const admin = await getAdminInfo()
 
@@ -49,7 +49,7 @@ export default async function AdminUsersPage() {
           </CardHeader>
           <CardContent className="flex justify-center">
             <Button asChild>
-              <Link href="/sign-in?redirect_url=/admin/users">Sign In</Link>
+              <Link href="/sign-in?redirect_url=/admin/rates">Sign In</Link>
             </Button>
           </CardContent>
         </Card>
@@ -84,18 +84,18 @@ export default async function AdminUsersPage() {
     )
   }
 
-  // Only admins can manage users
+  // Only admins can edit rates
   if (admin.role !== "admin") {
     return (
       <div className="min-h-screen bg-muted/30">
-        <AdminNav currentPage="users" admin={admin} />
+        <AdminNav currentPage="rates" admin={admin} />
         <main className="container py-8">
           <Card>
             <CardHeader className="text-center">
               <ShieldAlert className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <CardTitle>Admin Access Required</CardTitle>
               <CardDescription>
-                Only administrators can manage user roles.
+                Only administrators can manage rate charts.
               </CardDescription>
             </CardHeader>
           </Card>
@@ -106,9 +106,9 @@ export default async function AdminUsersPage() {
 
   return (
     <div className="min-h-screen bg-muted/30">
-      <AdminNav currentPage="users" admin={admin} />
+      <AdminNav currentPage="rates" admin={admin} />
       <main className="container py-8">
-        <UsersClient />
+        <RatesClient />
       </main>
     </div>
   )

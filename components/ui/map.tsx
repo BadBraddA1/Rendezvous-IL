@@ -2,129 +2,119 @@
 
 import * as React from "react"
 import { cn } from "@/lib/utils"
+import { MapPin } from "lucide-react"
+
+interface Marker {
+  position: [number, number]
+  label: string
+  size?: "sm" | "md" | "lg"
+  color?: string
+}
 
 interface MapProps extends React.HTMLAttributes<HTMLDivElement> {
   center?: [number, number]
   zoom?: number
+  markers?: Marker[]
 }
 
-export function Map({ center = [-89.8815, 39.2794], zoom = 5, className, children, ...props }: MapProps) {
-  const [selectedMarker, setSelectedMarker] = React.useState<string | null>(null)
+export function Map({ 
+  center = [39.2794, -89.8815], 
+  zoom = 5, 
+  markers = [],
+  className, 
+  children, 
+  ...props 
+}: MapProps) {
+  const [selectedMarker, setSelectedMarker] = React.useState<number | null>(null)
 
-  return (
-    <MapContext.Provider value={{ selectedMarker, setSelectedMarker }}>
-      <div className={cn("relative size-full overflow-hidden", className)} {...props}>
-        {/* OpenStreetMap iframe as base layer */}
-        <iframe
-          src={`https://www.openstreetmap.org/export/embed.html?bbox=${center[0] - 15}%2C${center[1] - 10}%2C${center[0] + 15}%2C${center[1] + 10}&layer=mapnik`}
-          className="absolute inset-0 h-full w-full border-0"
-          style={{ filter: "saturate(0.9)" }}
-        />
-        {/* Overlay for markers */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="relative h-full w-full pointer-events-auto">
-            {children}
-          </div>
-        </div>
-      </div>
-    </MapContext.Provider>
-  )
-}
+  // Calculate bounds for OpenStreetMap embed
+  const latRange = 20 / zoom
+  const lngRange = 30 / zoom
+  const bbox = `${center[1] - lngRange / 2},${center[0] - latRange / 2},${center[1] + lngRange / 2},${center[0] + latRange / 2}`
 
-const MapContext = React.createContext<{
-  selectedMarker: string | null
-  setSelectedMarker: (id: string | null) => void
-}>({
-  selectedMarker: null,
-  setSelectedMarker: () => {},
-})
+  const getMarkerSize = (size?: "sm" | "md" | "lg") => {
+    switch (size) {
+      case "sm": return "h-3 w-3"
+      case "lg": return "h-6 w-6"
+      default: return "h-4 w-4"
+    }
+  }
 
-interface MapMarkerProps {
-  longitude: number
-  latitude: number
-  children?: React.ReactNode
-  id?: string
-}
-
-export function MapMarker({ longitude, latitude, children, id }: MapMarkerProps) {
-  // Simple projection for US-centric map (approximate)
-  // This converts lat/lng to percentage positions on the map
-  const centerLng = -89.8815
-  const centerLat = 39.2794
-  const lngRange = 30 // degrees of longitude shown
-  const latRange = 20 // degrees of latitude shown
-
-  const x = ((longitude - (centerLng - lngRange / 2)) / lngRange) * 100
-  const y = (((centerLat + latRange / 2) - latitude) / latRange) * 100
-
-  // Only render if within bounds
-  if (x < 0 || x > 100 || y < 0 || y > 100) return null
-
-  return (
-    <div
-      className="absolute transform -translate-x-1/2 -translate-y-1/2"
-      style={{ left: `${x}%`, top: `${y}%` }}
-    >
-      {children}
-    </div>
-  )
-}
-
-interface MarkerContentProps {
-  children: React.ReactNode
-}
-
-export function MarkerContent({ children }: MarkerContentProps) {
-  return <div className="relative cursor-pointer">{children}</div>
-}
-
-interface MarkerLabelProps {
-  children: React.ReactNode
-  position?: "top" | "bottom" | "left" | "right"
-}
-
-export function MarkerLabel({ children, position = "top" }: MarkerLabelProps) {
-  const positionClasses = {
-    top: "-top-8 left-1/2 -translate-x-1/2",
-    bottom: "top-8 left-1/2 -translate-x-1/2",
-    left: "top-1/2 -translate-y-1/2 right-8",
-    right: "top-1/2 -translate-y-1/2 left-8",
+  // Convert lat/lng to percentage position on the map
+  const getPosition = (lat: number, lng: number) => {
+    const x = ((lng - (center[1] - lngRange / 2)) / lngRange) * 100
+    const y = (((center[0] + latRange / 2) - lat) / latRange) * 100
+    return { x, y }
   }
 
   return (
-    <div
-      className={cn(
-        "absolute whitespace-nowrap rounded-md bg-popover px-2 py-1 text-xs font-medium text-popover-foreground shadow-md hidden group-hover:block",
-        positionClasses[position],
-      )}
-    >
+    <div className={cn("relative size-full overflow-hidden bg-muted", className)} {...props}>
+      {/* OpenStreetMap iframe as base layer */}
+      <iframe
+        src={`https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik`}
+        className="absolute inset-0 h-full w-full border-0"
+        style={{ filter: "saturate(0.9)" }}
+        title="Map"
+      />
+      
+      {/* Marker overlay */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="relative h-full w-full">
+          {markers.map((marker, index) => {
+            const pos = getPosition(marker.position[0], marker.position[1])
+            
+            // Only render if within bounds
+            if (pos.x < 0 || pos.x > 100 || pos.y < 0 || pos.y > 100) return null
+            
+            return (
+              <div
+                key={index}
+                className="absolute transform -translate-x-1/2 -translate-y-1/2 pointer-events-auto cursor-pointer group"
+                style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
+                onClick={() => setSelectedMarker(selectedMarker === index ? null : index)}
+              >
+                <MapPin 
+                  className={cn(
+                    getMarkerSize(marker.size),
+                    "drop-shadow-md transition-transform hover:scale-125"
+                  )}
+                  style={{ color: marker.color || "#3B82F6" }}
+                  fill={marker.color || "#3B82F6"}
+                />
+                
+                {/* Tooltip on hover/click */}
+                {selectedMarker === index && (
+                  <div 
+                    className="absolute left-1/2 top-full mt-2 -translate-x-1/2 z-50 min-w-[150px] max-w-[250px] rounded-lg border bg-popover p-2 text-xs text-popover-foreground shadow-lg"
+                    dangerouslySetInnerHTML={{ __html: marker.label }}
+                  />
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+      
       {children}
     </div>
   )
 }
 
-interface MarkerPopupProps extends React.HTMLAttributes<HTMLDivElement> {
-  children: React.ReactNode
+// Legacy exports for compatibility
+export function MapMarker({ children }: { children?: React.ReactNode }) {
+  return <>{children}</>
 }
 
-export function MarkerPopup({ children, className, ...props }: MarkerPopupProps) {
-  const [isOpen, setIsOpen] = React.useState(false)
+export function MarkerContent({ children }: { children: React.ReactNode }) {
+  return <div className="relative cursor-pointer">{children}</div>
+}
 
-  return (
-    <div className="group" onClick={() => setIsOpen(!isOpen)}>
-      {isOpen && (
-        <div
-          className={cn(
-            "absolute left-1/2 top-full z-50 mt-2 min-w-[200px] -translate-x-1/2 rounded-lg border bg-popover text-popover-foreground shadow-lg",
-            className,
-          )}
-          {...props}
-        >
-          {children}
-        </div>
-      )}
-    </div>
-  )
+export function MarkerLabel({ children }: { children: React.ReactNode }) {
+  return <span>{children}</span>
+}
+
+export function MarkerPopup({ children }: { children: React.ReactNode }) {
+  return <div>{children}</div>
 }
 
 export function MapControls() {

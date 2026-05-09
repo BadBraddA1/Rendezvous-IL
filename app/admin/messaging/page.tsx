@@ -1,10 +1,10 @@
 import { auth, currentUser } from "@clerk/nextjs/server"
 import { AdminNav } from "@/components/admin/admin-nav"
-import { UsersClient } from "./users-client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { ShieldAlert, LogIn, Home } from "lucide-react"
+import { ShieldAlert, LogIn, Home, MessageSquare, Mail, Users } from "lucide-react"
 import Link from "next/link"
+import { MessagingClient } from "./messaging-client"
 
 type AdminRole = "admin" | "editor" | "viewer"
 
@@ -29,7 +29,7 @@ async function getAdminInfo() {
   }
 }
 
-export default async function AdminUsersPage() {
+export default async function MessagingPage() {
   const { userId } = await auth()
   const admin = await getAdminInfo()
 
@@ -49,7 +49,7 @@ export default async function AdminUsersPage() {
           </CardHeader>
           <CardContent className="flex justify-center">
             <Button asChild>
-              <Link href="/sign-in?redirect_url=/admin/users">Sign In</Link>
+              <Link href="/sign-in?redirect_url=/admin/messaging">Sign In</Link>
             </Button>
           </CardContent>
         </Card>
@@ -84,31 +84,19 @@ export default async function AdminUsersPage() {
     )
   }
 
-  // Only admins can manage users
-  if (admin.role !== "admin") {
-    return (
-      <div className="min-h-screen bg-muted/30">
-        <AdminNav currentPage="users" admin={admin} />
-        <main className="container py-8">
-          <Card>
-            <CardHeader className="text-center">
-              <ShieldAlert className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <CardTitle>Admin Access Required</CardTitle>
-              <CardDescription>
-                Only administrators can manage user roles.
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        </main>
-      </div>
-    )
-  }
-
   return (
-    <div className="min-h-screen bg-muted/30">
-      <AdminNav currentPage="users" admin={admin} />
-      <main className="container py-8">
-        <UsersClient />
+    <div className="flex min-h-screen flex-col">
+      <AdminNav currentPage="messaging" admin={admin} />
+
+      <main className="flex-1 bg-background p-6">
+        <div className="container mx-auto space-y-6">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">Messaging</h2>
+            <p className="text-muted-foreground">Send emails to registered families</p>
+          </div>
+
+          <MessagingClient />
+        </div>
       </main>
     </div>
   )

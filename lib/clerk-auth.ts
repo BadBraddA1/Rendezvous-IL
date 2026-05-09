@@ -1,20 +1,19 @@
 import { auth, currentUser } from "@clerk/nextjs/server"
-import { redirect } from "next/navigation"
 
 export type AdminRole = "admin" | "editor" | "viewer"
+
+export interface AdminUser {
+  id: string
+  email: string
+  fullName: string
+  role: AdminRole
+}
 
 /**
  * Get the current user's admin role from Clerk metadata
  * Returns null if user is not an admin
  */
 export async function getAdminRole(): Promise<AdminRole | null> {
-  const { userId } = await auth()
-
-  if (!userId) {
-    return null
-  }
-
-  // Get the full user to access publicMetadata
   const user = await currentUser()
   
   if (!user) {
@@ -36,11 +35,17 @@ export async function getAdminRole(): Promise<AdminRole | null> {
  * Get current admin user details
  * Returns null if not authenticated or not an admin
  */
-export async function getCurrentAdmin() {
+export async function getCurrentAdmin(): Promise<AdminUser | null> {
   const user = await currentUser()
-  const role = await getAdminRole()
+  
+  if (!user) {
+    return null
+  }
 
-  if (!user || !role) {
+  const publicMetadata = user.publicMetadata as { role?: string } | undefined
+  const role = publicMetadata?.role as AdminRole | undefined
+
+  if (!role || !["admin", "editor", "viewer"].includes(role)) {
     return null
   }
 
@@ -53,66 +58,44 @@ export async function getCurrentAdmin() {
 }
 
 /**
- * Require admin access - redirects to sign-in if not authenticated
- * or shows unauthorized page if authenticated but not an admin
+ * Check if current user is authenticated (but may not be admin)
  */
-export async function requireAdmin() {
+export async function isAuthenticated(): Promise<boolean> {
   const { userId } = await auth()
-
-  if (!userId) {
-    redirect("/sign-in?redirect_url=/admin")
-  }
-
-  const role = await getAdminRole()
-
-  if (!role) {
-    // User is authenticated but doesn't have an admin role
-    // Redirect to unauthorized page instead of sign-in to avoid loop
-    redirect("/admin/unauthorized")
-  }
-
-  return role
+  return !!userId
 }
 
 /**
  * Require editor or admin role for mutations
  */
-export async function requireEditor() {
-  const role = await requireAdmin()
-
+export async function requireEditor(role: AdminRole) {
   if (role === "viewer") {
     throw new Error("Insufficient permissions - editor access required")
   }
-
   return role
 }
 
 /**
  * Require full admin role
  */
-export async function requireFullAdmin() {
-  const role = await requireAdmin()
-
+export async function requireFullAdmin(role: AdminRole) {
   if (role !== "admin") {
     throw new Error("Insufficient permissions - admin access required")
   }
-
   return role
 }
 
 /**
- * Check if current user can edit (editor or admin)
+ * Check if role can edit (editor or admin)
  */
-export async function canEdit(): Promise<boolean> {
-  const role = await getAdminRole()
+export function canEdit(role: AdminRole | null): boolean {
   return role === "admin" || role === "editor"
 }
 
 /**
- * Check if current user is full admin
+ * Check if role is full admin
  */
-export async function isFullAdmin(): Promise<boolean> {
-  const role = await getAdminRole()
+export function isFullAdmin(role: AdminRole | null): boolean {
   return role === "admin"
 }
 
@@ -120,7 +103,7 @@ export async function isFullAdmin(): Promise<boolean> {
  * Require admin access for API routes
  * Returns admin info or throws an error (for use in route handlers)
  */
-export async function requireAdminApi() {
+export async function requireAdminApi(): Promise<AdminUser> {
   const admin = await getCurrentAdmin()
 
   if (!admin) {
@@ -156,6 +139,4 @@ export async function logAuditAction(
     resourceId,
     details,
   })
-
-  // TODO: In production, you may want to store this in the database
 }

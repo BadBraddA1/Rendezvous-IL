@@ -1,23 +1,68 @@
-import { redirect } from "next/navigation"
 import { AdminNav } from "@/components/admin/admin-nav"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Users, DollarSign, Tent, UserPlus } from "lucide-react"
+import { Users, DollarSign, Tent, UserPlus, ShieldX, LogIn } from "lucide-react"
 import Link from "next/link"
 import { sql } from "@/lib/db"
-import { getCurrentAdmin, requireAdmin } from "@/lib/clerk-auth"
+import { getCurrentAdmin, isAuthenticated } from "@/lib/clerk-auth"
 
 export default async function AdminDashboard() {
-  // Require admin access - redirects if not authenticated or not an admin
-  await requireAdmin()
-  
+  const authenticated = await isAuthenticated()
   const admin = await getCurrentAdmin()
-  
-  if (!admin) {
-    redirect("/sign-in?redirect_url=/admin")
+
+  // Not logged in at all - show sign in prompt
+  if (!authenticated) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+              <LogIn className="h-7 w-7 text-primary" />
+            </div>
+            <CardTitle className="text-2xl">Admin Sign In Required</CardTitle>
+            <CardDescription>
+              Please sign in to access the admin dashboard.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild className="w-full">
+              <Link href="/sign-in?redirect_url=/admin">Sign In</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
-  // Fetch stats directly in the server component
+  // Logged in but not an admin - show access denied
+  if (!admin) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-destructive/10">
+              <ShieldX className="h-7 w-7 text-destructive" />
+            </div>
+            <CardTitle className="text-2xl">Access Denied</CardTitle>
+            <CardDescription>
+              You don&apos;t have permission to access the admin dashboard.
+              Contact an administrator if you believe this is an error.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Button asChild variant="outline" className="w-full">
+              <Link href="/account">Go to My Account</Link>
+            </Button>
+            <Button asChild variant="ghost" className="w-full">
+              <Link href="/">Return to Home</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // User is authenticated AND is an admin - show dashboard
   let stats = {
     totalRegistrations: 0,
     totalAttendees: 0,
@@ -30,7 +75,6 @@ export default async function AdminDashboard() {
   let recentRegistrations: any[] = []
 
   try {
-    // Get basic stats
     const [statsData] = await sql`
       SELECT 
         COUNT(DISTINCT r.id)::int as total_registrations,
@@ -52,7 +96,6 @@ export default async function AdminDashboard() {
       unpaid: statsData.unpaid,
     }
 
-    // Get recent registrations
     recentRegistrations = await sql`
       SELECT 
         r.id,
@@ -70,7 +113,7 @@ export default async function AdminDashboard() {
       LIMIT 5
     `
   } catch (error) {
-    console.error("[v0] Dashboard data fetch error:", error)
+    console.error("Dashboard data fetch error:", error)
   }
 
   return (
@@ -182,7 +225,7 @@ export default async function AdminDashboard() {
                         <p className="font-medium">{reg.family_last_name} Family</p>
                         <p className="text-sm text-muted-foreground">{reg.email}</p>
                         <p className="text-xs text-muted-foreground">
-                          {reg.attendee_count} attendees • {reg.lodging_type}
+                          {reg.attendee_count} attendees - {reg.lodging_type}
                         </p>
                       </div>
                       <div className="flex items-center gap-3">
