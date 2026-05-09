@@ -1,41 +1,63 @@
-import { NextResponse } from "next/server"
+import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server"
 
-const protectedRoutes = ["/admin"]
-const publicRoutes = ["/admin/login", "/admin/auth", "/api/admin/auth"]
+// Routes that require admin role
+const isAdminRoute = createRouteMatcher(["/admin(.*)"])
 
-export async function proxy(request) {
-  const { pathname } = request.nextUrl
+// Routes that require any authenticated user
+const isProtectedRoute = createRouteMatcher(["/registration(.*)"])
 
-  const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route))
+// Public routes that should never redirect
+const isPublicRoute = createRouteMatcher([
+  "/",
+  "/schedule(.*)",
+  "/about(.*)",
+  "/biblebowl(.*)",
+  "/faq(.*)",
+  "/calculator(.*)",
+  "/map2027(.*)",
+  "/eod(.*)",
+  "/sign-in(.*)",
+  "/sign-up(.*)",
+  "/login(.*)",
+  "/auth-redirect(.*)",
+  "/api(.*)",
+  "/privacy(.*)",
+])
 
-  if (isPublicRoute) {
-    console.log("[v0] Public route, allowing access:", pathname)
-    return NextResponse.next()
+export default clerkMiddleware(async (auth, request) => {
+  const { userId, sessionClaims } = await auth()
+
+  // Skip auth check for public routes
+  if (isPublicRoute(request)) {
+    return
   }
 
-  const isProtectedRoute = protectedRoutes.some((route) => pathname.startsWith(route))
-
-  if (isProtectedRoute) {
-    const sessionCookie = request.cookies.get("admin_session")?.value
-    console.log("[v0] Protected route check:", pathname)
-    console.log("[v0] Session cookie:", sessionCookie)
-
-    if (!sessionCookie || sessionCookie !== "authenticated") {
-      console.log("[v0] No valid session, redirecting to login")
-      const url = new URL("/admin/login", request.url)
-      return NextResponse.redirect(url)
+  // Admin routes require admin role in publicMetadata
+  if (isAdminRoute(request)) {
+    if (!userId) {
+      return Response.redirect(new URL("/sign-in", request.url))
     }
-
-    console.log("[v0] Valid session, allowing access")
-    // Valid session, allow access
-    const response = NextResponse.next()
-    response.headers.set("X-Admin-Authenticated", "true")
-    return response
+    
+    // Check for admin role in publicMetadata
+    const role = sessionClaims?.metadata?.role
+    if (role !== "admin") {
+      return Response.redirect(new URL("/", request.url))
+    }
   }
 
-  return NextResponse.next()
-}
+  // Registration requires login (any authenticated user)
+  if (isProtectedRoute(request)) {
+    if (!userId) {
+      return Response.redirect(new URL("/sign-in", request.url))
+    }
+  }
+})
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: [
+    // Skip Next.js internals and all static files, unless found in search params
+    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
+    // Always run for API routes
+    "/(api|trpc)(.*)",
+  ],
 }

@@ -1,5 +1,5 @@
+import { currentUser } from "@clerk/nextjs/server"
 import { redirect } from "next/navigation"
-import { cookies } from "next/headers"
 import { AdminNav } from "@/components/admin/admin-nav"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -8,14 +8,22 @@ import Link from "next/link"
 import { sql } from "@/lib/db"
 
 export default async function AdminDashboard() {
-  const cookieStore = await cookies()
-  const sessionCookie = cookieStore.get("admin_session")
+  const user = await currentUser()
 
-  if (!sessionCookie || sessionCookie.value !== "authenticated") {
-    redirect("/admin/login")
+  if (!user) {
+    redirect("/sign-in")
   }
 
-  const admin = { email: "admin@braddcorp.com" }
+  // Check for admin role
+  const role = user.publicMetadata?.role as string | undefined
+  if (role !== "admin") {
+    redirect("/")
+  }
+
+  const admin = { 
+    email: user.emailAddresses[0]?.emailAddress || "admin@braddcorp.com",
+    fullName: user.firstName ? `${user.firstName} ${user.lastName || ""}`.trim() : "Admin"
+  }
 
   // Fetch stats directly in the server component
   let stats = {
