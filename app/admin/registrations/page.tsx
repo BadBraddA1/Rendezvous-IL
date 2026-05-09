@@ -1,6 +1,7 @@
 import { auth, currentUser } from "@clerk/nextjs/server"
 import { AdminNav } from "@/components/admin/admin-nav"
 import { RegistrationsTable } from "@/components/admin/registrations-table"
+import { AdminErrorBoundary } from "@/components/admin/admin-error-boundary"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ShieldAlert, LogIn, Home } from "lucide-react"
@@ -95,7 +96,9 @@ export default async function RegistrationsPage() {
             <p className="text-muted-foreground">View, search, and manage all event registrations</p>
           </div>
 
-          <RegistrationsTable />
+          <AdminErrorBoundary>
+            <RegistrationsTable />
+          </AdminErrorBoundary>
         </div>
       </main>
     </div>

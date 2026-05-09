@@ -2,16 +2,16 @@ import { type NextRequest, NextResponse } from "next/server"
 import { checkAdminAuth } from "@/lib/admin-auth"
 import { sql } from "@/lib/db"
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const admin = await checkAdminAuth()
   if (!admin) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
   try {
-    const { id } = params
+    const { id } = await params
 
-    console.log("[v0] Fetching full registration for ID:", id)
+
 
     // Fetch registration
     const [registration] = await sql`
@@ -29,7 +29,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       ORDER BY age DESC
     `
 
-    console.log("[v0] Found family members:", familyMembers.length)
+
 
     // Fetch t-shirt orders
     const tshirtOrders = await sql`

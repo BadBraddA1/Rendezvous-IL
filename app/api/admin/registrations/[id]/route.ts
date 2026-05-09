@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { checkAdminAuth } from "@/lib/admin-auth"
 import { sql } from "@/lib/db"
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const admin = await checkAdminAuth()
   if (!admin) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -10,9 +10,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   try {
     const updates = await req.json()
-    const { id } = params
+    const { id } = await params
 
-    console.log("[v0] Updating registration:", id, updates)
+
 
     if (updates.family_members && Array.isArray(updates.family_members)) {
       // Delete existing family members
@@ -42,33 +42,42 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       `
     }
 
-    const allowedFields = [
-      "family_last_name",
-      "email",
-      "husband_phone",
-      "wife_phone",
-      "address",
-      "city",
-      "state",
-      "zip",
-      "home_congregation",
-      "registration_fee_paid",
-      "full_payment_paid",
-      "payment_notes",
-    ]
-
-    const registrationUpdates: Record<string, any> = {}
-    for (const field of allowedFields) {
-      if (updates[field] !== undefined) {
-        registrationUpdates[field] = updates[field]
-      }
+    // Update individual fields if provided
+    if (updates.family_last_name !== undefined) {
+      await sql`UPDATE registrations SET family_last_name = ${updates.family_last_name} WHERE id = ${id}`
     }
-
-    if (Object.keys(registrationUpdates).length > 0) {
-      const setClauses = Object.keys(registrationUpdates).map((key) => `${key} = $${key}`)
-
-      const query = `UPDATE registrations SET ${setClauses.join(", ")} WHERE id = $id`
-      await sql(query, { ...registrationUpdates, id })
+    if (updates.email !== undefined) {
+      await sql`UPDATE registrations SET email = ${updates.email} WHERE id = ${id}`
+    }
+    if (updates.husband_phone !== undefined) {
+      await sql`UPDATE registrations SET husband_phone = ${updates.husband_phone} WHERE id = ${id}`
+    }
+    if (updates.wife_phone !== undefined) {
+      await sql`UPDATE registrations SET wife_phone = ${updates.wife_phone} WHERE id = ${id}`
+    }
+    if (updates.address !== undefined) {
+      await sql`UPDATE registrations SET address = ${updates.address} WHERE id = ${id}`
+    }
+    if (updates.city !== undefined) {
+      await sql`UPDATE registrations SET city = ${updates.city} WHERE id = ${id}`
+    }
+    if (updates.state !== undefined) {
+      await sql`UPDATE registrations SET state = ${updates.state} WHERE id = ${id}`
+    }
+    if (updates.zip !== undefined) {
+      await sql`UPDATE registrations SET zip = ${updates.zip} WHERE id = ${id}`
+    }
+    if (updates.home_congregation !== undefined) {
+      await sql`UPDATE registrations SET home_congregation = ${updates.home_congregation} WHERE id = ${id}`
+    }
+    if (updates.registration_fee_paid !== undefined) {
+      await sql`UPDATE registrations SET registration_fee_paid = ${updates.registration_fee_paid} WHERE id = ${id}`
+    }
+    if (updates.full_payment_paid !== undefined) {
+      await sql`UPDATE registrations SET full_payment_paid = ${updates.full_payment_paid} WHERE id = ${id}`
+    }
+    if (updates.payment_notes !== undefined) {
+      await sql`UPDATE registrations SET payment_notes = ${updates.payment_notes} WHERE id = ${id}`
     }
 
     return NextResponse.json({ success: true })
@@ -78,16 +87,16 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const admin = await checkAdminAuth()
   if (!admin) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
   try {
-    const { id } = params
+    const { id } = await params
 
-    console.log("[v0] Deleting registration:", id)
+
 
     // Delete all related records (cascade delete)
     await sql`DELETE FROM family_members WHERE registration_id = ${id}`
