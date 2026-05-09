@@ -127,6 +127,21 @@
   }
 }
 
+/* Fix Leaflet map z-index to be below Sheet/Dialog overlays */
+.leaflet-container {
+  z-index: 0 !important;
+}
+.leaflet-pane {
+  z-index: 1 !important;
+}
+.leaflet-top,
+.leaflet-bottom {
+  z-index: 10 !important;
+}
+.leaflet-control {
+  z-index: 10 !important;
+}
+
 /* Hero gradient animation */
 @keyframes gradient-shift {
   0%, 100% {
