@@ -4,7 +4,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { useState, useEffect } from "react"
 import { Menu, LogIn } from "lucide-react"
-import { useAuth, UserButton } from "@clerk/nextjs"
+import { Show, UserButton, SignInButton } from "@clerk/nextjs"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 
@@ -25,7 +25,6 @@ interface SiteHeaderProps {
 export function SiteHeader({ isHomepage = false }: SiteHeaderProps) {
   const [open, setOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
-  const { isSignedIn } = useAuth()
 
   useEffect(() => {
     if (!isHomepage) {
@@ -119,18 +118,19 @@ export function SiteHeader({ isHomepage = false }: SiteHeaderProps) {
               {link.label}
             </Link>
           ))}
-          {!isSignedIn ? (
-            <Link href="/sign-in">
+          <Show when="signed-out">
+            <SignInButton mode="modal">
               <Button variant="default" size="sm" className="ml-2 gap-2">
                 <LogIn className="h-4 w-4" />
                 Login
               </Button>
-            </Link>
-          ) : (
+            </SignInButton>
+          </Show>
+          <Show when="signed-in">
             <div className="ml-3">
-              <UserButton afterSignOutUrl="/" />
+              <UserButton />
             </div>
-          )}
+          </Show>
         </div>
 
         <Sheet open={open} onOpenChange={setOpen}>
@@ -162,19 +162,20 @@ export function SiteHeader({ isHomepage = false }: SiteHeaderProps) {
               ))}
             </nav>
             <div className="mt-6 pt-6 border-t border-border">
-              {!isSignedIn ? (
-                <Link href="/sign-in" onClick={() => setOpen(false)}>
-                  <Button variant="default" className="w-full gap-2">
+              <Show when="signed-out">
+                <SignInButton mode="modal">
+                  <Button variant="default" className="w-full gap-2" onClick={() => setOpen(false)}>
                     <LogIn className="h-4 w-4" />
                     Login / Sign Up
                   </Button>
-                </Link>
-              ) : (
+                </SignInButton>
+              </Show>
+              <Show when="signed-in">
                 <div className="flex items-center justify-center gap-3">
-                  <UserButton afterSignOutUrl="/" />
+                  <UserButton />
                   <span className="text-sm text-muted-foreground">My Account</span>
                 </div>
-              )}
+              </Show>
             </div>
             <div className="mt-6 pt-6 border-t border-border">
               <p className="text-sm text-muted-foreground text-center">

@@ -49,7 +49,7 @@ export function AdminNav({ currentPage, admin }: AdminNavProps) {
             <p className="text-sm font-medium">{admin.fullName || admin.email}</p>
             <p className="text-xs text-muted-foreground">{admin.email}</p>
           </div>
-          <UserButton afterSignOutUrl="/" />
+          <UserButton />
         </div>
       </div>
     </header>
