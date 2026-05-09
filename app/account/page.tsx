@@ -22,7 +22,8 @@ import {
   Clock, 
   AlertCircle,
   ArrowRight,
-  History
+  History,
+  Map
 } from "lucide-react"
 
 export default async function AccountPage() {
@@ -278,6 +279,44 @@ export default async function AccountPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Attendee Maps */}
+        {registrations.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Map className="h-5 w-5" />
+                Attendee Maps
+              </CardTitle>
+              <CardDescription>
+                Access maps for years you&apos;ve attended
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {/* Show map access for each year they have a registration */}
+                {Array.from(new Set(registrations.map(() => 2027))).map((year) => (
+                  <Link 
+                    key={year}
+                    href={`/map${year}`}
+                    className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <MapPin className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="font-medium">Rendezvous {year}</p>
+                        <p className="text-sm text-muted-foreground">View attendee map</p>
+                      </div>
+                    </div>
+                    <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                  </Link>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Account Info */}
         <Card>
