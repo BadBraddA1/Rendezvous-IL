@@ -3,8 +3,8 @@
 import Link from "next/link"
 import Image from "next/image"
 import { useState, useEffect } from "react"
-import { Menu, User } from "lucide-react"
-import { Show } from "@clerk/nextjs"
+import { Menu, User, LogOut } from "lucide-react"
+import { Show, SignOutButton } from "@clerk/nextjs"
 import { Button } from "@/components/ui/button"
 import { UserMenuButton } from "@/components/user-menu-button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
@@ -83,7 +83,7 @@ export function SiteHeader({ isHomepage = false }: SiteHeaderProps) {
             </nav>
             <div className="mt-6 pt-6 border-t border-border">
               <Show when="signed-in">
-                <div className="space-y-3 px-4 py-3">
+                <div className="space-y-2 px-4 py-3">
                   <Link 
                     href="/account" 
                     className="flex items-center gap-3 p-3 rounded-lg hover:bg-secondary/50 transition-colors"
@@ -95,10 +95,15 @@ export function SiteHeader({ isHomepage = false }: SiteHeaderProps) {
                       <p className="text-xs text-muted-foreground">View your dashboard</p>
                     </div>
                   </Link>
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                    <p className="text-sm text-muted-foreground">Signed in</p>
-                    <UserMenuButton size="md" afterSignOutUrl="/" />
-                  </div>
+                  <SignOutButton redirectUrl="/">
+                    <button 
+                      className="flex items-center gap-3 p-3 rounded-lg hover:bg-destructive/10 transition-colors w-full text-left"
+                      onClick={() => setOpen(false)}
+                    >
+                      <LogOut className="h-5 w-5 text-destructive" />
+                      <p className="text-sm font-medium text-destructive">Sign Out</p>
+                    </button>
+                  </SignOutButton>
                 </div>
               </Show>
               <Show when="signed-out">
@@ -195,7 +200,7 @@ export function SiteHeader({ isHomepage = false }: SiteHeaderProps) {
             </nav>
             <div className="mt-6 pt-6 border-t border-border">
               <Show when="signed-in">
-                <div className="space-y-3 px-4 py-3">
+                <div className="space-y-2 px-4 py-3">
                   <Link 
                     href="/account" 
                     className="flex items-center gap-3 p-3 rounded-lg hover:bg-secondary/50 transition-colors"
@@ -207,10 +212,15 @@ export function SiteHeader({ isHomepage = false }: SiteHeaderProps) {
                       <p className="text-xs text-muted-foreground">View your dashboard</p>
                     </div>
                   </Link>
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                    <p className="text-sm text-muted-foreground">Signed in</p>
-                    <UserMenuButton size="md" afterSignOutUrl="/" />
-                  </div>
+                  <SignOutButton redirectUrl="/">
+                    <button 
+                      className="flex items-center gap-3 p-3 rounded-lg hover:bg-destructive/10 transition-colors w-full text-left"
+                      onClick={() => setOpen(false)}
+                    >
+                      <LogOut className="h-5 w-5 text-destructive" />
+                      <p className="text-sm font-medium text-destructive">Sign Out</p>
+                    </button>
+                  </SignOutButton>
                 </div>
               </Show>
               <Show when="signed-out">
