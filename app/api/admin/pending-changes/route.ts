@@ -66,12 +66,37 @@ export async function POST(request: Request) {
     if (action === 'approve') {
       // Apply the change based on type
       if (change.change_type === 'update_field') {
-        // Update the family field
-        await sql`
-          UPDATE families
-          SET ${sql.unsafe(change.field_name)} = ${change.new_value}
-          WHERE id = ${change.family_id}
-        `
+        // Update the family field - use specific field updates for safety
+        const fieldName = change.field_name
+        const newValue = change.new_value
+        const familyId = change.family_id
+        
+        // Handle known fields explicitly
+        if (fieldName === 'family_last_name') {
+          await sql`UPDATE families SET family_last_name = ${newValue} WHERE id = ${familyId}`
+        } else if (fieldName === 'email') {
+          await sql`UPDATE families SET email = ${newValue} WHERE id = ${familyId}`
+        } else if (fieldName === 'husband_first_name') {
+          await sql`UPDATE families SET husband_first_name = ${newValue} WHERE id = ${familyId}`
+        } else if (fieldName === 'wife_first_name') {
+          await sql`UPDATE families SET wife_first_name = ${newValue} WHERE id = ${familyId}`
+        } else if (fieldName === 'husband_phone') {
+          await sql`UPDATE families SET husband_phone = ${newValue} WHERE id = ${familyId}`
+        } else if (fieldName === 'wife_phone') {
+          await sql`UPDATE families SET wife_phone = ${newValue} WHERE id = ${familyId}`
+        } else if (fieldName === 'address') {
+          await sql`UPDATE families SET address = ${newValue} WHERE id = ${familyId}`
+        } else if (fieldName === 'city') {
+          await sql`UPDATE families SET city = ${newValue} WHERE id = ${familyId}`
+        } else if (fieldName === 'state') {
+          await sql`UPDATE families SET state = ${newValue} WHERE id = ${familyId}`
+        } else if (fieldName === 'zip') {
+          await sql`UPDATE families SET zip = ${newValue} WHERE id = ${familyId}`
+        } else if (fieldName === 'home_congregation') {
+          await sql`UPDATE families SET home_congregation = ${newValue} WHERE id = ${familyId}`
+        } else {
+          return NextResponse.json({ error: `Unknown field: ${fieldName}` }, { status: 400 })
+        }
       } else if (change.change_type === 'add_member') {
         // Add new member
         const memberData = change.member_data
