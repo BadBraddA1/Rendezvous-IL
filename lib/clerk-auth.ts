@@ -8,14 +8,22 @@ export type AdminRole = "admin" | "editor" | "viewer"
  * Returns null if user is not an admin
  */
 export async function getAdminRole(): Promise<AdminRole | null> {
-  const { userId, sessionClaims } = await auth()
+  const { userId } = await auth()
 
   if (!userId) {
     return null
   }
 
-  // Check for role in public metadata
-  const role = sessionClaims?.metadata?.role as AdminRole | undefined
+  // Get the full user to access publicMetadata
+  const user = await currentUser()
+  
+  if (!user) {
+    return null
+  }
+
+  // Check for role in public metadata (set via Clerk Dashboard or API)
+  const publicMetadata = user.publicMetadata as { role?: string } | undefined
+  const role = publicMetadata?.role as AdminRole | undefined
 
   if (!role || !["admin", "editor", "viewer"].includes(role)) {
     return null

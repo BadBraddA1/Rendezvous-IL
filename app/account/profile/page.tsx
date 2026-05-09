@@ -53,7 +53,8 @@ import {
   AlertCircle,
   ArrowLeft,
   Loader2,
-  Home
+  Home,
+  Edit
 } from "lucide-react"
 
 interface FamilyMember {
