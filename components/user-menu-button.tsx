@@ -1,8 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { UserButton } from "@clerk/nextjs"
-import { User, Users, Shield } from "lucide-react"
+import { UserButton, useUser } from "@clerk/nextjs"
+import { User, Users, Shield, Loader2 } from "lucide-react"
 
 interface UserMenuButtonProps {
   size?: "sm" | "md"
@@ -10,8 +10,14 @@ interface UserMenuButtonProps {
 }
 
 export function UserMenuButton({ size = "md", afterSignOutUrl = "/" }: UserMenuButtonProps) {
+  const { isLoaded: userLoaded } = useUser()
   const [isAdmin, setIsAdmin] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [isMounted, setIsMounted] = useState(false)
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   useEffect(() => {
     async function checkAdminStatus() {
@@ -27,12 +33,23 @@ export function UserMenuButton({ size = "md", afterSignOutUrl = "/" }: UserMenuB
       }
     }
 
-    checkAdminStatus()
-  }, [])
+    if (isMounted && userLoaded) {
+      checkAdminStatus()
+    }
+  }, [isMounted, userLoaded])
 
   const avatarSize = size === "sm" ? "h-9 w-9" : "h-10 w-10"
 
-  // While loading, show UserButton without custom menu items
+  // Wait for client-side mounting and Clerk to be ready
+  if (!isMounted || !userLoaded) {
+    return (
+      <div className={`${avatarSize} rounded-full bg-muted flex items-center justify-center`}>
+        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
+  // While checking admin status, show basic UserButton
   if (isLoading) {
     return (
       <UserButton 

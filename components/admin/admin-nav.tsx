@@ -4,7 +4,7 @@ import Link from "next/link"
 import { UserButton } from "@clerk/nextjs"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { LayoutDashboard, Users, Settings, FileText, MapPin, MessageSquare, Utensils, Eye, ClipboardCheck, User, Home, Shield, DollarSign } from "lucide-react"
+import { LayoutDashboard, Users, Settings, FileText, MapPin, MessageSquare, Utensils, Eye, ClipboardCheck, User, Home, Shield, DollarSign, ScanLine, UserCheck, QrCode, Megaphone, Star } from "lucide-react"
 import type { AdminRole } from "@/lib/clerk-auth"
 
 interface AdminNavProps {
@@ -20,7 +20,12 @@ export function AdminNav({ currentPage, admin }: AdminNavProps) {
   const navItems = [
     { href: "/admin", label: "Dashboard", icon: LayoutDashboard, page: "dashboard" },
     { href: "/admin/registrations", label: "Registrations", icon: Users, page: "registrations" },
+    { href: "/admin/checkin", label: "Check-In", icon: ScanLine, page: "checkin", minRole: "editor" as AdminRole },
+    { href: "/admin/checked-in", label: "Checked In", icon: UserCheck, page: "checked-in" },
+    { href: "/admin/qr-codes", label: "QR Codes", icon: QrCode, page: "qr-codes", minRole: "editor" as AdminRole },
     { href: "/admin/pending-changes", label: "Pending", icon: ClipboardCheck, page: "pending-changes", minRole: "editor" as AdminRole },
+    { href: "/admin/announcements", label: "Announcements", icon: Megaphone, page: "announcements", minRole: "editor" as AdminRole },
+    { href: "/admin/feedback", label: "Feedback", icon: Star, page: "feedback" },
     { href: "/admin/messaging", label: "Messaging", icon: MessageSquare, page: "messaging" },
     { href: "/admin/meals", label: "Meals", icon: Utensils, page: "meals" },
     { href: "/admin/map", label: "Map", icon: MapPin, page: "map" },

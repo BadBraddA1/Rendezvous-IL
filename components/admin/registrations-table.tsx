@@ -28,14 +28,32 @@ export function RegistrationsTable() {
   }, [search, lodgingFilter])
 
   const fetchRegistrations = async () => {
-    const params = new URLSearchParams()
-    if (search) params.append("search", search)
-    if (lodgingFilter !== "all") params.append("lodging", lodgingFilter)
+    setLoading(true)
+    try {
+      const params = new URLSearchParams()
+      if (search) params.append("search", search)
+      if (lodgingFilter !== "all") params.append("lodging", lodgingFilter)
 
-    const res = await fetch(`/api/admin/registrations?${params}`)
-    const data = await res.json()
-    setRegistrations(data)
-    setLoading(false)
+      const res = await fetch(`/api/admin/registrations?${params}`)
+      if (!res.ok) {
+        console.error("[v0] Failed to fetch registrations:", res.status)
+        setRegistrations([])
+        return
+      }
+      const data = await res.json()
+      // Defensive: ensure we always have an array
+      if (Array.isArray(data)) {
+        setRegistrations(data)
+      } else {
+        console.error("[v0] Registrations response not an array:", data)
+        setRegistrations([])
+      }
+    } catch (error) {
+      console.error("[v0] Error fetching registrations:", error)
+      setRegistrations([])
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleExport = async () => {

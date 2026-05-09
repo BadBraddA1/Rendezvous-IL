@@ -2,16 +2,14 @@ import { type NextRequest, NextResponse } from "next/server"
 import { checkAdminAuth } from "@/lib/admin-auth"
 import { sql } from "@/lib/db"
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const admin = await checkAdminAuth()
   if (!admin) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
   try {
-    const { id } = params
-
-    console.log("[v0] Fetching full registration for ID:", id)
+    const { id } = await params
 
     // Fetch registration
     const [registration] = await sql`
@@ -26,28 +24,48 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     const familyMembers = await sql`
       SELECT * FROM family_members 
       WHERE registration_id = ${id}
-      ORDER BY age DESC
+      ORDER BY age DESC NULLS LAST, id ASC
     `
-
-    console.log("[v0] Found family members:", familyMembers.length)
 
     // Fetch t-shirt orders
     const tshirtOrders = await sql`
       SELECT * FROM tshirt_orders 
       WHERE registration_id = ${id}
+      ORDER BY id ASC
     `
 
-    // Fetch health info
+    // Fetch health info (correct table name is health_info)
     const healthInfo = await sql`
-      SELECT * FROM health_information 
+      SELECT * FROM health_info 
       WHERE registration_id = ${id}
+      ORDER BY id ASC
     `
+
+    // Fetch volunteer signups
+    const volunteers = await sql`
+      SELECT * FROM volunteer_signups 
+      WHERE registration_id = ${id}
+      ORDER BY id ASC
+    `
+
+    // Compute totals defensively
+    const lodgingTotal = Number(registration.lodging_total ?? 0)
+    const tshirtTotal = Number(registration.tshirt_total ?? 0)
+    const climbingTotal = Number(registration.climbing_tower_total ?? 0)
+    const regFee = Number(registration.registration_fee ?? 0)
+    const scholarshipDonation = Number(registration.scholarship_donation ?? 0)
+    const totalCost = lodgingTotal + tshirtTotal + climbingTotal + regFee + scholarshipDonation
 
     return NextResponse.json({
-      registration,
+      registration: {
+        ...registration,
+        total_cost: totalCost,
+        attendee_count: familyMembers.length,
+      },
       family_members: familyMembers,
       tshirt_orders: tshirtOrders,
       health_info: healthInfo,
+      volunteers,
     })
   } catch (error) {
     console.error("[v0] Failed to fetch full registration:", error)
