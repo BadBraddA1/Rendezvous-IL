@@ -38,11 +38,15 @@ export default async function AccountPage() {
   // Try to get linked family
   let family = await getCurrentFamily()
 
-  // If no linked family, try to auto-link by email
+  // If no linked family, try to find and link by email
   if (!family && userEmail) {
     const matchedFamily = await getFamilyByEmail(userEmail)
     if (matchedFamily) {
-      await linkFamilyToClerk(matchedFamily.id, user.id)
+      // If family exists but isn't linked to anyone, link it to this user
+      if (!matchedFamily.clerk_user_id) {
+        await linkFamilyToClerk(matchedFamily.id, user.id)
+      }
+      // Use the matched family regardless (it might be linked to this user already)
       family = matchedFamily
     }
   }

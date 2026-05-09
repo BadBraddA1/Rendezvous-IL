@@ -96,8 +96,28 @@ export async function getFamilyByClerkId(clerkUserId: string): Promise<Family | 
 /**
  * Get family by email address
  * Used for auto-linking when a user signs up
+ * Returns family even if already linked (for display purposes)
  */
 export async function getFamilyByEmail(email: string): Promise<Family | null> {
+  try {
+    const [family] = await sql`
+      SELECT * FROM families 
+      WHERE LOWER(email) = LOWER(${email})
+      LIMIT 1
+    `
+
+    return family || null
+  } catch (error) {
+    console.error("[Family Auth] Error fetching family by email:", error)
+    return null
+  }
+}
+
+/**
+ * Get unlinked family by email address
+ * Only returns families that don't have a clerk_user_id yet
+ */
+export async function getUnlinkedFamilyByEmail(email: string): Promise<Family | null> {
   try {
     const [family] = await sql`
       SELECT * FROM families 
@@ -108,7 +128,7 @@ export async function getFamilyByEmail(email: string): Promise<Family | null> {
 
     return family || null
   } catch (error) {
-    console.error("[Family Auth] Error fetching family by email:", error)
+    console.error("[Family Auth] Error fetching unlinked family by email:", error)
     return null
   }
 }
