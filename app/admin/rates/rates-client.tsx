@@ -260,12 +260,12 @@ export function RatesClient() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="copyFrom">Copy Rates From (Optional)</Label>
-                <Select value={copyFromYear} onValueChange={setCopyFromYear}>
+                <Select value={copyFromYear || "none"} onValueChange={(val) => setCopyFromYear(val === "none" ? "" : val)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Start fresh" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Start fresh</SelectItem>
+                    <SelectItem value="none">Start fresh</SelectItem>
                     {rateCharts.map((chart) => (
                       <SelectItem key={chart.year} value={chart.year.toString()}>
                         {chart.year}
