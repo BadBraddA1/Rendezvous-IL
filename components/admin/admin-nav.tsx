@@ -4,7 +4,7 @@ import Link from "next/link"
 import { UserButton } from "@clerk/nextjs"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { LayoutDashboard, Users, Settings, FileText, MapPin, MessageSquare, Utensils, Eye, ClipboardCheck, User, Home, Shield } from "lucide-react"
+import { LayoutDashboard, Users, Settings, FileText, MapPin, MessageSquare, Utensils, Eye, ClipboardCheck, User, Home, Shield, DollarSign } from "lucide-react"
 import type { AdminRole } from "@/lib/clerk-auth"
 
 interface AdminNavProps {
@@ -24,6 +24,7 @@ export function AdminNav({ currentPage, admin }: AdminNavProps) {
     { href: "/admin/messaging", label: "Messaging", icon: MessageSquare, page: "messaging" },
     { href: "/admin/meals", label: "Meals", icon: Utensils, page: "meals" },
     { href: "/admin/map", label: "Map", icon: MapPin, page: "map" },
+    { href: "/admin/rates", label: "Rates", icon: DollarSign, page: "rates", minRole: "admin" as AdminRole },
     { href: "/admin/users", label: "Users", icon: Shield, page: "users", minRole: "admin" as AdminRole },
     { href: "/admin/settings", label: "Settings", icon: Settings, page: "settings", minRole: "admin" as AdminRole },
     { href: "/admin/audit", label: "Audit Logs", icon: FileText, page: "audit", minRole: "admin" as AdminRole },
