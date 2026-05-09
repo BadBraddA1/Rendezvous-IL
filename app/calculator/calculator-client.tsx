@@ -45,6 +45,7 @@ export function CalculatorClient({ ratesData }: CalculatorClientProps) {
   const [lodgingType, setLodgingType] = useState<string>("")
   const [climbingTower, setClimbingTower] = useState(false)
   const [climbingCount, setClimbingCount] = useState(0)
+  const [tshirts, setTshirts] = useState(0)
 
   // Extract rates from data
   const lodgingRates = useMemo(() => {
@@ -71,6 +72,12 @@ export function CalculatorClient({ ratesData }: CalculatorClientProps) {
     return rate ? parseFloat(rate.amount) : 10
   }, [ratesData])
 
+  const tshirtRate = useMemo(() => {
+    if (!ratesData?.rates?.extra) return 15
+    const rate = ratesData.rates.extra.find(r => r.name === "tshirt")
+    return rate ? parseFloat(rate.amount) : 15
+  }, [ratesData])
+
   const totalPeople = adults + teens + children5to11 + toddlers + infants
   const eligibleForClimbing = adults + teens + children5to11
 
@@ -91,7 +98,10 @@ export function CalculatorClient({ ratesData }: CalculatorClientProps) {
     // Climbing tower
     const climbingFee = climbingTower ? climbingCount * climbingTowerRate : 0
 
-    const total = lodgingTotal + siteFee + climbingFee
+    // T-shirts
+    const tshirtFee = tshirts * tshirtRate
+
+    const total = lodgingTotal + siteFee + climbingFee + tshirtFee
 
     return {
       adultCost,
@@ -102,9 +112,10 @@ export function CalculatorClient({ ratesData }: CalculatorClientProps) {
       lodgingTotal,
       siteFee,
       climbingFee,
+      tshirtFee,
       total,
     }
-  }, [adults, teens, children5to11, toddlers, infants, lodgingType, climbingTower, climbingCount, lodgingRates, siteFeeRates, climbingTowerRate])
+  }, [adults, teens, children5to11, toddlers, infants, lodgingType, climbingTower, climbingCount, tshirts, lodgingRates, siteFeeRates, climbingTowerRate, tshirtRate])
 
   if (!ratesData) {
     return (
@@ -285,7 +296,7 @@ export function CalculatorClient({ ratesData }: CalculatorClientProps) {
                   Climbing Tower (${climbingTowerRate}/person)
                 </Label>
               </div>
-              {climbingTower && (
+                {climbingTower && (
                 <div className="ml-6 space-y-2">
                   <Label htmlFor="climbingCount">
                     Number of climbers (max {eligibleForClimbing})
@@ -301,6 +312,21 @@ export function CalculatorClient({ ratesData }: CalculatorClientProps) {
                   />
                 </div>
               )}
+              
+              <div className="pt-4 border-t">
+                <div className="space-y-2">
+                  <Label htmlFor="tshirts">T-Shirts (${tshirtRate}/each)</Label>
+                  <Input
+                    id="tshirts"
+                    type="number"
+                    min="0"
+                    value={tshirts}
+                    onChange={(e) => setTshirts(Math.max(0, parseInt(e.target.value) || 0))}
+                    className="w-24"
+                  />
+                  <p className="text-xs text-muted-foreground">All sizes same price</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -370,16 +396,24 @@ export function CalculatorClient({ ratesData }: CalculatorClientProps) {
                 </div>
               )}
 
-              {/* Climbing Tower */}
-              {climbingTower && climbingCount > 0 && (
+              {/* Extras */}
+              {(climbingTower && climbingCount > 0) || tshirts > 0 ? (
                 <div className="space-y-2">
                   <h4 className="font-semibold text-sm">Extras</h4>
-                  <div className="flex justify-between text-sm">
-                    <span>Climbing Tower ({climbingCount})</span>
-                    <span>${calculation.climbingFee.toFixed(2)}</span>
-                  </div>
+                  {climbingTower && climbingCount > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span>Climbing Tower ({climbingCount})</span>
+                      <span>${calculation.climbingFee.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {tshirts > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span>T-Shirts ({tshirts})</span>
+                      <span>${calculation.tshirtFee.toFixed(2)}</span>
+                    </div>
+                  )}
                 </div>
-              )}
+              ) : null}
 
               {/* Total */}
               <div className="pt-4 border-t-2">
