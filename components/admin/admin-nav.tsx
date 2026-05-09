@@ -4,7 +4,7 @@ import Link from "next/link"
 import { UserButton } from "@clerk/nextjs"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { LayoutDashboard, Users, Settings, FileText, MapPin, MessageSquare, Utensils, Eye, ClipboardCheck } from "lucide-react"
+import { LayoutDashboard, Users, Settings, FileText, MapPin, MessageSquare, Utensils, Eye, ClipboardCheck, User, Home } from "lucide-react"
 import type { AdminRole } from "@/lib/clerk-auth"
 
 interface AdminNavProps {
@@ -99,7 +99,12 @@ export function AdminNav({ currentPage, admin }: AdminNavProps) {
                 avatarBox: "h-9 w-9"
               }
             }}
-          />
+          >
+            <UserButton.MenuItems>
+              <UserButton.Link label="My Account" href="/account" labelIcon={<User className="h-4 w-4" />} />
+              <UserButton.Link label="Back to Site" href="/" labelIcon={<Home className="h-4 w-4" />} />
+            </UserButton.MenuItems>
+          </UserButton>
         </div>
       </div>
       

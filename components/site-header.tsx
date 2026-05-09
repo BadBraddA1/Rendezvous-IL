@@ -3,7 +3,7 @@
 import Link from "next/link"
 import Image from "next/image"
 import { useState, useEffect } from "react"
-import { Menu, User, Users } from "lucide-react"
+import { Menu, User, Users, Shield } from "lucide-react"
 import { Show, UserButton } from "@clerk/nextjs"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
@@ -165,6 +165,7 @@ export function SiteHeader({ isHomepage = false }: SiteHeaderProps) {
                 <UserButton.MenuItems>
                   <UserButton.Link label="Dashboard" href="/account" labelIcon={<User className="h-4 w-4" />} />
                   <UserButton.Link label="Family Profile" href="/account/profile" labelIcon={<Users className="h-4 w-4" />} />
+                  <UserButton.Link label="Admin Dashboard" href="/admin" labelIcon={<Shield className="h-4 w-4" />} />
                 </UserButton.MenuItems>
               </UserButton>
             </Show>
