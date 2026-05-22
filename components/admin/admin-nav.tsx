@@ -4,7 +4,7 @@ import Link from "next/link"
 import { UserButton } from "@clerk/nextjs"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { LayoutDashboard, Users, Settings, FileText, MapPin, MessageSquare, Utensils, Eye, ClipboardCheck, User, Home, Shield, DollarSign, ScanLine, UserCheck, QrCode, Megaphone, Star } from "lucide-react"
+import { LayoutDashboard, Users, Settings, FileText, MapPin, MessageSquare, Utensils, Eye, ClipboardCheck, User, Home, Shield, DollarSign, ScanLine, UserCheck, QrCode, Megaphone, Star, Calculator } from "lucide-react"
 import type { AdminRole } from "@/lib/clerk-auth"
 
 interface AdminNavProps {
@@ -30,6 +30,7 @@ export function AdminNav({ currentPage, admin }: AdminNavProps) {
     { href: "/admin/meals", label: "Meals", icon: Utensils, page: "meals" },
     { href: "/admin/map", label: "Map", icon: MapPin, page: "map" },
     { href: "/admin/rates", label: "Rates", icon: DollarSign, page: "rates", minRole: "admin" as AdminRole },
+    { href: "/admin/calculator", label: "Calculator", icon: Calculator, page: "calculator", minRole: "admin" as AdminRole },
     { href: "/admin/users", label: "Users", icon: Shield, page: "users", minRole: "admin" as AdminRole },
     { href: "/admin/settings", label: "Settings", icon: Settings, page: "settings", minRole: "admin" as AdminRole },
     { href: "/admin/audit", label: "Audit Logs", icon: FileText, page: "audit", minRole: "admin" as AdminRole },
