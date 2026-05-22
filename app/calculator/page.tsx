@@ -149,7 +149,7 @@ export default async function CalculatorPage() {
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
-      <main className="container mx-auto px-4 py-12">
+      <main className="container mx-auto px-4 pt-20 pb-12 md:pt-24">
         <CalculatorClient ratesData={ratesData} familyData={familyData} />
       </main>
       <SiteFooter />

@@ -7,7 +7,7 @@ export default function ScrabbleRulesPage() {
     <div className="min-h-screen bg-background">
       <SiteHeader />
 
-      <main className="container mx-auto px-4 py-12">
+      <main className="container mx-auto px-4 pt-20 pb-12 md:pt-24">
         <div className="mx-auto max-w-4xl">
           <div className="mb-8 text-center">
             <h1 className="mb-4 text-4xl font-bold tracking-tight text-foreground">Scrabble Tournament Rules</h1>

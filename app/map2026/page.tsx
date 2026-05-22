@@ -580,7 +580,7 @@ export default function Map2026Page() {
 
       <main>
         {/* Hero Section */}
-        <section className="border-b bg-secondary py-12 md:py-16">
+        <section className="border-b bg-secondary pt-24 pb-12 md:pt-28 md:pb-16">
           <div className="container mx-auto px-6">
             <div className="mx-auto max-w-4xl text-center">
               <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-secondary-foreground/20 bg-secondary-foreground/10 backdrop-blur-sm px-4 py-2 text-sm font-medium text-secondary-foreground">

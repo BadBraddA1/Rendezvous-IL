@@ -8,7 +8,7 @@ export default function AboutPage() {
       <SiteHeader />
 
       <main>
-        <section className="border-b bg-secondary py-16">
+        <section className="border-b bg-secondary pt-24 pb-16 md:pt-28">
           <div className="container mx-auto px-6">
             <div className="mx-auto max-w-4xl text-center">
               <h1 className="mb-6 text-balance text-5xl font-bold tracking-tight text-secondary-foreground md:text-6xl">
