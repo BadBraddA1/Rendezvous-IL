@@ -146,13 +146,9 @@ export function CalculatorClient({ ratesData, familyData }: CalculatorClientProp
     (familyData?.lastRegistration?.lodgingType as typeof lodgingType) || 
     "motel"
   )
-  const [isPartialStay, setIsPartialStay] = useState(false)
-  const [selectedNights, setSelectedNights] = useState<string[]>(["mon", "tue", "wed", "thu"])
-  const [selectedDriveInDays, setSelectedDriveInDays] = useState<string[]>(["mon", "tue", "wed", "thu", "fri"])
   
-  // Calculate numNights from selectedNights
-  const numNights = selectedNights.length
-  const numDriveInDays = selectedDriveInDays.length
+  // For simple mode, always use full week (4 nights for lodging, 5 days for drive-in)
+  const numNights = 4
 
   // Auto-calculate occupancy based on number of adults
   const occupancyType = useMemo((): "single" | "double" | "triple" | "quad" => {
@@ -162,21 +158,9 @@ export function CalculatorClient({ ratesData, familyData }: CalculatorClientProp
     return "quad" // 4+ adults
   }, [adults])
 
-  // Auto-detect package type based on selected nights (simple mode) or attendance (detailed mode)
+  // Auto-detect package type based on attendance (detailed mode only)
   const detectPackageType = useCallback((memberAttendance?: Record<string, MemberAttendance>): "regular" | "special_3_9" | "special_2_6" | "special_1_3" => {
-    // For simple mode, use selectedNights count to determine package
     if (!memberAttendance || Object.keys(memberAttendance).length === 0) {
-      const nightCount = selectedNights.length
-      
-      // Map night count to special packages
-      // 4 nights = regular (full week)
-      // 3 nights = 3/9 package
-      // 2 nights = 2/6 package
-      // 1 night = 1/3 package
-      if (nightCount === 3) return "special_3_9"
-      if (nightCount === 2) return "special_2_6"
-      if (nightCount === 1) return "special_1_3"
-      
       return "regular"
     }
     
@@ -193,7 +177,7 @@ export function CalculatorClient({ ratesData, familyData }: CalculatorClientProp
     if (nightCount === 1 && mealCount === 3) return "special_1_3"
 
     return "regular"
-  }, [selectedNights])
+  }, [])
 
   // For detailed mode - use actual family members
   const initialAttendance = useMemo(() => {
@@ -269,8 +253,8 @@ export function CalculatorClient({ ratesData, familyData }: CalculatorClientProp
       return { adults: 0, youth: 0, children: 0, infants: 0, siteFee: 0, total: 0, packageApplied: null }
     }
 
-    // Detect if partial stay qualifies for a special package
-    const packageType = isPartialStay ? detectPackageType() : "regular"
+    // Detect if partial stay qualifies for a special package (only for detailed mode now)
+    const packageType = "regular" // Simple mode always uses regular full week pricing
     const rateCategory = packageType === "regular" ? lodgingType : packageType
     
     let adultCost = 0
@@ -291,7 +275,7 @@ export function CalculatorClient({ ratesData, familyData }: CalculatorClientProp
       youthCost = youth * getRate(rateCategory, "tent_youth")
       childCost = children * getRate(rateCategory, "tent_child")
     } else if (lodgingType === "drivein") {
-      const daysCount = numDriveInDays
+      const daysCount = 5 // Simple mode always shows full week (5 days)
       adultCost = adults * getRate("drivein", "drivein_adult") * daysCount
       youthCost = youth * getRate("drivein", "drivein_youth") * daysCount
       childCost = children * getRate("drivein", "drivein_child") * daysCount
@@ -313,7 +297,7 @@ export function CalculatorClient({ ratesData, familyData }: CalculatorClientProp
       total: adultCost + youthCost + childCost + siteFee,
       packageApplied: packageType !== "regular" ? packageType : null,
     }
-  }, [adults, youth, children, lodgingType, occupancyType, numNights, numDriveInDays, ratesData, getRate, mode, isPartialStay, detectPackageType])
+  }, [adults, youth, children, lodgingType, occupancyType, numNights, ratesData, getRate, mode])
 
   // Detailed mode calculation (for returning families)
   const detailedCalculation = useMemo(() => {
@@ -592,143 +576,29 @@ export function CalculatorClient({ ratesData, familyData }: CalculatorClientProp
                 </div>
               )}
 
-              {/* Partial Stay Toggle */}
+              {/* Simple mode info - full week only for anonymous users */}
               {lodgingType !== "drivein" && mode === "simple" && (
                 <div className="pt-4 border-t">
-                  <div className="flex items-center justify-between mb-3">
-                    <div>
-                      <Label className="text-sm font-medium">Attendance</Label>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {isPartialStay ? "Select the nights you'll be staying" : "Full week (Mon-Fri)"}
-                      </p>
-                    </div>
-                    <Button 
-                      variant={isPartialStay ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => {
-                        setIsPartialStay(!isPartialStay)
-                        if (!isPartialStay) {
-                          // Reset to full week when disabling partial stay
-                          setSelectedNights(["mon", "tue", "wed", "thu"])
-                        }
-                      }}
-                    >
-                      <Calendar className="h-4 w-4 mr-2" />
-                      {isPartialStay ? "Partial Stay" : "Not staying full week?"}
-                    </Button>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Calendar className="h-4 w-4" />
+                    <span>Full week attendance (Mon-Fri)</span>
                   </div>
-                  
-                  {isPartialStay && (
-                    <div className="space-y-3">
-                      <div className="grid grid-cols-4 gap-2">
-                        {[
-                          { id: "mon", label: "Mon", sublabel: "Night" },
-                          { id: "tue", label: "Tue", sublabel: "Night" },
-                          { id: "wed", label: "Wed", sublabel: "Night" },
-                          { id: "thu", label: "Thu", sublabel: "Night" },
-                        ].map((night) => (
-                          <button
-                            key={night.id}
-                            onClick={() => {
-                              if (selectedNights.includes(night.id)) {
-                                setSelectedNights(selectedNights.filter(n => n !== night.id))
-                              } else {
-                                setSelectedNights([...selectedNights, night.id].sort((a, b) => 
-                                  ["mon", "tue", "wed", "thu"].indexOf(a) - ["mon", "tue", "wed", "thu"].indexOf(b)
-                                ))
-                              }
-                            }}
-                            className={`p-3 rounded-lg border-2 text-center transition-all ${
-                              selectedNights.includes(night.id) 
-                                ? "border-primary bg-primary/10 text-primary" 
-                                : "border-muted bg-muted/30 text-muted-foreground hover:border-muted-foreground/50"
-                            }`}
-                          >
-                            <div className="font-semibold">{night.label}</div>
-                            <div className="text-xs opacity-70">{night.sublabel}</div>
-                          </button>
-                        ))}
-                      </div>
-                      
-                      {/* Package detection info */}
-                      {simpleCalculation.packageApplied && (
-                        <Alert className="border-green-200 bg-green-50">
-                          <Sparkles className="h-4 w-4 text-green-600" />
-                          <AlertTitle className="text-green-800">
-                            {simpleCalculation.packageApplied === "special_3_9" && "3/9 Package Applied!"}
-                            {simpleCalculation.packageApplied === "special_2_6" && "2/6 Package Applied!"}
-                            {simpleCalculation.packageApplied === "special_1_3" && "1/3 Package Applied!"}
-                          </AlertTitle>
-                          <AlertDescription className="text-green-700">
-                            Your selection qualifies for a special discounted rate.
-                          </AlertDescription>
-                        </Alert>
-                      )}
-                      
-                      {selectedNights.length > 0 && !simpleCalculation.packageApplied && (
-                        <p className="text-xs text-muted-foreground">
-                          {selectedNights.length} night{selectedNights.length !== 1 ? "s" : ""} selected.
-                          {(lodgingType === "rv" || lodgingType === "tent") && (
-                            <span> Site fee: ${(lodgingType === "rv" ? getRate("rv", "rv_site_night") : getRate("tent", "tent_site_night")) * selectedNights.length}</span>
-                          )}
-                        </p>
-                      )}
-                      
-                      {selectedNights.length === 0 && (
-                        <p className="text-xs text-amber-600">Please select at least one night.</p>
-                      )}
-                    </div>
-                  )}
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Sign in to customize attendance for individual family members
+                  </p>
                 </div>
               )}
 
-              {/* Drive-In Day Selector */}
+              {/* Drive-In Simple Mode Info */}
               {lodgingType === "drivein" && mode === "simple" && (
                 <div className="pt-4 border-t">
-                  <Label className="text-sm font-medium mb-3 block">Days Attending</Label>
-                  <p className="text-xs text-muted-foreground mb-3">
-                    Select which days you&apos;ll be driving in
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Calendar className="h-4 w-4" />
+                    <span>Full week (Mon-Fri) - 5 days</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    ${getRate("drivein", "drivein_adult")}/day per adult. Sign in to select specific days per family member.
                   </p>
-                  <div className="grid grid-cols-5 gap-2">
-                    {[
-                      { id: "mon", label: "Mon" },
-                      { id: "tue", label: "Tue" },
-                      { id: "wed", label: "Wed" },
-                      { id: "thu", label: "Thu" },
-                      { id: "fri", label: "Fri" },
-                    ].map((day) => (
-                      <button
-                        key={day.id}
-                        onClick={() => {
-                          if (selectedDriveInDays.includes(day.id)) {
-                            setSelectedDriveInDays(selectedDriveInDays.filter(d => d !== day.id))
-                          } else {
-                            setSelectedDriveInDays([...selectedDriveInDays, day.id].sort((a, b) => 
-                              ["mon", "tue", "wed", "thu", "fri"].indexOf(a) - ["mon", "tue", "wed", "thu", "fri"].indexOf(b)
-                            ))
-                          }
-                        }}
-                        className={`p-3 rounded-lg border-2 text-center transition-all ${
-                          selectedDriveInDays.includes(day.id) 
-                            ? "border-primary bg-primary/10 text-primary" 
-                            : "border-muted bg-muted/30 text-muted-foreground hover:border-muted-foreground/50"
-                        }`}
-                      >
-                        <div className="font-semibold">{day.label}</div>
-                      </button>
-                    ))}
-                  </div>
-                  <div className="mt-3 flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">
-                      {selectedDriveInDays.length} day{selectedDriveInDays.length !== 1 ? "s" : ""} selected
-                    </span>
-                    <span className="font-medium">
-                      ${getRate("drivein", "drivein_adult")}/day per person
-                    </span>
-                  </div>
-                  {selectedDriveInDays.length === 0 && (
-                    <p className="text-xs text-amber-600 mt-2">Please select at least one day.</p>
-                  )}
                 </div>
               )}
             </CardContent>
@@ -909,13 +779,9 @@ export function CalculatorClient({ ratesData, familyData }: CalculatorClientProp
               </CardTitle>
               <CardDescription>
                 Rendezvous {ratesData.year} • {
-                  mode === "simple" && simpleCalculation.packageApplied 
-                    ? simpleCalculation.packageApplied.replace("special_", "").replace("_", "/").toUpperCase() + " Package"
-                    : mode === "detailed" && detailedCalculation.packageApplied 
-                      ? detailedCalculation.packageApplied.replace("special_", "").replace("_", "/").toUpperCase() + " Package"
-                      : isPartialStay && mode === "simple"
-                        ? `${selectedNights.length} Night${selectedNights.length !== 1 ? "s" : ""}`
-                        : "Full Week (Mon-Fri)"
+                  mode === "detailed" && detailedCalculation.packageApplied 
+                    ? detailedCalculation.packageApplied.replace("special_", "").replace("_", "/").toUpperCase() + " Package"
+                    : "Full Week (Mon-Fri)"
                 }
               </CardDescription>
             </CardHeader>
