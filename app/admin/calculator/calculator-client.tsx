@@ -95,7 +95,6 @@ export function AdminCalculatorClient() {
 
   // Lodging configuration
   const [lodgingType, setLodgingType] = useState<"motel" | "rv" | "tent" | "drivein">("motel")
-  const [occupancyType, setOccupancyType] = useState<"single" | "double" | "triple" | "quad">("double")
   const [numNights, setNumNights] = useState(4)
 
   // Auto-detect package type based on attendance
@@ -235,6 +234,13 @@ export function AdminCalculatorClient() {
 
     const attendingMembers = members.filter(m => attendance[m.id]?.attending)
     
+    // Auto-calculate occupancy based on attending adults
+    const attendingAdults = attendingMembers.filter(m => m.ageGroup === "adult").length
+    const occupancyType: "single" | "double" | "triple" | "quad" = 
+      attendingAdults === 1 ? "single" : 
+      attendingAdults === 2 ? "double" : 
+      attendingAdults === 3 ? "triple" : "quad"
+    
     const memberCosts = attendingMembers.map(member => {
       const att = attendance[member.id]
       let baseCost = 0
@@ -247,8 +253,7 @@ export function AdminCalculatorClient() {
       // Get base lodging rate
       if (lodgingType === "motel") {
         if (member.ageGroup === "adult") {
-          const occupancyName = `motel_${occupancyType}_adult`
-          baseCost = getRate(rateCategory, occupancyName)
+          baseCost = getRate(rateCategory, `motel_${occupancyType}_adult`)
         } else {
           baseCost = getRate(rateCategory, `motel_${member.ageGroup}`)
         }
@@ -316,12 +321,11 @@ export function AdminCalculatorClient() {
       total: grandTotal,
       packageApplied: packageType !== "regular" ? packageType : null,
     }
-  }, [members, attendance, lodgingType, occupancyType, numNights, ratesData, getRate, detectPackageType])
+  }, [members, attendance, lodgingType, numNights, ratesData, getRate, detectPackageType])
 
   // Reset to defaults
   const resetCalculator = () => {
     setLodgingType("motel")
-    setOccupancyType("double")
     setNumNights(4)
     setMembers([
       { id: "1", name: "Adult 1", ageGroup: "adult", age: 35 },
@@ -420,20 +424,21 @@ export function AdminCalculatorClient() {
               {lodgingType === "motel" && (
                 <div className="pt-4 border-t">
                   <Label className="text-sm font-medium mb-2 block">Room Occupancy</Label>
-                  <RadioGroup
-                    value={occupancyType}
-                    onValueChange={(v) => setOccupancyType(v as typeof occupancyType)}
-                    className="grid grid-cols-2 md:grid-cols-4 gap-4"
-                  >
-                    {["single", "double", "triple", "quad"].map((occ) => (
-                      <div key={occ} className="flex items-center space-x-2">
-                        <RadioGroupItem value={occ} id={occ} />
-                        <Label htmlFor={occ} className="cursor-pointer capitalize">
-                          {occ}
-                        </Label>
-                      </div>
-                    ))}
-                  </RadioGroup>
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                    <div className="flex-1">
+                      <span className="font-medium capitalize">{calculation.members.length > 0 ? (
+                        members.filter(m => m.ageGroup === "adult" && attendance[m.id]?.attending).length === 1 ? "single" :
+                        members.filter(m => m.ageGroup === "adult" && attendance[m.id]?.attending).length === 2 ? "double" :
+                        members.filter(m => m.ageGroup === "adult" && attendance[m.id]?.attending).length === 3 ? "triple" : "quad"
+                      ) : "double"}</span>
+                      <span className="text-muted-foreground ml-1">
+                        ({members.filter(m => m.ageGroup === "adult" && attendance[m.id]?.attending).length} {members.filter(m => m.ageGroup === "adult" && attendance[m.id]?.attending).length === 1 ? "adult" : "adults"})
+                      </span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Occupancy is automatically set based on attending adults
+                  </p>
                 </div>
               )}
 

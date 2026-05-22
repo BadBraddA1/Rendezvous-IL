@@ -146,10 +146,15 @@ export function CalculatorClient({ ratesData, familyData }: CalculatorClientProp
     (familyData?.lastRegistration?.lodgingType as typeof lodgingType) || 
     "motel"
   )
-  const [occupancyType, setOccupancyType] = useState<"single" | "double" | "triple" | "quad">(
-    (familyData?.expressPreferences?.occupancy_type as typeof occupancyType) || "double"
-  )
   const [numNights, setNumNights] = useState(4)
+
+  // Auto-calculate occupancy based on number of adults
+  const occupancyType = useMemo((): "single" | "double" | "triple" | "quad" => {
+    if (adults === 1) return "single"
+    if (adults === 2) return "double"
+    if (adults === 3) return "triple"
+    return "quad" // 4+ adults
+  }, [adults])
 
   // Auto-detect package type based on attendance
   const detectPackageType = useCallback((memberAttendance: Record<string, MemberAttendance>): "regular" | "special_3_9" | "special_2_6" | "special_1_3" => {
@@ -297,6 +302,13 @@ export function CalculatorClient({ ratesData, familyData }: CalculatorClientProp
 
     const attendingMembers = familyData.members.filter(m => attendance[m.id]?.attending)
     
+    // Auto-calculate occupancy based on attending adults
+    const attendingAdults = attendingMembers.filter(m => m.ageGroup === "adult").length
+    const detailedOccupancy: "single" | "double" | "triple" | "quad" = 
+      attendingAdults === 1 ? "single" : 
+      attendingAdults === 2 ? "double" : 
+      attendingAdults === 3 ? "triple" : "quad"
+    
     const memberCosts = attendingMembers.map(member => {
       const att = attendance[member.id]
       let baseCost = 0
@@ -307,7 +319,7 @@ export function CalculatorClient({ ratesData, familyData }: CalculatorClientProp
 
       if (lodgingType === "motel") {
         if (member.ageGroup === "adult") {
-          baseCost = getRate(rateCategory, `motel_${occupancyType}_adult`)
+          baseCost = getRate(rateCategory, `motel_${detailedOccupancy}_adult`)
         } else {
           baseCost = getRate(rateCategory, `motel_${member.ageGroup}`)
         }
@@ -367,7 +379,7 @@ export function CalculatorClient({ ratesData, familyData }: CalculatorClientProp
       total: grandTotal,
       packageApplied: packageType !== "regular" ? packageType : null,
     }
-  }, [familyData, attendance, lodgingType, occupancyType, numNights, ratesData, getRate, mode, detectPackageType])
+  }, [familyData, attendance, lodgingType, numNights, ratesData, getRate, mode, detectPackageType])
 
   // Save express registration preferences
   const [isSaving, setIsSaving] = useState(false)
@@ -537,27 +549,22 @@ export function CalculatorClient({ ratesData, familyData }: CalculatorClientProp
 
               {lodgingType === "motel" && (
                 <div className="pt-4 border-t">
-                  <Label className="text-sm font-medium mb-2 block">Room Occupancy (Adults)</Label>
-                  <RadioGroup
-                    value={occupancyType}
-                    onValueChange={(v) => setOccupancyType(v as typeof occupancyType)}
-                    className="grid grid-cols-2 md:grid-cols-4 gap-4"
-                  >
-                    {[
-                      { value: "single", label: "Single", price: getRate("motel", "motel_single_adult") },
-                      { value: "double", label: "Double", price: getRate("motel", "motel_double_adult") },
-                      { value: "triple", label: "Triple", price: getRate("motel", "motel_triple_adult") },
-                      { value: "quad", label: "Quad", price: getRate("motel", "motel_quad_adult") },
-                    ].map((occ) => (
-                      <div key={occ.value} className="flex items-center space-x-2">
-                        <RadioGroupItem value={occ.value} id={occ.value} />
-                        <Label htmlFor={occ.value} className="cursor-pointer">
-                          <span className="block">{occ.label}</span>
-                          <span className="text-xs text-muted-foreground">${occ.price}/adult</span>
-                        </Label>
-                      </div>
-                    ))}
-                  </RadioGroup>
+                  <Label className="text-sm font-medium mb-2 block">Room Occupancy</Label>
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                    <div className="flex-1">
+                      <span className="font-medium capitalize">{occupancyType}</span>
+                      <span className="text-muted-foreground ml-1">
+                        ({adults} {adults === 1 ? "adult" : "adults"})
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <span className="font-semibold">${getRate("motel", `motel_${occupancyType}_adult`)}</span>
+                      <span className="text-sm text-muted-foreground">/adult</span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Occupancy is automatically set based on the number of adults
+                  </p>
                 </div>
               )}
 
