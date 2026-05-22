@@ -181,7 +181,7 @@ export default function InstallPage() {
       <SiteHeader />
 
       <main>
-        <section className="border-b bg-secondary py-16 md:py-20">
+        <section className="border-b bg-secondary pt-24 pb-16 md:pt-28 md:pb-20">
           <div className="container mx-auto px-6">
             <div className="mx-auto max-w-4xl text-center">
               <h1 className="mb-4 text-balance text-4xl font-bold tracking-tight text-secondary-foreground md:text-5xl lg:text-6xl">

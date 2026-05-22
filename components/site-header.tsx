@@ -60,7 +60,7 @@ export function SiteHeader({ isHomepage = false }: SiteHeaderProps) {
             </Button>
           </SheetTrigger>
           <SheetContent side="right" className="w-full sm:w-[400px] bg-background border-border">
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center justify-center mb-8">
               <Image
                 src="/rendezvous-logo.png"
                 alt="Rendezvous"
@@ -177,7 +177,7 @@ export function SiteHeader({ isHomepage = false }: SiteHeaderProps) {
             </Button>
           </SheetTrigger>
           <SheetContent side="right" className="w-full sm:w-[400px] bg-background border-border">
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center justify-center mb-8">
               <Image
                 src="/rendezvous-logo.png"
                 alt="Rendezvous"

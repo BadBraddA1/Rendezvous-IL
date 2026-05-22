@@ -4,7 +4,13 @@ import Link from "next/link"
 import { UserButton } from "@clerk/nextjs"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { LayoutDashboard, Users, Settings, FileText, MapPin, MessageSquare, Utensils, Eye, ClipboardCheck, User, Home, Shield, DollarSign, ScanLine, UserCheck, QrCode, Megaphone, Star } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { LayoutDashboard, Users, Settings, FileText, MapPin, MessageSquare, Utensils, Eye, ClipboardCheck, User, Home, Shield, DollarSign, ScanLine, UserCheck, QrCode, Megaphone, Star, Calculator, ChevronDown } from "lucide-react"
 import type { AdminRole } from "@/lib/clerk-auth"
 
 interface AdminNavProps {
@@ -16,23 +22,62 @@ interface AdminNavProps {
   }
 }
 
+type NavItem = {
+  href: string
+  label: string
+  icon: React.ComponentType<{ className?: string }>
+  page: string
+  minRole?: AdminRole
+}
+
+type NavGroup = {
+  label: string
+  icon: React.ComponentType<{ className?: string }>
+  items: NavItem[]
+}
+
 export function AdminNav({ currentPage, admin }: AdminNavProps) {
-  const navItems = [
-    { href: "/admin", label: "Dashboard", icon: LayoutDashboard, page: "dashboard" },
-    { href: "/admin/registrations", label: "Registrations", icon: Users, page: "registrations" },
-    { href: "/admin/checkin", label: "Check-In", icon: ScanLine, page: "checkin", minRole: "editor" as AdminRole },
-    { href: "/admin/checked-in", label: "Checked In", icon: UserCheck, page: "checked-in" },
-    { href: "/admin/qr-codes", label: "QR Codes", icon: QrCode, page: "qr-codes", minRole: "editor" as AdminRole },
-    { href: "/admin/pending-changes", label: "Pending", icon: ClipboardCheck, page: "pending-changes", minRole: "editor" as AdminRole },
-    { href: "/admin/announcements", label: "Announcements", icon: Megaphone, page: "announcements", minRole: "editor" as AdminRole },
-    { href: "/admin/feedback", label: "Feedback", icon: Star, page: "feedback" },
-    { href: "/admin/messaging", label: "Messaging", icon: MessageSquare, page: "messaging" },
-    { href: "/admin/meals", label: "Meals", icon: Utensils, page: "meals" },
-    { href: "/admin/map", label: "Map", icon: MapPin, page: "map" },
-    { href: "/admin/rates", label: "Rates", icon: DollarSign, page: "rates", minRole: "admin" as AdminRole },
-    { href: "/admin/users", label: "Users", icon: Shield, page: "users", minRole: "admin" as AdminRole },
-    { href: "/admin/settings", label: "Settings", icon: Settings, page: "settings", minRole: "admin" as AdminRole },
-    { href: "/admin/audit", label: "Audit Logs", icon: FileText, page: "audit", minRole: "admin" as AdminRole },
+  // Grouped navigation items
+  const navGroups: NavGroup[] = [
+    {
+      label: "Registrations",
+      icon: Users,
+      items: [
+        { href: "/admin/registrations", label: "All Registrations", icon: Users, page: "registrations" },
+        { href: "/admin/checkin", label: "Check-In", icon: ScanLine, page: "checkin", minRole: "editor" as AdminRole },
+        { href: "/admin/checked-in", label: "Checked In", icon: UserCheck, page: "checked-in" },
+        { href: "/admin/qr-codes", label: "QR Codes", icon: QrCode, page: "qr-codes", minRole: "editor" as AdminRole },
+        { href: "/admin/pending-changes", label: "Pending Changes", icon: ClipboardCheck, page: "pending-changes", minRole: "editor" as AdminRole },
+      ]
+    },
+    {
+      label: "Communication",
+      icon: MessageSquare,
+      items: [
+        { href: "/admin/announcements", label: "Announcements", icon: Megaphone, page: "announcements", minRole: "editor" as AdminRole },
+        { href: "/admin/messaging", label: "Messaging", icon: MessageSquare, page: "messaging" },
+        { href: "/admin/feedback", label: "Feedback", icon: Star, page: "feedback" },
+      ]
+    },
+    {
+      label: "Event",
+      icon: Utensils,
+      items: [
+        { href: "/admin/meals", label: "Meals", icon: Utensils, page: "meals" },
+        { href: "/admin/map", label: "Map", icon: MapPin, page: "map" },
+      ]
+    },
+    {
+      label: "Settings",
+      icon: Settings,
+      items: [
+        { href: "/admin/rates", label: "Rates", icon: DollarSign, page: "rates", minRole: "admin" as AdminRole },
+        { href: "/admin/calculator", label: "Calculator", icon: Calculator, page: "calculator", minRole: "admin" as AdminRole },
+        { href: "/admin/users", label: "Users", icon: Shield, page: "users", minRole: "admin" as AdminRole },
+        { href: "/admin/settings", label: "Settings", icon: Settings, page: "settings", minRole: "admin" as AdminRole },
+        { href: "/admin/audit", label: "Audit Logs", icon: FileText, page: "audit", minRole: "admin" as AdminRole },
+      ]
+    },
   ]
 
   // Role hierarchy for access control
@@ -58,6 +103,16 @@ export function AdminNav({ currentPage, admin }: AdminNavProps) {
     }
   }
 
+  // Check if any item in a group is active
+  const isGroupActive = (group: NavGroup) => {
+    return group.items.some(item => currentPage === item.page)
+  }
+
+  // Filter group items based on role access
+  const getAccessibleItems = (items: NavItem[]) => {
+    return items.filter(item => hasAccess(item.minRole))
+  }
+
   return (
     <header className="border-b bg-card">
       <div className="container flex h-16 items-center justify-between px-4">
@@ -65,20 +120,59 @@ export function AdminNav({ currentPage, admin }: AdminNavProps) {
           <Link href="/admin" className="text-lg font-semibold hover:text-primary transition-colors">
             Rendezvous Admin
           </Link>
-          <nav className="hidden md:flex gap-1">
-            {navItems.map((item) => {
-              if (!hasAccess(item.minRole)) return null
+          <nav className="hidden md:flex items-center gap-1">
+            {/* Dashboard - standalone */}
+            <Link href="/admin">
+              <Button 
+                variant={currentPage === "dashboard" || currentPage === "" ? "secondary" : "ghost"} 
+                size="sm" 
+                className="gap-2"
+              >
+                <LayoutDashboard className="h-4 w-4" />
+                Dashboard
+              </Button>
+            </Link>
 
-              const Icon = item.icon
-              const isActive = currentPage === item.page || (currentPage === "" && item.page === "dashboard")
+            {/* Grouped navigation */}
+            {navGroups.map((group) => {
+              const accessibleItems = getAccessibleItems(group.items)
+              if (accessibleItems.length === 0) return null
+
+              const GroupIcon = group.icon
+              const groupActive = isGroupActive(group)
 
               return (
-                <Link key={item.href} href={item.href}>
-                  <Button variant={isActive ? "secondary" : "ghost"} size="sm" className="gap-2">
-                    <Icon className="h-4 w-4" />
-                    {item.label}
-                  </Button>
-                </Link>
+                <DropdownMenu key={group.label}>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      variant={groupActive ? "secondary" : "ghost"} 
+                      size="sm" 
+                      className="gap-1.5"
+                    >
+                      <GroupIcon className="h-4 w-4" />
+                      {group.label}
+                      <ChevronDown className="h-3 w-3 opacity-50" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-48">
+                    {accessibleItems.map((item) => {
+                      const Icon = item.icon
+                      const isActive = currentPage === item.page
+
+                      return (
+                        <DropdownMenuItem key={item.href} asChild>
+                          <Link 
+                            href={item.href} 
+                            className={`flex items-center gap-2 ${isActive ? "bg-secondary" : ""}`}
+                          >
+                            <Icon className="h-4 w-4" />
+                            {item.label}
+                          </Link>
+                        </DropdownMenuItem>
+                      )
+                    })}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               )
             })}
           </nav>
@@ -115,22 +209,61 @@ export function AdminNav({ currentPage, admin }: AdminNavProps) {
         </div>
       </div>
       
-      {/* Mobile nav */}
+      {/* Mobile nav - uses same grouped approach but in a scrollable row */}
       <div className="md:hidden border-t px-4 py-2 overflow-x-auto">
         <nav className="flex gap-1">
-          {navItems.map((item) => {
-            if (!hasAccess(item.minRole)) return null
+          {/* Dashboard */}
+          <Link href="/admin">
+            <Button 
+              variant={currentPage === "dashboard" || currentPage === "" ? "secondary" : "ghost"} 
+              size="sm" 
+              className="gap-2 whitespace-nowrap"
+            >
+              <LayoutDashboard className="h-4 w-4" />
+              Dashboard
+            </Button>
+          </Link>
 
-            const Icon = item.icon
-            const isActive = currentPage === item.page || (currentPage === "" && item.page === "dashboard")
+          {/* Grouped dropdowns for mobile */}
+          {navGroups.map((group) => {
+            const accessibleItems = getAccessibleItems(group.items)
+            if (accessibleItems.length === 0) return null
+
+            const GroupIcon = group.icon
+            const groupActive = isGroupActive(group)
 
             return (
-              <Link key={item.href} href={item.href}>
-                <Button variant={isActive ? "secondary" : "ghost"} size="sm" className="gap-2 whitespace-nowrap">
-                  <Icon className="h-4 w-4" />
-                  {item.label}
-                </Button>
-              </Link>
+              <DropdownMenu key={group.label}>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant={groupActive ? "secondary" : "ghost"} 
+                    size="sm" 
+                    className="gap-1.5 whitespace-nowrap"
+                  >
+                    <GroupIcon className="h-4 w-4" />
+                    {group.label}
+                    <ChevronDown className="h-3 w-3 opacity-50" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-48">
+                  {accessibleItems.map((item) => {
+                    const Icon = item.icon
+                    const isActive = currentPage === item.page
+
+                    return (
+                      <DropdownMenuItem key={item.href} asChild>
+                        <Link 
+                          href={item.href} 
+                          className={`flex items-center gap-2 ${isActive ? "bg-secondary" : ""}`}
+                        >
+                          <Icon className="h-4 w-4" />
+                          {item.label}
+                        </Link>
+                      </DropdownMenuItem>
+                    )
+                  })}
+                </DropdownMenuContent>
+              </DropdownMenu>
             )
           })}
         </nav>
