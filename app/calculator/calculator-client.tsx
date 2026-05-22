@@ -326,14 +326,20 @@ export function CalculatorClient({ ratesData, familyData, isAuthenticated = fals
     }
   }, [adults, youth, children, lodgingType, occupancyType, numNights, ratesData, getRate, mode])
 
+  // Calculate package type based on attendance (for detailed mode UI)
+  const detailedPackageType = useMemo(() => {
+    if (mode !== "detailed") return "regular"
+    return detectPackageType(attendance)
+  }, [mode, attendance, detectPackageType])
+
   // Detailed mode calculation (for returning families)
   const detailedCalculation = useMemo(() => {
     if (!ratesData?.rates || mode !== "detailed" || !familyData?.members) {
       return { members: [], siteFee: 0, deductions: 0, total: 0, packageApplied: null }
     }
 
-    // Auto-detect package type based on attendance
-    const packageType = detectPackageType(attendance)
+    // Use the pre-computed package type
+    const packageType = detailedPackageType
 
     const attendingMembers = familyData.members.filter(m => attendance[m.id]?.attending)
     
@@ -419,7 +425,7 @@ export function CalculatorClient({ ratesData, familyData, isAuthenticated = fals
       total: grandTotal,
       packageApplied: packageType !== "regular" ? packageType : null,
     }
-  }, [familyData, attendance, lodgingType, numNights, ratesData, getRate, mode, detectPackageType])
+  }, [familyData, attendance, lodgingType, numNights, ratesData, getRate, mode, detailedPackageType])
 
   // Save express registration preferences
   const [isSaving, setIsSaving] = useState(false)
@@ -770,7 +776,7 @@ export function CalculatorClient({ ratesData, familyData, isAuthenticated = fals
                       </div>
 
                       {/* Attendance Details */}
-                      {attendance[member.id]?.attending && packageType === "regular" && lodgingType !== "drivein" && (
+                      {attendance[member.id]?.attending && detailedPackageType === "regular" && lodgingType !== "drivein" && (
                         <div className="pl-8 pt-2 border-t">
                           <p className="text-sm font-medium mb-3 flex items-center gap-2">
                             <Calendar className="h-4 w-4" />
