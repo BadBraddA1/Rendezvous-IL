@@ -2,9 +2,12 @@ import { AdminNav } from "@/components/admin/admin-nav"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Progress } from "@/components/ui/progress"
 import { 
-  Users, DollarSign, ShieldX, LogIn, ScanLine, UserCheck, 
-  QrCode, Megaphone, Star, Shirt, ClipboardCheck, AlertCircle, TrendingUp
+  Users, DollarSign, ShieldX, LogIn, 
+  Megaphone, Star, ClipboardCheck, AlertCircle, 
+  Calendar, Home, Tent, Truck, Car,
+  UserPlus, Calculator, Clock, CheckCircle2
 } from "lucide-react"
 import Link from "next/link"
 import { sql } from "@/lib/db"
@@ -65,50 +68,74 @@ export default async function AdminDashboard() {
     )
   }
 
-  // Default stats
-  let stats = {
-    totalRegistrations: 0,
-    totalAttendees: 0,
-    totalRevenue: 0,
-    paidInFull: 0,
-    regFeePaid: 0,
-    unpaid: 0,
+  // Stats for 2027
+  let stats2027 = {
+    totalFamilies: 0,
+    totalMembers: 0,
+    expressRegistrations: 0,
+    registrations: 0,
+    registeredAttendees: 0,
     checkedIn: 0,
-    notCheckedIn: 0,
-    tshirtCount: 0,
+    totalRevenue: 0,
+    depositsPaid: 0,
+    fullyPaid: 0,
+    balanceDue: 0,
+    lodgingBreakdown: { motel: 0, rv: 0, tent: 0, drivein: 0 },
+  }
+
+  let actionItems = {
     pendingChanges: 0,
     activeAnnouncements: 0,
     feedbackCount: 0,
     avgRating: 0,
   }
 
-  let recentRegistrations: any[] = []
-  let recentCheckIns: any[] = []
+  let returningFamilies = 0
+  let newFamilies = 0
 
   try {
-    // Aggregate registration stats
-    const [regStats] = await sql`
+    // 2027 Registrations from registrations_v2
+    const [regStats2027] = await sql`
       SELECT 
         COUNT(DISTINCT r.id)::int as total_registrations,
-        COUNT(fm.id)::int as total_attendees,
-        COALESCE(SUM(COALESCE(r.lodging_total,0) + COALESCE(r.tshirt_total,0) + COALESCE(r.climbing_tower_total,0) + COALESCE(r.registration_fee,0)), 0)::numeric as total_revenue,
-        COUNT(DISTINCT CASE WHEN r.full_payment_paid = true THEN r.id END)::int as paid_in_full,
-        COUNT(DISTINCT CASE WHEN r.registration_fee_paid = true AND r.full_payment_paid = false THEN r.id END)::int as reg_fee_paid,
-        COUNT(DISTINCT CASE WHEN r.registration_fee_paid = false THEN r.id END)::int as unpaid,
         COUNT(DISTINCT CASE WHEN r.checked_in = true THEN r.id END)::int as checked_in,
-        COUNT(DISTINCT CASE WHEN r.checked_in = false OR r.checked_in IS NULL THEN r.id END)::int as not_checked_in
-      FROM registrations r
-      LEFT JOIN family_members fm ON r.id = fm.registration_id
+        COALESCE(SUM(r.total_cost), 0)::numeric as total_revenue,
+        COALESCE(SUM(r.deposit_paid), 0)::numeric as deposits_paid,
+        COUNT(DISTINCT CASE WHEN r.payment_status = 'paid' THEN r.id END)::int as fully_paid,
+        COALESCE(SUM(r.balance_due), 0)::numeric as balance_due,
+        COUNT(DISTINCT CASE WHEN r.lodging_type = 'motel' THEN r.id END)::int as motel,
+        COUNT(DISTINCT CASE WHEN r.lodging_type = 'rv' THEN r.id END)::int as rv,
+        COUNT(DISTINCT CASE WHEN r.lodging_type = 'tent' THEN r.id END)::int as tent,
+        COUNT(DISTINCT CASE WHEN r.lodging_type = 'drivein' THEN r.id END)::int as drivein
+      FROM registrations_v2 r
+      WHERE r.event_year = 2027
     `
 
-    // T-shirt total
-    const [tshirtStats] = await sql`
-      SELECT COALESCE(SUM(quantity), 0)::int as count FROM tshirt_orders
+    // Count attendees for 2027 registrations
+    const [attendeeStats] = await sql`
+      SELECT COUNT(ra.id)::int as total_attendees
+      FROM registration_attendees ra
+      JOIN registrations_v2 r ON ra.registration_id = r.id
+      WHERE r.event_year = 2027
+    `
+
+    // Total families in the system
+    const [familyStats] = await sql`
+      SELECT 
+        COUNT(DISTINCT f.id)::int as total_families,
+        COUNT(fm.id)::int as total_members
+      FROM families f
+      LEFT JOIN family_members_v2 fm ON f.id = fm.family_id
+    `
+
+    // Express registration count for 2027
+    const [expressStats] = await sql`
+      SELECT COUNT(*)::int as count FROM express_registration_2027
     `
 
     // Pending changes
     const [pendingStats] = await sql`
-      SELECT COUNT(*)::int as count FROM pending_changes WHERE status = 'pending'
+      SELECT COUNT(*)::int as count FROM pending_family_changes WHERE status = 'pending'
     `
 
     // Active announcements
@@ -116,62 +143,71 @@ export default async function AdminDashboard() {
       SELECT COUNT(*)::int as count FROM announcements WHERE is_active = true
     `
 
-    // Feedback
+    // Feedback (from event_feedback for 2027 or general feedback)
     const [fbStats] = await sql`
       SELECT 
         COUNT(*)::int as count,
-        COALESCE(AVG(rating), 0)::numeric as avg_rating
-      FROM feedback
+        COALESCE(AVG(
+          CASE overall_experience 
+            WHEN 'excellent' THEN 5 
+            WHEN 'good' THEN 4 
+            WHEN 'average' THEN 3 
+            WHEN 'poor' THEN 2 
+            ELSE NULL 
+          END
+        ), 0)::numeric as avg_rating
+      FROM event_feedback
+      WHERE event_year = 2027
     `
 
-    stats = {
-      totalRegistrations: regStats.total_registrations,
-      totalAttendees: regStats.total_attendees,
-      totalRevenue: Number(regStats.total_revenue),
-      paidInFull: regStats.paid_in_full,
-      regFeePaid: regStats.reg_fee_paid,
-      unpaid: regStats.unpaid,
-      checkedIn: regStats.checked_in,
-      notCheckedIn: regStats.not_checked_in,
-      tshirtCount: tshirtStats.count,
+    // Check how many 2027 families also had 2026 registrations (returning vs new)
+    const [returningStats] = await sql`
+      SELECT 
+        COUNT(DISTINCT r2027.family_id)::int as returning_families
+      FROM registrations_v2 r2027
+      JOIN families f ON r2027.family_id = f.id
+      WHERE r2027.event_year = 2027
+      AND EXISTS (
+        SELECT 1 FROM registrations r2026 
+        WHERE LOWER(r2026.email) = LOWER(f.email)
+      )
+    `
+
+    stats2027 = {
+      totalFamilies: familyStats.total_families,
+      totalMembers: familyStats.total_members,
+      expressRegistrations: expressStats.count,
+      registrations: regStats2027.total_registrations,
+      registeredAttendees: attendeeStats.total_attendees,
+      checkedIn: regStats2027.checked_in,
+      totalRevenue: Number(regStats2027.total_revenue),
+      depositsPaid: Number(regStats2027.deposits_paid),
+      fullyPaid: regStats2027.fully_paid,
+      balanceDue: Number(regStats2027.balance_due),
+      lodgingBreakdown: {
+        motel: regStats2027.motel,
+        rv: regStats2027.rv,
+        tent: regStats2027.tent,
+        drivein: regStats2027.drivein,
+      },
+    }
+
+    actionItems = {
       pendingChanges: pendingStats.count,
       activeAnnouncements: annStats.count,
       feedbackCount: fbStats.count,
       avgRating: Number(fbStats.avg_rating),
     }
 
-    recentRegistrations = await sql`
-      SELECT 
-        r.id,
-        r.family_last_name,
-        r.email,
-        r.lodging_type,
-        r.full_payment_paid,
-        r.registration_fee_paid,
-        r.checked_in,
-        r.created_at,
-        COUNT(fm.id)::int as attendee_count
-      FROM registrations r
-      LEFT JOIN family_members fm ON r.id = fm.registration_id
-      GROUP BY r.id
-      ORDER BY r.created_at DESC
-      LIMIT 5
-    `
+    returningFamilies = returningStats.returning_families
+    newFamilies = stats2027.registrations - returningFamilies
 
-    recentCheckIns = await sql`
-      SELECT id, family_last_name, checked_in_at
-      FROM registrations
-      WHERE checked_in = true AND checked_in_at IS NOT NULL
-      ORDER BY checked_in_at DESC
-      LIMIT 5
-    `
   } catch (error) {
     console.error("[v0] Dashboard data fetch error:", error)
   }
 
-  const checkInPercent = stats.totalRegistrations > 0
-    ? Math.round((stats.checkedIn / stats.totalRegistrations) * 100)
-    : 0
+  const registrationGoal = 100 // Target registrations for 2027
+  const registrationProgress = Math.min((stats2027.registrations / registrationGoal) * 100, 100)
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -179,111 +215,209 @@ export default async function AdminDashboard() {
 
       <main className="flex-1 bg-background p-6">
         <div className="container mx-auto space-y-6">
-          <div>
-            <h2 className="text-3xl font-bold tracking-tight">Dashboard Overview</h2>
-            <p className="text-muted-foreground">Welcome back, {admin.fullName || admin.email}</p>
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-3xl font-bold tracking-tight">Rendezvous 2027</h2>
+                <Badge variant="outline" className="text-primary border-primary">
+                  <Calendar className="h-3 w-3 mr-1" />
+                  Planning Phase
+                </Badge>
+              </div>
+              <p className="text-muted-foreground">Welcome back, {admin.fullName || admin.email}</p>
+            </div>
+            <div className="flex gap-2">
+              <Button asChild variant="outline">
+                <Link href="/admin/calculator">
+                  <Calculator className="h-4 w-4 mr-2" />
+                  Test Rates
+                </Link>
+              </Button>
+              <Button asChild>
+                <Link href="/admin/rates">
+                  <DollarSign className="h-4 w-4 mr-2" />
+                  Manage Rates
+                </Link>
+              </Button>
+            </div>
           </div>
 
-          {/* Quick Actions */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Button asChild size="lg" className="h-auto flex-col gap-2 py-5">
-              <Link href="/admin/checkin">
-                <ScanLine className="h-7 w-7" />
-                <span className="text-sm">Check-In Station</span>
-              </Link>
-            </Button>
-            <Button asChild size="lg" variant="outline" className="h-auto flex-col gap-2 py-5 bg-transparent">
-              <Link href="/admin/registrations">
-                <Users className="h-7 w-7" />
-                <span className="text-sm">Registrations</span>
-              </Link>
-            </Button>
-            <Button asChild size="lg" variant="outline" className="h-auto flex-col gap-2 py-5 bg-transparent">
-              <Link href="/admin/qr-codes">
-                <QrCode className="h-7 w-7" />
-                <span className="text-sm">Print QR Codes</span>
-              </Link>
-            </Button>
-            <Button asChild size="lg" variant="outline" className="h-auto flex-col gap-2 py-5 bg-transparent">
-              <Link href="/admin/announcements">
-                <Megaphone className="h-7 w-7" />
-                <span className="text-sm">Announcements</span>
-              </Link>
-            </Button>
-          </div>
+          {/* Registration Progress */}
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg">2027 Registration Progress</CardTitle>
+                <span className="text-2xl font-bold">{stats2027.registrations} / {registrationGoal}</span>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Progress value={registrationProgress} className="h-3" />
+              <div className="flex justify-between mt-2 text-sm text-muted-foreground">
+                <span>{Math.round(registrationProgress)}% of goal</span>
+                <span>{registrationGoal - stats2027.registrations} spots remaining</span>
+              </div>
+            </CardContent>
+          </Card>
 
-          {/* Primary Stats */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {/* Primary Stats Grid */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Registrations</CardTitle>
+                <CardTitle className="text-sm font-medium">Registered Families</CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.totalRegistrations}</div>
-                <p className="text-xs text-muted-foreground">{stats.totalAttendees} total attendees</p>
+                <div className="text-2xl font-bold">{stats2027.registrations}</div>
+                <p className="text-xs text-muted-foreground">
+                  {stats2027.registeredAttendees} total attendees
+                </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Checked In</CardTitle>
-                <UserCheck className="h-4 w-4 text-green-600" />
+                <CardTitle className="text-sm font-medium">Express Pre-Registrations</CardTitle>
+                <Clock className="h-4 w-4 text-blue-500" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.checkedIn} <span className="text-sm font-normal text-muted-foreground">/ {stats.totalRegistrations}</span></div>
-                <p className="text-xs text-muted-foreground">{checkInPercent}% of families</p>
+                <div className="text-2xl font-bold">{stats2027.expressRegistrations}</div>
+                <p className="text-xs text-muted-foreground">
+                  Families planning to attend
+                </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
+                <DollarSign className="h-4 w-4 text-green-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">${stats.totalRevenue.toFixed(2)}</div>
-                <p className="text-xs text-muted-foreground">Expected revenue</p>
+                <div className="text-2xl font-bold">${stats2027.totalRevenue.toLocaleString()}</div>
+                <p className="text-xs text-muted-foreground">
+                  ${stats2027.balanceDue.toLocaleString()} balance due
+                </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">T-Shirts Ordered</CardTitle>
-                <Shirt className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-sm font-medium">Family Database</CardTitle>
+                <UserPlus className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.tshirtCount}</div>
-                <p className="text-xs text-muted-foreground">All sizes combined</p>
+                <div className="text-2xl font-bold">{stats2027.totalFamilies}</div>
+                <p className="text-xs text-muted-foreground">
+                  {stats2027.totalMembers} total members
+                </p>
               </CardContent>
             </Card>
           </div>
 
-          {/* Secondary Stats */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {/* Two Column Layout */}
+          <div className="grid gap-4 lg:grid-cols-2">
+            {/* Lodging Breakdown */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <DollarSign className="h-4 w-4" />
-                  Payment Status
-                </CardTitle>
+                <CardTitle className="text-base">Lodging Distribution</CardTitle>
+                <CardDescription>2027 registration breakdown by lodging type</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-green-600">Paid in Full</span>
-                  <span className="font-bold">{stats.paidInFull}</span>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Home className="h-4 w-4 text-blue-600" />
+                    <span>Motel</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold">{stats2027.lodgingBreakdown.motel}</span>
+                    {stats2027.registrations > 0 && (
+                      <Badge variant="secondary" className="text-xs">
+                        {Math.round((stats2027.lodgingBreakdown.motel / stats2027.registrations) * 100)}%
+                      </Badge>
+                    )}
+                  </div>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-yellow-600">Reg Fee Only</span>
-                  <span className="font-bold">{stats.regFeePaid}</span>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Truck className="h-4 w-4 text-green-600" />
+                    <span>RV</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold">{stats2027.lodgingBreakdown.rv}</span>
+                    {stats2027.registrations > 0 && (
+                      <Badge variant="secondary" className="text-xs">
+                        {Math.round((stats2027.lodgingBreakdown.rv / stats2027.registrations) * 100)}%
+                      </Badge>
+                    )}
+                  </div>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-red-600">Unpaid</span>
-                  <span className="font-bold">{stats.unpaid}</span>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Tent className="h-4 w-4 text-orange-600" />
+                    <span>Tent</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold">{stats2027.lodgingBreakdown.tent}</span>
+                    {stats2027.registrations > 0 && (
+                      <Badge variant="secondary" className="text-xs">
+                        {Math.round((stats2027.lodgingBreakdown.tent / stats2027.registrations) * 100)}%
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Car className="h-4 w-4 text-purple-600" />
+                    <span>Drive-In</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold">{stats2027.lodgingBreakdown.drivein}</span>
+                    {stats2027.registrations > 0 && (
+                      <Badge variant="secondary" className="text-xs">
+                        {Math.round((stats2027.lodgingBreakdown.drivein / stats2027.registrations) * 100)}%
+                      </Badge>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
+            {/* Payment Status */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Payment Status</CardTitle>
+                <CardDescription>2027 payment collection progress</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                    <span>Paid in Full</span>
+                  </div>
+                  <span className="font-bold">{stats2027.fullyPaid}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-yellow-600" />
+                    <span>Deposit Only</span>
+                  </div>
+                  <span className="font-bold">{stats2027.registrations - stats2027.fullyPaid}</span>
+                </div>
+                <div className="border-t pt-4 space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Deposits Collected</span>
+                    <span className="font-medium">${stats2027.depositsPaid.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Balance Remaining</span>
+                    <span className="font-medium text-orange-600">${stats2027.balanceDue.toLocaleString()}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Action Items */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
@@ -291,146 +425,107 @@ export default async function AdminDashboard() {
                   Action Items
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2">
-                <Link href="/admin/pending-changes" className="flex justify-between text-sm hover:underline">
-                  <span className="flex items-center gap-1">
-                    {stats.pendingChanges > 0 && <AlertCircle className="h-3 w-3 text-orange-600" />}
-                    Pending Changes
+              <CardContent className="space-y-3">
+                <Link href="/admin/pending-changes" className="flex justify-between items-center text-sm hover:bg-muted/50 p-2 rounded-md -mx-2">
+                  <span className="flex items-center gap-2">
+                    {actionItems.pendingChanges > 0 && <AlertCircle className="h-4 w-4 text-orange-600" />}
+                    Pending Family Changes
                   </span>
-                  <Badge variant={stats.pendingChanges > 0 ? "default" : "secondary"}>
-                    {stats.pendingChanges}
+                  <Badge variant={actionItems.pendingChanges > 0 ? "default" : "secondary"}>
+                    {actionItems.pendingChanges}
                   </Badge>
                 </Link>
-                <Link href="/admin/announcements" className="flex justify-between text-sm hover:underline">
-                  <span>Active Announcements</span>
-                  <Badge variant="secondary">{stats.activeAnnouncements}</Badge>
-                </Link>
-                <Link href="/admin/checked-in" className="flex justify-between text-sm hover:underline">
-                  <span>Not Checked In</span>
-                  <Badge variant="outline">{stats.notCheckedIn}</Badge>
-                </Link>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Star className="h-4 w-4" />
-                  Feedback
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Total Submissions</span>
-                  <Badge variant="secondary">{stats.feedbackCount}</Badge>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span>Avg Rating</span>
-                  <span className="font-bold flex items-center gap-1">
-                    {stats.avgRating > 0 ? (
-                      <>
-                        {stats.avgRating.toFixed(1)}
-                        <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                      </>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
+                <Link href="/admin/announcements" className="flex justify-between items-center text-sm hover:bg-muted/50 p-2 rounded-md -mx-2">
+                  <span className="flex items-center gap-2">
+                    <Megaphone className="h-4 w-4 text-muted-foreground" />
+                    Active Announcements
                   </span>
+                  <Badge variant="secondary">{actionItems.activeAnnouncements}</Badge>
+                </Link>
+                <Link href="/admin/feedback" className="flex justify-between items-center text-sm hover:bg-muted/50 p-2 rounded-md -mx-2">
+                  <span className="flex items-center gap-2">
+                    <Star className="h-4 w-4 text-muted-foreground" />
+                    2027 Feedback
+                  </span>
+                  <Badge variant="secondary">{actionItems.feedbackCount}</Badge>
+                </Link>
+              </CardContent>
+            </Card>
+
+            {/* Family Insights */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Family Insights</CardTitle>
+                <CardDescription>Returning vs new families for 2027</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span>Returning Families</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold">{returningFamilies}</span>
+                    {stats2027.registrations > 0 && (
+                      <Badge variant="outline" className="text-green-600 border-green-200">
+                        {Math.round((returningFamilies / stats2027.registrations) * 100)}%
+                      </Badge>
+                    )}
+                  </div>
                 </div>
-                <Button variant="ghost" size="sm" className="w-full justify-start" asChild>
-                  <Link href="/admin/feedback">View All Feedback →</Link>
-                </Button>
+                <div className="flex items-center justify-between">
+                  <span>New Families</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold">{newFamilies}</span>
+                    {stats2027.registrations > 0 && (
+                      <Badge variant="outline" className="text-blue-600 border-blue-200">
+                        {Math.round((newFamilies / stats2027.registrations) * 100)}%
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+                <div className="border-t pt-4">
+                  <p className="text-sm text-muted-foreground">
+                    {stats2027.expressRegistrations > 0 
+                      ? `${stats2027.expressRegistrations} families have saved their preferences for express registration.`
+                      : "No express registrations yet. Share the calculator to let families plan ahead!"}
+                  </p>
+                </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Two Column: Recent Registrations & Recent Check-Ins */}
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5" />
-                  Recent Registrations
-                </CardTitle>
-                <CardDescription>Latest families who have registered</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {recentRegistrations.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">No registrations yet</p>
-                ) : (
-                  <div className="space-y-3">
-                    {recentRegistrations.map((reg) => (
-                      <div key={reg.id} className="flex items-center justify-between border-b pb-2 last:border-0">
-                        <div className="space-y-0.5">
-                          <p className="font-medium text-sm">{reg.family_last_name} Family</p>
-                          <p className="text-xs text-muted-foreground">
-                            {reg.attendee_count} attendees • {reg.lodging_type}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {reg.checked_in && (
-                            <Badge variant="outline" className="text-green-600 border-green-200">
-                              <UserCheck className="h-3 w-3 mr-1" />
-                              In
-                            </Badge>
-                          )}
-                          {reg.full_payment_paid ? (
-                            <Badge className="bg-green-50 text-green-700 hover:bg-green-50">Paid</Badge>
-                          ) : reg.registration_fee_paid ? (
-                            <Badge className="bg-yellow-50 text-yellow-700 hover:bg-yellow-50">Reg</Badge>
-                          ) : (
-                            <Badge variant="destructive">Unpaid</Badge>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <Button variant="outline" className="w-full mt-4 bg-transparent" asChild>
-                  <Link href="/admin/registrations">View All Registrations</Link>
+          {/* Quick Links */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Quick Actions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                <Button asChild variant="outline" className="justify-start">
+                  <Link href="/admin/registrations">
+                    <Users className="h-4 w-4 mr-2" />
+                    View All Registrations
+                  </Link>
                 </Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <UserCheck className="h-5 w-5 text-green-600" />
-                  Recent Check-Ins
-                </CardTitle>
-                <CardDescription>Latest families to arrive on-site</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {recentCheckIns.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">No check-ins yet</p>
-                ) : (
-                  <div className="space-y-3">
-                    {recentCheckIns.map((reg) => (
-                      <div key={reg.id} className="flex items-center justify-between border-b pb-2 last:border-0">
-                        <div>
-                          <p className="font-medium text-sm">{reg.family_last_name} Family</p>
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(reg.checked_in_at).toLocaleString(undefined, {
-                              month: "short",
-                              day: "numeric",
-                              hour: "numeric",
-                              minute: "2-digit",
-                            })}
-                          </p>
-                        </div>
-                        <Badge variant="outline" className="text-green-600 border-green-200">
-                          Checked In
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <Button variant="outline" className="w-full mt-4 bg-transparent" asChild>
-                  <Link href="/admin/checked-in">View All Check-Ins</Link>
+                <Button asChild variant="outline" className="justify-start">
+                  <Link href="/admin/announcements">
+                    <Megaphone className="h-4 w-4 mr-2" />
+                    Post Announcement
+                  </Link>
                 </Button>
-              </CardContent>
-            </Card>
-          </div>
+                <Button asChild variant="outline" className="justify-start">
+                  <Link href="/admin/meals">
+                    <Calendar className="h-4 w-4 mr-2" />
+                    Manage Meals
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" className="justify-start">
+                  <Link href="/admin/feedback">
+                    <Star className="h-4 w-4 mr-2" />
+                    View Feedback
+                  </Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </main>
     </div>
