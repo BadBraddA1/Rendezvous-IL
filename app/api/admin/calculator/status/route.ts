@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server"
 import { auth, currentUser } from "@clerk/nextjs/server"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db"
 
-const sql = neon(process.env.DATABASE_URL!)
+// Force dynamic to prevent build-time database connection
+export const dynamic = "force-dynamic"
 
 type AdminRole = "admin" | "editor" | "viewer"
 
