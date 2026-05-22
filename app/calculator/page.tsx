@@ -5,6 +5,7 @@ import { sql } from "@/lib/db"
 import { getCurrentFamily, getFamilyMembers, getFamilyRegistrations } from "@/lib/family-auth"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Calculator, Clock } from "lucide-react"
+import { auth } from "@clerk/nextjs/server"
 
 async function isCalculatorEnabled() {
   try {
@@ -155,11 +156,14 @@ async function getFamilyData() {
 }
 
 export default async function CalculatorPage() {
-  const [ratesData, familyData, isEnabled] = await Promise.all([
+  const [ratesData, familyData, isEnabled, authResult] = await Promise.all([
     getActiveRates(),
     getFamilyData(),
     isCalculatorEnabled(),
+    auth(),
   ])
+
+  const isAuthenticated = !!authResult.userId
 
   // Show coming soon page if calculator is disabled
   if (!isEnabled) {
@@ -199,7 +203,7 @@ export default async function CalculatorPage() {
     <div className="min-h-screen bg-background">
       <SiteHeader />
       <main className="container mx-auto px-4 pt-20 pb-12 md:pt-24">
-        <CalculatorClient ratesData={ratesData} familyData={familyData} />
+        <CalculatorClient ratesData={ratesData} familyData={familyData} isAuthenticated={isAuthenticated} />
       </main>
       <SiteFooter />
     </div>
