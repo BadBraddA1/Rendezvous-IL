@@ -148,9 +148,11 @@ export function CalculatorClient({ ratesData, familyData }: CalculatorClientProp
   )
   const [isPartialStay, setIsPartialStay] = useState(false)
   const [selectedNights, setSelectedNights] = useState<string[]>(["mon", "tue", "wed", "thu"])
+  const [selectedDriveInDays, setSelectedDriveInDays] = useState<string[]>(["mon", "tue", "wed", "thu", "fri"])
   
   // Calculate numNights from selectedNights
   const numNights = selectedNights.length
+  const numDriveInDays = selectedDriveInDays.length
 
   // Auto-calculate occupancy based on number of adults
   const occupancyType = useMemo((): "single" | "double" | "triple" | "quad" => {
@@ -289,9 +291,10 @@ export function CalculatorClient({ ratesData, familyData }: CalculatorClientProp
       youthCost = youth * getRate(rateCategory, "tent_youth")
       childCost = children * getRate(rateCategory, "tent_child")
     } else if (lodgingType === "drivein") {
-      adultCost = adults * getRate("drivein", "drivein_adult")
-      youthCost = youth * getRate("drivein", "drivein_youth")
-      childCost = children * getRate("drivein", "drivein_child")
+      const daysCount = numDriveInDays
+      adultCost = adults * getRate("drivein", "drivein_adult") * daysCount
+      youthCost = youth * getRate("drivein", "drivein_youth") * daysCount
+      childCost = children * getRate("drivein", "drivein_child") * daysCount
     }
 
     let siteFee = 0
@@ -310,7 +313,7 @@ export function CalculatorClient({ ratesData, familyData }: CalculatorClientProp
       total: adultCost + youthCost + childCost + siteFee,
       packageApplied: packageType !== "regular" ? packageType : null,
     }
-  }, [adults, youth, children, lodgingType, occupancyType, numNights, ratesData, getRate, mode, isPartialStay, detectPackageType])
+  }, [adults, youth, children, lodgingType, occupancyType, numNights, numDriveInDays, ratesData, getRate, mode, isPartialStay, detectPackageType])
 
   // Detailed mode calculation (for returning families)
   const detailedCalculation = useMemo(() => {
@@ -678,10 +681,58 @@ export function CalculatorClient({ ratesData, familyData }: CalculatorClientProp
                   )}
                 </div>
               )}
+
+              {/* Drive-In Day Selector */}
+              {lodgingType === "drivein" && mode === "simple" && (
+                <div className="pt-4 border-t">
+                  <Label className="text-sm font-medium mb-3 block">Days Attending</Label>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Select which days you&apos;ll be driving in
+                  </p>
+                  <div className="grid grid-cols-5 gap-2">
+                    {[
+                      { id: "mon", label: "Mon" },
+                      { id: "tue", label: "Tue" },
+                      { id: "wed", label: "Wed" },
+                      { id: "thu", label: "Thu" },
+                      { id: "fri", label: "Fri" },
+                    ].map((day) => (
+                      <button
+                        key={day.id}
+                        onClick={() => {
+                          if (selectedDriveInDays.includes(day.id)) {
+                            setSelectedDriveInDays(selectedDriveInDays.filter(d => d !== day.id))
+                          } else {
+                            setSelectedDriveInDays([...selectedDriveInDays, day.id].sort((a, b) => 
+                              ["mon", "tue", "wed", "thu", "fri"].indexOf(a) - ["mon", "tue", "wed", "thu", "fri"].indexOf(b)
+                            ))
+                          }
+                        }}
+                        className={`p-3 rounded-lg border-2 text-center transition-all ${
+                          selectedDriveInDays.includes(day.id) 
+                            ? "border-primary bg-primary/10 text-primary" 
+                            : "border-muted bg-muted/30 text-muted-foreground hover:border-muted-foreground/50"
+                        }`}
+                      >
+                        <div className="font-semibold">{day.label}</div>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="mt-3 flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      {selectedDriveInDays.length} day{selectedDriveInDays.length !== 1 ? "s" : ""} selected
+                    </span>
+                    <span className="font-medium">
+                      ${getRate("drivein", "drivein_adult")}/day per person
+                    </span>
+                  </div>
+                  {selectedDriveInDays.length === 0 && (
+                    <p className="text-xs text-amber-600 mt-2">Please select at least one day.</p>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
-
-          {/* Simple Mode: Count-based input */}
           {mode === "simple" && (
             <Card>
               <CardHeader>
