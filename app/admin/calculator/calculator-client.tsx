@@ -22,7 +22,8 @@ import {
   Minus,
   RefreshCw,
   Info,
-  Calendar
+  Calendar,
+  Sparkles
 } from "lucide-react"
 import useSWR from "swr"
 
@@ -96,7 +97,23 @@ export function AdminCalculatorClient() {
   const [lodgingType, setLodgingType] = useState<"motel" | "rv" | "tent" | "drivein">("motel")
   const [occupancyType, setOccupancyType] = useState<"single" | "double" | "triple" | "quad">("double")
   const [numNights, setNumNights] = useState(4)
-  const [packageType, setPackageType] = useState<"regular" | "special_3_9" | "special_2_6" | "special_1_3">("regular")
+
+  // Auto-detect package type based on attendance
+  const detectPackageType = useCallback((memberAttendance: Record<string, MemberAttendance>): "regular" | "special_3_9" | "special_2_6" | "special_1_3" => {
+    // Get the first attending member's attendance to determine package
+    const firstAttendance = Object.values(memberAttendance).find(a => a.attending)
+    if (!firstAttendance) return "regular"
+
+    const nightCount = firstAttendance.nights.length
+    const mealCount = Object.values(firstAttendance.meals).reduce((sum, meals) => sum + meals.length, 0)
+
+    // Check for special packages (exact matches)
+    if (nightCount === 3 && mealCount === 9) return "special_3_9"
+    if (nightCount === 2 && mealCount === 6) return "special_2_6"
+    if (nightCount === 1 && mealCount === 3) return "special_1_3"
+
+    return "regular"
+  }, [])
 
   // Family members for testing
   const [members, setMembers] = useState<FamilyMember[]>([
@@ -210,8 +227,11 @@ export function AdminCalculatorClient() {
   // Calculate costs
   const calculation = useMemo(() => {
     if (!ratesData?.rates) {
-      return { members: [], lodging: 0, siteFee: 0, deductions: 0, additions: 0, total: 0 }
+      return { members: [], lodging: 0, siteFee: 0, deductions: 0, additions: 0, total: 0, packageApplied: null }
     }
+
+    // Auto-detect package type based on attendance
+    const packageType = detectPackageType(attendance)
 
     const attendingMembers = members.filter(m => attendance[m.id]?.attending)
     
@@ -240,7 +260,7 @@ export function AdminCalculatorClient() {
         baseCost = getRate("drivein", `drivein_${member.ageGroup}`)
       }
 
-      // For regular package, calculate deductions for missed meals
+      // For regular package, calculate deductions for missed meals (special packages have fixed prices)
       if (packageType === "regular" && lodgingType !== "drivein") {
         // Monday dinner deduction
         if (!att.nights.includes("mon") || !att.meals.mon?.includes("dinner")) {
@@ -294,15 +314,15 @@ export function AdminCalculatorClient() {
       deductions: totalDeductions,
       additions: totalAdditions,
       total: grandTotal,
+      packageApplied: packageType !== "regular" ? packageType : null,
     }
-  }, [members, attendance, lodgingType, occupancyType, packageType, numNights, ratesData, getRate])
+  }, [members, attendance, lodgingType, occupancyType, numNights, ratesData, getRate, detectPackageType])
 
   // Reset to defaults
   const resetCalculator = () => {
     setLodgingType("motel")
     setOccupancyType("double")
     setNumNights(4)
-    setPackageType("regular")
     setMembers([
       { id: "1", name: "Adult 1", ageGroup: "adult", age: 35 },
       { id: "2", name: "Adult 2", ageGroup: "adult", age: 33 },
@@ -442,23 +462,6 @@ export function AdminCalculatorClient() {
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
-                </div>
-              )}
-
-              {lodgingType !== "drivein" && (
-                <div className="pt-4 border-t">
-                  <Label className="text-sm font-medium mb-2 block">Package Type</Label>
-                  <Select value={packageType} onValueChange={(v) => setPackageType(v as typeof packageType)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="regular">Regular 4/12 (Full Week)</SelectItem>
-                      <SelectItem value="special_3_9">Special 3/9 (3 Nights/9 Meals)</SelectItem>
-                      <SelectItem value="special_2_6">Special 2/6 (2 Nights/6 Meals)</SelectItem>
-                      <SelectItem value="special_1_3">Special 1/3 (1 Night/3 Meals)</SelectItem>
-                    </SelectContent>
-                  </Select>
                 </div>
               )}
             </CardContent>
@@ -701,6 +704,17 @@ export function AdminCalculatorClient() {
                   <div className="flex justify-between text-sm">
                     <span>Site Fee</span>
                     <span>${calculation.siteFee.toFixed(2)}</span>
+                  </div>
+                )}
+                {/* Special Package Applied Notification */}
+                {calculation.packageApplied && (
+                  <div className="flex items-center gap-2 p-2 rounded-md bg-green-50 border border-green-200">
+                    <Sparkles className="h-4 w-4 text-green-600" />
+                    <span className="text-sm font-medium text-green-800">
+                      {calculation.packageApplied === "special_3_9" && "3/9 Package Applied"}
+                      {calculation.packageApplied === "special_2_6" && "2/6 Package Applied"}
+                      {calculation.packageApplied === "special_1_3" && "1/3 Package Applied"}
+                    </span>
                   </div>
                 )}
                 <div className="flex justify-between items-center pt-2 border-t">

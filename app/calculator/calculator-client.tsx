@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -151,7 +150,23 @@ export function CalculatorClient({ ratesData, familyData }: CalculatorClientProp
     (familyData?.expressPreferences?.occupancy_type as typeof occupancyType) || "double"
   )
   const [numNights, setNumNights] = useState(4)
-  const [packageType, setPackageType] = useState<"regular" | "special_3_9" | "special_2_6" | "special_1_3">("regular")
+
+  // Auto-detect package type based on attendance
+  const detectPackageType = useCallback((memberAttendance: Record<string, MemberAttendance>): "regular" | "special_3_9" | "special_2_6" | "special_1_3" => {
+    // Get the first attending member's attendance to determine package
+    const firstAttendance = Object.values(memberAttendance).find(a => a.attending)
+    if (!firstAttendance) return "regular"
+
+    const nightCount = firstAttendance.nights.length
+    const mealCount = Object.values(firstAttendance.meals).reduce((sum, meals) => sum + meals.length, 0)
+
+    // Check for special packages (exact matches)
+    if (nightCount === 3 && mealCount === 9) return "special_3_9"
+    if (nightCount === 2 && mealCount === 6) return "special_2_6"
+    if (nightCount === 1 && mealCount === 3) return "special_1_3"
+
+    return "regular"
+  }, [])
 
   // For detailed mode - use actual family members
   const initialAttendance = useMemo(() => {
@@ -224,10 +239,11 @@ export function CalculatorClient({ ratesData, familyData }: CalculatorClientProp
   // Simple mode calculation
   const simpleCalculation = useMemo(() => {
     if (!ratesData?.rates || mode !== "simple") {
-      return { adults: 0, youth: 0, children: 0, infants: 0, siteFee: 0, total: 0 }
+      return { adults: 0, youth: 0, children: 0, infants: 0, siteFee: 0, total: 0, packageApplied: null }
     }
 
-    const rateCategory = packageType === "regular" ? lodgingType : packageType
+    // For simple mode, use regular rates (full week)
+    const rateCategory = lodgingType
     
     let adultCost = 0
     let youthCost = 0
@@ -266,14 +282,18 @@ export function CalculatorClient({ ratesData, familyData }: CalculatorClientProp
       infants: infantCost,
       siteFee,
       total: adultCost + youthCost + childCost + siteFee,
+      packageApplied: null,
     }
-  }, [adults, youth, children, lodgingType, occupancyType, packageType, numNights, ratesData, getRate, mode])
+  }, [adults, youth, children, lodgingType, occupancyType, numNights, ratesData, getRate, mode])
 
   // Detailed mode calculation (for returning families)
   const detailedCalculation = useMemo(() => {
     if (!ratesData?.rates || mode !== "detailed" || !familyData?.members) {
-      return { members: [], siteFee: 0, deductions: 0, total: 0 }
+      return { members: [], siteFee: 0, deductions: 0, total: 0, packageApplied: null }
     }
+
+    // Auto-detect package type based on attendance
+    const packageType = detectPackageType(attendance)
 
     const attendingMembers = familyData.members.filter(m => attendance[m.id]?.attending)
     
@@ -299,7 +319,7 @@ export function CalculatorClient({ ratesData, familyData }: CalculatorClientProp
         baseCost = getRate("drivein", `drivein_${member.ageGroup}`)
       }
 
-      // Calculate deductions for regular package
+      // Calculate deductions for regular package only (special packages have fixed prices)
       if (packageType === "regular" && lodgingType !== "drivein" && att) {
         if (!att.nights.includes("mon") || !att.meals.mon?.includes("dinner")) {
           deductions += Math.abs(getRate("deduction", `monday_dinner_${member.ageGroup}`))
@@ -345,8 +365,9 @@ export function CalculatorClient({ ratesData, familyData }: CalculatorClientProp
       siteFee,
       deductions: totalDeductions,
       total: grandTotal,
+      packageApplied: packageType !== "regular" ? packageType : null,
     }
-  }, [familyData, attendance, lodgingType, occupancyType, packageType, numNights, ratesData, getRate, mode])
+  }, [familyData, attendance, lodgingType, occupancyType, numNights, ratesData, getRate, mode, detectPackageType])
 
   // Save express registration preferences
   const [isSaving, setIsSaving] = useState(false)
@@ -570,23 +591,6 @@ export function CalculatorClient({ ratesData, familyData }: CalculatorClientProp
                   </div>
                 </div>
               )}
-
-              {lodgingType !== "drivein" && (
-                <div className="pt-4 border-t">
-                  <Label className="text-sm font-medium mb-2 block">Package Type</Label>
-                  <Select value={packageType} onValueChange={(v) => setPackageType(v as typeof packageType)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="regular">Regular 4/12 (Full Week - Mon-Fri)</SelectItem>
-                      <SelectItem value="special_3_9">Special 3/9 (3 Nights / 9 Meals)</SelectItem>
-                      <SelectItem value="special_2_6">Special 2/6 (2 Nights / 6 Meals)</SelectItem>
-                      <SelectItem value="special_1_3">Special 1/3 (1 Night / 3 Meals)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
             </CardContent>
           </Card>
 
@@ -766,7 +770,9 @@ export function CalculatorClient({ ratesData, familyData }: CalculatorClientProp
                 Cost Estimate
               </CardTitle>
               <CardDescription>
-                Rendezvous {ratesData.year} • {packageType === "regular" ? "Regular 4/12" : packageType.replace("_", "/").toUpperCase()}
+                Rendezvous {ratesData.year} • {mode === "detailed" && detailedCalculation.packageApplied 
+                  ? detailedCalculation.packageApplied.replace("special_", "").replace("_", "/").toUpperCase() + " Package"
+                  : "Full Week (Mon-Fri)"}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -847,6 +853,19 @@ export function CalculatorClient({ ratesData, familyData }: CalculatorClientProp
                     </div>
                   )}
                 </div>
+              )}
+
+              {/* Special Package Applied Notification */}
+              {mode === "detailed" && detailedCalculation.packageApplied && (
+                <Alert className="border-green-200 bg-green-50">
+                  <Sparkles className="h-4 w-4 text-green-600" />
+                  <AlertTitle className="text-green-800">Special Package Applied!</AlertTitle>
+                  <AlertDescription className="text-green-700">
+                    {detailedCalculation.packageApplied === "special_3_9" && "3 Night / 9 Meal package rate applied - you save money vs. the full week rate!"}
+                    {detailedCalculation.packageApplied === "special_2_6" && "2 Night / 6 Meal package rate applied - you save money vs. the full week rate!"}
+                    {detailedCalculation.packageApplied === "special_1_3" && "1 Night / 3 Meal package rate applied - you save money vs. the full week rate!"}
+                  </AlertDescription>
+                </Alert>
               )}
 
               {/* Total */}
