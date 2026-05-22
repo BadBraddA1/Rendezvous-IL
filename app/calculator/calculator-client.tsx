@@ -146,7 +146,11 @@ export function CalculatorClient({ ratesData, familyData }: CalculatorClientProp
     (familyData?.lastRegistration?.lodgingType as typeof lodgingType) || 
     "motel"
   )
-  const [numNights, setNumNights] = useState(4)
+  const [isPartialStay, setIsPartialStay] = useState(false)
+  const [selectedNights, setSelectedNights] = useState<string[]>(["mon", "tue", "wed", "thu"])
+  
+  // Calculate numNights from selectedNights
+  const numNights = selectedNights.length
 
   // Auto-calculate occupancy based on number of adults
   const occupancyType = useMemo((): "single" | "double" | "triple" | "quad" => {
@@ -156,9 +160,25 @@ export function CalculatorClient({ ratesData, familyData }: CalculatorClientProp
     return "quad" // 4+ adults
   }, [adults])
 
-  // Auto-detect package type based on attendance
-  const detectPackageType = useCallback((memberAttendance: Record<string, MemberAttendance>): "regular" | "special_3_9" | "special_2_6" | "special_1_3" => {
-    // Get the first attending member's attendance to determine package
+  // Auto-detect package type based on selected nights (simple mode) or attendance (detailed mode)
+  const detectPackageType = useCallback((memberAttendance?: Record<string, MemberAttendance>): "regular" | "special_3_9" | "special_2_6" | "special_1_3" => {
+    // For simple mode, use selectedNights count to determine package
+    if (!memberAttendance || Object.keys(memberAttendance).length === 0) {
+      const nightCount = selectedNights.length
+      
+      // Map night count to special packages
+      // 4 nights = regular (full week)
+      // 3 nights = 3/9 package
+      // 2 nights = 2/6 package
+      // 1 night = 1/3 package
+      if (nightCount === 3) return "special_3_9"
+      if (nightCount === 2) return "special_2_6"
+      if (nightCount === 1) return "special_1_3"
+      
+      return "regular"
+    }
+    
+    // For detailed mode, check actual attendance
     const firstAttendance = Object.values(memberAttendance).find(a => a.attending)
     if (!firstAttendance) return "regular"
 
@@ -171,7 +191,7 @@ export function CalculatorClient({ ratesData, familyData }: CalculatorClientProp
     if (nightCount === 1 && mealCount === 3) return "special_1_3"
 
     return "regular"
-  }, [])
+  }, [selectedNights])
 
   // For detailed mode - use actual family members
   const initialAttendance = useMemo(() => {
@@ -247,8 +267,9 @@ export function CalculatorClient({ ratesData, familyData }: CalculatorClientProp
       return { adults: 0, youth: 0, children: 0, infants: 0, siteFee: 0, total: 0, packageApplied: null }
     }
 
-    // For simple mode, use regular rates (full week)
-    const rateCategory = lodgingType
+    // Detect if partial stay qualifies for a special package
+    const packageType = isPartialStay ? detectPackageType() : "regular"
+    const rateCategory = packageType === "regular" ? lodgingType : packageType
     
     let adultCost = 0
     let youthCost = 0
@@ -287,9 +308,9 @@ export function CalculatorClient({ ratesData, familyData }: CalculatorClientProp
       infants: infantCost,
       siteFee,
       total: adultCost + youthCost + childCost + siteFee,
-      packageApplied: null,
+      packageApplied: packageType !== "regular" ? packageType : null,
     }
-  }, [adults, youth, children, lodgingType, occupancyType, numNights, ratesData, getRate, mode])
+  }, [adults, youth, children, lodgingType, occupancyType, numNights, ratesData, getRate, mode, isPartialStay, detectPackageType])
 
   // Detailed mode calculation (for returning families)
   const detailedCalculation = useMemo(() => {
@@ -558,7 +579,7 @@ export function CalculatorClient({ ratesData, familyData }: CalculatorClientProp
                       </span>
                     </div>
                     <div className="text-right">
-                      <span className="font-semibold">${getRate("motel", `motel_${occupancyType}_adult`)}</span>
+                      <span className="font-semibold">${getRate(simpleCalculation.packageApplied || "motel", `motel_${occupancyType}_adult`)}</span>
                       <span className="text-sm text-muted-foreground">/adult</span>
                     </div>
                   </div>
@@ -568,34 +589,93 @@ export function CalculatorClient({ ratesData, familyData }: CalculatorClientProp
                 </div>
               )}
 
-              {(lodgingType === "rv" || lodgingType === "tent") && (
+              {/* Partial Stay Toggle */}
+              {lodgingType !== "drivein" && mode === "simple" && (
                 <div className="pt-4 border-t">
-                  <Label className="text-sm font-medium mb-2 block">Number of Nights</Label>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => setNumNights(Math.max(1, numNights - 1))}
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <Label className="text-sm font-medium">Attendance</Label>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {isPartialStay ? "Select the nights you'll be staying" : "Full week (Mon-Fri)"}
+                      </p>
+                    </div>
+                    <Button 
+                      variant={isPartialStay ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => {
+                        setIsPartialStay(!isPartialStay)
+                        if (!isPartialStay) {
+                          // Reset to full week when disabling partial stay
+                          setSelectedNights(["mon", "tue", "wed", "thu"])
+                        }
+                      }}
                     >
-                      <Minus className="h-4 w-4" />
+                      <Calendar className="h-4 w-4 mr-2" />
+                      {isPartialStay ? "Partial Stay" : "Not staying full week?"}
                     </Button>
-                    <Input
-                      type="number"
-                      value={numNights}
-                      onChange={(e) => setNumNights(Math.max(1, parseInt(e.target.value) || 1))}
-                      className="w-20 text-center"
-                    />
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => setNumNights(numNights + 1)}
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                    <span className="text-sm text-muted-foreground ml-2">
-                      @ ${lodgingType === "rv" ? getRate("rv", "rv_site_night") : getRate("tent", "tent_site_night")}/night
-                    </span>
                   </div>
+                  
+                  {isPartialStay && (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-4 gap-2">
+                        {[
+                          { id: "mon", label: "Mon", sublabel: "Night" },
+                          { id: "tue", label: "Tue", sublabel: "Night" },
+                          { id: "wed", label: "Wed", sublabel: "Night" },
+                          { id: "thu", label: "Thu", sublabel: "Night" },
+                        ].map((night) => (
+                          <button
+                            key={night.id}
+                            onClick={() => {
+                              if (selectedNights.includes(night.id)) {
+                                setSelectedNights(selectedNights.filter(n => n !== night.id))
+                              } else {
+                                setSelectedNights([...selectedNights, night.id].sort((a, b) => 
+                                  ["mon", "tue", "wed", "thu"].indexOf(a) - ["mon", "tue", "wed", "thu"].indexOf(b)
+                                ))
+                              }
+                            }}
+                            className={`p-3 rounded-lg border-2 text-center transition-all ${
+                              selectedNights.includes(night.id) 
+                                ? "border-primary bg-primary/10 text-primary" 
+                                : "border-muted bg-muted/30 text-muted-foreground hover:border-muted-foreground/50"
+                            }`}
+                          >
+                            <div className="font-semibold">{night.label}</div>
+                            <div className="text-xs opacity-70">{night.sublabel}</div>
+                          </button>
+                        ))}
+                      </div>
+                      
+                      {/* Package detection info */}
+                      {simpleCalculation.packageApplied && (
+                        <Alert className="border-green-200 bg-green-50">
+                          <Sparkles className="h-4 w-4 text-green-600" />
+                          <AlertTitle className="text-green-800">
+                            {simpleCalculation.packageApplied === "special_3_9" && "3/9 Package Applied!"}
+                            {simpleCalculation.packageApplied === "special_2_6" && "2/6 Package Applied!"}
+                            {simpleCalculation.packageApplied === "special_1_3" && "1/3 Package Applied!"}
+                          </AlertTitle>
+                          <AlertDescription className="text-green-700">
+                            Your selection qualifies for a special discounted rate.
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                      
+                      {selectedNights.length > 0 && !simpleCalculation.packageApplied && (
+                        <p className="text-xs text-muted-foreground">
+                          {selectedNights.length} night{selectedNights.length !== 1 ? "s" : ""} selected.
+                          {(lodgingType === "rv" || lodgingType === "tent") && (
+                            <span> Site fee: ${(lodgingType === "rv" ? getRate("rv", "rv_site_night") : getRate("tent", "tent_site_night")) * selectedNights.length}</span>
+                          )}
+                        </p>
+                      )}
+                      
+                      {selectedNights.length === 0 && (
+                        <p className="text-xs text-amber-600">Please select at least one night.</p>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>
@@ -777,9 +857,15 @@ export function CalculatorClient({ ratesData, familyData }: CalculatorClientProp
                 Cost Estimate
               </CardTitle>
               <CardDescription>
-                Rendezvous {ratesData.year} • {mode === "detailed" && detailedCalculation.packageApplied 
-                  ? detailedCalculation.packageApplied.replace("special_", "").replace("_", "/").toUpperCase() + " Package"
-                  : "Full Week (Mon-Fri)"}
+                Rendezvous {ratesData.year} • {
+                  mode === "simple" && simpleCalculation.packageApplied 
+                    ? simpleCalculation.packageApplied.replace("special_", "").replace("_", "/").toUpperCase() + " Package"
+                    : mode === "detailed" && detailedCalculation.packageApplied 
+                      ? detailedCalculation.packageApplied.replace("special_", "").replace("_", "/").toUpperCase() + " Package"
+                      : isPartialStay && mode === "simple"
+                        ? `${selectedNights.length} Night${selectedNights.length !== 1 ? "s" : ""}`
+                        : "Full Week (Mon-Fri)"
+                }
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
