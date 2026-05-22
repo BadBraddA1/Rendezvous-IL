@@ -77,6 +77,7 @@ interface FamilyData {
 interface CalculatorClientProps {
   ratesData: RatesData | null
   familyData?: FamilyData | null
+  isAuthenticated?: boolean
 }
 
 interface MemberAttendance {
@@ -128,7 +129,7 @@ function getDefaultAttendance(): MemberAttendance {
   }
 }
 
-export function CalculatorClient({ ratesData, familyData }: CalculatorClientProps) {
+export function CalculatorClient({ ratesData, familyData, isAuthenticated = false }: CalculatorClientProps) {
   // Mode: "simple" for anonymous users, "detailed" for logged-in returning families
   const [mode, setMode] = useState<"simple" | "detailed">(
     familyData?.isReturningFamily ? "detailed" : "simple"
@@ -219,7 +220,9 @@ export function CalculatorClient({ ratesData, familyData }: CalculatorClientProp
         meals[nextDay] = meals[nextDay].filter(m => m !== "breakfast")
       }
     } else {
-      meals[night] = MEALS[night as keyof typeof MEALS] || []
+      // Add default meals (spread to create mutable array)
+      const mealKey = night as keyof typeof MEALS
+      meals[night] = mealKey in MEALS ? [...MEALS[mealKey]] : []
     }
 
     setAttendance({
@@ -504,8 +507,8 @@ export function CalculatorClient({ ratesData, familyData }: CalculatorClientProp
         </Alert>
       )}
 
-      {/* Sign in prompt for anonymous users */}
-      {!familyData && (
+      {/* Sign in prompt for anonymous users - only show if not authenticated */}
+      {!isAuthenticated && (
         <Alert className="mb-6">
           <LogIn className="h-4 w-4" />
           <AlertTitle>Sign in for a personalized estimate</AlertTitle>
@@ -515,6 +518,18 @@ export function CalculatorClient({ ratesData, familyData }: CalculatorClientProp
             <Button variant="link" asChild className="p-0 h-auto ml-2">
               <Link href="/sign-in?redirect_url=/calculator">Sign In</Link>
             </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Message for authenticated users without linked family */}
+      {isAuthenticated && !familyData && (
+        <Alert className="mb-6">
+          <User className="h-4 w-4" />
+          <AlertTitle>No registration history found</AlertTitle>
+          <AlertDescription>
+            We couldn&apos;t find any previous registrations linked to your account. You can still use
+            the calculator below to estimate costs for your family.
           </AlertDescription>
         </Alert>
       )}

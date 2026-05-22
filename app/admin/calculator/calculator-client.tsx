@@ -222,8 +222,9 @@ export function AdminCalculatorClient() {
         meals[nextDay] = meals[nextDay].filter(m => m !== "breakfast")
       }
     } else {
-      // Add default meals
-      meals[night] = MEALS[night as keyof typeof MEALS] || []
+      // Add default meals (spread to create mutable array)
+      const mealKey = night as keyof typeof MEALS
+      meals[night] = mealKey in MEALS ? [...MEALS[mealKey]] : []
     }
 
     setAttendance({
@@ -251,14 +252,16 @@ export function AdminCalculatorClient() {
     })
   }
 
+  // Calculate package type based on attendance
+  const packageType = useMemo(() => {
+    return detectPackageType(attendance)
+  }, [attendance, detectPackageType])
+
   // Calculate costs
   const calculation = useMemo(() => {
     if (!ratesData?.rates) {
       return { members: [], lodging: 0, siteFee: 0, deductions: 0, additions: 0, total: 0, packageApplied: null }
     }
-
-    // Auto-detect package type based on attendance
-    const packageType = detectPackageType(attendance)
 
     const attendingMembers = members.filter(m => attendance[m.id]?.attending)
     
@@ -349,7 +352,7 @@ export function AdminCalculatorClient() {
       total: grandTotal,
       packageApplied: packageType !== "regular" ? packageType : null,
     }
-  }, [members, attendance, lodgingType, numNights, ratesData, getRate, detectPackageType])
+  }, [members, attendance, lodgingType, numNights, ratesData, getRate, packageType])
 
   // Reset to defaults
   const resetCalculator = () => {
