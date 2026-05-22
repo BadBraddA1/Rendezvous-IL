@@ -276,9 +276,33 @@ export function CalculatorClient({ ratesData, familyData }: CalculatorClientProp
       childCost = children * getRate(rateCategory, "tent_child")
     } else if (lodgingType === "drivein") {
       const daysCount = 5 // Simple mode always shows full week (5 days)
-      adultCost = adults * getRate("drivein", "drivein_adult") * daysCount
-      youthCost = youth * getRate("drivein", "drivein_youth") * daysCount
-      childCost = children * getRate("drivein", "drivein_child") * daysCount
+      // Drive-in = daily entry fee + all meals
+      // Entry fees
+      const adultEntry = adults * getRate("drivein", "drivein_adult") * daysCount
+      const youthEntry = youth * getRate("drivein", "drivein_youth") * daysCount
+      const childEntry = children * getRate("drivein", "drivein_child") * daysCount
+      
+      // Meal costs (all 15 meals: 5 days x 3 meals)
+      // Mon: D only, Tue-Thu: B/L/D, Fri: B/L = 1 + 9 + 2 = 12 meals total for full week
+      const adultMeals = adults * (
+        getRate("meal_addition", "breakfast_adult") * 4 + // Tue-Fri breakfast
+        getRate("meal_addition", "lunch_adult") * 5 +     // Mon-Fri lunch
+        getRate("meal_addition", "dinner_adult") * 4      // Mon-Thu dinner
+      )
+      const youthMeals = youth * (
+        getRate("meal_addition", "breakfast_youth") * 4 +
+        getRate("meal_addition", "lunch_youth") * 5 +
+        getRate("meal_addition", "dinner_youth") * 4
+      )
+      const childMeals = children * (
+        getRate("meal_addition", "breakfast_child") * 4 +
+        getRate("meal_addition", "lunch_child") * 5 +
+        getRate("meal_addition", "dinner_child") * 4
+      )
+      
+      adultCost = adultEntry + adultMeals
+      youthCost = youthEntry + youthMeals
+      childCost = childEntry + childMeals
     }
 
     let siteFee = 0
@@ -336,7 +360,12 @@ export function CalculatorClient({ ratesData, familyData }: CalculatorClientProp
       } else if (lodgingType === "tent") {
         baseCost = getRate(rateCategory, `tent_${member.ageGroup}`)
       } else if (lodgingType === "drivein") {
-        baseCost = getRate("drivein", `drivein_${member.ageGroup}`)
+        // Drive-in: entry fee per day they're attending
+        const daysAttending = att.nights.length + (att.nights.includes("thu") ? 1 : 0) // nights + Friday if staying Thu
+        // Actually for drive-in, count unique days from meals
+        const daysWithMeals = new Set(Object.keys(att.meals).filter(day => att.meals[day as keyof typeof att.meals]?.length > 0))
+        const numDays = daysWithMeals.size || 1
+        baseCost = getRate("drivein", `drivein_${member.ageGroup}`) * numDays
       }
 
       // Calculate deductions for regular package only (special packages have fixed prices)
@@ -592,12 +621,22 @@ export function CalculatorClient({ ratesData, familyData }: CalculatorClientProp
               {/* Drive-In Simple Mode Info */}
               {lodgingType === "drivein" && mode === "simple" && (
                 <div className="pt-4 border-t">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2 text-sm font-medium">
                     <Calendar className="h-4 w-4" />
-                    <span>Full week (Mon-Fri) - 5 days</span>
+                    <span>Full week (Mon-Fri) with all meals</span>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    ${getRate("drivein", "drivein_adult")}/day per adult. Sign in to select specific days per family member.
+                  <div className="mt-3 space-y-2 text-sm text-muted-foreground">
+                    <div className="flex justify-between">
+                      <span>Daily entry fee:</span>
+                      <span>${getRate("drivein", "drivein_adult")}/day per adult</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Meals included:</span>
+                      <span>12 meals (B/L/D)</span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-3">
+                    Sign in to select specific days and meals per family member.
                   </p>
                 </div>
               )}
