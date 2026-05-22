@@ -23,9 +23,13 @@ import {
   RefreshCw,
   Info,
   Calendar,
-  Sparkles
+  Sparkles,
+  Globe,
+  GlobeLock,
+  Loader2
 } from "lucide-react"
-import useSWR from "swr"
+import { Switch } from "@/components/ui/switch"
+import useSWR, { mutate } from "swr"
 
 interface Rate {
   id: number
@@ -92,6 +96,30 @@ export function AdminCalculatorClient() {
     `/api/admin/calculator?year=${year}`,
     fetcher
   )
+
+  // Public calculator status
+  const { data: statusData, isLoading: statusLoading } = useSWR<{ enabled: boolean }>(
+    "/api/admin/calculator/status",
+    fetcher
+  )
+  const [isTogglingStatus, setIsTogglingStatus] = useState(false)
+
+  const togglePublicCalculator = async () => {
+    setIsTogglingStatus(true)
+    try {
+      const newStatus = !statusData?.enabled
+      await fetch("/api/admin/calculator/status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled: newStatus }),
+      })
+      mutate("/api/admin/calculator/status")
+    } catch (error) {
+      console.error("Failed to toggle calculator status:", error)
+    } finally {
+      setIsTogglingStatus(false)
+    }
+  }
 
   // Lodging configuration
   const [lodgingType, setLodgingType] = useState<"motel" | "rv" | "tent" | "drivein">("motel")
@@ -358,7 +386,25 @@ export function AdminCalculatorClient() {
             Test all pricing scenarios for {year}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
+          {/* Public Calculator Toggle */}
+          <div className="flex items-center gap-3 px-4 py-2 rounded-lg border bg-card">
+            <div className="flex items-center gap-2">
+              {statusData?.enabled ? (
+                <Globe className="h-4 w-4 text-green-600" />
+              ) : (
+                <GlobeLock className="h-4 w-4 text-muted-foreground" />
+              )}
+              <span className="text-sm font-medium">Public Calculator</span>
+            </div>
+            <Switch
+              checked={statusData?.enabled || false}
+              onCheckedChange={togglePublicCalculator}
+              disabled={statusLoading || isTogglingStatus}
+            />
+            {isTogglingStatus && <Loader2 className="h-4 w-4 animate-spin" />}
+          </div>
+          
           <Select value={year} onValueChange={setYear}>
             <SelectTrigger className="w-[120px]">
               <SelectValue />
@@ -373,6 +419,29 @@ export function AdminCalculatorClient() {
           </Button>
         </div>
       </div>
+
+      {/* Status Banner */}
+      {!statusLoading && (
+        <div className={`p-3 rounded-lg border flex items-center gap-3 ${
+          statusData?.enabled 
+            ? "bg-green-50 border-green-200 text-green-800" 
+            : "bg-amber-50 border-amber-200 text-amber-800"
+        }`}>
+          {statusData?.enabled ? (
+            <>
+              <Globe className="h-5 w-5" />
+              <span className="font-medium">Public calculator is live</span>
+              <span className="text-sm opacity-75">- Families can estimate their costs at /calculator</span>
+            </>
+          ) : (
+            <>
+              <GlobeLock className="h-5 w-5" />
+              <span className="font-medium">Public calculator is disabled</span>
+              <span className="text-sm opacity-75">- Only admins can access it. Toggle on when ready to go public.</span>
+            </>
+          )}
+        </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Configuration Panel */}
