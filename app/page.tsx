@@ -1,15 +1,84 @@
 "use client"
 
-import { useState } from "react"
+import { useState, type ReactNode } from "react"
 import Link from "next/link"
-import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Calendar, MapPin, Users, Sparkles, ExternalLink, Wifi, Trophy, Play, ArrowRight } from "lucide-react"
+import {
+  Calendar,
+  MapPin,
+  Users,
+  Sparkles,
+  ExternalLink,
+  Wifi,
+  Trophy,
+  Play,
+  ArrowRight,
+  type LucideIcon,
+} from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { HeroSection } from "@/components/hero-section"
 import { RegistrationCountdown2027 } from "@/components/registration-countdown-2027"
+
+const retreatFacts = [
+  {
+    icon: Calendar,
+    title: "5 days / 4 nights",
+    description: "Lots of time for fellowship, worship, recreation, and encouragement.",
+  },
+  {
+    icon: MapPin,
+    title: "Lake Williamson",
+    description: "A full-service Christian camp with lodging, dining, and recreation on site.",
+  },
+  {
+    icon: Users,
+    title: "All ages welcome",
+    description: "Activities for children through adults, planned as a family retreat.",
+  },
+  {
+    icon: Sparkles,
+    title: "Meals included",
+    description: "Buffet-style dining with no cooking or cleanup for your family.",
+  },
+] as const
+
+const planning2027 = [
+  { label: "Dates", value: "May 3–7, 2027 (Monday – Friday)" },
+  { label: "Registration opens", value: "January 1, 2027" },
+  { label: "Theme / Bible Bowl", value: "1 Samuel" },
+  { label: "Location", value: "Lake Williamson Christian Center, Carlinville, IL" },
+] as const
+
+function ExpectPanel({
+  icon: Icon,
+  title,
+  children,
+  featured = false,
+  className = "",
+}: {
+  icon: LucideIcon
+  title: string
+  children: ReactNode
+  featured?: boolean
+  className?: string
+}) {
+  return (
+    <article
+      className={`flex flex-col gap-3 rounded-xl border p-5 sm:p-6 ${
+        featured
+          ? "border-primary/30 bg-surface-highlight ring-1 ring-primary/10"
+          : "border-border/70 bg-card"
+      } ${className}`}
+    >
+      <h3 className="flex items-center gap-2.5 font-medium text-foreground">
+        <Icon className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+        {title}
+      </h3>
+      <div className="text-sm leading-relaxed text-muted-foreground sm:text-base">{children}</div>
+    </article>
+  )
+}
 
 export default function HomePage() {
   const [isPlaying, setIsPlaying] = useState(false)
@@ -18,26 +87,21 @@ export default function HomePage() {
     <div className="min-h-screen bg-background">
       <SiteHeader isHomepage />
 
-      <main>
-        {/* Full-screen Hero */}
+      <main id="main-content">
         <HeroSection />
 
-        {/* Registration Countdown */}
         <RegistrationCountdown2027 />
 
-        {/* Experience Video Section */}
-        <section className="py-20 bg-gradient-to-b from-background to-secondary/20">
-          <div className="container mx-auto px-6">
+        <section className="section-lg">
+          <div className="site-container">
             <div className="mx-auto max-w-5xl">
-              <div className="text-center mb-12">
-                <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-4 text-foreground">
-                  Experience Rendezvous
-                </h2>
-                <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              <header className="mb-8 text-center sm:mb-12">
+                <h2 className="text-section-title mb-4 text-balance">Experience Rendezvous</h2>
+                <p className="measure-prose mx-auto text-lead text-muted-foreground">
                   See what makes our Christian homeschool family retreat so special
                 </p>
-              </div>
-              <div className="overflow-hidden rounded-2xl border border-border/50 bg-card shadow-2xl shadow-primary/5">
+              </header>
+              <div className="overflow-hidden rounded-xl border border-border bg-card">
                 <div className="relative aspect-video w-full">
                   {isPlaying ? (
                     <iframe
@@ -48,18 +112,21 @@ export default function HomePage() {
                     />
                   ) : (
                     <button
+                      type="button"
                       onClick={() => setIsPlaying(true)}
-                      className="group absolute inset-0 flex items-center justify-center"
-                      aria-label="Play video"
+                      className="focus-ring group absolute inset-0 flex items-center justify-center"
+                      aria-label="Play Rendezvous retreat video"
                     >
                       <img
                         src="https://image.mux.com/Fu2mzvA8FO6sEUE01JWv8DvLgRz7K01hmvyBH01DTiDKyc/thumbnail.jpg?width=1200&height=675&fit_mode=smartcrop"
                         alt="Rendezvous retreat preview"
                         className="absolute inset-0 h-full w-full object-cover"
+                        loading="lazy"
+                        decoding="async"
                       />
-                      <div className="absolute inset-0 z-10 flex items-center justify-center bg-gradient-to-br from-background/90 to-primary/30 backdrop-blur-sm transition-all group-hover:from-background/80 group-hover:to-primary/40">
-                        <div className="flex h-20 w-20 md:h-24 md:w-24 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-2xl transition-all group-hover:scale-110 group-hover:shadow-primary/50">
-                          <Play className="h-8 w-8 md:h-10 md:w-10 ml-1" fill="currentColor" />
+                      <div className="absolute inset-0 z-10 flex items-center justify-center bg-foreground/25 transition-colors group-hover:bg-foreground/35">
+                        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md transition-transform duration-200 ease-out group-hover:scale-[1.03] md:h-20 md:w-20">
+                          <Play className="ml-0.5 h-7 w-7 md:h-8 md:w-8" fill="currentColor" />
                         </div>
                       </div>
                     </button>
@@ -70,78 +137,34 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Quick Stats */}
-        <section className="py-16 border-y border-border/50">
-          <div className="container mx-auto px-6">
-            <div className="grid gap-6 md:grid-cols-4">
-              <Card className="border-border/50 bg-card/50 backdrop-blur transition-all hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 group">
-                <CardHeader className="pb-3">
-                  <Calendar className="mb-2 h-8 w-8 text-primary group-hover:scale-110 transition-transform" />
-                  <CardTitle className="text-lg text-foreground">5 Days / 4 Nights</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CardDescription className="leading-relaxed">
-                    Lots of time for fellowship, worship, recreation, & encouragement!
-                  </CardDescription>
-                </CardContent>
-              </Card>
-
-              <Card className="border-border/50 bg-card/50 backdrop-blur transition-all hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 group">
-                <CardHeader className="pb-3">
-                  <MapPin className="mb-2 h-8 w-8 text-primary group-hover:scale-110 transition-transform" />
-                  <CardTitle className="text-lg text-foreground">Beautiful Facility</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CardDescription className="leading-relaxed">
-                    Lake Williamson Christian Center with extensive amenities
-                  </CardDescription>
-                </CardContent>
-              </Card>
-
-              <Card className="border-border/50 bg-card/50 backdrop-blur transition-all hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 group">
-                <CardHeader className="pb-3">
-                  <Users className="mb-2 h-8 w-8 text-primary group-hover:scale-110 transition-transform" />
-                  <CardTitle className="text-lg text-foreground">All Ages</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CardDescription className="leading-relaxed">
-                    Activities designed for children through adults
-                  </CardDescription>
-                </CardContent>
-              </Card>
-
-              <Card className="border-border/50 bg-card/50 backdrop-blur transition-all hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 group">
-                <CardHeader className="pb-3">
-                  <Sparkles className="mb-2 h-8 w-8 text-primary group-hover:scale-110 transition-transform" />
-                  <CardTitle className="text-lg text-foreground">All Meals Included</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CardDescription className="leading-relaxed">
-                    Buffet-style dining with no cooking or cleanup
-                  </CardDescription>
-                </CardContent>
-              </Card>
-            </div>
+        <section className="section-sm border-y border-border/50">
+          <div className="site-container">
+            <dl className="mx-auto grid max-w-5xl divide-y divide-primary/10 rounded-xl border border-primary/15 bg-surface-tint lg:grid-cols-4 lg:divide-x lg:divide-y-0">
+              {retreatFacts.map(({ icon: Icon, title, description }) => (
+                <div key={title} className="p-5 sm:p-6">
+                  <dt className="flex items-start gap-2.5 font-medium text-foreground">
+                    <Icon className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+                    {title}
+                  </dt>
+                  <dd className="mt-2 pl-7 text-sm leading-relaxed text-muted-foreground">{description}</dd>
+                </div>
+              ))}
+            </dl>
           </div>
         </section>
 
-        {/* About Section */}
-        <section className="py-20">
-          <div className="container mx-auto max-w-4xl px-6">
+        <section className="section-lg">
+          <div className="site-container max-w-3xl">
             <div className="text-center">
-              <span className="inline-block mb-4 text-sm font-semibold uppercase tracking-wider text-primary">
-                Christian Homeschool Family Retreat
-              </span>
-              <h2 className="mb-6 text-balance text-4xl md:text-5xl font-bold tracking-tight text-foreground">
-                Join Us for Fellowship & Fun
-              </h2>
-              <p className="mb-8 text-lg text-muted-foreground leading-relaxed max-w-2xl mx-auto">
-                Rendezvous is a 5-day, 4-night retreat filled with fellowship, worship, recreation, 
-                and encouragement for Christian families who educate their children at home.
+              <p className="mb-3 text-sm text-muted-foreground">Christian homeschool family retreat</p>
+              <h2 className="text-section-title mb-5 text-balance sm:mb-6">Join us for fellowship and fun</h2>
+              <p className="measure-prose mx-auto mb-8 text-lead text-muted-foreground">
+                Rendezvous is a 5-day, 4-night retreat filled with fellowship, worship, recreation, and encouragement
+                for Christian families who educate their children at home.
               </p>
-              <Button size="lg" className="h-14 px-8 text-base" asChild>
+              <Button size="lg" className="h-14 w-full px-8 text-base sm:w-auto" asChild>
                 <Link href="/about">
-                  Learn More About Rendezvous
+                  Learn more about Rendezvous
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
@@ -149,163 +172,112 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* What to Expect */}
-        <section className="py-20 bg-secondary/30">
-          <div className="container mx-auto px-6">
-            <div className="text-center mb-12">
-              <h2 className="text-4xl md:text-5xl font-bold tracking-tight text-foreground">What to Expect</h2>
-            </div>
-            <div className="mx-auto grid max-w-6xl gap-6 md:grid-cols-2 lg:grid-cols-3">
-              <Card className="border-border/50 bg-card transition-all hover:shadow-xl hover:shadow-primary/5 group">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-foreground">
-                    <Users className="h-5 w-5 text-primary" />
-                    Lodging Options
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <p className="leading-relaxed text-muted-foreground">
-                    Choose from motel rooms (sleeps up to 6), RV sites, or tent camping. Motel rooms include linens and
-                    private bathrooms.
-                  </p>
-                </CardContent>
-              </Card>
+        <section className="section bg-surface-tint">
+          <div className="site-container">
+            <header className="mb-8 text-center sm:mb-12">
+              <h2 className="text-section-title text-balance">What to expect</h2>
+            </header>
 
-              <Card className="border-border/50 bg-card transition-all hover:shadow-xl hover:shadow-primary/5 group">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-foreground">
-                    <Sparkles className="h-5 w-5 text-primary" />
-                    Recreation Activities
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <p className="leading-relaxed text-muted-foreground">
-                    Archery, swimming, black-light dodgeball, nine square, basketball, volleyball, ping pong, mini golf,
-                    canoeing, tournaments, and more!
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="border-border/50 bg-card transition-all hover:shadow-xl hover:shadow-primary/5 group">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-foreground">
-                    <Calendar className="h-5 w-5 text-primary" />
-                    Buffet Dining
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <p className="leading-relaxed text-muted-foreground">
-                    11 meals are buffet style plus 1 cookout by the lake. LWCC handles all cooking and cleanup. 
-                    Gluten-free foods are labeled.
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="border-border/50 bg-card transition-all hover:shadow-xl hover:shadow-primary/5 lg:col-span-2">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-foreground">
-                    <Trophy className="h-5 w-5 text-primary" />
-                    Bible Bowl
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <p className="leading-relaxed text-muted-foreground">
-                    Everyone is encouraged to participate in the Bible Bowl on Thursday morning (children & adults).
-                    This is a great study opportunity for families!
-                  </p>
-                  <a
-                    href="https://pewpackers.com/"
-                    target="_blank"
-                    rel="noreferrer noopener"
-                    className="inline-flex items-center gap-2 text-sm font-medium text-primary transition-colors hover:underline"
-                  >
-                    Learn About Bible Bowl
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
-                </CardContent>
-              </Card>
-
-              <Card className="border-border/50 bg-card transition-all hover:shadow-xl hover:shadow-primary/5">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-foreground">
-                    <Wifi className="h-5 w-5 text-primary" />
-                    Event WiFi
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="rounded-lg bg-secondary/50 p-4 border border-border/50">
-                    <p className="font-mono text-sm text-foreground">
-                      <span className="font-semibold">Network:</span> LWCC
-                    </p>
-                    <p className="font-mono text-sm text-foreground">
-                      <span className="font-semibold">Password:</span> wifi4lwcc
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </section>
-
-        {/* 2027 Updates Section */}
-        <section className="py-20 border-t border-border/50">
-          <div className="container mx-auto px-6">
-            <div className="max-w-4xl mx-auto">
-              <div className="text-center mb-12">
-                <span className="inline-block mb-4 text-sm font-semibold uppercase tracking-wider text-primary">
-                  Coming in 2027
-                </span>
-                <h2 className="text-4xl md:text-5xl font-bold tracking-tight text-foreground mb-4">
-                  What&apos;s New for 2027
-                </h2>
-                <p className="text-lg text-muted-foreground">
-                  Here&apos;s what we&apos;re planning for the next Rendezvous
+            <div className="mx-auto grid max-w-6xl gap-5 lg:grid-cols-12 lg:gap-6">
+              <ExpectPanel icon={Trophy} title="Bible Bowl" featured className="lg:col-span-7 lg:p-8">
+                <p>
+                  Everyone is encouraged to participate in the Bible Bowl on Thursday morning (children and adults). This
+                  is a great study opportunity for families.
                 </p>
+                <a
+                  href="https://pewpackers.com/"
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="mt-4 inline-flex items-center gap-2 font-medium text-primary transition-colors hover:underline"
+                >
+                  Learn about Bible Bowl
+                  <ExternalLink className="h-4 w-4" />
+                </a>
+              </ExpectPanel>
+
+              <div className="flex flex-col gap-5 lg:col-span-5 lg:gap-6">
+                <ExpectPanel icon={Users} title="Lodging options" className="flex-1">
+                  <p>
+                    Motel rooms (sleeps up to 6), RV sites, or tent camping. Motel rooms include linens and private
+                    bathrooms.
+                  </p>
+                </ExpectPanel>
+
+                <ExpectPanel icon={Wifi} title="Event WiFi" className="p-5">
+                  <dl className="space-y-1 font-mono text-sm tabular-nums">
+                    <div className="flex flex-wrap gap-x-2">
+                      <dt className="font-medium text-foreground">Network:</dt>
+                      <dd>LWCC</dd>
+                    </div>
+                    <div className="flex flex-wrap gap-x-2">
+                      <dt className="font-medium text-foreground">Password:</dt>
+                      <dd>wifi4lwcc</dd>
+                    </div>
+                  </dl>
+                </ExpectPanel>
               </div>
-              
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="rounded-xl border border-border/50 bg-card p-6 hover:border-primary/30 transition-colors">
-                  <h3 className="font-semibold text-foreground mb-2">New Dates</h3>
-                  <p className="text-muted-foreground">May 3-7, 2027 (Monday - Friday)</p>
-                </div>
-                <div className="rounded-xl border border-border/50 bg-card p-6 hover:border-primary/30 transition-colors">
-                  <h3 className="font-semibold text-foreground mb-2">Registration Opens</h3>
-                  <p className="text-muted-foreground">January 1, 2027</p>
-                </div>
-                <div className="rounded-xl border border-border/50 bg-card p-6 hover:border-primary/30 transition-colors">
-                  <h3 className="font-semibold text-foreground mb-2">2027 Theme / Bible Bowl</h3>
-                  <p className="text-muted-foreground">1 Samuel</p>
-                </div>
-                <div className="rounded-xl border border-border/50 bg-card p-6 hover:border-primary/30 transition-colors">
-                  <h3 className="font-semibold text-foreground mb-2">Same Great Location</h3>
-                  <p className="text-muted-foreground">Lake Williamson Christian Center, Carlinville, IL</p>
-                </div>
+
+              <div className="grid gap-5 sm:grid-cols-2 lg:col-span-12 lg:gap-6">
+                <ExpectPanel icon={Sparkles} title="Recreation activities">
+                  <p>
+                    Archery, swimming, black-light dodgeball, nine square, basketball, volleyball, ping pong, mini golf,
+                    canoeing, tournaments, and more.
+                  </p>
+                </ExpectPanel>
+                <ExpectPanel icon={Calendar} title="Buffet dining">
+                  <p>
+                    11 buffet meals plus a cookout by the lake. LWCC handles cooking and cleanup. Gluten-free foods are
+                    labeled.
+                  </p>
+                </ExpectPanel>
               </div>
             </div>
           </div>
         </section>
 
-        {/* CTA Section */}
-        <section className="py-20 bg-gradient-to-br from-primary/10 via-background to-accent/10">
-          <div className="container mx-auto px-6 text-center">
-            <h2 className="mb-4 text-balance text-4xl md:text-5xl font-bold tracking-tight text-foreground">
-              See You at Rendezvous 2027!
-            </h2>
-            <p className="mb-8 text-balance text-lg text-muted-foreground max-w-2xl mx-auto">
-              Get ready for an amazing time of fellowship, faith, and fun with homeschool families from across the country.
+        <section className="section border-t border-border/50">
+          <div className="site-container">
+            <div className="mx-auto max-w-3xl">
+              <header className="mb-8 text-center sm:mb-10">
+                <h2 className="text-section-title mb-4 text-balance">Planning for 2027</h2>
+                <p className="text-lead text-muted-foreground">What we&apos;re preparing for the next Rendezvous</p>
+              </header>
+
+              <ol className="divide-y divide-primary/10 overflow-hidden rounded-xl border border-primary/15 bg-card">
+                {planning2027.map((item, index) => (
+                  <li
+                    key={item.label}
+                    className={`flex flex-col gap-1 px-5 py-4 sm:flex-row sm:items-baseline sm:justify-between sm:gap-8 sm:px-6 sm:py-5 ${
+                      index % 2 === 0 ? "bg-surface-tint/50" : "bg-card"
+                    }`}
+                  >
+                    <h3 className="shrink-0 font-medium text-foreground sm:w-44">{item.label}</h3>
+                    <p className="text-muted-foreground">{item.value}</p>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          </div>
+        </section>
+
+        <section className="section-lg border-t border-primary/15 bg-surface-lake">
+          <div className="site-container text-center">
+            <h2 className="text-section-title mb-4 text-balance">See you at Rendezvous 2027</h2>
+            <p className="measure-prose mx-auto mb-8 text-balance text-lead text-on-surface">
+              Get ready for fellowship, faith, and fun with homeschool families from across the country.
             </p>
-            <div className="flex flex-wrap items-center justify-center gap-4">
-              <Button size="lg" className="h-14 px-8 text-base font-semibold" asChild>
-                <Link href="/schedule">View Schedule</Link>
+            <div className="flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center sm:gap-4">
+              <Button size="lg" className="h-14 px-8 text-base" asChild>
+                <Link href="/schedule">View schedule</Link>
               </Button>
               <Button
                 size="lg"
                 variant="outline"
                 asChild
-                className="h-14 px-8 text-base font-semibold border-primary/30 hover:bg-primary/10"
+                className="h-14 border-primary/30 bg-card/60 px-8 text-base hover:bg-card"
               >
                 <a href="https://www.facebook.com/groups/RendezvousIL" target="_blank" rel="noreferrer noopener">
-                  Join Facebook Group
+                  Join Facebook group
                   <ExternalLink className="ml-2 h-4 w-4" />
                 </a>
               </Button>

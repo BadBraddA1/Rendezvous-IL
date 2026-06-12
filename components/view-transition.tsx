@@ -59,19 +59,17 @@ export function ViewTransition({
 
         /* ---------- Zoom in ---------- */
         @keyframes vt-zoom-in {
-          0%   { opacity: 0; transform: scale(0.82); filter: blur(8px); }
-          60%  { opacity: 1; filter: blur(0); }
+          0%   { opacity: 0; transform: scale(0.94); filter: blur(6px); }
           100% { opacity: 1; transform: scale(1);    filter: blur(0); }
         }
-        .vt-zoom-in { animation: vt-zoom-in 650ms cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+        .vt-zoom-in { animation: vt-zoom-in 550ms cubic-bezier(0.25, 1, 0.5, 1) both; }
 
-        /* ---------- Slide up with overshoot ---------- */
+        /* ---------- Slide up ---------- */
         @keyframes vt-slide-up {
-          0%   { opacity: 0; transform: translateY(60px); }
-          70%  { opacity: 1; transform: translateY(-8px); }
-          100% { opacity: 1; transform: translateY(0);    }
+          0%   { opacity: 0; transform: translateY(24px); }
+          100% { opacity: 1; transform: translateY(0); }
         }
-        .vt-slide-up { animation: vt-slide-up 750ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+        .vt-slide-up { animation: vt-slide-up 600ms cubic-bezier(0.25, 1, 0.5, 1) both; }
 
         /* ---------- Slide right (in from left) ---------- */
         @keyframes vt-slide-right {
@@ -125,6 +123,21 @@ export function ViewTransition({
           100% { opacity: 1; transform: translateX(0); filter: none; }
         }
         .vt-glitch { animation: vt-glitch 700ms steps(12, end) both; }
+
+        @media (prefers-reduced-motion: reduce) {
+          .vt-fade-blur,
+          .vt-zoom-in,
+          .vt-slide-up,
+          .vt-slide-right,
+          .vt-slide-left,
+          .vt-flip-x,
+          .vt-flip-y,
+          .vt-iris,
+          .vt-wipe-diagonal,
+          .vt-glitch {
+            animation: none !important;
+          }
+        }
       `}</style>
       <div
         key={`${viewKey}-${transition}`}

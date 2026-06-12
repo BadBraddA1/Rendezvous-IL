@@ -44,19 +44,19 @@ function getWeatherIcon(weatherId: number, iconCode: string) {
 
   // Weather condition codes: https://openweathermap.org/weather-conditions
   if (weatherId >= 200 && weatherId < 300) {
-    return <CloudLightning className={`${iconClass} text-yellow-500`} />
+    return <CloudLightning className={`${iconClass} text-warning`} />
   } else if (weatherId >= 300 && weatherId < 600) {
-    return <CloudRain className={`${iconClass} text-blue-400`} />
+    return <CloudRain className={`${iconClass} text-primary`} />
   } else if (weatherId >= 600 && weatherId < 700) {
-    return <Snowflake className={`${iconClass} text-blue-200`} />
+    return <Snowflake className={`${iconClass} text-accent`} />
   } else if (weatherId >= 700 && weatherId < 800) {
-    return <Wind className={`${iconClass} text-gray-400`} />
+    return <Wind className={`${iconClass} text-muted-foreground`} />
   } else if (weatherId === 800) {
-    return isDay ? <Sun className={`${iconClass} text-yellow-400`} /> : <Sun className={`${iconClass} text-gray-300`} />
+    return <Sun className={`${iconClass} text-warning`} />
   } else if (weatherId > 800) {
-    return isDay ? <CloudSun className={`${iconClass} text-gray-400`} /> : <Cloud className={`${iconClass} text-gray-400`} />
+    return isDay ? <CloudSun className={`${iconClass} text-muted-foreground`} /> : <Cloud className={`${iconClass} text-muted-foreground`} />
   }
-  return <Cloud className={`${iconClass} text-gray-400`} />
+  return <Cloud className={`${iconClass} text-muted-foreground`} />
 }
 
 function formatTime(timestamp: number): string {
@@ -100,17 +100,17 @@ export function WeatherForecast() {
 
   if (loading && !weather) {
     return (
-      <Card className="border-blue-200/50 bg-gradient-to-br from-blue-50/50 to-transparent dark:from-blue-950/20">
+      <Card className="border-primary/15 bg-surface-highlight">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold flex items-center gap-2">
-            <Cloud className="h-4 w-4" />
+          <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+            <Cloud className="h-4 w-4 text-primary" aria-hidden="true" />
             Weather at Lake Williamson
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center py-4">
-            <RefreshCw className="h-5 w-5 animate-spin text-muted-foreground" />
-            <span className="ml-2 text-sm text-muted-foreground">Loading weather...</span>
+            <RefreshCw className="h-5 w-5 animate-spin text-muted-foreground" aria-hidden="true" />
+            <span className="ml-2 text-sm text-muted-foreground">Loading weather…</span>
           </div>
         </CardContent>
       </Card>
@@ -119,7 +119,7 @@ export function WeatherForecast() {
 
   if (error || !weather) {
     return (
-      <Card className="border-red-200/50 bg-gradient-to-br from-red-50/50 to-transparent dark:from-red-950/20">
+      <Card className="border-destructive/30 bg-destructive/5">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-semibold flex items-center gap-2">
             <Cloud className="h-4 w-4" />
@@ -138,11 +138,11 @@ export function WeatherForecast() {
   const hourly = expanded ? weather.hourly.slice(0, 12) : weather.hourly.slice(0, 5)
 
   return (
-    <Card className="border-blue-200/50 bg-gradient-to-br from-blue-50/50 to-transparent dark:from-blue-950/20">
+    <Card className="border-primary/15 bg-surface-highlight">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-semibold flex items-center gap-2">
-            <Cloud className="h-4 w-4 text-blue-500" />
+          <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+            <Cloud className="h-4 w-4 text-primary" aria-hidden="true" />
             Weather at Lake Williamson
           </CardTitle>
           {lastUpdated && (
@@ -201,14 +201,14 @@ export function WeatherForecast() {
           </div>
           <div className={`grid gap-2 ${expanded ? 'grid-cols-4 sm:grid-cols-6 md:grid-cols-12' : 'grid-cols-5'}`}>
             {hourly.map((hour) => (
-              <div key={hour.dt} className="text-center p-2 rounded-lg bg-background/50">
+              <div key={hour.dt} className="rounded-lg border border-border/40 bg-card/80 p-2 text-center">
                 <p className="text-xs font-medium text-muted-foreground">{formatTime(hour.dt)}</p>
                 <div className="flex justify-center my-1">
                   {getWeatherIcon(hour.weather[0].id, hour.weather[0].icon)}
                 </div>
                 <p className="text-sm font-semibold">{Math.round(hour.temp)}°</p>
                 {hour.pop > 0.1 && (
-                  <p className="text-xs text-blue-500 flex items-center justify-center gap-0.5">
+                  <p className="flex items-center justify-center gap-0.5 text-xs text-primary">
                     <Droplets className="h-2.5 w-2.5" />
                     {Math.round(hour.pop * 100)}%
                   </p>
@@ -297,13 +297,15 @@ export function RainAlertBanner() {
       <DialogContent className="max-w-md">
         <div className="text-center space-y-4">
           {/* Weather icon */}
-          <div className={`mx-auto w-20 h-20 rounded-full flex items-center justify-center ${
-            isStorm ? 'bg-yellow-100 dark:bg-yellow-900/30' : 'bg-blue-100 dark:bg-blue-900/30'
-          }`}>
+          <div
+            className={`mx-auto flex h-20 w-20 items-center justify-center rounded-full ${
+              isStorm ? "bg-surface-warm" : "bg-surface-lake"
+            }`}
+          >
             {isStorm ? (
-              <CloudLightning className="h-10 w-10 text-yellow-600 dark:text-yellow-400 animate-pulse" />
+              <CloudLightning className="h-10 w-10 text-warning" />
             ) : (
-              <CloudRain className="h-10 w-10 text-blue-600 dark:text-blue-400" />
+              <CloudRain className="h-10 w-10 text-primary" />
             )}
           </div>
           
@@ -382,11 +384,11 @@ export function InlineWeather({ date, hour }: { date: string; hour: number }) {
   }
 
   return (
-    <span className="inline-flex items-center gap-1 ml-2 px-2 py-0.5 rounded-full bg-blue-100/50 dark:bg-blue-900/30 text-xs">
+    <span className="ml-2 inline-flex items-center gap-1 rounded-full border border-primary/20 bg-surface-highlight px-2 py-0.5 text-xs">
       {getWeatherIcon(closestForecast.weather[0].id, closestForecast.weather[0].icon)}
       <span className="font-medium">{Math.round(closestForecast.temp)}°F</span>
       {closestForecast.pop > 0.2 && (
-        <span className="text-blue-500 flex items-center gap-0.5">
+        <span className="flex items-center gap-0.5 text-primary">
           <Droplets className="h-2.5 w-2.5" />
           {Math.round(closestForecast.pop * 100)}%
         </span>

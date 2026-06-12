@@ -10,13 +10,16 @@ export default function PrivacyPage() {
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
-      <main className="container mx-auto max-w-3xl px-6 pt-24 pb-16 md:pt-28">
-        <h1 className="mb-2 text-4xl font-bold">Privacy Policy</h1>
+      <main
+        id="main-content"
+        className="site-container section-sm max-w-3xl pb-16 pt-[calc(5.5rem+env(safe-area-inset-top,0px))] md:pb-20"
+      >
+        <h1 className="text-page-title mb-2">Privacy policy</h1>
         <p className="mb-10 text-sm text-muted-foreground">Last updated: January 2027</p>
 
-        <div className="space-y-10 text-foreground">
+        <div className="measure-prose space-y-10 text-foreground">
           <section>
-            <h2 className="mb-3 text-xl font-semibold">Overview</h2>
+            <h2 className="font-display mb-3 text-xl font-semibold">Overview</h2>
             <p className="leading-relaxed text-muted-foreground">
               Rendezvous IL is a family reunion event organized by Stephen and Ranae Bradd. This privacy policy
               explains what personal information we collect during registration, how we use it, and how we protect it.
@@ -26,7 +29,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="mb-3 text-xl font-semibold">Information We Collect</h2>
+            <h2 className="font-display mb-3 text-xl font-semibold">Information we collect</h2>
             <p className="mb-3 leading-relaxed text-muted-foreground">
               During the registration process, we collect the following information:
             </p>
@@ -42,7 +45,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="mb-3 text-xl font-semibold">How We Use Your Information</h2>
+            <h2 className="font-display mb-3 text-xl font-semibold">How we use your information</h2>
             <p className="mb-3 leading-relaxed text-muted-foreground">Your information is used solely to:</p>
             <ul className="ml-6 list-disc space-y-2 text-muted-foreground">
               <li>Process and confirm your registration for Rendezvous IL</li>
@@ -54,7 +57,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="mb-3 text-xl font-semibold">The Attendee Map</h2>
+            <h2 className="font-display mb-3 text-xl font-semibold">The attendee map</h2>
             <p className="leading-relaxed text-muted-foreground">
               Registered families are shown on a map at <strong>/map2026</strong>. This map displays your family last
               name, contact name, address, email, and family member names to other registered attendees. This map is
@@ -64,7 +67,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="mb-3 text-xl font-semibold">Data Storage & Security</h2>
+            <h2 className="font-display mb-3 text-xl font-semibold">Data storage and security</h2>
             <p className="leading-relaxed text-muted-foreground">
               Registration data is stored securely in a hosted database. We use industry-standard security practices to
               protect your information. Only authorized event organizers have access to the full registration data.
@@ -72,7 +75,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="mb-3 text-xl font-semibold">Data Retention</h2>
+            <h2 className="font-display mb-3 text-xl font-semibold">Data retention</h2>
             <p className="leading-relaxed text-muted-foreground">
               Registration data will be retained for the duration of the event planning period and for a reasonable
               time afterward for record-keeping purposes. We do not retain your data indefinitely.
@@ -80,7 +83,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="mb-3 text-xl font-semibold">Your Rights</h2>
+            <h2 className="font-display mb-3 text-xl font-semibold">Your rights</h2>
             <p className="leading-relaxed text-muted-foreground">
               You have the right to request access to, correction of, or deletion of your personal information at any
               time. To make such a request, please contact us using the information below.
@@ -88,15 +91,15 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="mb-3 text-xl font-semibold">Contact Us</h2>
+            <h2 className="font-display mb-3 text-xl font-semibold">Contact us</h2>
             <p className="mb-2 leading-relaxed text-muted-foreground">
               If you have any questions about this privacy policy or how your data is handled, please reach out:
             </p>
-            <div className="rounded-lg border bg-muted/40 p-4 text-sm space-y-1">
+            <div className="space-y-1 rounded-lg border border-primary/15 bg-surface-tint/50 p-4 text-sm">
               <p className="font-medium">Stephen &amp; Ranae Bradd</p>
               <p className="text-muted-foreground">8754 Sunset Rd, Clinton, IL 61727</p>
               <p className="text-muted-foreground">(217) 935-5058</p>
-              <a href="mailto:Stephen@Bradd.us" className="text-primary hover:underline">
+              <a href="mailto:Stephen@Bradd.us" className="focus-ring rounded-sm font-medium text-primary hover:underline">
                 Stephen@Bradd.us
               </a>
             </div>

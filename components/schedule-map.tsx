@@ -16,23 +16,37 @@ interface PopupPos {
 }
 
 const colorToClass: Record<string, string> = {
-  red: "text-red-500",
-  orange: "text-orange-500",
-  yellow: "text-yellow-500",
-  green: "text-green-500",
-  blue: "text-blue-500",
-  purple: "text-purple-500",
-  pink: "text-pink-500",
+  red: "text-destructive",
+  orange: "text-brand-coral-ink",
+  yellow: "text-warning",
+  green: "text-primary",
+  blue: "text-accent",
+  purple: "text-accent",
+  pink: "text-brand-coral",
 }
 
-const colorToHex: Record<string, string> = {
-  red: "#ef4444",
-  orange: "#f97316",
-  yellow: "#eab308",
-  green: "#22c55e",
-  blue: "#3b82f6",
-  purple: "#a855f7",
-  pink: "#ec4899",
+const colorToStroke: Record<string, string> = {
+  red: "var(--destructive)",
+  orange: "var(--brand-coral)",
+  yellow: "var(--warning)",
+  green: "var(--primary)",
+  blue: "var(--accent)",
+  purple: "var(--accent)",
+  pink: "var(--brand-coral)",
+}
+
+const categoryPinClass: Record<MapLocation["category"], string> = {
+  dining: "text-brand-coral-ink",
+  meeting: "text-destructive",
+  lodging: "text-primary",
+  activity: "text-accent",
+}
+
+const categoryBadgeClass: Record<MapLocation["category"], string> = {
+  dining: "bg-surface-warm text-brand-coral-ink",
+  meeting: "bg-destructive/10 text-destructive",
+  lodging: "bg-surface-highlight text-primary",
+  activity: "bg-surface-lake text-accent",
 }
 
 export function ScheduleMap({ highlightedLocationId, onClose }: ScheduleMapProps) {
@@ -242,23 +256,12 @@ export function ScheduleMap({ highlightedLocationId, onClose }: ScheduleMapProps
 
   const getPinColor = (location: MapLocation) => {
     if (location.color) {
-      return colorToClass[location.color] || "text-purple-500"
+      return colorToClass[location.color] || categoryPinClass.activity
     }
-    // Fallback to category-based colors
-    return location.category === "dining" ? "text-orange-500" 
-      : location.category === "meeting" ? "text-red-500" 
-      : location.category === "lodging" ? "text-green-500"
-      : "text-purple-500"
+    return categoryPinClass[location.category] ?? categoryPinClass.activity
   }
 
-  const badgeClass = (cat: MapLocation["category"]) =>
-    cat === "dining"
-      ? "bg-orange-100 text-orange-700"
-      : cat === "meeting"
-        ? "bg-red-100 text-red-700"
-        : cat === "lodging"
-          ? "bg-green-100 text-green-700"
-          : "bg-purple-100 text-purple-700"
+  const badgeClass = (cat: MapLocation["category"]) => categoryBadgeClass[cat] ?? categoryBadgeClass.activity
 
   // Generate SVG path string from path points
   const getPathD = (points: { x: number; y: number }[]) => {
@@ -271,19 +274,41 @@ export function ScheduleMap({ highlightedLocationId, onClose }: ScheduleMapProps
 
       {/* Zoom controls — top-right, always visible */}
       <div className="absolute top-2 right-2 z-30 flex gap-1">
-        <button onClick={handleZoomIn} className="p-2.5 bg-background/95 rounded-lg shadow border border-border/40 touch-manipulation active:scale-95 transition-transform" aria-label="Zoom in">
-          <ZoomIn className="h-4 w-4" />
+        <button
+          type="button"
+          onClick={handleZoomIn}
+          className="focus-ring touch-target rounded-lg border border-primary/15 bg-card p-2.5 shadow-sm transition-transform active:scale-95"
+          aria-label="Zoom in"
+        >
+          <ZoomIn className="h-4 w-4" aria-hidden="true" />
         </button>
-        <button onClick={handleZoomOut} className="p-2.5 bg-background/95 rounded-lg shadow border border-border/40 touch-manipulation active:scale-95 transition-transform" aria-label="Zoom out">
-          <ZoomOut className="h-4 w-4" />
+        <button
+          type="button"
+          onClick={handleZoomOut}
+          className="focus-ring touch-target rounded-lg border border-primary/15 bg-card p-2.5 shadow-sm transition-transform active:scale-95"
+          aria-label="Zoom out"
+        >
+          <ZoomOut className="h-4 w-4" aria-hidden="true" />
         </button>
-        <button onClick={handleReset} className="px-3 py-2 bg-background/95 rounded-lg shadow border border-border/40 text-xs font-medium touch-manipulation active:scale-95 transition-transform">
+        <button
+          type="button"
+          onClick={handleReset}
+          className="focus-ring touch-target rounded-lg border border-primary/15 bg-card px-3 py-2 text-xs font-medium shadow-sm transition-transform active:scale-95"
+          aria-label="Reset map view"
+        >
           Reset
         </button>
         {mapPaths.length > 0 && (
-          <button 
-            onClick={() => setShowPaths(!showPaths)} 
-            className={`px-3 py-2 rounded-lg shadow border text-xs font-medium touch-manipulation active:scale-95 transition-transform ${showPaths ? 'bg-orange-500 text-white border-orange-500' : 'bg-background/95 border-border/40'}`}
+          <button
+            type="button"
+            onClick={() => setShowPaths(!showPaths)}
+            aria-label={showPaths ? "Hide walking paths" : "Show walking paths"}
+            aria-pressed={showPaths}
+            className={`focus-ring touch-target rounded-lg border px-3 py-2 text-xs font-medium shadow-sm transition-transform active:scale-95 ${
+              showPaths
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-primary/15 bg-card"
+            }`}
           >
             Paths
           </button>
@@ -328,7 +353,7 @@ export function ScheduleMap({ highlightedLocationId, onClose }: ScheduleMapProps
                   <path
                     d={getPathD(path.points)}
                     fill="none"
-                    stroke={colorToHex[path.color] || "#f97316"}
+                    stroke={colorToStroke[path.color] || "var(--brand-coral)"}
                     strokeWidth={0.5}
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -357,7 +382,7 @@ export function ScheduleMap({ highlightedLocationId, onClose }: ScheduleMapProps
                   }
                 }}
                 className={`absolute -translate-x-1/2 -translate-y-full touch-manipulation ${
-                  isHighlighted ? "z-20 animate-bounce" : "z-10"
+                  isHighlighted ? "z-20 map-pin-highlight" : "z-10"
                 }`}
                 style={{ left: `${location.x}%`, top: `${location.y}%` }}
                 aria-label={location.name}
@@ -381,11 +406,12 @@ export function ScheduleMap({ highlightedLocationId, onClose }: ScheduleMapProps
           style={getPopupStyle(popup.x, popup.y)}
         >
           <button
+            type="button"
             onClick={() => setPopup(null)}
-            className="absolute top-2 right-2 p-1 hover:bg-muted rounded-md touch-manipulation"
-            aria-label="Close"
+            className="focus-ring touch-target absolute top-1 right-1 rounded-md p-2 transition-colors hover:bg-secondary"
+            aria-label="Close location details"
           >
-            <X className="h-3 w-3" />
+            <X className="h-4 w-4" aria-hidden="true" />
           </button>
           <div className="flex items-start gap-2 pr-5">
             <MapPin className={`h-4 w-4 mt-0.5 shrink-0 ${getPinColor(popup.location)}`} />
@@ -401,11 +427,23 @@ export function ScheduleMap({ highlightedLocationId, onClose }: ScheduleMapProps
       )}
 
       {/* Legend */}
-      <div className="absolute bottom-2 left-2 z-30 flex flex-wrap gap-2 text-xs bg-background/90 rounded-lg px-2.5 py-1.5 shadow border border-border/40">
-        <div className="flex items-center gap-1"><MapPin className="h-3 w-3 text-red-500" fill="white" /><span>Meeting</span></div>
-        <div className="flex items-center gap-1"><MapPin className="h-3 w-3 text-orange-500" fill="white" /><span>Dining</span></div>
-        <div className="flex items-center gap-1"><MapPin className="h-3 w-3 text-purple-500" fill="white" /><span>Activity</span></div>
-        <div className="flex items-center gap-1"><MapPin className="h-3 w-3 text-green-500" fill="white" /><span>Lodging</span></div>
+      <div className="absolute bottom-2 left-2 z-30 flex flex-wrap gap-2 rounded-lg border border-primary/15 bg-card/95 px-2.5 py-1.5 text-xs shadow-sm">
+        <div className="flex items-center gap-1">
+          <MapPin className={`h-3 w-3 ${categoryPinClass.meeting}`} fill="white" aria-hidden="true" />
+          <span>Meeting</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <MapPin className={`h-3 w-3 ${categoryPinClass.dining}`} fill="white" aria-hidden="true" />
+          <span>Dining</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <MapPin className={`h-3 w-3 ${categoryPinClass.activity}`} fill="white" aria-hidden="true" />
+          <span>Activity</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <MapPin className={`h-3 w-3 ${categoryPinClass.lodging}`} fill="white" aria-hidden="true" />
+          <span>Lodging</span>
+        </div>
       </div>
 
       <p className="absolute bottom-2 right-2 z-30 text-[10px] text-muted-foreground/70">

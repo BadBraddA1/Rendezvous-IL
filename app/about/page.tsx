@@ -7,14 +7,14 @@ export default function AboutPage() {
     <div className="min-h-screen">
       <SiteHeader />
 
-      <main>
-        <section className="border-b bg-secondary pt-24 pb-16 md:pt-28">
-          <div className="container mx-auto px-6">
+      <main id="main-content">
+        <section className="border-b border-primary/15 bg-surface-highlight pt-[calc(5.5rem+env(safe-area-inset-top,0px))] pb-16 md:pt-28">
+          <div className="site-container">
             <div className="mx-auto max-w-4xl text-center">
-              <h1 className="mb-6 text-balance text-5xl font-bold tracking-tight text-secondary-foreground md:text-6xl">
+              <h1 className="text-page-title mb-6 text-balance text-secondary-foreground">
                 About Rendezvous
               </h1>
-              <p className="text-balance text-lg text-secondary-foreground/70">
+              <p className="measure-prose mx-auto text-balance text-lead text-secondary-foreground/80">
                 A Christian homeschool family retreat built on fellowship, worship, recreation, & encouragement.
               </p>
             </div>
@@ -22,9 +22,9 @@ export default function AboutPage() {
         </section>
 
         <section className="py-20">
-          <div className="container mx-auto max-w-4xl px-6">
-            <div className="prose prose-lg max-w-none space-y-8 leading-relaxed">
-              <div className="rounded-xl border bg-gradient-to-br from-primary/5 to-accent/5 p-8">
+          <div className="site-container max-w-4xl">
+            <div className="measure-prose mx-auto space-y-8">
+              <div className="rounded-xl border border-primary/15 bg-surface-highlight p-8">
                 <p className="text-lg leading-relaxed">
                   Greetings brethren! Our family has enjoyed Roundhouse for 20 years now and plans to continue attending
                   indefinitely, Lord willing. We appreciate the fellowship so much and look forward to it annually,
@@ -56,7 +56,7 @@ export default function AboutPage() {
                   href="http://www.LakeWilliamson.org"
                   target="_blank"
                   rel="noreferrer noopener"
-                  className="inline-flex items-center gap-1 font-medium text-primary transition-colors hover:underline"
+                  className="focus-ring inline-flex items-center gap-1 rounded-sm font-medium text-primary transition-colors hover:underline"
                 >
                   www.LakeWilliamson.org
                   <ExternalLink className="h-4 w-4" />
@@ -85,25 +85,40 @@ export default function AboutPage() {
                 you think may be interested.
               </p>
 
-              <div className="my-12 grid gap-4 md:grid-cols-2">
-                
-
+              <div className="my-12 grid gap-4 sm:grid-cols-2">
                 <a
                   href="http://www.facebook.com/groups/RendezvousIL"
                   target="_blank"
                   rel="noreferrer noopener"
-                  className="group rounded-xl border border-accent/20 bg-gradient-to-br from-accent/5 to-accent/10 p-6 transition-all hover:border-accent/40 hover:shadow-lg text-center"
+                  className="focus-ring group flex min-h-[4.5rem] items-center justify-between rounded-xl border border-primary/15 bg-card p-6 transition-colors hover:border-primary/30 hover:bg-surface-tint"
                 >
-                  <div className="mb-3 flex items-center gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-accent text-accent-foreground">
-                      <Users className="h-6 w-6" />
+                  <div className="flex items-center gap-3 text-left">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-accent text-accent-foreground">
+                      <Users className="h-6 w-6" aria-hidden="true" />
                     </div>
                     <div>
-                      <p className="font-semibold">Facebook Group</p>
+                      <p className="font-semibold">Facebook group</p>
                       <p className="text-sm text-muted-foreground">Join our community</p>
                     </div>
                   </div>
-                  <ExternalLink className="h-5 w-5 text-primary transition-transform group-hover:translate-x-1" />
+                  <ExternalLink className="h-5 w-5 shrink-0 text-primary transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+                </a>
+                <a
+                  href="http://www.LakeWilliamson.org"
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="focus-ring group flex min-h-[4.5rem] items-center justify-between rounded-xl border border-primary/15 bg-card p-6 transition-colors hover:border-primary/30 hover:bg-surface-tint"
+                >
+                  <div className="flex items-center gap-3 text-left">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                      <Building className="h-6 w-6" aria-hidden="true" />
+                    </div>
+                    <div>
+                      <p className="font-semibold">Lake Williamson</p>
+                      <p className="text-sm text-muted-foreground">Explore the retreat center</p>
+                    </div>
+                  </div>
+                  <ExternalLink className="h-5 w-5 shrink-0 text-primary transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
                 </a>
               </div>
 
@@ -112,10 +127,10 @@ export default function AboutPage() {
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-secondary text-secondary-foreground">
                     <Calendar className="h-6 w-6" />
                   </div>
-                  <h2 className="text-3xl font-bold">Attendance History</h2>
+                  <h2 className="font-display text-section-title">Attendance history</h2>
                 </div>
-                <div className="overflow-hidden rounded-xl border">
-                  <table className="w-full">
+                <div className="-mx-4 overflow-x-auto rounded-xl border border-primary/15 sm:mx-0">
+                  <table className="w-full min-w-[28rem]">
                     <thead>
                       <tr className="border-b bg-secondary text-secondary-foreground">
                         <th className="p-4 text-left font-semibold">Year</th>
@@ -155,8 +170,8 @@ export default function AboutPage() {
                 </div>
               </div>
 
-              <div className="my-12 rounded-xl border border-primary/20 bg-gradient-to-br from-primary/5 via-card to-accent/5 p-8">
-                <h2 className="mb-6 text-2xl font-bold">Get in Touch</h2>
+              <div className="my-12 rounded-xl border border-primary/15 bg-surface-tint p-8">
+                <h2 className="font-display mb-6 text-2xl font-bold">Get in touch</h2>
                 <p className="mb-6 leading-relaxed text-muted-foreground">
                   If you have any questions or concerns, please contact us.
                 </p>

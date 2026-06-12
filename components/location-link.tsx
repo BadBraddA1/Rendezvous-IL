@@ -11,9 +11,10 @@ interface LocationLinkProps {
 export function LocationLink({ children, locationId, onShowMap }: LocationLinkProps) {
   return (
     <button
+      type="button"
       onClick={() => onShowMap(locationId)}
-      className="inline-flex items-center gap-1 underline decoration-primary/50 underline-offset-2 hover:decoration-primary hover:text-primary transition-colors cursor-pointer"
-      title="View on map"
+      className="focus-ring inline-flex cursor-pointer items-center gap-1 rounded-sm underline decoration-primary/50 underline-offset-2 transition-colors hover:text-primary hover:decoration-primary active:text-primary"
+      aria-label={`Show ${typeof children === "string" ? children : "location"} on venue map`}
     >
       {children}
       <MapPin className="h-3 w-3 text-primary inline" />

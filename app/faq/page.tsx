@@ -1,59 +1,114 @@
 "use client"
 
+import type React from "react"
 import { useState } from "react"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { ExternalLink, Play, Video } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 
-const faqItems = [
+type FaqItem = {
+  id: string
+  question: string
+  answer: React.ReactNode
+}
+
+const faqItems: FaqItem[] = [
   {
+    id: "what-is-rendezvous",
     question: "What is Rendezvous?",
-    answer: "Rendezvous is a 5-day, 4-night Christian family retreat specifically designed for homeschooling families. It's a time of fellowship, worship, recreation, and encouragement held at Lake Williamson Christian Center in Carlinville, IL."
+    answer:
+      "Rendezvous is a 5-day, 4-night Christian family retreat specifically designed for homeschooling families. It's a time of fellowship, worship, recreation, and encouragement held at Lake Williamson Christian Center in Carlinville, IL.",
   },
   {
+    id: "when-2027",
     question: "When is Rendezvous 2027?",
-    answer: "Rendezvous 2027 will be held May 3-7, 2027 (Monday through Friday). Registration opens January 1, 2027."
+    answer:
+      "Rendezvous 2027 will be held May 3–7, 2027 (Monday through Friday). Registration opens January 1, 2027.",
   },
   {
+    id: "who-can-attend",
     question: "Who can attend?",
-    answer: "Rendezvous is open to Christian families who homeschool their children. The retreat is designed for the whole family - parents and children of all ages are welcome and encouraged to attend together."
+    answer:
+      "Rendezvous is open to Christian families who homeschool their children. The retreat is designed for the whole family — parents and children of all ages are welcome and encouraged to attend together.",
   },
   {
-    question: "What's included in the registration?",
-    answer: "Registration includes lodging, all meals (starting with Monday dinner through Friday breakfast), access to all activities and facilities, Bible Bowl participation, evening programs, and recreational activities like swimming, sports, and the climbing tower."
+    id: "registration-includes",
+    question: "What's included in registration?",
+    answer:
+      "Registration includes lodging, all meals (starting with Monday dinner through Friday breakfast), access to all activities and facilities, Bible Bowl participation, evening programs, and recreational activities like swimming, sports, and the climbing tower.",
   },
   {
+    id: "lodging-options",
     question: "What are the lodging options?",
-    answer: "Lake Williamson offers hotel-style rooms and motel-style rooms. Hotel rooms have private bathrooms, while motel rooms have shared bathroom facilities. Both options are comfortable and family-friendly. Tent camping is also available for those who prefer it."
+    answer:
+      "Lake Williamson offers hotel-style rooms and motel-style rooms. Hotel rooms have private bathrooms, while motel rooms have shared bathroom facilities. Both options are comfortable and family-friendly. Tent camping is also available for those who prefer it.",
   },
   {
+    id: "bible-bowl",
     question: "What is Bible Bowl?",
-    answer: "Bible Bowl is a highlight of Rendezvous where families study a book of the Bible together before the retreat, then participate in friendly competition during the week. For 2027, we'll be studying 1 Samuel. It's a wonderful way for families to dive deep into Scripture together."
+    answer: (
+      <>
+        Bible Bowl is a highlight of Rendezvous where families study a book of the Bible together before the retreat,
+        then participate in friendly competition during the week. For 2027, we&apos;ll be studying 1 Samuel. It&apos;s a
+        wonderful way for families to dive deep into Scripture together.{" "}
+        <Link href="/biblebowl" className="focus-ring rounded-sm font-medium text-primary hover:underline">
+          Learn more about Bible Bowl
+        </Link>
+        .
+      </>
+    ),
   },
   {
+    id: "activities",
     question: "What activities are available?",
-    answer: "Activities include swimming, basketball, volleyball, gaga ball, hiking trails, fishing, a climbing tower, archery, campfires, and much more. There are also organized games, crafts for children, and fellowship time for adults."
+    answer:
+      "Activities include swimming, basketball, volleyball, gaga ball, hiking trails, fishing, a climbing tower, archery, campfires, and much more. There are also organized games, crafts for children, and fellowship time for adults.",
   },
   {
+    id: "food",
     question: "Can we bring our own food?",
-    answer: "All meals are provided and included in your registration. However, if you have specific dietary needs or allergies, please note them during registration and we'll do our best to accommodate you. You're welcome to bring snacks for your family."
+    answer:
+      "All meals are provided and included in your registration. However, if you have specific dietary needs or allergies, please note them during registration and we'll do our best to accommodate you. You're welcome to bring snacks for your family.",
   },
   {
+    id: "refund-policy",
     question: "What's the refund policy?",
-    answer: "Refund policies vary depending on how close to the event you cancel. Please contact us directly at Stephen@Bradd.us for specific refund inquiries. We understand circumstances change and will work with you."
+    answer: (
+      <>
+        Refund policies vary depending on how close to the event you cancel. Please contact us directly at{" "}
+        <a
+          href="mailto:Stephen@Bradd.us"
+          className="focus-ring rounded-sm font-medium text-primary hover:underline"
+        >
+          Stephen@Bradd.us
+        </a>{" "}
+        for specific refund inquiries. We understand circumstances change and will work with you.
+      </>
+    ),
   },
   {
+    id: "children-cost",
     question: "Is there a cost for children?",
-    answer: "Yes, pricing varies by age. Children under 3 are free, and there are reduced rates for different age groups. Use our Cost Calculator to get an accurate estimate for your family."
+    answer: (
+      <>
+        Yes, pricing varies by age. Children under 3 are free, and there are reduced rates for different age groups.
+        Use our{" "}
+        <Link href="/calculator" className="focus-ring rounded-sm font-medium text-primary hover:underline">
+          cost calculator
+        </Link>{" "}
+        to get an accurate estimate for your family.
+      </>
+    ),
   },
 ]
 
 const faqVideos = [
   {
     id: "djuAc8QIk6pPNX1mGigB5MEAN02UeuydJQW01GhiCZlIU",
-    title: "Rendezvous History",
+    title: "Rendezvous history",
   },
   {
     id: "O9702XLr9hbXUXZDlUvdiDym01nmI4200QDyaHNZN2voa4",
@@ -77,40 +132,52 @@ const faqVideos = [
   },
 ]
 
-function VideoCard({ video, isPlaying, onPlay }: { 
-  video: typeof faqVideos[0]
+function VideoCard({
+  video,
+  isPlaying,
+  onPlay,
+}: {
+  video: (typeof faqVideos)[0]
   isPlaying: boolean
-  onPlay: () => void 
+  onPlay: () => void
 }) {
   return (
-    <div className="group">
-      <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-muted">
-        {!isPlaying ? (
-          <button
-            onClick={onPlay}
-            className="absolute inset-0 flex items-center justify-center"
-          >
-            <img
-              src={`https://image.mux.com/${video.id}/thumbnail.jpg?width=640&height=360&fit_mode=smartcrop`}
-              alt={video.title}
-              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+    <article className="group">
+      <div className="overflow-hidden rounded-xl border border-primary/15 bg-card">
+        <div className="relative aspect-video w-full bg-muted">
+          {!isPlaying ? (
+            <button
+              type="button"
+              onClick={onPlay}
+              className="focus-ring absolute inset-0 flex items-center justify-center"
+              aria-label={`Play video: ${video.title}`}
+            >
+              <img
+                src={`https://image.mux.com/${video.id}/thumbnail.jpg?width=640&height=360&fit_mode=smartcrop`}
+                alt={video.title}
+                className="absolute inset-0 h-full w-full object-cover"
+                loading="lazy"
+                decoding="async"
+              />
+              <div className="absolute inset-0 z-10 flex items-center justify-center bg-foreground/25 transition-colors group-hover:bg-foreground/35">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md transition-transform duration-200 ease-out group-hover:scale-[1.03]">
+                  <Play className="ml-0.5 h-6 w-6" fill="currentColor" aria-hidden="true" />
+                </div>
+              </div>
+            </button>
+          ) : (
+            <iframe
+              title={video.title}
+              src={`https://player.mux.com/${video.id}?autoplay=1`}
+              className="h-full w-full"
+              allow="autoplay; fullscreen; picture-in-picture"
+              allowFullScreen
             />
-            <div className="absolute inset-0 bg-black/30 transition-opacity group-hover:bg-black/40" />
-            <div className="absolute flex h-14 w-14 items-center justify-center rounded-full bg-primary shadow-xl transition-transform group-hover:scale-110">
-              <Play className="ml-0.5 h-6 w-6 fill-primary-foreground text-primary-foreground" />
-            </div>
-          </button>
-        ) : (
-          <iframe
-            src={`https://player.mux.com/${video.id}?autoplay=1`}
-            className="h-full w-full"
-            allow="autoplay; fullscreen; picture-in-picture"
-            allowFullScreen
-          />
-        )}
+          )}
+        </div>
       </div>
-      <p className="mt-3 text-sm font-medium text-foreground line-clamp-2">{video.title}</p>
-    </div>
+      <p className="mt-3 text-sm font-medium leading-snug text-foreground text-pretty line-clamp-2">{video.title}</p>
+    </article>
   )
 }
 
@@ -121,62 +188,52 @@ export default function FAQPage() {
     <div className="min-h-screen bg-background">
       <SiteHeader />
 
-      <main className="pt-20 md:pt-24">
-        {/* FAQ Section - Two Column Layout */}
-        <section className="py-16 md:py-24">
-          <div className="container mx-auto px-6">
-            <div className="grid gap-12 lg:grid-cols-[280px_1fr] lg:gap-16 xl:gap-24">
-              {/* Left Column - Title */}
-              <div className="lg:sticky lg:top-32 lg:self-start">
-                <h1 className="text-5xl font-bold tracking-tight md:text-6xl lg:text-7xl">
-                  FAQ
-                </h1>
-                <p className="mt-4 text-muted-foreground">
+      <main id="main-content">
+        <section className="section-lg pt-[calc(5.5rem+env(safe-area-inset-top,0px))]">
+          <div className="site-container">
+            <div className="grid gap-10 lg:grid-cols-[minmax(0,17.5rem)_1fr] lg:gap-16 xl:gap-20">
+              <header className="lg:sticky lg:top-[calc(5.5rem+env(safe-area-inset-top,0px))] lg:self-start">
+                <h1 className="text-page-title text-balance">Frequently asked questions</h1>
+                <p className="mt-4 text-lead text-muted-foreground text-pretty">
                   Everything you need to know about Rendezvous 2027
                 </p>
-              </div>
+              </header>
 
-              {/* Right Column - Questions */}
-              <div>
-                <Accordion type="single" collapsible className="w-full">
-                  {faqItems.map((item, index) => (
-                    <AccordionItem 
-                      key={index} 
-                      value={`item-${index}`}
-                      className="border-b border-border/50 py-2"
-                    >
-                      <AccordionTrigger className="text-left text-lg font-medium hover:no-underline md:text-xl py-5">
-                        {item.question}
-                      </AccordionTrigger>
-                      <AccordionContent className="text-muted-foreground text-base leading-relaxed pb-6">
-                        {item.answer}
-                      </AccordionContent>
-                    </AccordionItem>
-                  ))}
-                </Accordion>
-              </div>
+              <Accordion type="single" collapsible className="w-full">
+                {faqItems.map((item) => (
+                  <AccordionItem
+                    key={item.id}
+                    value={item.id}
+                    className="border-b border-primary/15 py-1 last:border-b-0"
+                  >
+                    <AccordionTrigger className="font-display py-5 text-left text-base font-semibold hover:no-underline md:text-lg">
+                      {item.question}
+                    </AccordionTrigger>
+                    <AccordionContent className="measure-prose pb-6 text-base leading-relaxed text-muted-foreground">
+                      {item.answer}
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
             </div>
           </div>
         </section>
 
-        {/* Videos Section */}
-        <section className="border-t bg-secondary/30 py-16 md:py-24">
-          <div className="container mx-auto px-6">
-            <div className="mb-12">
+        <section className="section-lg border-t border-primary/15 bg-surface-highlight">
+          <div className="site-container">
+            <header className="mb-10 md:mb-12">
               <div className="flex items-center gap-3">
-                <Video className="h-6 w-6 text-primary" />
-                <h2 className="text-2xl font-bold md:text-3xl">
-                  Hear From Our Retreat Organizers
-                </h2>
+                <Video className="h-6 w-6 shrink-0 text-primary" aria-hidden="true" />
+                <h2 className="text-section-title text-balance">Hear from our retreat organizers</h2>
               </div>
-              <p className="mt-2 text-muted-foreground">Click any video to play</p>
-            </div>
-            
+              <p className="mt-2 text-muted-foreground">Tap a video to play</p>
+            </header>
+
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {faqVideos.map((video) => (
-                <VideoCard 
-                  key={video.id} 
-                  video={video} 
+                <VideoCard
+                  key={video.id}
+                  video={video}
                   isPlaying={playingVideo === video.id}
                   onPlay={() => setPlayingVideo(video.id)}
                 />
@@ -185,28 +242,20 @@ export default function FAQPage() {
           </div>
         </section>
 
-        {/* Contact Section */}
-        <section className="border-t py-16 md:py-24">
-          <div className="container mx-auto px-6 text-center">
-            <h2 className="mb-4 text-3xl font-bold tracking-tight md:text-4xl">
-              Still Have Questions?
-            </h2>
-            <p className="mb-8 text-lg text-muted-foreground max-w-xl mx-auto">
+        <section className="section-lg border-t border-primary/15">
+          <div className="site-container text-center">
+            <h2 className="text-section-title mb-4 text-balance">Still have questions?</h2>
+            <p className="measure-prose mx-auto mb-8 text-lead text-muted-foreground">
               We&apos;re here to help. Reach out directly or connect with other families in our community.
             </p>
-            <div className="flex flex-wrap items-center justify-center gap-4">
-              <Button size="lg" className="h-12 px-6" asChild>
-                <a href="mailto:Stephen@Bradd.us">Contact Us</a>
+            <div className="flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center sm:justify-center">
+              <Button size="lg" className="h-11 gap-2" asChild>
+                <a href="mailto:Stephen@Bradd.us">Contact us</a>
               </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                asChild
-                className="h-12 px-6"
-              >
+              <Button size="lg" variant="outline" className="h-11 gap-2 border-primary/25" asChild>
                 <a href="https://www.facebook.com/groups/RendezvousIL" target="_blank" rel="noreferrer noopener">
-                  Join Facebook Group
-                  <ExternalLink className="ml-2 h-4 w-4" />
+                  Join Facebook group
+                  <ExternalLink className="h-4 w-4" aria-hidden="true" />
                 </a>
               </Button>
             </div>

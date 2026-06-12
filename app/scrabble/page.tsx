@@ -1,51 +1,40 @@
 import { SiteHeader } from "@/components/site-header"
+import { SiteFooter } from "@/components/site-footer"
 import { Button } from "@/components/ui/button"
+import { Download } from "lucide-react"
 
 export default function ScrabblePage() {
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
 
-      <main className="container mx-auto px-4 pt-20 pb-12 md:pt-24">
+      <main
+        id="main-content"
+        className="site-container section-sm pb-16 pt-[calc(5.5rem+env(safe-area-inset-top,0px))] md:pb-20"
+      >
         <div className="mx-auto max-w-4xl">
-          <div className="mb-8 text-center">
-            <h1 className="mb-4 text-4xl font-bold tracking-tight text-foreground">Scrabble Tournament</h1>
-            <p className="text-lg text-muted-foreground">Word lists for the Rendezvous Scrabble Tournament</p>
-            <div className="mt-6">
-              <div className="flex flex-wrap justify-center gap-4">
-                <Button asChild size="lg" variant="outline">
-                  <a href="/scrabble-rules">Tournament Rules</a>
-                </Button>
-                <Button asChild size="lg">
-                  <a
-                    href="https://yixdedkxmmcaglqi.public.blob.vercel-storage.com/Scrabble%20Cheat%20Sheet.pdf"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                      <polyline points="7 10 12 15 17 10" />
-                      <line x1="12" y1="15" x2="12" y2="3" />
-                    </svg>
-                    Cheat Sheet
-                  </a>
-                </Button>
-              </div>
+          <header className="mb-8 text-center md:mb-10">
+            <h1 className="text-page-title mb-3 text-balance">Scrabble tournament</h1>
+            <p className="text-lead text-muted-foreground">Word lists for the Rendezvous Scrabble tournament</p>
+            <div className="mt-6 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
+              <Button asChild size="lg" variant="outline" className="h-11 border-primary/25">
+                <a href="/scrabble-rules">Tournament rules</a>
+              </Button>
+              <Button asChild size="lg" className="h-11 gap-2">
+                <a
+                  href="https://yixdedkxmmcaglqi.public.blob.vercel-storage.com/Scrabble%20Cheat%20Sheet.pdf"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2"
+                >
+                  <Download className="h-5 w-5" aria-hidden="true" />
+                  Cheat sheet
+                </a>
+              </Button>
             </div>
-          </div>
+          </header>
 
-          <div className="prose prose-slate mx-auto max-w-none rounded-lg border border-border bg-card p-8">
+          <div className="rounded-xl border border-primary/15 bg-card p-6 md:p-8">
             <div className="mb-6 text-sm text-muted-foreground">
               <p>
                 These word lists are adapted from SCRABBLE® Wordbook by Mike Baron, Sterling Publishing, 2007, and
@@ -63,7 +52,7 @@ export default function ScrabblePage() {
             </div>
 
             <section className="mb-8">
-              <h2 className="mb-4 text-2xl font-bold text-foreground">2-Letter Words</h2>
+              <h2 className="font-display mb-4 text-2xl font-bold text-foreground">2-letter words</h2>
               <div className="grid grid-cols-5 gap-2 text-sm md:grid-cols-10">
                 {[
                   "AA",
@@ -172,7 +161,7 @@ export default function ScrabblePage() {
                   "YO",
                   "ZA",
                 ].map((word) => (
-                  <span key={word} className="rounded bg-muted px-2 py-1 text-center font-mono">
+                  <span key={word} className="rounded border border-border/60 bg-surface-tint/50 px-2 py-1 text-center font-mono text-sm">
                     {word}
                   </span>
                 ))}
@@ -331,6 +320,8 @@ export default function ScrabblePage() {
           </div>
         </div>
       </main>
+
+      <SiteFooter />
     </div>
   )
 }

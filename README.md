@@ -58,6 +58,10 @@ pnpm db:verify
 | `pnpm build` | Production build |
 | `pnpm db:verify` | List Turso tables and row counts |
 
+## Design & motion
+
+Brand and UI context: `PRODUCT.md`, `DESIGN.md`. Marketing surfaces polished: lake-teal OKLCH palette, Libre Baskerville + Libre Franklin, mobile safe-areas, accessible focus rings, semantic success/warning tokens. `/schedule` uses the same layout utilities (`.site-container`, `.text-page-title`), token-based day sections, sticky day nav with `aria-current`, and an accessible venue-map dialog (Escape to close, backdrop dismiss). `/faq` matches the system: editorial two-column accordion, `.measure-prose` answers, linked cost calculator / Bible Bowl / contact paths, and homepage-aligned video cards. `/calculator` uses the same shell (`.site-container`, safe-area offset, `#main-content`), token borders, tile-style lodging radios with 44px targets, `surface-highlight` estimate panel (no gradient), and `aria-live` on the running total. `/registration` shares `components/registration-open-countdown.tsx` with the homepage banner — countdown targets **Jan 1, 2027** (not event start), includes email notify + links to calculator/FAQ, and shows a `surface-lake` open-state CTA when registration opens. Post-audit hardening: venue map dialog uses `lib/use-focus-trap.ts`; schedule map + weather use lake-teal tokens; biblebowl/privacy/scrabble routes use `#main-content` + `.site-container`. Run `pnpm dev` and open `/registration` or `/schedule` to preview.
+
 ## Project structure
 
 ```
