@@ -5,9 +5,10 @@ import { useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { ExternalLink, Play } from "lucide-react"
+import { ExternalLink } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
+import { MuxVideoPlayer } from "@/components/mux-video-player"
 
 type FaqItem = {
   id: string
@@ -144,37 +145,12 @@ function VideoCard({
   return (
     <article className="group">
       <div className="overflow-hidden rounded-xl border border-primary/15 bg-card">
-        <div className="relative aspect-video w-full bg-muted">
-          {!isPlaying ? (
-            <button
-              type="button"
-              onClick={onPlay}
-              className="focus-ring absolute inset-0 flex items-center justify-center"
-              aria-label={`Play video: ${video.title}`}
-            >
-              <img
-                src={`https://image.mux.com/${video.id}/thumbnail.jpg?width=640&height=360&fit_mode=smartcrop`}
-                alt={video.title}
-                className="absolute inset-0 h-full w-full object-cover"
-                loading="lazy"
-                decoding="async"
-              />
-              <div className="absolute inset-0 z-10 flex items-center justify-center bg-foreground/25 transition-colors group-hover:bg-foreground/35">
-                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md transition-transform duration-200 ease-out group-hover:scale-[1.03]">
-                  <Play className="ml-0.5 h-6 w-6" fill="currentColor" aria-hidden="true" />
-                </div>
-              </div>
-            </button>
-          ) : (
-            <iframe
-              title={video.title}
-              src={`https://player.mux.com/${video.id}?autoplay=1`}
-              className="h-full w-full"
-              allow="autoplay; fullscreen; picture-in-picture"
-              allowFullScreen
-            />
-          )}
-        </div>
+        <MuxVideoPlayer
+          playbackId={video.id}
+          title={video.title}
+          isActive={isPlaying}
+          onActivate={onPlay}
+        />
       </div>
       <p className="mt-3 text-sm font-medium leading-snug text-foreground text-pretty line-clamp-2">{video.title}</p>
     </article>

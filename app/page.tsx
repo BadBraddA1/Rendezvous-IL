@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, type ReactNode } from "react"
+import type { ReactNode } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import {
@@ -11,7 +11,6 @@ import {
   ExternalLink,
   Wifi,
   Trophy,
-  Play,
   ArrowRight,
   type LucideIcon,
 } from "lucide-react"
@@ -19,6 +18,7 @@ import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { HeroSection } from "@/components/hero-section"
 import { RegistrationCountdown2027 } from "@/components/registration-countdown-2027"
+import { MuxVideoPlayer } from "@/components/mux-video-player"
 
 const retreatFacts = [
   {
@@ -81,8 +81,6 @@ function ExpectPanel({
 }
 
 export default function HomePage() {
-  const [isPlaying, setIsPlaying] = useState(false)
-
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader isHomepage />
@@ -102,36 +100,13 @@ export default function HomePage() {
                 </p>
               </header>
               <div className="overflow-hidden rounded-xl border border-border bg-card">
-                <div className="relative aspect-video w-full">
-                  {isPlaying ? (
-                    <iframe
-                      src="https://player.mux.com/Fu2mzvA8FO6sEUE01JWv8DvLgRz7K01hmvyBH01DTiDKyc?autoplay=1&muted=0"
-                      className="absolute inset-0 h-full w-full"
-                      allow="autoplay; fullscreen; picture-in-picture"
-                      allowFullScreen
-                    />
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => setIsPlaying(true)}
-                      className="focus-ring group absolute inset-0 flex items-center justify-center"
-                      aria-label="Play Rendezvous retreat video"
-                    >
-                      <img
-                        src="https://image.mux.com/Fu2mzvA8FO6sEUE01JWv8DvLgRz7K01hmvyBH01DTiDKyc/thumbnail.jpg?width=1200&height=675&fit_mode=smartcrop"
-                        alt="Rendezvous retreat preview"
-                        className="absolute inset-0 h-full w-full object-cover"
-                        loading="lazy"
-                        decoding="async"
-                      />
-                      <div className="absolute inset-0 z-10 flex items-center justify-center bg-foreground/25 transition-colors group-hover:bg-foreground/35">
-                        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md transition-transform duration-200 ease-out group-hover:scale-[1.03] md:h-20 md:w-20">
-                          <Play className="ml-0.5 h-7 w-7 md:h-8 md:w-8" fill="currentColor" />
-                        </div>
-                      </div>
-                    </button>
-                  )}
-                </div>
+                <MuxVideoPlayer
+                  playbackId="Fu2mzvA8FO6sEUE01JWv8DvLgRz7K01hmvyBH01DTiDKyc"
+                  title="Rendezvous retreat video"
+                  thumbnailWidth={1200}
+                  thumbnailHeight={675}
+                  playButtonSize="lg"
+                />
               </div>
             </div>
           </div>
