@@ -1,5 +1,5 @@
 import { auth, currentUser } from "@clerk/nextjs/server"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db"
 import { AdminNav } from "@/components/admin/admin-nav"
 import { MealsForm } from "./meals-form"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -31,7 +31,6 @@ async function getAdminInfo() {
 }
 
 async function getMeals() {
-  const sql = neon(process.env.NEON_DATABASE_URL!)
   const meals = await sql`
     SELECT * FROM meals 
     ORDER BY date, 

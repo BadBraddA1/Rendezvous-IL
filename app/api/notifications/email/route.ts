@@ -1,4 +1,4 @@
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db"
 
 export async function POST(request: Request) {
   try {
@@ -19,12 +19,10 @@ export async function POST(request: Request) {
       )
     }
 
-    const sql = neon(process.env.NEON_DATABASE_URL!)
-
     // Insert email into notification list
     await sql`
       INSERT INTO email_notification_list (email, notification_type, created_at)
-      VALUES (${email}, ${notification_type}, NOW())
+      VALUES (${email}, ${notification_type}, CURRENT_TIMESTAMP)
       ON CONFLICT DO NOTHING
     `
 

@@ -1,35 +1,104 @@
-import { neon } from "@neondatabase/serverless"
+import { createClient, type Client, type InValue } from "@libsql/client"
 
-// Lazy-initialize the neon client so importing this module never throws,
-// even if environment variables aren't available (e.g. during `next build`
-// route data collection or in environments where envs load after import).
-type NeonClient = ReturnType<typeof neon>
-let _client: NeonClient | null = null
+export type SqlRow = Record<string, unknown>
 
-function getClient(): NeonClient {
+export type SqlClient = {
+  (strings: TemplateStringsArray, ...values: unknown[]): Promise<SqlRow[]>
+  query: (query: string, args?: unknown[]) => Promise<SqlRow[]>
+}
+
+let _client: Client | null = null
+
+function getClient(): Client {
   if (_client) return _client
-  const url = process.env.NEON_DATABASE_URL || process.env.DATABASE_URL
+
+  const url =
+    process.env.TURSO_DATABASE_URL ||
+    process.env.TURSO_URL ||
+    process.env.LIBSQL_URL
+
+  const authToken =
+    process.env.TURSO_AUTH_TOKEN ||
+    process.env.LIBSQL_AUTH_TOKEN
+
   if (!url) {
     throw new Error(
-      "Database connection string is not set. Configure NEON_DATABASE_URL (or DATABASE_URL) in your environment.",
+      "Turso database URL is not set. Configure TURSO_DATABASE_URL in your environment.",
     )
   }
-  _client = neon(url)
+
+  _client = createClient({ url, authToken })
   return _client
 }
 
-// Export a Proxy that behaves identically to a neon `sql` client. It works as a
-// tagged template (`sql\`SELECT ...\``), and also forwards property access for
-// helpers like `sql.transaction(...)`. The real client is only constructed on
-// first use, after env vars are guaranteed to be available.
-export const sql = new Proxy(function () {} as unknown as NeonClient, {
+/** Normalize legacy SQL dialect differences for SQLite/libSQL. */
+export function normalizeSql(query: string): string {
+  return query
+    .replace(/\bNOW\(\)/gi, "CURRENT_TIMESTAMP")
+    .replace(/::(int|integer|numeric|text|boolean|jsonb)\b/gi, "")
+    .replace(/\bILIKE\b/gi, "LIKE")
+    .replace(/EXTRACT\(YEAR FROM ([^)]+)\)/gi, "strftime('%Y', $1)")
+}
+
+function buildTemplateQuery(
+  strings: TemplateStringsArray,
+  values: unknown[],
+): { sql: string; args: InValue[] } {
+  let sql = ""
+  const args: InValue[] = []
+
+  for (let i = 0; i < strings.length; i++) {
+    sql += strings[i]
+
+    if (i >= values.length) continue
+
+    const value = values[i]
+
+    // Legacy `= ANY($n)` → SQLite `IN (?, ?, ?)`
+    if (Array.isArray(value) && sql.endsWith("= ANY(")) {
+      sql = sql.slice(0, -6) + `IN (${value.map(() => "?").join(", ")})`
+      args.push(...(value as InValue[]))
+      continue
+    }
+
+    sql += "?"
+    args.push(value as InValue)
+  }
+
+  return { sql: normalizeSql(sql), args }
+}
+
+async function executeQuery(query: string, args: unknown[] = []): Promise<SqlRow[]> {
+  const client = getClient()
+  const result = await client.execute({
+    sql: normalizeSql(query),
+    args: args as InValue[],
+  })
+  return result.rows as SqlRow[]
+}
+
+async function sqlTag(strings: TemplateStringsArray, ...values: unknown[]): Promise<SqlRow[]> {
+  const { sql, args } = buildTemplateQuery(strings, values)
+  const client = getClient()
+  const result = await client.execute({ sql, args })
+  return result.rows as SqlRow[]
+}
+
+const sqlFn = sqlTag as SqlClient
+sqlFn.query = executeQuery
+
+export const sql = new Proxy(function () {} as unknown as SqlClient, {
   apply(_target, _thisArg, args: unknown[]) {
-    // @ts-expect-error - tagged-template invocation
-    return getClient()(...args)
+    const strings = args[0] as TemplateStringsArray
+    const values = args.slice(1)
+    return sqlTag(strings, ...values)
   },
   get(_target, prop: string | symbol) {
+    if (prop === "query") return executeQuery
     const client = getClient() as unknown as Record<string | symbol, unknown>
     const value = client[prop]
-    return typeof value === "function" ? (value as (...args: unknown[]) => unknown).bind(client) : value
+    return typeof value === "function"
+      ? (value as (...fnArgs: unknown[]) => unknown).bind(client)
+      : value
   },
-}) as NeonClient
+}) as SqlClient

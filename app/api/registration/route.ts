@@ -1,4 +1,3 @@
-import { neon } from "@neondatabase/serverless"
 import { NextResponse } from "next/server"
 import { generateRegistrationConfirmationEmail, generateAdminNotificationEmail } from "@/lib/email-templates"
 import { resend } from "@/lib/resend"
@@ -10,12 +9,11 @@ export async function POST(request: Request) {
     { status: 403 }
   )
 
-  // Original registration logic (disabled)
+  // Original registration logic (disabled) — uses `sql` from `@/lib/db` when re-enabled
   /*
   try {
     const data = await request.json()
-    const sql = neon(process.env.NEON_DATABASE_URL!)
-
+    const { sql } = await import("@/lib/db")
     const [registration] = await sql`
       INSERT INTO registrations (
         family_last_name, email, husband_phone, wife_phone, address, city, state, zip,

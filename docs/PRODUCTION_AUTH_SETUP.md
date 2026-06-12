@@ -15,8 +15,9 @@ The Rendezvous admin dashboard uses production-grade authentication with:
 Add these to your Vercel project or `.env.local`:
 
 ```bash
-# Database connection (already configured)
-DATABASE_URL=your_neon_database_url
+# Database (Turso — configured via Vercel integration or manually)
+TURSO_DATABASE_URL=libsql://your-db.turso.io
+TURSO_AUTH_TOKEN=your_turso_token
 
 # JWT Secret (REQUIRED - generate a strong random string)
 JWT_SECRET=your-super-secret-jwt-key-change-this-in-production

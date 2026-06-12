@@ -1,11 +1,7 @@
 import { sql } from "@/lib/db"
 import { NextResponse } from "next/server"
 
-// Use the shared `lib/db` client so the route works regardless of whether
-// the env var is named `NEON_DATABASE_URL` or `DATABASE_URL` — when the
-// Neon integration is added via Vercel Marketplace, only `DATABASE_URL` /
-// `POSTGRES_URL` are set, which previously made this route 500 silently
-// and caused the LU "Next Meal" panel to show no menu data.
+// Uses shared Turso client from `lib/db`.
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)

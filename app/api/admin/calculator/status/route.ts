@@ -53,8 +53,8 @@ export async function POST(request: Request) {
     
     await sql`
       INSERT INTO app_settings (key, value, updated_at)
-      VALUES ('public_calculator_enabled', ${enabled ? "true" : "false"}, NOW())
-      ON CONFLICT (key) DO UPDATE SET value = ${enabled ? "true" : "false"}, updated_at = NOW()
+      VALUES ('public_calculator_enabled', ${enabled ? "true" : "false"}, CURRENT_TIMESTAMP)
+      ON CONFLICT (key) DO UPDATE SET value = ${enabled ? "true" : "false"}, updated_at = CURRENT_TIMESTAMP
     `
 
     return NextResponse.json({ success: true, enabled })

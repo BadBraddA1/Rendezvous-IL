@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db"
 
 export const dynamic = "force-dynamic"
 export const revalidate = 0
@@ -24,7 +24,6 @@ function parse(value: unknown): Challenge {
 
 export async function GET() {
   try {
-    const sql = neon(process.env.NEON_DATABASE_URL!)
     const rows = await sql`SELECT value FROM app_settings WHERE key = 'ice_cream_challenge' LIMIT 1`
     const value = rows[0]?.value
     return NextResponse.json(parse(value))
@@ -36,7 +35,6 @@ export async function GET() {
 
 export async function PUT(req: Request) {
   try {
-    const sql = neon(process.env.NEON_DATABASE_URL!)
     const body = await req.json()
     const next: Challenge = {
       visible: !!body.visible,
@@ -46,8 +44,8 @@ export async function PUT(req: Request) {
 
     await sql`
       INSERT INTO app_settings (key, value, updated_at)
-      VALUES ('ice_cream_challenge', ${JSON.stringify(next)}::jsonb, NOW())
-      ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()
+      VALUES ('ice_cream_challenge', ${JSON.stringify(next)}, CURRENT_TIMESTAMP)
+      ON CONFLICT (key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP
     `
 
     return NextResponse.json(next)

@@ -1,156 +1,80 @@
 # Rendezvous IL Website
 
-A fast, mobile-first static site for the Rendezvous Christian Homeschool Family Retreat, built with Vue 3, Vite, and Mint UI.
+Production site for the Rendezvous Christian Homeschool Family Retreat — [rendezvousil.com](https://rendezvousil.com).
 
-## Features
+Handles public event pages, family registration (2027), admin dashboard (registrations, meals, check-in, messaging), and Clerk-based family accounts.
 
-- Mobile-first responsive design
-- Vue 3 with Composition API
-- Vite for fast development and builds
-- Mint UI component library for mobile UI
-- Vue Router with smooth scrolling and hash navigation
-- Accessible (WCAG AA compliant)
-- Light/dark mode support via `prefers-color-scheme`
-- Lightweight CSS (< 20KB unminified custom styles)
+## Tech stack
 
-## Tech Stack
+- **Next.js 16** (App Router) + React 19 + TypeScript
+- **Turso** (libSQL / SQLite) — all app data via `lib/db.ts` and `@libsql/client`
+- **Clerk** — authentication (families + admin roles)
+- **Resend** — email
+- **Vercel** — hosting (project: `v0-ren`)
 
-- **Vue 3** - Progressive JavaScript framework
-- **Vite** - Next generation frontend tooling
-- **Mint UI** - Mobile UI component library
-- **Vue Router** - Official router for Vue.js
+## Environment variables
 
-## Getting Started
+Required on Vercel (`v0-ren`):
 
-### Prerequisites
+| Variable | Purpose |
+|----------|---------|
+| `TURSO_DATABASE_URL` | Turso libsql URL |
+| `TURSO_AUTH_TOKEN` | Turso auth token |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk (client) |
+| `CLERK_SECRET_KEY` | Clerk (server) |
+| `JWT_SECRET`, `ADMIN_SECRET`, `ADMIN_SETUP_KEY` | Admin auth |
+| `RESEND_API_KEY` | Email |
 
-- Node.js 16+ and npm
+Full list and legacy cleanup notes: [docs/TURSO_SETUP.md](docs/TURSO_SETUP.md)
 
-### Installation
-
-1. Clone or download this repository
-
-2. Install dependencies:
-```bash
-npm install
-```
-
-### Development
-
-Start the development server:
+## Local development
 
 ```bash
-npm run dev
+git clone https://github.com/BadBraddA1/Rendezvous-IL.git
+cd Rendezvous-IL
+pnpm install
+vercel link --project v0-ren
+vercel env pull .env.local --environment=production
+pnpm dev
 ```
 
-The site will be available at `http://localhost:5173`
-
-### Build for Production
-
-Create an optimized production build:
+Verify database connectivity:
 
 ```bash
-npm run build
+pnpm db:verify
 ```
 
-The built files will be in the `dist` directory.
+## Database
 
-### Preview Production Build
+- Schema: `scripts/schema-turso.sql`
+- All queries: `import { sql } from "@/lib/db"`
+- Migrated from Neon Postgres to Turso (one-time script archived in `scripts/archive/`)
 
-Preview the production build locally:
+## Scripts
 
-```bash
-npm run preview
-```
+| Command | Description |
+|---------|-------------|
+| `pnpm dev` | Next.js dev server |
+| `pnpm build` | Production build |
+| `pnpm db:verify` | List Turso tables and row counts |
 
-## Project Structure
+## Project structure
 
 ```
 rendezvous-il/
-├── index.html              # Entry HTML file
-├── vite.config.js          # Vite configuration
-├── package.json            # Dependencies and scripts
-├── src/
-│   ├── main.js            # Vue app bootstrap
-│   ├── router.js          # Vue Router configuration
-│   ├── App.vue            # Root component
-│   ├── styles/
-│   │   ├── base.css       # Base styles and CSS variables
-│   │   └── mint-overrides.css  # Mint UI theme overrides
-│   ├── views/
-│   │   ├── HomeView.vue       # Home page
-│   │   ├── ScheduleView.vue   # Schedule page
-│   │   └── AboutView.vue      # About page
-│   └── components/
-│       ├── DaySection.vue     # Collapsible day section
-│       ├── StickySubnav.vue   # Day navigation
-│       └── FactCard.vue       # Quick facts card
-└── README.md
+├── app/              # Next.js routes (pages + API)
+├── components/       # React UI
+├── lib/db.ts         # Turso database client
+├── scripts/          # Schema, verify, archived migration
+├── docs/             # Setup guides
+└── src/              # Legacy Vue static site (not deployed)
 ```
-
-## Pages
-
-- **Home** (`/`) - Event overview, quick facts, and call-to-action
-- **Schedule** (`/schedule`) - Complete 5-day event schedule with collapsible sections
-- **About** (`/about`) - Introduction and history of Rendezvous
-
-## Customization
-
-### Colors
-
-Edit CSS variables in `src/styles/base.css`:
-
-```css
-:root {
-  --color-primary: #4a7c59;
-  --color-secondary: #8b6f47;
-  --color-accent: #c9a961;
-  /* ... */
-}
-```
-
-### Typography
-
-The site uses the system font stack for optimal performance. To change fonts, edit the `--font-family` variable in `base.css`.
-
-### Mint UI Overrides
-
-Customize Mint UI components in `src/styles/mint-overrides.css` while maintaining WCAG AA compliance.
-
-## Accessibility
-
-- Semantic HTML elements
-- ARIA labels and roles
-- Keyboard navigation support
-- High contrast focus states
-- WCAG AA color contrast ratios
-- Screen reader friendly
-- Respects `prefers-reduced-motion`
-
-## Performance
-
-- Minimal JavaScript bundle
-- System fonts (no webfont downloads)
-- Lazy loading where applicable
-- Optimized images with width/height attributes
-- CSS code splitting
-
-## Browser Support
-
-- Modern browsers (Chrome, Firefox, Safari, Edge)
-- Mobile browsers (iOS Safari, Chrome Mobile)
-
-## License
-
-© 2025 Rendezvous Illinois. All rights reserved.
 
 ## Contact
 
 Stephen & Ranae Bradd  
-824 W. Main St.  
-Clinton, IL 61727  
-(217)935-5058  
-Stephen@Bradd.us
+824 W. Main St., Clinton, IL 61727  
+(217) 935-5058 · Stephen@Bradd.us
 
-Website: www.RendezvousIL.com  
-Facebook: www.facebook.com/groups/RendezvousIL
+Website: [rendezvousil.com](https://rendezvousil.com)  
+Facebook: [facebook.com/groups/RendezvousIL](https://www.facebook.com/groups/RendezvousIL)
