@@ -23,8 +23,9 @@ const scheduleDays = [
 ] as const
 
 const sectionClass =
-  "scroll-mt-[calc(5rem+env(safe-area-inset-top,0px))] rounded-xl border border-primary/15 bg-card p-4 md:p-6"
-const eventClass = "rounded-lg border border-border/60 bg-surface-tint/50 p-3 md:p-4"
+  "scroll-mt-[calc(5.5rem+env(safe-area-inset-top,0px)+1rem)] rounded-xl border border-primary/15 bg-card p-4 md:p-6"
+const eventClass =
+  "min-w-0 rounded-lg border border-border/60 bg-surface-tint/50 p-3 break-words md:p-4"
 
 export default function SchedulePage() {
   const [activeDay, setActiveDay] = useState<string>("")
@@ -62,13 +63,14 @@ export default function SchedulePage() {
 
       <main
         id="main-content"
-        className="site-container section-sm pb-16 pt-[calc(5.5rem+env(safe-area-inset-top,0px))] md:pb-20"
+        className="site-container pb-16 pt-[calc(5.5rem+env(safe-area-inset-top,0px)+1.25rem)] md:pb-20 md:pt-[calc(5.5rem+env(safe-area-inset-top,0px))]"
       >
-        <header className="mb-8 text-center md:mb-12">
-          <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-warning/30 bg-surface-warm px-4 py-2 text-sm font-medium text-warning">
-            Based on the 2026 schedule — may change slightly for 2027
-          </p>
+        <header className="mb-6 text-center md:mb-12">
           <h1 className="text-page-title mb-3 text-balance md:mb-4">Rendezvous 2027 schedule</h1>
+          <p className="schedule-draft-notice" role="note">
+            <span aria-hidden="true">⚠</span>
+            <span>Based on the 2026 schedule — may change slightly for 2027</span>
+          </p>
           <p className="text-lead text-muted-foreground">May 3–7, 2027</p>
           <p className="mt-1 text-balance text-sm text-muted-foreground md:text-base">
             Lake Williamson Christian Center, Carlinville, IL
@@ -127,7 +129,7 @@ export default function SchedulePage() {
           <aside className="shrink-0 lg:sticky lg:top-[calc(5.5rem+env(safe-area-inset-top,0px))] lg:w-64">
             <nav
               aria-label="Jump to day"
-              className="grid grid-cols-2 justify-items-stretch gap-2 rounded-xl border border-primary/15 bg-card p-3 md:grid-cols-5 lg:flex lg:flex-col lg:gap-2 lg:p-4"
+              className="schedule-day-nav grid grid-cols-2 justify-items-stretch gap-2 rounded-xl border border-primary/15 bg-card p-3 sm:grid-cols-5 lg:flex lg:flex-col lg:gap-2 lg:p-4"
             >
               {scheduleDays.map((day) => {
                 const isActive = activeDay === day.id

@@ -52,17 +52,21 @@ export function useRegistrationOpenCountdown() {
   return { timeLeft, mounted, registrationOpen }
 }
 
-export function RegistrationTimeBlock({ value, label }: { value: number; label: string }) {
+export function RegistrationTimeBlock({ value, label, padDays = false }: { value: number; label: string; padDays?: boolean }) {
   return (
     <div className="flex flex-col items-center">
       <div className="flex h-[4.5rem] w-full max-w-[4.5rem] items-center justify-center rounded-lg border border-primary/20 bg-card ring-1 ring-primary/5 sm:h-24 sm:max-w-[6rem] md:h-28 md:max-w-[7rem]">
-        <span className="font-mono text-2xl font-semibold tabular-nums text-foreground sm:text-4xl md:text-5xl">
-          {String(value).padStart(2, "0")}
+        <span className="registration-countdown-num tabular-nums">
+          {formatCountdownValue(value, padDays)}
         </span>
       </div>
-      <span className="mt-2 text-xs font-medium text-muted-foreground sm:mt-3 sm:text-sm">{label}</span>
+      <span className="registration-countdown-label mt-2 text-xs text-muted-foreground sm:mt-3 sm:text-sm">{label}</span>
     </div>
   )
+}
+
+function formatCountdownValue(value: number, padDays = false) {
+  return padDays ? String(value) : String(value).padStart(2, "0")
 }
 
 export function RegistrationCountdownGrid({
@@ -77,13 +81,8 @@ export function RegistrationCountdownGrid({
   const display = mounted ? timeLeft : { days: 0, hours: 0, minutes: 0, seconds: 0 }
 
   return (
-    <div
-      className={className}
-      aria-label="Time until registration opens"
-      role="timer"
-      aria-live="off"
-    >
-      <RegistrationTimeBlock value={display.days} label="Days" />
+    <div className={className} aria-label="Time until registration opens" role="timer" aria-live="off">
+      <RegistrationTimeBlock value={display.days} label="Days" padDays />
       <RegistrationTimeBlock value={display.hours} label="Hours" />
       <RegistrationTimeBlock value={display.minutes} label="Minutes" />
       <RegistrationTimeBlock value={display.seconds} label="Seconds" />

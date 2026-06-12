@@ -207,17 +207,25 @@
   .text-section-title {
     font-family: var(--font-display);
     font-size: var(--text-section);
-    font-weight: 700;
+    font-weight: var(--display-weight, 700);
     line-height: var(--leading-heading);
-    letter-spacing: -0.02em;
+    letter-spacing: var(--section-tracking, -0.02em);
   }
 
   .text-page-title {
     font-family: var(--font-display);
     font-size: var(--text-page);
-    font-weight: 700;
+    font-weight: var(--display-weight, 700);
     line-height: var(--leading-tight);
-    letter-spacing: -0.025em;
+    letter-spacing: var(--title-tracking, -0.025em);
+  }
+
+  .text-display-hero {
+    font-family: var(--font-display);
+    font-size: var(--text-display);
+    font-weight: var(--display-weight, 700);
+    line-height: var(--leading-tight);
+    letter-spacing: var(--title-tracking, -0.025em);
   }
 
   .text-lead {
@@ -367,6 +375,165 @@
   overflow-wrap: anywhere;
 }
 
+/* Hero year — coral-to-teal color wave through digits (live accept: speed 0.35, spread 0.3) */
+.hero-year--flow {
+  display: inline-flex;
+  justify-content: center;
+}
+
+.hero-year__digit {
+  display: inline-block;
+  color: var(--primary);
+  animation: hero-year-color-wave 2.91s var(--ease-out-quart) infinite;
+  animation-delay: calc(var(--digit-i, 0) * 0.17s);
+}
+
+@keyframes hero-year-color-wave {
+  0%,
+  18%,
+  100% {
+    color: var(--primary);
+    transform: translateY(0);
+  }
+  42%,
+  58% {
+    color: var(--brand-coral-ink);
+    transform: translateY(-3px);
+  }
+  72% {
+    color: var(--primary);
+    transform: translateY(0);
+  }
+}
+
+/* Registration countdown — Franklin sans numbers (live accept, scale 0.5) */
+.registration-countdown-num {
+  font-family: var(--font-sans);
+  font-size: clamp(1.5rem, 4vw, 3rem);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.025em;
+  color: var(--primary);
+}
+
+.registration-countdown-label {
+  font-family: var(--font-sans);
+  font-weight: 500;
+}
+
+/* Planning for 2027 — dates hero + fact chips (live accept variant 2) */
+.planning-2027-hero {
+  text-align: center;
+  padding: 1.625rem;
+  border-radius: var(--radius-xl);
+  background: var(--surface-highlight);
+  border: 1px solid color-mix(in oklch, var(--primary) 20%, transparent);
+  margin-bottom: 1.25rem;
+}
+
+.planning-2027-hero-value {
+  font-family: var(--font-display);
+  font-size: clamp(1.25rem, 2.5vw, 1.625rem);
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.planning-2027-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem 1rem;
+}
+
+.planning-2027-chip {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.65rem 1rem;
+  border-radius: var(--radius-md);
+  background: var(--card);
+  border: 1px solid var(--border);
+  min-width: 8rem;
+}
+
+/* Schedule draft notice — left-accent callout, clears fixed header (live accept variant 2) */
+.schedule-draft-notice {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 0 auto 1rem;
+  max-width: 36rem;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--warning);
+  background: color-mix(in oklch, var(--surface-warm) 85%, var(--card));
+  border-left: 3px solid var(--warning);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  box-shadow: 0 1px 2px color-mix(in oklch, var(--foreground) 6%, transparent);
+}
+
+@media (max-width: 639px) {
+  .schedule-draft-notice {
+    max-width: none;
+    text-align: left;
+  }
+}
+
+.schedule-day-nav {
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+}
+
+.schedule-day-nav::-webkit-scrollbar {
+  display: none;
+}
+
+/* About hero greeting — script kicker (live accept variant 2) */
+.about-hero-greeting {
+  margin: 0 0 0.75rem;
+  font-family: var(--font-script);
+  font-size: clamp(1.35rem, 1.1rem + 1vw, 1.75rem);
+  font-weight: 400;
+  line-height: 1.2;
+  color: var(--brand-coral-ink);
+}
+
+/* FAQ organizer videos — campfire layout (live accept variant 1, tilt 0.6) */
+.faq-videos-campfire {
+  padding: clamp(1.25rem, 1rem + 1vw, 2rem);
+  border-radius: var(--radius-xl);
+  background: color-mix(in oklch, var(--surface-warm) 55%, var(--surface-highlight));
+  border: 1px dashed color-mix(in oklch, var(--brand-coral) 35%, transparent);
+}
+
+.faq-videos-campfire-script {
+  font-family: var(--font-script);
+  font-size: clamp(1.45rem, 1.2rem + 1.2vw, 2rem);
+  color: var(--brand-coral-ink);
+  margin-bottom: 0.35rem;
+}
+
+.faq-videos-campfire-grid article:nth-child(odd) {
+  transform: rotate(-0.66deg);
+}
+
+.faq-videos-campfire-grid article:nth-child(even) {
+  transform: rotate(0.66deg);
+}
+
+.faq-videos-campfire-grid article {
+  transition: transform var(--duration-normal) var(--ease-out-quart);
+}
+
+.faq-videos-campfire-grid article:hover {
+  transform: rotate(0deg) translateY(-3px);
+}
+
 @keyframes hero-reveal-up {
   from {
     opacity: 0;
@@ -403,7 +570,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .hero-stagger,
-  .hero-live-ping {
+  .hero-live-ping,
+  .hero-year__digit {
     animation: none !important;
   }
 }

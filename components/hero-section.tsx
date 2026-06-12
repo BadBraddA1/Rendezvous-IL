@@ -60,10 +60,14 @@ export function HeroSection() {
         </div>
 
         <h1
-          className="hero-stagger hero-year font-display mb-2 text-balance font-bold leading-none tracking-[-0.03em] text-primary"
+          className="hero-stagger hero-year hero-year--flow font-display mb-2 text-balance font-bold leading-none tracking-[-0.03em]"
           style={{ "--i": 2 } as CSSProperties}
         >
-          2027
+          {["2", "0", "2", "7"].map((digit, index) => (
+            <span key={digit + index} className="hero-year__digit" style={{ "--digit-i": index } as CSSProperties}>
+              {digit}
+            </span>
+          ))}
         </h1>
 
         <div className="hero-stagger mb-6" style={{ "--i": 3 } as CSSProperties}>

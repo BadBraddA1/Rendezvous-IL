@@ -178,32 +178,24 @@ export default function HomePage() {
               <h2 className="text-section-title text-balance">What to expect</h2>
             </header>
 
-            <div className="mx-auto grid max-w-6xl gap-5 lg:grid-cols-12 lg:gap-6">
-              <ExpectPanel icon={Trophy} title="Bible Bowl" featured className="lg:col-span-7 lg:p-8">
-                <p>
-                  Everyone is encouraged to participate in the Bible Bowl on Thursday morning (children and adults). This
-                  is a great study opportunity for families.
-                </p>
-                <a
-                  href="https://pewpackers.com/"
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  className="mt-4 inline-flex items-center gap-2 font-medium text-primary transition-colors hover:underline"
-                >
-                  Learn about Bible Bowl
-                  <ExternalLink className="h-4 w-4" />
-                </a>
-              </ExpectPanel>
-
-              <div className="flex flex-col gap-5 lg:col-span-5 lg:gap-6">
-                <ExpectPanel icon={Users} title="Lodging options" className="flex-1">
+            <div className="mx-auto flex max-w-6xl flex-col gap-5 lg:flex-row lg:items-stretch lg:gap-8">
+              <div className="flex flex-col gap-5 lg:w-[38%] lg:shrink-0">
+                <ExpectPanel icon={Trophy} title="Bible Bowl" featured className="flex-1 lg:p-7">
                   <p>
-                    Motel rooms (sleeps up to 6), RV sites, or tent camping. Motel rooms include linens and private
-                    bathrooms.
+                    Everyone is encouraged to participate in the Bible Bowl on Thursday morning (children and adults).
+                    This is a great study opportunity for families.
                   </p>
+                  <a
+                    href="https://pewpackers.com/"
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className="mt-4 inline-flex items-center gap-2 font-medium text-primary transition-colors hover:underline"
+                  >
+                    Learn about Bible Bowl
+                    <ExternalLink className="h-4 w-4" />
+                  </a>
                 </ExpectPanel>
-
-                <ExpectPanel icon={Wifi} title="Event WiFi" className="p-5">
+                <ExpectPanel icon={Wifi} title="Event WiFi">
                   <dl className="space-y-1 font-mono text-sm tabular-nums">
                     <div className="flex flex-wrap gap-x-2">
                       <dt className="font-medium text-foreground">Network:</dt>
@@ -216,15 +208,20 @@ export default function HomePage() {
                   </dl>
                 </ExpectPanel>
               </div>
-
-              <div className="grid gap-5 sm:grid-cols-2 lg:col-span-12 lg:gap-6">
+              <div className="grid flex-1 gap-5 sm:grid-cols-2">
+                <ExpectPanel icon={Users} title="Lodging options">
+                  <p>
+                    Motel rooms (sleeps up to 6), RV sites, or tent camping. Motel rooms include linens and private
+                    bathrooms.
+                  </p>
+                </ExpectPanel>
                 <ExpectPanel icon={Sparkles} title="Recreation activities">
                   <p>
                     Archery, swimming, black-light dodgeball, nine square, basketball, volleyball, ping pong, mini golf,
                     canoeing, tournaments, and more.
                   </p>
                 </ExpectPanel>
-                <ExpectPanel icon={Calendar} title="Buffet dining">
+                <ExpectPanel icon={Calendar} title="Buffet dining" className="sm:col-span-2">
                   <p>
                     11 buffet meals plus a cookout by the lake. LWCC handles cooking and cleanup. Gluten-free foods are
                     labeled.
@@ -242,20 +239,19 @@ export default function HomePage() {
                 <h2 className="text-section-title mb-4 text-balance">Planning for 2027</h2>
                 <p className="text-lead text-muted-foreground">What we&apos;re preparing for the next Rendezvous</p>
               </header>
-
-              <ol className="divide-y divide-primary/10 overflow-hidden rounded-xl border border-primary/15 bg-card">
-                {planning2027.map((item, index) => (
-                  <li
-                    key={item.label}
-                    className={`flex flex-col gap-1 px-5 py-4 sm:flex-row sm:items-baseline sm:justify-between sm:gap-8 sm:px-6 sm:py-5 ${
-                      index % 2 === 0 ? "bg-surface-tint/50" : "bg-card"
-                    }`}
-                  >
-                    <h3 className="shrink-0 font-medium text-foreground sm:w-44">{item.label}</h3>
-                    <p className="text-muted-foreground">{item.value}</p>
-                  </li>
+              <div className="planning-2027-hero">
+                <p className="text-sm font-medium text-muted-foreground">Retreat dates</p>
+                <p className="planning-2027-hero-value mt-1">May 3–7, 2027</p>
+                <p className="mt-1 text-sm text-muted-foreground">Monday – Friday · Lake Williamson</p>
+              </div>
+              <div className="planning-2027-row">
+                {planning2027.slice(1).map((item) => (
+                  <div key={item.label} className="planning-2027-chip">
+                    <span className="text-xs font-medium text-muted-foreground">{item.label}</span>
+                    <span className="mt-1 text-sm font-semibold text-foreground">{item.value}</span>
+                  </div>
                 ))}
-              </ol>
+              </div>
             </div>
           </div>
         </section>

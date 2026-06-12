@@ -5,7 +5,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { ExternalLink, Play, Video } from "lucide-react"
+import { ExternalLink, Play } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 
@@ -220,16 +220,13 @@ export default function FAQPage() {
         </section>
 
         <section className="section-lg border-t border-primary/15 bg-surface-highlight">
-          <div className="site-container">
-            <header className="mb-10 md:mb-12">
-              <div className="flex items-center gap-3">
-                <Video className="h-6 w-6 shrink-0 text-primary" aria-hidden="true" />
-                <h2 className="text-section-title text-balance">Hear from our retreat organizers</h2>
-              </div>
-              <p className="mt-2 text-muted-foreground">Tap a video to play</p>
+          <div className="faq-videos-campfire site-container">
+            <header className="mb-8 md:mb-10">
+              <p className="faq-videos-campfire-script">Around the campfire</p>
+              <h2 className="text-section-title text-balance">Stephen &amp; Ranae tell the Rendezvous story</h2>
+              <p className="mt-2 text-muted-foreground">Six short clips—grab one and listen in</p>
             </header>
-
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="faq-videos-campfire-grid grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {faqVideos.map((video) => (
                 <VideoCard
                   key={video.id}
