@@ -104,7 +104,7 @@ export default async function PendingChangesPage() {
   return (
     <div className="flex min-h-screen flex-col">
       <AdminNav currentPage="pending-changes" admin={admin} />
-      <main className="flex-1 container py-6">
+      <main id="main-content" className="flex-1 container py-6">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Pending Changes</h1>

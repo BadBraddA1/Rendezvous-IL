@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { mapLocations as defaultLocations, type MapLocation } from "@/lib/venue-map-data"
+import { MainContent } from "@/components/main-content"
 
 type EditorMode = "select" | "add" | "path"
 
@@ -295,7 +296,7 @@ export default function MapEditorPage() {
   }
 
   return (
-    <div className="flex h-screen bg-background">
+    <MainContent className="flex h-screen bg-background">
       {/* Sidebar */}
       <div className="w-80 border-r bg-card flex flex-col">
         <div className="p-4 border-b">
@@ -745,6 +746,6 @@ export default function MapEditorPage() {
           )}
         </div>
       </div>
-    </div>
+    </MainContent>
   )
 }

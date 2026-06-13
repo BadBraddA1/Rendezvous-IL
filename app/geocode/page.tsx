@@ -207,7 +207,7 @@ export default function GeocodeAdminPage() {
     <div className="flex min-h-screen flex-col bg-background">
       <SiteHeader />
 
-      <main className="flex-1">
+      <main id="main-content" className="flex-1">
         {/* Header */}
         <section className="bg-secondary py-12">
           <div className="container">

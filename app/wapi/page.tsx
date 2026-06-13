@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { RefreshCw } from "lucide-react"
+import { MainContent } from "@/components/main-content"
 
 export default function WeatherApiTestPage() {
   const [response, setResponse] = useState<string>("")
@@ -28,7 +29,7 @@ export default function WeatherApiTestPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-8">
+    <MainContent className="min-h-screen bg-background p-8">
       <div className="max-w-4xl mx-auto space-y-6">
         <h1 className="text-3xl font-bold">Weather API Test</h1>
         
@@ -80,6 +81,6 @@ export default function WeatherApiTestPage() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </MainContent>
   )
 }

@@ -16,7 +16,7 @@ export default async function CheckinPage() {
   return (
     <div className="flex min-h-screen flex-col">
       <AdminNav currentPage="checkin" admin={admin} />
-      <main className="flex-1 bg-background p-6">
+      <main id="main-content" className="flex-1 bg-background p-6">
         <div className="container mx-auto max-w-5xl space-y-6">
           <div>
             <h2 className="text-3xl font-bold tracking-tight">Check-In Station</h2>

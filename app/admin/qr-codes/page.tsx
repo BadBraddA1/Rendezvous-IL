@@ -18,7 +18,7 @@ export default async function QrCodesPage() {
       <div className="print:hidden">
         <AdminNav currentPage="qr-codes" admin={admin} />
       </div>
-      <main className="flex-1 bg-background p-6 print:p-0">
+      <main id="main-content" className="flex-1 bg-background p-6 print:p-0">
         <div className="container mx-auto space-y-6 print:max-w-none">
           <div className="print:hidden">
             <h2 className="text-3xl font-bold tracking-tight">Family QR Codes</h2>

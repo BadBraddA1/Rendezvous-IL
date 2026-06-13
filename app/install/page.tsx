@@ -2,6 +2,7 @@
 
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
+import { MainContent } from "@/components/main-content"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Apple, Smartphone, Share, MoreVertical, Plus, Download, CheckCircle2, Bell } from "lucide-react"
 
@@ -180,7 +181,7 @@ export default function InstallPage() {
     <div className="min-h-screen bg-background">
       <SiteHeader />
 
-      <main>
+      <MainContent>
         <section className="border-b bg-secondary pt-24 pb-16 md:pt-28 md:pb-20">
           <div className="container mx-auto px-6">
             <div className="mx-auto max-w-4xl text-center">
@@ -242,7 +243,7 @@ export default function InstallPage() {
             </div>
           </div>
         </section>
-      </main>
+      </MainContent>
 
       <SiteFooter />
     </div>

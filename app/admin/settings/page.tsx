@@ -89,7 +89,7 @@ export default async function SettingsPage() {
     return (
       <div className="min-h-screen bg-muted/30">
         <AdminNav currentPage="settings" admin={admin} />
-        <main className="container py-8">
+        <main id="main-content" className="container py-8">
           <Card>
             <CardHeader className="text-center">
               <ShieldAlert className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -108,7 +108,7 @@ export default async function SettingsPage() {
     <div className="flex min-h-screen flex-col">
       <AdminNav currentPage="settings" admin={admin} />
 
-      <main className="flex-1 bg-background p-6">
+      <main id="main-content" className="flex-1 bg-background p-6">
         <div className="container mx-auto space-y-6">
           <div>
             <h2 className="text-2xl font-bold tracking-tight">System Settings</h2>

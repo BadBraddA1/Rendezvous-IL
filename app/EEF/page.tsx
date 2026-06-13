@@ -254,7 +254,7 @@ export default function EndOfEventFeedbackPage() {
     return (
       <div className="min-h-screen bg-background">
         <SiteHeader />
-        <main className="container mx-auto px-4 py-12 md:py-20">
+        <main id="main-content" className="container mx-auto px-4 py-12 md:py-20">
           <Card className="mx-auto max-w-2xl border-2 border-primary/20">
             <CardContent className="flex flex-col items-center justify-center py-16 text-center">
               <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
@@ -280,7 +280,7 @@ export default function EndOfEventFeedbackPage() {
     <div className="min-h-screen bg-background">
       <SiteHeader />
 
-      <main className="container mx-auto px-4 py-8 md:py-12">
+      <main id="main-content" className="container mx-auto px-4 py-8 md:py-12">
         <div className="mb-8 text-center">
           <h1 className="mb-3 text-balance text-3xl font-bold tracking-tight md:text-4xl">
             Rendezvous 2027 Feedback

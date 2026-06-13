@@ -135,6 +135,17 @@ function getLocationIdForEvent(item: ScheduleItem | null): string | null {
   return "activities-center"
 }
 
+function LuNowDot({ size = "sm" }: { size?: "sm" | "md" | "lg" }) {
+  const sizeClass =
+    size === "lg" ? "h-5 w-5" : size === "md" ? "h-3 w-3" : "h-2.5 w-2.5"
+  return (
+    <span
+      className={`inline-flex shrink-0 rounded-full lu-bg-now ${sizeClass}`}
+      aria-hidden="true"
+    />
+  )
+}
+
 function getEventIcon(
   title: string, 
   isMeal?: boolean, 
@@ -873,7 +884,7 @@ export default function LiveUpdatesPage() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 p-12 flex items-center justify-center overflow-hidden">
+      <main id="main-content" className="flex-1 p-12 flex items-center justify-center overflow-hidden">
         <ViewTransition viewKey={currentView} className="w-full h-full flex items-center justify-center">
           {currentView === "all" && (
             <AllView 
@@ -1061,17 +1072,12 @@ function ScheduleCard({
               >
                 <div className="flex items-start gap-3">
                   <div className="flex items-center gap-2 shrink-0 pt-0.5">
-                    {isNow && (
-                      <span className="relative flex h-2.5 w-2.5">
-                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full lu-bg-now opacity-75" />
-                        <span className="relative inline-flex h-2.5 w-2.5 rounded-full lu-bg-now" />
-                      </span>
-                    )}
+                    {isNow && <LuNowDot />}
                     {getEventIcon(item.title, item.isMeal, "xs")}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-base leading-tight truncate">{item.title}</p>
-                    <p className={`text-sm mt-0.5 ${isNow ? "lu-text-now font-bold uppercase tracking-wider" : "text-white/50"}`}>
+                    <p className={`text-sm mt-0.5 ${isNow ? "lu-text-now font-semibold uppercase tracking-wider" : "text-white/50"}`}>
                       {isNow ? "Now" : `${item.day} ${item.time}`}
                     </p>
                   </div>
@@ -1154,10 +1160,7 @@ function AllView({
                 <div className="flex items-center gap-3 mb-4">
                   {featuredIsNow ? (
                     <>
-                      <span className="relative flex h-3 w-3">
-                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full lu-bg-now opacity-75" />
-                        <span className="relative inline-flex h-3 w-3 rounded-full lu-bg-now" />
-                      </span>
+                      <LuNowDot size="md" />
                       <span className="lu-kicker lu-text-now">Happening now</span>
                     </>
                   ) : (
@@ -1205,7 +1208,7 @@ function AllView({
       <div className={`grid grid-cols-1 gap-6 flex-1 min-h-0 ${hasVolunteers ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
         {/* Weather Card */}
         <div className="group relative overflow-hidden lu-panel p-7">
-<div className="relative">
+          <div className="relative">
             <div className="flex items-center gap-3 mb-6">
               <div className="rounded-xl lu-pin-lake-surface p-2.5 border lu-pin-lake-border">
                 <Droplets className="h-5 w-5 lu-text-schedule" />
@@ -1248,12 +1251,12 @@ function AllView({
 
         {/* Next Meal Card */}
         <div className="group relative overflow-hidden lu-panel p-7">
-<div className="relative">
+          <div className="relative">
             <div className="flex items-center gap-3 mb-6">
               <div className="rounded-xl lu-priority-normal-surface p-2.5 border lu-pin-warm-border">
                 <UtensilsCrossed className="h-5 w-5 lu-text-meal" />
               </div>
-              <span className="text-sm uppercase tracking-[0.2em] font-bold lu-text-meal opacity-90">Next Meal</span>
+              <span className="text-sm uppercase tracking-[0.12em] font-semibold lu-text-meal opacity-90">Next Meal</span>
             </div>
             {nextMeal ? (
               <div className="flex flex-col items-center justify-center text-center pt-2">
@@ -1284,7 +1287,7 @@ function AllView({
         {/* Volunteer Schedule Card */}
         {hasVolunteers && (
           <div className="group relative overflow-hidden lu-panel p-7">
-<div className="relative">
+            <div className="relative">
               <div className="flex items-center gap-3 mb-6">
                 <div className="rounded-xl lu-pin-coral-surface p-2.5 border lu-pin-coral-border">
                   <Users className="h-5 w-5 lu-pin-coral-text" />
@@ -1321,11 +1324,8 @@ function AllView({
 function WifiView() {
   return (
     <div className="relative w-full h-full flex items-center justify-center">
-      {/* Ambient cyan glow orbs */}
-
-
       <div className="relative w-full max-w-5xl lu-panel p-12 text-center">
-<div className="relative flex flex-col items-center">
+        <div className="relative flex flex-col items-center">
           <div className="mb-8 rounded-3xl lu-pin-lake-surface border lu-pin-lake-border p-6">
             <Wifi className="h-20 w-20 lu-text-schedule" />
           </div>
@@ -1389,11 +1389,8 @@ function UpcomingView({
 
   return (
     <div className="relative w-full h-full flex items-center justify-center select-none">
-      {/* Ambient indigo glow orbs */}
-
-
       <div className="relative w-full max-w-6xl lu-panel p-10">
-<div className="relative">
+        <div className="relative">
           {/* Header */}
           <div className="flex items-center justify-center gap-4 mb-8">
             <div className="rounded-2xl lu-pin-lake-surface p-4 border lu-pin-lake-border">
@@ -1428,11 +1425,8 @@ function UpcomingView({
                     <div className="flex items-center gap-4 mb-2">
                       {isNow && (
                         <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full lu-surface-now border lu-border-now">
-                          <span className="relative flex h-3 w-3">
-                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full lu-bg-now opacity-75" />
-                            <span className="relative inline-flex h-3 w-3 rounded-full lu-bg-now" />
-                          </span>
-                          <span className="text-lg font-bold uppercase tracking-wider lu-text-now">Now</span>
+                          <LuNowDot size="md" />
+                          <span className="text-lg font-semibold uppercase tracking-wider lu-text-now">Now</span>
                         </span>
                       )}
                     </div>
@@ -1535,11 +1529,8 @@ function ScheduleView({
             <div className="flex items-center justify-center gap-4 mb-10">
               {showNow ? (
                 <>
-                  <span className="relative flex h-5 w-5">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full lu-bg-now opacity-75" />
-                    <span className="relative inline-flex h-5 w-5 rounded-full lu-bg-now" />
-                  </span>
-                  <span className="text-3xl font-bold uppercase tracking-[0.12em] lu-text-now">Happening Now</span>
+                  <LuNowDot size="lg" />
+                  <span className="text-3xl font-semibold uppercase tracking-[0.12em] lu-text-now">Happening Now</span>
                 </>
               ) : (
                 <>
@@ -1743,16 +1734,13 @@ function MapView({
       {/* Left side - Event info card */}
       <div className="w-[26rem] shrink-0 flex flex-col">
         <div className={`flex-1 relative overflow-hidden lu-panel p-7 flex flex-col justify-center`}>
-<div className="relative">
+          <div className="relative">
             {featuredItem ? (
               <>
                 <div className="flex items-center gap-3 mb-5">
                   {isHappeningNow ? (
                     <>
-                      <span className="relative flex h-3 w-3">
-                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full lu-bg-now opacity-75" />
-                        <span className="relative inline-flex h-3 w-3 rounded-full lu-bg-now" />
-                      </span>
+                      <LuNowDot size="md" />
                       <span className="lu-kicker lu-text-now">Happening now</span>
                     </>
                   ) : (
@@ -2054,7 +2042,7 @@ function AnnouncementsView({ announcements }: { announcements: Announcement[] })
         <div className="relative w-full max-w-7xl flex flex-col items-center">
           {/* Header panel */}
           <div className="relative w-full overflow-hidden lu-panel p-7 mb-5 text-center">
-<div className="relative flex items-center justify-center gap-4">
+            <div className="relative flex items-center justify-center gap-4">
               <div className="rounded-xl lu-announce-header p-3 border">
                 <Megaphone className="h-7 w-7 lu-text-meal" />
               </div>

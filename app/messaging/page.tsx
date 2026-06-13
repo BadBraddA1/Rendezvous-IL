@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Lock, ShieldX } from "lucide-react"
 import Link from "next/link"
+import { MainContent } from "@/components/main-content"
 
 interface Announcement {
   id: number
@@ -29,7 +30,7 @@ export default async function MessagingPage() {
   // Check if user is authenticated
   if (!userId) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+      <MainContent className="min-h-screen bg-background flex items-center justify-center p-6">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
@@ -46,7 +47,7 @@ export default async function MessagingPage() {
             </Link>
           </CardContent>
         </Card>
-      </div>
+      </MainContent>
     )
   }
 
@@ -57,7 +58,7 @@ export default async function MessagingPage() {
 
   if (!role || !["admin", "editor"].includes(role)) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+      <MainContent className="min-h-screen bg-background flex items-center justify-center p-6">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-destructive/10">
@@ -77,7 +78,7 @@ export default async function MessagingPage() {
             </Link>
           </CardContent>
         </Card>
-      </div>
+      </MainContent>
     )
   }
 
@@ -100,7 +101,7 @@ export default async function MessagingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-6">
+    <MainContent className="min-h-screen bg-background p-6">
       <div className="container mx-auto space-y-6">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Messaging & Announcements</h2>
@@ -109,6 +110,6 @@ export default async function MessagingPage() {
 
         <MessagingForm initialAnnouncements={announcements} />
       </div>
-    </div>
+    </MainContent>
   )
 }

@@ -213,7 +213,7 @@ export default async function AdminDashboard() {
     <div className="flex min-h-screen flex-col">
       <AdminNav currentPage="dashboard" admin={admin} />
 
-      <main className="flex-1 bg-background p-6">
+      <main id="main-content" className="flex-1 bg-background p-6">
         <div className="container mx-auto space-y-6">
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

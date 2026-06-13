@@ -1,8 +1,9 @@
 import Image from "next/image"
+import { MainContent } from "@/components/main-content"
 
 export default function EODPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20 flex flex-col items-center justify-center p-8">
+    <MainContent className="min-h-screen bg-gradient-to-b from-background to-secondary/20 flex flex-col items-center justify-center p-8">
       {/* Logo */}
       <div className="mb-12">
         <Image
@@ -44,6 +45,6 @@ export default function EODPage() {
           rendezvousil.com
         </p>
       </div>
-    </div>
+    </MainContent>
   )
 }

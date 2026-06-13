@@ -89,7 +89,7 @@ export default async function RegistrationsPage() {
     <div className="flex min-h-screen flex-col">
       <AdminNav currentPage="registrations" admin={admin} />
 
-      <main className="flex-1 bg-background p-6">
+      <main id="main-content" className="flex-1 bg-background p-6">
         <div className="container mx-auto space-y-6">
           <div>
             <h2 className="text-2xl font-bold tracking-tight">Registration Management</h2>

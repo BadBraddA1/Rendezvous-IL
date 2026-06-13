@@ -89,7 +89,7 @@ export default async function AdminCalculatorPage() {
     return (
       <div className="min-h-screen bg-muted/30">
         <AdminNav currentPage="calculator" admin={admin} />
-        <main className="container py-8">
+        <main id="main-content" className="container py-8">
           <Card>
             <CardHeader className="text-center">
               <ShieldAlert className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -107,7 +107,7 @@ export default async function AdminCalculatorPage() {
   return (
     <div className="min-h-screen bg-muted/30">
       <AdminNav currentPage="calculator" admin={admin} />
-      <main className="container py-8">
+      <main id="main-content" className="container py-8">
         <AdminCalculatorClient />
       </main>
     </div>

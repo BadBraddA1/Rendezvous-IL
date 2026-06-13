@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Shield, AlertCircle } from "lucide-react"
 import Link from "next/link"
+import { MainContent } from "@/components/main-content"
 
 export const metadata = {
   title: "Admin Login - Rendezvous IL",
@@ -22,15 +23,15 @@ export default async function AdminLoginPage({
   // If user is signed in, check if they're an admin
   if (userId) {
     const role = await getAdminRole()
-    
+
     if (role) {
       // User is an admin, redirect to dashboard
       redirect("/admin")
     }
-    
+
     // User is signed in but not an admin
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background p-4">
+      <MainContent className="flex min-h-screen items-center justify-center bg-background p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="space-y-1 text-center">
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
@@ -55,13 +56,13 @@ export default async function AdminLoginPage({
             </div>
           </CardContent>
         </Card>
-      </div>
+      </MainContent>
     )
   }
 
   // User is not signed in
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
+    <MainContent className="flex min-h-screen items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
@@ -88,6 +89,6 @@ export default async function AdminLoginPage({
           </p>
         </CardContent>
       </Card>
-    </div>
+    </MainContent>
   )
 }

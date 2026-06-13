@@ -1,9 +1,10 @@
 import { Download } from "lucide-react"
 import { scheduleData } from "@/lib/schedule-data"
+import { MainContent } from "@/components/main-content"
 
 export default function PrintableSchedulePage() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <MainContent className="min-h-screen bg-background text-foreground">
       {/* Print button - hidden when printing */}
       <div className="fixed top-4 right-4 z-50 print:hidden">
         <a
@@ -82,6 +83,6 @@ export default function PrintableSchedulePage() {
           <p className="mt-1">Visit rendezvousil.com for live updates and announcements</p>
         </footer>
       </div>
-    </div>
+    </MainContent>
   )
 }

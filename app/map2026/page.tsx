@@ -512,7 +512,7 @@ export default function Map2026Page() {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <SiteHeader />
-        <main className="flex-1 flex items-center justify-center p-6">
+        <main id="main-content" className="flex-1 flex items-center justify-center p-6">
           <Card className="w-full max-w-md">
             <CardHeader className="text-center">
               <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
@@ -535,7 +535,7 @@ export default function Map2026Page() {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <SiteHeader />
-        <main className="flex-1 flex items-center justify-center p-6">
+        <main id="main-content" className="flex-1 flex items-center justify-center p-6">
           <Card className="w-full max-w-md">
             <CardHeader className="text-center">
               <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
@@ -578,7 +578,7 @@ export default function Map2026Page() {
     <div className="min-h-screen bg-background">
       <SiteHeader />
 
-      <main>
+      <main id="main-content">
         {/* Hero Section */}
         <section className="border-b bg-secondary pt-24 pb-12 md:pt-28 md:pb-16">
           <div className="container mx-auto px-6">

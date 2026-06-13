@@ -5,6 +5,7 @@ import { Map } from "@/components/ui/map"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Loader2, MapPin } from "lucide-react"
 import Script from "next/script"
+import { MainContent } from "@/components/main-content"
 
 type MapData = {
   center: {
@@ -54,25 +55,25 @@ export default function AdminMapPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <MainContent className="flex min-h-screen items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           <p className="text-muted-foreground">Loading registration map...</p>
         </div>
-      </div>
+      </MainContent>
     )
   }
 
   if (error || !mapData) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <MainContent className="flex min-h-screen items-center justify-center">
         <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle>Error Loading Map</CardTitle>
             <CardDescription>{error || "Failed to load map data"}</CardDescription>
           </CardHeader>
         </Card>
-      </div>
+      </MainContent>
     )
   }
 
@@ -99,7 +100,7 @@ export default function AdminMapPage() {
         strategy="afterInteractive"
       />
 
-      <div className="container mx-auto space-y-6 p-6">
+      <MainContent className="container mx-auto space-y-6 p-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">Registration Map</h1>
@@ -135,7 +136,7 @@ export default function AdminMapPage() {
             )}
           </CardContent>
         </Card>
-      </div>
+      </MainContent>
     </>
   )
 }

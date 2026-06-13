@@ -1,6 +1,7 @@
 import { SignUp } from "@clerk/nextjs"
 import Image from "next/image"
 import Link from "next/link"
+import { MainContent } from "@/components/main-content"
 
 export const metadata = {
   title: "Sign Up - Rendezvous IL",
@@ -9,7 +10,7 @@ export const metadata = {
 
 export default function SignUpPage() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4 py-12">
+    <MainContent className="min-h-screen flex flex-col items-center justify-center bg-background px-4 py-12">
       <div className="w-full max-w-md space-y-8">
         <div className="flex flex-col items-center">
           <Link href="/">
@@ -57,6 +58,6 @@ export default function SignUpPage() {
           </Link>
         </p>
       </div>
-    </div>
+    </MainContent>
   )
 }

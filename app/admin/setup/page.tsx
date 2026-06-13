@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { CheckCircle2, AlertCircle } from "lucide-react"
+import { MainContent } from "@/components/main-content"
 
 export default function AdminSetupPage() {
   const [email, setEmail] = useState("")
@@ -65,7 +66,7 @@ export default function AdminSetupPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <MainContent className="min-h-screen bg-background flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Admin Setup</CardTitle>
@@ -162,6 +163,6 @@ export default function AdminSetupPage() {
           </form>
         </CardContent>
       </Card>
-    </div>
+    </MainContent>
   )
 }

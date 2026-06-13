@@ -190,7 +190,7 @@ export default function RegistrationTestPage() {
     <div className="min-h-screen bg-background">
       <SiteHeader />
 
-      <main className="container mx-auto px-4 py-12">
+      <main id="main-content" className="container mx-auto px-4 py-12">
         <div className="mx-auto max-w-4xl">
           <div className="mb-6 rounded-lg border-2 border-orange-500 bg-orange-50 p-4 dark:bg-orange-950">
             <div className="flex items-center gap-3">
