@@ -678,3 +678,153 @@
 .live-updates-shell .lu-ambient {
   display: none;
 }
+
+/* Live-updates semantic color — lake teal + coral family on dark shell */
+.live-updates-shell {
+  --lu-ink-muted: oklch(0.68 0.02 195);
+  --lu-now: oklch(0.55 0.12 155);
+  --lu-now-bright: oklch(0.72 0.11 155);
+  --lu-upcoming: oklch(0.72 0.12 38);
+  --lu-schedule: oklch(0.74 0.08 175);
+  --lu-meal: oklch(0.76 0.1 62);
+  --lu-pin-coral: oklch(0.65 0.14 38);
+  --lu-pin-warm: oklch(0.72 0.1 62);
+  --lu-pin-highlight: oklch(0.72 0.11 85);
+  --lu-pin-success: oklch(0.58 0.11 155);
+  --lu-pin-lake: oklch(0.62 0.11 175);
+  --lu-pin-ink: oklch(0.58 0.06 195);
+  --lu-destructive: oklch(0.62 0.18 25);
+  --lu-warning: oklch(0.72 0.12 38);
+  --lu-announce: oklch(0.76 0.1 62);
+}
+
+.live-updates-shell .lu-text-now { color: var(--lu-now-bright); }
+.live-updates-shell .lu-bg-now { background: var(--lu-now-bright); }
+.live-updates-shell .lu-surface-now {
+  background: color-mix(in oklch, var(--lu-now) 14%, transparent);
+  border-color: color-mix(in oklch, var(--lu-now-bright) 35%, transparent);
+}
+.live-updates-shell .lu-border-now {
+  border-color: color-mix(in oklch, var(--lu-now-bright) 35%, transparent);
+}
+.live-updates-shell .lu-text-upcoming { color: var(--lu-upcoming); }
+.live-updates-shell .lu-text-schedule { color: var(--lu-schedule); }
+.live-updates-shell .lu-text-meal { color: var(--lu-meal); }
+.live-updates-shell .lu-icon-warm { color: var(--lu-meal); }
+.live-updates-shell .lu-icon-lake { color: var(--lu-schedule); }
+.live-updates-shell .lu-icon-muted { color: var(--lu-ink-muted); }
+.live-updates-shell .lu-icon-coral { color: var(--lu-pin-coral); }
+
+.live-updates-shell .lu-weather-storm { color: var(--lu-meal); }
+.live-updates-shell .lu-weather-rain { color: var(--lu-schedule); }
+.live-updates-shell .lu-weather-snow { color: oklch(0.82 0.04 178); }
+.live-updates-shell .lu-weather-wind { color: var(--lu-ink-muted); }
+.live-updates-shell .lu-weather-sun { color: var(--lu-meal); }
+
+.live-updates-shell .lu-priority-urgent-text { color: oklch(0.78 0.14 25); }
+.live-updates-shell .lu-priority-urgent-border {
+  border-color: color-mix(in oklch, var(--lu-destructive) 45%, transparent);
+}
+.live-updates-shell .lu-priority-urgent-surface {
+  background: color-mix(in oklch, var(--lu-destructive) 14%, transparent);
+}
+.live-updates-shell .lu-priority-urgent-glow {
+  background: color-mix(in oklch, var(--lu-destructive) 22%, transparent);
+}
+
+.live-updates-shell .lu-priority-high-text { color: oklch(0.78 0.12 38); }
+.live-updates-shell .lu-priority-high-border {
+  border-color: color-mix(in oklch, var(--lu-warning) 45%, transparent);
+}
+.live-updates-shell .lu-priority-high-surface {
+  background: color-mix(in oklch, var(--lu-warning) 14%, transparent);
+}
+.live-updates-shell .lu-priority-high-glow {
+  background: color-mix(in oklch, var(--lu-warning) 22%, transparent);
+}
+
+.live-updates-shell .lu-priority-normal-text { color: var(--lu-announce); }
+.live-updates-shell .lu-priority-normal-surface {
+  background: color-mix(in oklch, var(--lu-announce) 8%, transparent);
+}
+.live-updates-shell .lu-priority-normal-glow {
+  background: color-mix(in oklch, var(--lu-announce) 12%, transparent);
+}
+
+.live-updates-shell .lu-announce-header {
+  color: var(--lu-announce);
+  background: color-mix(in oklch, var(--lu-announce) 14%, transparent);
+  border-color: color-mix(in oklch, var(--lu-announce) 22%, transparent);
+}
+
+.live-updates-shell .lu-pin-coral { color: var(--lu-pin-coral); }
+.live-updates-shell .lu-pin-coral-text { color: oklch(0.78 0.12 38); }
+.live-updates-shell .lu-pin-coral-border {
+  border-color: color-mix(in oklch, var(--lu-pin-coral) 45%, transparent);
+}
+.live-updates-shell .lu-pin-coral-surface {
+  background: color-mix(in oklch, var(--lu-pin-coral) 14%, transparent);
+}
+.live-updates-shell .lu-pin-coral-glow {
+  background: color-mix(in oklch, var(--lu-pin-coral) 22%, transparent);
+}
+
+.live-updates-shell .lu-pin-warm { color: var(--lu-pin-warm); }
+.live-updates-shell .lu-pin-warm-text { color: oklch(0.8 0.09 62); }
+.live-updates-shell .lu-pin-warm-border {
+  border-color: color-mix(in oklch, var(--lu-pin-warm) 45%, transparent);
+}
+.live-updates-shell .lu-pin-warm-surface {
+  background: color-mix(in oklch, var(--lu-pin-warm) 14%, transparent);
+}
+.live-updates-shell .lu-pin-warm-glow {
+  background: color-mix(in oklch, var(--lu-pin-warm) 22%, transparent);
+}
+
+.live-updates-shell .lu-pin-highlight { color: var(--lu-pin-highlight); }
+.live-updates-shell .lu-pin-highlight-text { color: oklch(0.8 0.1 85); }
+.live-updates-shell .lu-pin-highlight-border {
+  border-color: color-mix(in oklch, var(--lu-pin-highlight) 45%, transparent);
+}
+.live-updates-shell .lu-pin-highlight-surface {
+  background: color-mix(in oklch, var(--lu-pin-highlight) 14%, transparent);
+}
+.live-updates-shell .lu-pin-highlight-glow {
+  background: color-mix(in oklch, var(--lu-pin-highlight) 22%, transparent);
+}
+
+.live-updates-shell .lu-pin-success { color: var(--lu-pin-success); }
+.live-updates-shell .lu-pin-success-text { color: oklch(0.76 0.1 155); }
+.live-updates-shell .lu-pin-success-border {
+  border-color: color-mix(in oklch, var(--lu-pin-success) 45%, transparent);
+}
+.live-updates-shell .lu-pin-success-surface {
+  background: color-mix(in oklch, var(--lu-pin-success) 14%, transparent);
+}
+.live-updates-shell .lu-pin-success-glow {
+  background: color-mix(in oklch, var(--lu-pin-success) 22%, transparent);
+}
+
+.live-updates-shell .lu-pin-lake { color: var(--lu-pin-lake); }
+.live-updates-shell .lu-pin-lake-text { color: oklch(0.76 0.09 175); }
+.live-updates-shell .lu-pin-lake-border {
+  border-color: color-mix(in oklch, var(--lu-pin-lake) 45%, transparent);
+}
+.live-updates-shell .lu-pin-lake-surface {
+  background: color-mix(in oklch, var(--lu-pin-lake) 14%, transparent);
+}
+.live-updates-shell .lu-pin-lake-glow {
+  background: color-mix(in oklch, var(--lu-pin-lake) 22%, transparent);
+}
+
+.live-updates-shell .lu-pin-ink { color: var(--lu-pin-ink); }
+.live-updates-shell .lu-pin-ink-text { color: oklch(0.74 0.05 195); }
+.live-updates-shell .lu-pin-ink-border {
+  border-color: color-mix(in oklch, var(--lu-pin-ink) 45%, transparent);
+}
+.live-updates-shell .lu-pin-ink-surface {
+  background: color-mix(in oklch, var(--lu-pin-ink) 14%, transparent);
+}
+.live-updates-shell .lu-pin-ink-glow {
+  background: color-mix(in oklch, var(--lu-pin-ink) 22%, transparent);
+}

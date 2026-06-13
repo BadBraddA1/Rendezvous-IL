@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from "react"
 import Image from "next/image"
 import { mapLocations, mapPaths } from "@/lib/venue-map-data"
 import { LU_SCHEDULE_ITEMS } from "@/lib/schedule-data"
+import { LU_ICON, LU_PIN_COLORS, luPinStyle } from "@/lib/live-updates-colors"
 import { ViewTransition } from "@/components/view-transition"
 
 import { 
@@ -155,33 +156,33 @@ function getEventIcon(
   const c = (defaultClass: string) => colorOverrideClass ?? defaultClass
   
   if (isMeal) {
-    if (lowerTitle.includes('breakfast')) return <Coffee className={`${base} ${c("text-amber-500")}`} />
-    if (lowerTitle.includes('lunch')) return <Sandwich className={`${base} ${c("text-yellow-500")}`} />
-    if (lowerTitle.includes('dinner')) return <UtensilsCrossed className={`${base} ${c("text-orange-500")}`} />
-    return <Utensils className={`${base} ${c("text-orange-400")}`} />
+    if (lowerTitle.includes('breakfast')) return <Coffee className={`${base} ${c(LU_ICON.meal)}`} />
+    if (lowerTitle.includes('lunch')) return <Sandwich className={`${base} ${c(LU_ICON.meal)}`} />
+    if (lowerTitle.includes('dinner')) return <UtensilsCrossed className={`${base} ${c(LU_ICON.meal)}`} />
+    return <Utensils className={`${base} ${c(LU_ICON.meal)}`} />
   }
   
-  if (lowerTitle.includes('good night')) return <Moon className={`${base} ${c("text-indigo-300")}`} />
-  if (lowerTitle.includes('check-in') || lowerTitle.includes('checkout')) return <ClipboardCheck className={`${base} ${c("text-emerald-400")}`} />
-  if (lowerTitle.includes('assembly') || lowerTitle.includes('announcement')) return <Megaphone className={`${base} ${c("text-rose-400")}`} />
-  if (lowerTitle.includes('archery')) return <Target className={`${base} ${c("text-red-500")}`} />
-  if (lowerTitle.includes('dodgeball')) return <Volleyball className={`${base} ${c("text-primary")}`} />
-  if (lowerTitle.includes('game') || lowerTitle.includes('knockout')) return <Gamepad2 className={`${base} ${c("text-fuchsia-400")}`} />
-  if (lowerTitle.includes('obstacle') || lowerTitle.includes('rope')) return <Mountain className={`${base} ${c("text-stone-400")}`} />
-  if (lowerTitle.includes('gym') || lowerTitle.includes('sport')) return <Dumbbell className={`${base} ${c("text-sky-400")}`} />
-  if (lowerTitle.includes('bonfire') || lowerTitle.includes('fire')) return <Flame className={`${base} ${c("text-orange-500")}`} />
-  if (lowerTitle.includes('picture') || lowerTitle.includes('photo')) return <Camera className={`${base} ${c("text-pink-400")}`} />
-  if (lowerTitle.includes('award') || lowerTitle.includes('ceremony')) return <Trophy className={`${base} ${c("text-yellow-400")}`} />
-  if (lowerTitle.includes('farewell') || lowerTitle.includes('goodbye')) return <Hand className={`${base} ${c("text-amber-400")}`} />
-  if (lowerTitle.includes('ice breaker') || lowerTitle.includes('introduction')) return <Users className={`${base} ${c("text-cyan-400")}`} />
-  if (lowerTitle.includes('nine square')) return <Grid3x3 className={`${base} ${c("text-lime-400")}`} />
-  if (lowerTitle.includes('table game')) return <Dice5 className={`${base} ${c("text-purple-400")}`} />
-  if (lowerTitle.includes('mom') || lowerTitle.includes('family')) return <Heart className={`${base} ${c("text-rose-500")}`} />
-  if (lowerTitle.includes('young adult') || lowerTitle.includes('session') || lowerTitle.includes('meeting')) return <Users className={`${base} ${c("text-cyan-400")}`} />
-  if (lowerTitle.includes('afternoon') || lowerTitle.includes('activities')) return <Sun className={`${base} ${c("text-yellow-400")}`} />
-  if (lowerTitle.includes('evening')) return <Moon className={`${base} ${c("text-indigo-300")}`} />
+  if (lowerTitle.includes('good night')) return <Moon className={`${base} ${c(LU_ICON.muted)}`} />
+  if (lowerTitle.includes('check-in') || lowerTitle.includes('checkout')) return <ClipboardCheck className={`${base} ${c(LU_ICON.lake)}`} />
+  if (lowerTitle.includes('assembly') || lowerTitle.includes('announcement')) return <Megaphone className={`${base} ${c(LU_ICON.coral)}`} />
+  if (lowerTitle.includes('archery')) return <Target className={`${base} ${c(LU_ICON.coral)}`} />
+  if (lowerTitle.includes('dodgeball')) return <Volleyball className={`${base} ${c(LU_ICON.lake)}`} />
+  if (lowerTitle.includes('game') || lowerTitle.includes('knockout')) return <Gamepad2 className={`${base} ${c(LU_ICON.lake)}`} />
+  if (lowerTitle.includes('obstacle') || lowerTitle.includes('rope')) return <Mountain className={`${base} ${c(LU_ICON.muted)}`} />
+  if (lowerTitle.includes('gym') || lowerTitle.includes('sport')) return <Dumbbell className={`${base} ${c(LU_ICON.lake)}`} />
+  if (lowerTitle.includes('bonfire') || lowerTitle.includes('fire')) return <Flame className={`${base} ${c(LU_ICON.warm)}`} />
+  if (lowerTitle.includes('picture') || lowerTitle.includes('photo')) return <Camera className={`${base} ${c(LU_ICON.lake)}`} />
+  if (lowerTitle.includes('award') || lowerTitle.includes('ceremony')) return <Trophy className={`${base} ${c(LU_ICON.warm)}`} />
+  if (lowerTitle.includes('farewell') || lowerTitle.includes('goodbye')) return <Hand className={`${base} ${c(LU_ICON.warm)}`} />
+  if (lowerTitle.includes('ice breaker') || lowerTitle.includes('introduction')) return <Users className={`${base} ${c(LU_ICON.lake)}`} />
+  if (lowerTitle.includes('nine square')) return <Grid3x3 className={`${base} ${c(LU_ICON.lake)}`} />
+  if (lowerTitle.includes('table game')) return <Dice5 className={`${base} ${c(LU_ICON.lake)}`} />
+  if (lowerTitle.includes('mom') || lowerTitle.includes('family')) return <Heart className={`${base} ${c(LU_ICON.coral)}`} />
+  if (lowerTitle.includes('young adult') || lowerTitle.includes('session') || lowerTitle.includes('meeting')) return <Users className={`${base} ${c(LU_ICON.lake)}`} />
+  if (lowerTitle.includes('afternoon') || lowerTitle.includes('activities')) return <Sun className={`${base} ${c(LU_ICON.warm)}`} />
+  if (lowerTitle.includes('evening')) return <Moon className={`${base} ${c(LU_ICON.muted)}`} />
   
-  return <MapPin className={`${base} ${c("text-orange-400")}`} />
+  return <MapPin className={`${base} ${c(LU_ICON.upcoming)}`} />
 }
 
 // TEST MODE: Set to true ONLY during development to simulate the event clock.
@@ -217,19 +218,19 @@ function getWeatherIcon(weatherId: number, iconCode: string, size: "sm" | "md" |
   const iconClass = sizeClasses[size]
 
   if (weatherId >= 200 && weatherId < 300) {
-    return <CloudLightning className={`${iconClass} text-yellow-500`} />
+    return <CloudLightning className={`${iconClass} lu-weather-storm`} />
   } else if (weatherId >= 300 && weatherId < 600) {
-    return <CloudRain className={`${iconClass} text-blue-400`} />
+    return <CloudRain className={`${iconClass} lu-weather-rain`} />
   } else if (weatherId >= 600 && weatherId < 700) {
-    return <Snowflake className={`${iconClass} text-blue-200`} />
+    return <Snowflake className={`${iconClass} lu-weather-snow`} />
   } else if (weatherId >= 700 && weatherId < 800) {
-    return <Wind className={`${iconClass} text-gray-400`} />
+    return <Wind className={`${iconClass} lu-weather-wind`} />
   } else if (weatherId === 800) {
-    return isDay ? <Sun className={`${iconClass} text-yellow-400`} /> : <Sun className={`${iconClass} text-gray-300`} />
+    return isDay ? <Sun className={`${iconClass} lu-weather-sun`} /> : <Sun className={`${iconClass} lu-weather-wind`} />
   } else if (weatherId > 800) {
-    return isDay ? <CloudSun className={`${iconClass} text-gray-400`} /> : <Cloud className={`${iconClass} text-gray-400`} />
+    return isDay ? <CloudSun className={`${iconClass} lu-weather-wind`} /> : <Cloud className={`${iconClass} lu-weather-wind`} />
   }
-  return <Cloud className={`${iconClass} text-gray-400`} />
+  return <Cloud className={`${iconClass} lu-weather-wind`} />
 }
 
 // Per-view zoom levels persist in localStorage so each TV remembers its preferred
@@ -977,8 +978,8 @@ export default function LiveUpdatesPage() {
           </div>
 
           {isAutoRotating && (
-            <span className="text-green-400 text-sm flex items-center gap-2 ml-4">
-              <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+            <span className="lu-text-now text-sm flex items-center gap-2 ml-4">
+              <span className="w-2 h-2 lu-bg-now rounded-full animate-pulse" />
               Auto-rotating
             </span>
           )}
@@ -1053,7 +1054,7 @@ function ScheduleCard({
                 key={index}
                 className={`p-3.5 rounded-xl border transition-colors ${
                   isNow 
-                    ? "bg-green-500/10 border-green-400/30" 
+                    ? "lu-surface-now border lu-border-now" 
                     : item === nextItem
                     ? "bg-white/[0.07] border-white/15"
                     : "bg-white/[0.03] border-white/5"
@@ -1063,15 +1064,15 @@ function ScheduleCard({
                   <div className="flex items-center gap-2 shrink-0 pt-0.5">
                     {isNow && (
                       <span className="relative flex h-2.5 w-2.5">
-                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
-                        <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-green-400" />
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full lu-bg-now opacity-75" />
+                        <span className="relative inline-flex h-2.5 w-2.5 rounded-full lu-bg-now" />
                       </span>
                     )}
                     {getEventIcon(item.title, item.isMeal, "xs")}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-base leading-tight truncate">{item.title}</p>
-                    <p className={`text-sm mt-0.5 ${isNow ? "text-green-300 font-bold uppercase tracking-wider" : "text-white/50"}`}>
+                    <p className={`text-sm mt-0.5 ${isNow ? "lu-text-now font-bold uppercase tracking-wider" : "text-white/50"}`}>
                       {isNow ? "Now" : `${item.day} ${item.time}`}
                     </p>
                   </div>
@@ -1165,15 +1166,15 @@ function AllView({
                   {featuredIsNow ? (
                     <>
                       <span className="relative flex h-3 w-3">
-                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
-                        <span className="relative inline-flex h-3 w-3 rounded-full bg-green-400" />
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full lu-bg-now opacity-75" />
+                        <span className="relative inline-flex h-3 w-3 rounded-full lu-bg-now" />
                       </span>
-                      <span className="lu-kicker text-green-400">Happening now</span>
+                      <span className="lu-kicker lu-text-now">Happening now</span>
                     </>
                   ) : (
                     <>
-                      <ChevronRight className="h-5 w-5 text-orange-400" />
-                      <span className="text-sm font-bold uppercase tracking-[0.3em] text-orange-400">Up Next</span>
+                      <ChevronRight className="h-5 w-5 lu-text-upcoming" />
+                      <span className="text-sm font-bold uppercase tracking-[0.3em] lu-text-upcoming">Up Next</span>
                     </>
                   )}
                 </div>
@@ -1185,12 +1186,12 @@ function AllView({
                     <h2 className="text-4xl font-bold leading-tight mb-3 text-balance">{featuredItem.title}</h2>
                     <div className="flex flex-wrap gap-3">
                       <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-primary/20 text-base">
-                        <Clock className="h-4 w-4 text-orange-400" />
+                        <Clock className="h-4 w-4 lu-text-upcoming" />
                         {featuredIsNow ? featuredItem.time : `${featuredItem.day} ${featuredItem.time}`}
                       </span>
                       {featuredItem.location && (
                         <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-primary/20 text-base">
-                          <MapPin className="h-4 w-4 text-orange-400" />
+                          <MapPin className="h-4 w-4 lu-text-upcoming" />
                           {featuredItem.location}
                         </span>
                       )}
@@ -1262,10 +1263,10 @@ function AllView({
           <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-amber-500/10 blur-2xl" />
           <div className="relative">
             <div className="flex items-center gap-3 mb-6">
-              <div className="rounded-xl bg-amber-500/15 p-2.5 border border-amber-400/20">
-                <UtensilsCrossed className="h-5 w-5 text-amber-300" />
+              <div className="rounded-xl lu-priority-normal-surface p-2.5 border lu-pin-warm-border">
+                <UtensilsCrossed className="h-5 w-5 lu-text-meal" />
               </div>
-              <span className="text-sm uppercase tracking-[0.2em] font-bold text-amber-300/90">Next Meal</span>
+              <span className="text-sm uppercase tracking-[0.2em] font-bold lu-text-meal opacity-90">Next Meal</span>
             </div>
             {nextMeal ? (
               <div className="flex flex-col items-center justify-center text-center pt-2">
@@ -1274,7 +1275,7 @@ function AllView({
                 </div>
                 <h3 className="text-2xl font-bold mb-3">{nextMeal.title}</h3>
                 <p className="text-white/70 text-lg flex items-center justify-center gap-2 mb-2">
-                  <Clock className="h-4 w-4 text-amber-300" />
+                  <Clock className="h-4 w-4 lu-text-meal" />
                   {nextMeal.time}
                 </p>
                 {nextMeal.location && (
@@ -1419,8 +1420,8 @@ function UpcomingView({
         <div className="relative">
           {/* Header */}
           <div className="flex items-center justify-center gap-4 mb-8">
-            <div className="rounded-2xl bg-indigo-500/15 p-4 border border-indigo-400/20">
-              <Calendar className="h-10 w-10 text-indigo-300" />
+            <div className="rounded-2xl lu-pin-lake-surface p-4 border lu-pin-lake-border">
+              <Calendar className="h-10 w-10 lu-text-schedule" />
             </div>
             <h2 className="text-5xl font-bold">Up Next</h2>
           </div>
@@ -1437,25 +1438,25 @@ function UpcomingView({
                   key={idx}
                   className={`flex items-center gap-6 p-6 rounded-2xl border transition-colors ${
                     isNow
-                      ? "bg-green-500/[0.12] border-green-400/40"
+                      ? "lu-surface-now border lu-border-now"
                       : "bg-white/[0.03] border-white/10"
                   }`}
                 >
                   {/* Icon */}
                   <div className="shrink-0">
-                    {getEventIcon(item.title, item.isMeal, "lg", isNow ? "text-green-400" : "text-indigo-300")}
+                    {getEventIcon(item.title, item.isMeal, "lg", isNow ? LU_ICON.now : LU_ICON.schedule)}
                   </div>
 
                   {/* Content */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-4 mb-2">
                       {isNow && (
-                        <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/20 border border-green-400/30">
+                        <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full lu-surface-now border lu-border-now">
                           <span className="relative flex h-3 w-3">
-                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
-                            <span className="relative inline-flex h-3 w-3 rounded-full bg-green-400" />
+                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full lu-bg-now opacity-75" />
+                            <span className="relative inline-flex h-3 w-3 rounded-full lu-bg-now" />
                           </span>
-                          <span className="text-lg font-bold uppercase tracking-wider text-green-400">Now</span>
+                          <span className="text-lg font-bold uppercase tracking-wider lu-text-now">Now</span>
                         </span>
                       )}
                     </div>
@@ -1464,12 +1465,12 @@ function UpcomingView({
                     </h3>
                     <div className="flex items-center gap-6 text-2xl text-white/70">
                       <span className="flex items-center gap-2">
-                        <Clock className="h-6 w-6 text-indigo-300/70" />
+                        <Clock className="h-6 w-6 lu-text-schedule opacity-70" />
                         {item.day} {item.time}
                       </span>
                       {item.location && (
                         <span className="flex items-center gap-2">
-                          <MapPin className="h-6 w-6 text-indigo-300/70" />
+                          <MapPin className="h-6 w-6 lu-text-schedule opacity-70" />
                           {item.location}
                         </span>
                       )}
@@ -1572,10 +1573,10 @@ function ScheduleView({
               {showNow ? (
                 <>
                   <span className="relative flex h-5 w-5">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
-                    <span className="relative inline-flex h-5 w-5 rounded-full bg-green-400" />
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full lu-bg-now opacity-75" />
+                    <span className="relative inline-flex h-5 w-5 rounded-full lu-bg-now" />
                   </span>
-                  <span className="text-3xl font-bold uppercase tracking-[0.3em] text-green-400">Happening Now</span>
+                  <span className="text-3xl font-bold uppercase tracking-[0.3em] lu-text-now">Happening Now</span>
                 </>
               ) : (
                 <>
@@ -1677,9 +1678,9 @@ function MealView({
             {/* Top: small label chip combining the time-of-day phrase and meal
                 type ("Tonight • Dinner"). Intentionally small so the menu
                 content below is the dominant element. */}
-            <div className="inline-flex items-center gap-3 px-5 py-2 rounded-full border border-amber-400/30 bg-amber-500/10 mb-8">
+            <div className="inline-flex items-center gap-3 px-5 py-2 rounded-full border lu-pin-warm-border lu-priority-normal-surface mb-8">
               {getEventIcon(nextMeal.title, true, "sm")}
-              <span className="text-2xl uppercase tracking-[0.25em] font-bold text-amber-300/90">
+              <span className="text-2xl uppercase tracking-[0.25em] font-bold lu-text-meal opacity-90">
                 {mealLabel} · {nextMeal.title}
               </span>
             </div>
@@ -1703,7 +1704,7 @@ function MealView({
                     }
                   >
                     {cleanMain && (
-                      <span className="text-amber-300/70 mr-2">with</span>
+                      <span className="lu-text-meal opacity-70 mr-2">with</span>
                     )}
                     {cleanSides.join(", ")}
                   </p>
@@ -1717,7 +1718,7 @@ function MealView({
 
             {/* Bottom: serving time, de-emphasized. */}
             <p className="text-3xl text-white/60 flex items-center gap-3">
-              <Clock className="h-8 w-8 text-amber-300/70" />
+              <Clock className="h-8 w-8 lu-text-meal opacity-70" />
               Served at {nextMeal.time}
             </p>
           </div>
@@ -1768,48 +1769,13 @@ function MapView({
     }
   }
 
-  const colorToHex: Record<string, string> = {
-    red: "#ef4444",
-    orange: "#f97316",
-    yellow: "#eab308",
-    green: "#22c55e",
-    blue: "#3b82f6",
-    purple: "#a855f7",
-    pink: "#ec4899",
-  }
-
-  // Resolve the destination color name (e.g. "red", "orange", "purple", "blue") and Tailwind classes
-  const featuredColorName = featuredLocation 
-    ? (featuredLocation.color || (
-        featuredLocation.category === "dining" ? "orange"
-        : featuredLocation.category === "meeting" ? "red"
-        : featuredLocation.category === "lodging" ? "blue"
-        : "purple"
-      ))
-    : "orange"
+  const cc = featuredLocation
+    ? luPinStyle(featuredLocation.color, featuredLocation.category)
+    : LU_PIN_COLORS.orange
   
   if (featuredLocation) {
-    routeColor = colorToHex[featuredColorName] || routeColor
+    routeColor = cc.hex
   }
-
-  // Tailwind class lookup keyed by color name so the destination color flows through
-  // to the icon, label, and callout  -  all matching the map pin
-  const colorClasses: Record<string, { 
-    icon: string; 
-    text: string; 
-    border: string; 
-    bg: string;
-    glow: string;
-  }> = {
-    red:    { icon: "text-red-400",    text: "text-red-300",    border: "border-red-500/40",    bg: "from-red-500/[0.12]",    glow: "bg-red-500/20" },
-    orange: { icon: "text-orange-400", text: "text-orange-300", border: "border-orange-500/40", bg: "from-orange-500/[0.12]", glow: "bg-orange-500/20" },
-    yellow: { icon: "text-yellow-400", text: "text-yellow-300", border: "border-yellow-500/40", bg: "from-yellow-500/[0.12]", glow: "bg-yellow-500/20" },
-    green:  { icon: "text-green-400",  text: "text-green-300",  border: "border-green-500/40",  bg: "from-green-500/[0.12]",  glow: "bg-green-500/20" },
-    blue:   { icon: "text-blue-400",   text: "text-blue-300",   border: "border-blue-500/40",   bg: "from-blue-500/[0.12]",   glow: "bg-blue-500/20" },
-    purple: { icon: "text-purple-400", text: "text-purple-300", border: "border-purple-500/40", bg: "from-purple-500/[0.12]", glow: "bg-purple-500/20" },
-    pink:   { icon: "text-pink-400",   text: "text-pink-300",   border: "border-pink-500/40",   bg: "from-pink-500/[0.12]",   glow: "bg-pink-500/20" },
-  }
-  const cc = colorClasses[featuredColorName] || colorClasses.orange
 
   return (
     <div className="relative w-full h-full flex gap-6">
@@ -1830,10 +1796,10 @@ function MapView({
                   {isHappeningNow ? (
                     <>
                       <span className="relative flex h-3 w-3">
-                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
-                        <span className="relative inline-flex h-3 w-3 rounded-full bg-green-400" />
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full lu-bg-now opacity-75" />
+                        <span className="relative inline-flex h-3 w-3 rounded-full lu-bg-now" />
                       </span>
-                      <span className="lu-kicker text-green-400">Happening now</span>
+                      <span className="lu-kicker lu-text-now">Happening now</span>
                     </>
                   ) : (
                     <>
@@ -1895,19 +1861,19 @@ function MapView({
         {/* Legend */}
         <div className="mt-4 px-2 grid grid-cols-2 gap-2">
           <div className="flex items-center gap-2 text-xs text-white/60">
-            <MapPin className="h-3.5 w-3.5 text-red-400" fill="currentColor" />
+            <MapPin className="h-3.5 w-3.5 lu-pin-coral" fill="currentColor" />
             <span>Meeting</span>
           </div>
           <div className="flex items-center gap-2 text-xs text-white/60">
-            <MapPin className="h-3.5 w-3.5 text-orange-400" fill="currentColor" />
+            <MapPin className="h-3.5 w-3.5 lu-pin-warm" fill="currentColor" />
             <span>Dining</span>
           </div>
           <div className="flex items-center gap-2 text-xs text-white/60">
-            <MapPin className="h-3.5 w-3.5 text-purple-400" fill="currentColor" />
+            <MapPin className="h-3.5 w-3.5 lu-pin-ink" fill="currentColor" />
             <span>Activity</span>
           </div>
           <div className="flex items-center gap-2 text-xs text-white/60">
-            <MapPin className="h-3.5 w-3.5 text-blue-400" fill="currentColor" />
+            <MapPin className="h-3.5 w-3.5 lu-pin-lake" fill="currentColor" />
             <span>Lodging</span>
           </div>
         </div>
@@ -1992,13 +1958,8 @@ function MapView({
           {mapLocations.map((location) => {
             const isFeatured = location.id === featuredLocationId
             const isPrev = location.id === prevLocationId && location.id !== featuredLocationId && !!routePoints
-            const color = location.color || (
-              location.category === "dining" ? "orange"
-              : location.category === "meeting" ? "red"
-              : location.category === "lodging" ? "blue"
-              : "purple"
-            )
-            const hex = colorToHex[color] || "#a855f7"
+            const pinStyle = luPinStyle(location.color, location.category)
+            const hex = pinStyle.hex
             
             return (
               <div
@@ -2151,8 +2112,8 @@ function AnnouncementsView({ announcements }: { announcements: Announcement[] })
       {announcements.length === 0 ? (
         <div className="relative w-full max-w-2xl lu-panel p-12 flex flex-col items-center justify-center">
           <div className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-amber-500/15 blur-2xl" />
-          <Megaphone className="h-24 w-24 text-amber-400/60 mb-6 relative" />
-          <h2 className="text-4xl font-bold text-amber-300/80 relative">No Announcements</h2>
+          <Megaphone className="h-24 w-24 lu-text-meal opacity-60 mb-6 relative" />
+          <h2 className="text-4xl font-bold lu-text-meal opacity-80 relative">No Announcements</h2>
         </div>
       ) : (
         <div className="relative w-full max-w-7xl flex flex-col items-center">
@@ -2160,10 +2121,10 @@ function AnnouncementsView({ announcements }: { announcements: Announcement[] })
           <div className="relative w-full overflow-hidden lu-panel p-7 mb-5 text-center">
             <div className="absolute -top-12 left-1/2 -translate-x-1/2 h-48 w-96 rounded-full bg-amber-500/15 blur-3xl" />
             <div className="relative flex items-center justify-center gap-4">
-              <div className="rounded-xl bg-amber-500/15 p-3 border border-amber-400/20">
-                <Megaphone className="h-7 w-7 text-amber-300" />
+              <div className="rounded-xl lu-announce-header p-3 border">
+                <Megaphone className="h-7 w-7 lu-text-meal" />
               </div>
-              <h2 className="text-4xl font-bold text-amber-300">Announcements</h2>
+              <h2 className="text-4xl font-bold lu-text-meal">Announcements</h2>
             </div>
           </div>
 
@@ -2173,10 +2134,10 @@ function AnnouncementsView({ announcements }: { announcements: Announcement[] })
               const isUrgent = announcement.priority === "urgent"
               const isHigh = announcement.priority === "high"
               const palette = isUrgent
-                ? { bg: "from-red-500/[0.12]", border: "border-red-500/40", glow: "bg-red-500/20", icon: "text-red-300", badge: "URGENT" }
+                ? { border: "lu-priority-urgent-border", glow: "lu-priority-urgent-glow", icon: "lu-priority-urgent-text", badge: "URGENT" }
                 : isHigh
-                ? { bg: "from-orange-500/[0.12]", border: "border-orange-500/40", glow: "bg-orange-500/20", icon: "text-orange-300", badge: "IMPORTANT" }
-                : { bg: "from-amber-500/[0.06]", border: "border-white/10", glow: "bg-amber-500/10", icon: "text-amber-300", badge: null }
+                ? { border: "lu-priority-high-border", glow: "lu-priority-high-glow", icon: "lu-priority-high-text", badge: "IMPORTANT" }
+                : { border: "border-white/10", glow: "lu-priority-normal-glow", icon: "lu-priority-normal-text", badge: null }
 
               return (
                 <div

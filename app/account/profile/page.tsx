@@ -564,15 +564,15 @@ export default function FamilyProfilePage() {
         </Card>
 
         {/* Info Notice */}
-        <Card className="border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950/20">
+        <Card className="border-primary/25 bg-surface-highlight">
           <CardContent className="pt-6">
             <div className="flex gap-3">
-              <AlertCircle className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+              <AlertCircle className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
               <div className="space-y-1">
-                <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                <p className="text-sm font-medium text-foreground">
                   Changes require approval
                 </p>
-                <p className="text-sm text-blue-700 dark:text-blue-300">
+                <p className="text-sm text-muted-foreground">
                   All profile changes are reviewed by an admin before being displayed on the attendee map. 
                   You&apos;ll be notified once your changes are approved.
                 </p>
