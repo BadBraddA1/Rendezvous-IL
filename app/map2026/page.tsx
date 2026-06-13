@@ -557,7 +557,7 @@ export default function Map2026Page() {
                     setPasswordError(false)
                   }}
                   onKeyDown={(e) => e.key === "Enter" && handleUnlock()}
-                  className={passwordError ? "border-red-500 focus-visible:ring-red-500" : ""}
+                  className={`h-12 min-h-11 text-base ${passwordError ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                 />
                 {passwordError && (
                   <p className="text-sm text-red-500">Incorrect password. Please try again.</p>
@@ -638,16 +638,17 @@ export default function Map2026Page() {
                   placeholder="Search by name, email, phone, congregation, or city..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-10 h-12"
+                  className="h-12 min-h-11 pl-10 pr-12 text-base"
                 />
                 {searchQuery && (
                   <Button
                     variant="ghost"
-                    size="sm"
-                    className="absolute right-1 top-1/2 h-8 w-8 -translate-y-1/2 p-0"
+                    size="icon"
+                    className="focus-ring touch-target absolute right-0.5 top-1/2 -translate-y-1/2"
                     onClick={() => setSearchQuery("")}
+                    aria-label="Clear search"
                   >
-                    <X className="h-4 w-4" />
+                    <X className="h-4 w-4" aria-hidden="true" />
                   </Button>
                 )}
               </div>
@@ -662,7 +663,7 @@ export default function Map2026Page() {
               {/* Map */}
               <Card className="flex-1 overflow-hidden border-border/50 bg-card shadow-xl">
                 <CardContent className="p-0 h-full">
-                  <div className="h-[600px] lg:h-[calc(100vh-350px)]">
+                  <div className="h-[min(52dvh,520px)] min-h-[240px] sm:h-[min(56dvh,560px)] lg:h-[calc(100vh-350px)] lg:min-h-[400px]">
                     <LeafletMap
                       center={EVENT_CENTER}
                       registrations={filteredRegistrations}
@@ -684,8 +685,14 @@ export default function Map2026Page() {
                           <User className="h-5 w-5 text-primary shrink-0" />
                           {selectedRegistration.lastName} Family
                         </CardTitle>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 -mt-1 -mr-1" onClick={() => setSelectedRegistration(null)}>
-                          <X className="h-4 w-4" />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="focus-ring touch-target -mt-1 -mr-1 shrink-0"
+                          onClick={() => setSelectedRegistration(null)}
+                          aria-label="Close family details"
+                        >
+                          <X className="h-4 w-4" aria-hidden="true" />
                         </Button>
                       </div>
                     </CardHeader>
@@ -793,8 +800,9 @@ export default function Map2026Page() {
                         <div className="divide-y divide-border/50">
                           {filteredRegistrations.map((reg) => (
                             <button
+                              type="button"
                               key={reg.id}
-                              className={`w-full px-4 py-3 text-left transition-all hover:bg-primary/5 ${
+                              className={`focus-ring flex min-h-11 w-full items-center px-4 py-3 text-left transition-colors hover:bg-primary/5 active:bg-primary/10 ${
                                 selectedRegistration?.id === reg.id
                                   ? "border border-primary/30 bg-primary/10 ring-1 ring-primary/20"
                                   : "border border-transparent"

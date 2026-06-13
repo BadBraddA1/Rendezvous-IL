@@ -64,7 +64,7 @@ function MobileNav({
             <div className="space-y-2 px-4 py-3">
               <Link
                 href="/account"
-                className="flex items-center gap-3 rounded-lg p-3 transition-colors hover:bg-secondary/50"
+                className="focus-ring flex min-h-11 items-center gap-3 rounded-lg p-3 transition-colors hover:bg-secondary/50 active:bg-secondary/50"
                 onClick={() => onOpenChange(false)}
               >
                 <User className="h-5 w-5 text-primary" />
@@ -75,7 +75,8 @@ function MobileNav({
               </Link>
               <SignOutButton redirectUrl="/">
                 <button
-                  className="flex w-full items-center gap-3 rounded-lg p-3 text-left transition-colors hover:bg-destructive/10"
+                  type="button"
+                  className="focus-ring flex min-h-11 w-full items-center gap-3 rounded-lg p-3 text-left transition-colors hover:bg-destructive/10 active:bg-destructive/10"
                   onClick={() => onOpenChange(false)}
                 >
                   <LogOut className="h-5 w-5 text-destructive" />
@@ -87,7 +88,7 @@ function MobileNav({
           <Show when="signed-out">
             <Link
               href="/sign-in"
-              className="flex items-center gap-2 rounded-lg px-4 py-3 text-lg font-medium text-primary transition-colors hover:bg-secondary/50"
+              className="focus-ring flex min-h-11 items-center gap-2 rounded-lg px-4 py-3 text-lg font-medium text-primary transition-colors hover:bg-secondary/50 active:bg-secondary/50"
               onClick={() => onOpenChange(false)}
             >
               <User className="h-5 w-5" />
