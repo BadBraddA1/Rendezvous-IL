@@ -135,11 +135,11 @@ const faqVideos = [
 
 function VideoCard({
   video,
-  isPlaying,
+  isActive,
   onPlay,
 }: {
   video: (typeof faqVideos)[0]
-  isPlaying: boolean
+  isActive: boolean
   onPlay: () => void
 }) {
   return (
@@ -148,7 +148,7 @@ function VideoCard({
         <MuxVideoPlayer
           playbackId={video.id}
           title={video.title}
-          isActive={isPlaying}
+          isActive={isActive}
           onActivate={onPlay}
         />
       </div>
@@ -159,6 +159,10 @@ function VideoCard({
 
 export default function FAQPage() {
   const [playingVideo, setPlayingVideo] = useState<string | null>(null)
+
+  const handleVideoActivate = (videoId: string) => {
+    setPlayingVideo((current) => (current === videoId ? current : videoId))
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -207,8 +211,8 @@ export default function FAQPage() {
                 <VideoCard
                   key={video.id}
                   video={video}
-                  isPlaying={playingVideo === video.id}
-                  onPlay={() => setPlayingVideo(video.id)}
+                  isActive={playingVideo === null || playingVideo === video.id}
+                  onPlay={() => handleVideoActivate(video.id)}
                 />
               ))}
             </div>
