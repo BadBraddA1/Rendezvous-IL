@@ -31,36 +31,72 @@ export function MuxVideoPlayer({
 }: MuxVideoPlayerProps) {
   const playerRef = useRef<MuxPlayerElement>(null)
   const wasActiveRef = useRef(isActive)
-  const [started, setStarted] = useState(false)
+  const playingRef = useRef(false)
+  const gestureCompleteRef = useRef(false)
+  const ignorePauseUntilRef = useRef(0)
+  const [revealed, setRevealed] = useState(false)
+  const [launching, setLaunching] = useState(false)
+
+  const revealPlayer = () => {
+    if (playingRef.current && gestureCompleteRef.current) {
+      setRevealed(true)
+      setLaunching(false)
+    }
+  }
 
   // Only stop when another video takes over — not on the first tap while isActive is still false.
   useEffect(() => {
-    if (wasActiveRef.current && !isActive && started) {
+    if (wasActiveRef.current && !isActive && revealed) {
       playerRef.current?.pause()
-      setStarted(false)
+      playingRef.current = false
+      gestureCompleteRef.current = false
+      setRevealed(false)
+      setLaunching(false)
     }
     wasActiveRef.current = isActive
-  }, [isActive, started])
+  }, [isActive, revealed])
 
-  const startPlayback = () => {
+  const startPlayback = (event: PointerEvent<HTMLButtonElement>) => {
     onActivate?.()
+    setLaunching(true)
+    ignorePauseUntilRef.current = Date.now() + 600
+    event.currentTarget.setPointerCapture(event.pointerId)
+
     const player = playerRef.current
     if (player) {
-      // Must run synchronously inside the pointer/touch handler for iOS Safari.
+      // Must run synchronously inside the pointer handler for iOS Safari.
       void player.play().catch(() => {
-        setStarted(false)
+        playingRef.current = false
+        gestureCompleteRef.current = false
+        setLaunching(false)
       })
     }
-    setStarted(true)
   }
 
   const handlePointerDown = (event: PointerEvent<HTMLButtonElement>) => {
     if (event.pointerType === "mouse" && event.button !== 0) return
     event.preventDefault()
-    startPlayback()
+    startPlayback(event)
   }
 
-  const showPoster = !started
+  const handlePointerUp = (event: PointerEvent<HTMLButtonElement>) => {
+    if (event.pointerType === "mouse" && event.button !== 0) return
+    gestureCompleteRef.current = true
+    revealPlayer()
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId)
+    }
+  }
+
+  const handlePointerCancel = (event: PointerEvent<HTMLButtonElement>) => {
+    gestureCompleteRef.current = true
+    revealPlayer()
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId)
+    }
+  }
+
+  const showPoster = !revealed
   const playBtnClass = playButtonSize === "lg" ? "h-16 w-16 md:h-20 md:w-20" : "h-14 w-14"
   const playIconClass = playButtonSize === "lg" ? "h-7 w-7 md:h-8 md:w-8" : "h-6 w-6"
 
@@ -74,11 +110,20 @@ export function MuxVideoPlayer({
         poster={muxThumbnail(playbackId, thumbnailWidth, thumbnailHeight)}
         preload="metadata"
         playsInline
-        onPlaying={() => setStarted(true)}
-        onPause={() => {
-          if (playerRef.current?.paused) setStarted(false)
+        onPlaying={() => {
+          playingRef.current = true
+          revealPlayer()
         }}
-        className="absolute inset-0 h-full w-full"
+        onPause={() => {
+          if (Date.now() < ignorePauseUntilRef.current) return
+          if (playerRef.current?.paused) {
+            playingRef.current = false
+            gestureCompleteRef.current = false
+            setRevealed(false)
+            setLaunching(false)
+          }
+        }}
+        className={`absolute inset-0 h-full w-full ${showPoster ? "pointer-events-none" : ""}`}
         style={
           {
             "--media-object-fit": "cover",
@@ -90,8 +135,11 @@ export function MuxVideoPlayer({
         <button
           type="button"
           onPointerDown={handlePointerDown}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerCancel}
           className="focus-ring group absolute inset-0 z-10 flex cursor-pointer items-center justify-center touch-manipulation"
           aria-label={`Play video: ${title}`}
+          aria-busy={launching}
         >
           <img
             src={muxThumbnail(playbackId, thumbnailWidth, thumbnailHeight)}
@@ -103,7 +151,7 @@ export function MuxVideoPlayer({
           />
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-foreground/25 transition-colors group-hover:bg-foreground/35 group-active:bg-foreground/35">
             <div
-              className={`flex ${playBtnClass} items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md transition-transform duration-200 ease-out group-hover:scale-[1.03] group-active:scale-[1.03]`}
+              className={`flex ${playBtnClass} items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md transition-transform duration-200 ease-out group-hover:scale-[1.03] group-active:scale-[1.03] ${launching ? "scale-95 opacity-90" : ""}`}
             >
               <Play className={`${playIconClass} ml-0.5`} fill="currentColor" aria-hidden="true" />
             </div>
