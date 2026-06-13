@@ -828,3 +828,15 @@
 .live-updates-shell .lu-pin-ink-glow {
   background: color-mix(in oklch, var(--lu-pin-ink) 22%, transparent);
 }
+
+/* Quieter display board: no decorative ping/pulse; blurs already suppressed above */
+.live-updates-shell .animate-ping {
+  animation: none !important;
+  opacity: 0 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-updates-shell .animate-pulse {
+    animation: none !important;
+  }
+}

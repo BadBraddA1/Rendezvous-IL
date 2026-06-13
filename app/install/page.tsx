@@ -16,7 +16,7 @@ function StepNumber({ num }: { num: number }) {
 function IOSInstructions() {
   return (
     <Card className="border-border/50 bg-card shadow-lg">
-      <CardHeader className="bg-gradient-to-r from-primary/5 to-accent/5">
+      <CardHeader className="border-b border-border/50 bg-surface-tint">
         <CardTitle className="flex items-center gap-3 text-xl md:text-2xl">
           <Apple className="h-7 w-7" />
           iPhone / iPad (Safari)
@@ -97,7 +97,7 @@ function IOSInstructions() {
 function AndroidInstructions() {
   return (
     <Card className="border-border/50 bg-card shadow-lg">
-      <CardHeader className="bg-gradient-to-r from-primary/5 to-accent/5">
+      <CardHeader className="border-b border-border/50 bg-surface-tint">
         <CardTitle className="flex items-center gap-3 text-xl md:text-2xl">
           <Smartphone className="h-7 w-7" />
           Android (Chrome)

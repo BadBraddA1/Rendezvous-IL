@@ -979,7 +979,7 @@ export default function LiveUpdatesPage() {
 
           {isAutoRotating && (
             <span className="lu-text-now text-sm flex items-center gap-2 ml-4">
-              <span className="w-2 h-2 lu-bg-now rounded-full animate-pulse" />
+              <span className="w-2 h-2 lu-bg-now rounded-full" />
               Auto-rotating
             </span>
           )}
@@ -1039,13 +1039,12 @@ function ScheduleCard({
 
   return (
     <div className="group relative overflow-hidden lu-panel p-7">
-      <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-primary/10 blur-2xl" />
       <div className="relative">
         <div className="flex items-center gap-3 mb-6">
-          <div className="rounded-xl bg-primary/15 p-2.5 border border-violet-400/20">
+          <div className="rounded-xl bg-primary/10 p-2.5 border border-primary/20">
             <Calendar className="h-5 w-5 text-primary" />
           </div>
-          <span className="text-sm uppercase tracking-[0.2em] font-bold text-primary/90">Schedule</span>
+          <span className="text-sm uppercase tracking-[0.12em] font-semibold text-primary/90">Schedule</span>
         </div>
         <div className="space-y-2.5">
           {eventsToShow.length > 0 ? (
@@ -1128,28 +1127,18 @@ function AllView({
 
   return (
     <div className="relative w-full h-full mx-auto flex flex-col overflow-hidden">
-      {/* Ambient background orbs for depth */}
-      <div className="lu-ambient pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute -top-40 -left-40 h-[28rem] w-[28rem] rounded-full bg-orange-500/10 blur-3xl animate-pulse" style={{ animationDuration: "6s" }} />
-        <div className="absolute top-1/3 -right-40 h-[32rem] w-[32rem] rounded-full bg-amber-500/10 blur-3xl animate-pulse" style={{ animationDuration: "8s", animationDelay: "2s" }} />
-        <div className="absolute -bottom-40 left-1/3 h-96 w-96 rounded-full bg-rose-500/8 blur-3xl animate-pulse" style={{ animationDuration: "7s", animationDelay: "4s" }} />
-      </div>
-
       {/* HERO BANNER - Logo, tagline, featured event */}
       <div className="relative mb-6 shrink-0 overflow-hidden lu-panel">
-        <div className="absolute -top-24 left-1/2 -translate-x-1/2 h-48 w-[40rem] rounded-full bg-orange-500/20 blur-3xl" />
-
         <div className="relative grid grid-cols-12 gap-6 p-6">
           {/* Left: Logo + Tagline */}
           <div className="col-span-5 flex flex-col items-center justify-center text-center">
             <div className="relative mb-3">
-              <div className="absolute inset-0 -z-10 rounded-full bg-orange-500/30 blur-3xl" />
               <Image
                 src="/rendezvous-logo.png"
                 alt="Rendezvous Homeschool Family Retreat"
                 width={400}
                 height={400}
-                className="h-32 w-auto drop-shadow-2xl brightness-0 invert"
+                className="h-32 w-auto brightness-0 invert"
                 priority
               />
             </div>
@@ -1174,7 +1163,7 @@ function AllView({
                   ) : (
                     <>
                       <ChevronRight className="h-5 w-5 lu-text-upcoming" />
-                      <span className="text-sm font-bold uppercase tracking-[0.3em] lu-text-upcoming">Up Next</span>
+                      <span className="text-sm font-semibold uppercase tracking-[0.12em] lu-text-upcoming">Up Next</span>
                     </>
                   )}
                 </div>
@@ -1216,13 +1205,12 @@ function AllView({
       <div className={`grid grid-cols-1 gap-6 flex-1 min-h-0 ${hasVolunteers ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
         {/* Weather Card */}
         <div className="group relative overflow-hidden lu-panel p-7">
-          <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-sky-500/10 blur-2xl" />
-          <div className="relative">
+<div className="relative">
             <div className="flex items-center gap-3 mb-6">
-              <div className="rounded-xl bg-sky-500/15 p-2.5 border border-sky-400/20">
-                <Droplets className="h-5 w-5 text-sky-300" />
+              <div className="rounded-xl lu-pin-lake-surface p-2.5 border lu-pin-lake-border">
+                <Droplets className="h-5 w-5 lu-text-schedule" />
               </div>
-              <span className="text-sm uppercase tracking-[0.2em] font-bold text-sky-300/90">Weather</span>
+              <span className="text-sm uppercase tracking-[0.12em] font-semibold lu-text-schedule opacity-90">Weather</span>
             </div>
             {weather ? (
               <div className="space-y-5">
@@ -1240,7 +1228,7 @@ function AllView({
                       </div>
                       <p className="font-bold text-base tabular-nums">{Math.round(hour.temp)}°</p>
                       {hour.pop > 0.1 && (
-                        <p className="text-xs text-sky-300 flex items-center justify-center gap-1 mt-0.5">
+                        <p className="text-xs lu-text-schedule flex items-center justify-center gap-1 mt-0.5">
                           <Droplets className="h-3 w-3" />
                           {Math.round(hour.pop * 100)}%
                         </p>
@@ -1260,8 +1248,7 @@ function AllView({
 
         {/* Next Meal Card */}
         <div className="group relative overflow-hidden lu-panel p-7">
-          <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-amber-500/10 blur-2xl" />
-          <div className="relative">
+<div className="relative">
             <div className="flex items-center gap-3 mb-6">
               <div className="rounded-xl lu-priority-normal-surface p-2.5 border lu-pin-warm-border">
                 <UtensilsCrossed className="h-5 w-5 lu-text-meal" />
@@ -1297,13 +1284,12 @@ function AllView({
         {/* Volunteer Schedule Card */}
         {hasVolunteers && (
           <div className="group relative overflow-hidden lu-panel p-7">
-            <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-rose-500/10 blur-2xl" />
-            <div className="relative">
+<div className="relative">
               <div className="flex items-center gap-3 mb-6">
-                <div className="rounded-xl bg-rose-500/15 p-2.5 border border-rose-400/20">
-                  <Users className="h-5 w-5 text-rose-300" />
+                <div className="rounded-xl lu-pin-coral-surface p-2.5 border lu-pin-coral-border">
+                  <Users className="h-5 w-5 lu-pin-coral-text" />
                 </div>
-                <span className="text-sm uppercase tracking-[0.2em] font-bold text-rose-300/90 truncate">{volunteerTimeSlot}</span>
+                <span className="text-sm uppercase tracking-[0.12em] font-semibold lu-pin-coral-text opacity-90 truncate">{volunteerTimeSlot}</span>
               </div>
               <div className="space-y-2.5">
                 {volunteerItems.map((item, index) => (
@@ -1336,26 +1322,21 @@ function WifiView() {
   return (
     <div className="relative w-full h-full flex items-center justify-center">
       {/* Ambient cyan glow orbs */}
-      <div className="lu-ambient pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute -top-40 -left-40 h-[28rem] w-[28rem] rounded-full bg-cyan-500/15 blur-3xl animate-pulse" style={{ animationDuration: "6s" }} />
-        <div className="absolute -bottom-40 -right-40 h-[32rem] w-[32rem] rounded-full bg-sky-500/10 blur-3xl animate-pulse" style={{ animationDuration: "8s", animationDelay: "2s" }} />
-      </div>
+
 
       <div className="relative w-full max-w-5xl lu-panel p-12 text-center">
-        <div className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-cyan-500/15 blur-2xl" />
-
-        <div className="relative flex flex-col items-center">
-          <div className="mb-8 rounded-3xl bg-cyan-500/15 border border-cyan-400/30 p-6">
-            <Wifi className="h-20 w-20 text-cyan-300" />
+<div className="relative flex flex-col items-center">
+          <div className="mb-8 rounded-3xl lu-pin-lake-surface border lu-pin-lake-border p-6">
+            <Wifi className="h-20 w-20 lu-text-schedule" />
           </div>
 
-          <p className="text-3xl uppercase tracking-[0.3em] font-bold text-cyan-300/90 mb-10">
+          <p className="text-3xl uppercase tracking-[0.12em] font-semibold lu-text-schedule opacity-90 mb-10">
             Free WiFi
           </p>
 
           <div className="w-full max-w-3xl space-y-6">
             <div className="rounded-2xl border border-white/15 bg-white/[0.04] px-8 py-6">
-              <p className="text-2xl uppercase tracking-[0.25em] font-bold text-white/50 mb-3">
+              <p className="text-2xl uppercase tracking-[0.12em] font-bold text-white/50 mb-3">
                 Network
               </p>
               <p className="text-7xl font-mono font-bold leading-none tracking-wide">
@@ -1364,7 +1345,7 @@ function WifiView() {
             </div>
 
             <div className="rounded-2xl border border-white/15 bg-white/[0.04] px-8 py-6">
-              <p className="text-2xl uppercase tracking-[0.25em] font-bold text-white/50 mb-3">
+              <p className="text-2xl uppercase tracking-[0.12em] font-bold text-white/50 mb-3">
                 Password
               </p>
               <p className="text-7xl font-mono font-bold leading-none tracking-wide">
@@ -1409,15 +1390,10 @@ function UpcomingView({
   return (
     <div className="relative w-full h-full flex items-center justify-center select-none">
       {/* Ambient indigo glow orbs */}
-      <div className="lu-ambient pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute -top-40 -left-40 h-[28rem] w-[28rem] rounded-full bg-indigo-500/15 blur-3xl animate-pulse" style={{ animationDuration: "6s" }} />
-        <div className="absolute -bottom-40 -right-40 h-[32rem] w-[32rem] rounded-full bg-purple-500/10 blur-3xl animate-pulse" style={{ animationDuration: "8s", animationDelay: "2s" }} />
-      </div>
+
 
       <div className="relative w-full max-w-6xl lu-panel p-10">
-        <div className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-indigo-500/15 blur-2xl" />
-
-        <div className="relative">
+<div className="relative">
           {/* Header */}
           <div className="flex items-center justify-center gap-4 mb-8">
             <div className="rounded-2xl lu-pin-lake-surface p-4 border lu-pin-lake-border">
@@ -1489,15 +1465,7 @@ function UpcomingView({
 function WeatherView({ weather }: { weather: WeatherData | null }) {
   return (
     <div className="relative w-full h-full flex items-center justify-center">
-      {/* Ambient sky-blue glow orbs */}
-      <div className="lu-ambient pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute -top-40 -left-40 h-[28rem] w-[28rem] rounded-full bg-sky-500/15 blur-3xl animate-pulse" style={{ animationDuration: "6s" }} />
-        <div className="absolute -bottom-40 -right-40 h-[32rem] w-[32rem] rounded-full bg-cyan-500/10 blur-3xl animate-pulse" style={{ animationDuration: "8s", animationDelay: "2s" }} />
-      </div>
-
       <div className="relative w-full max-w-5xl lu-panel p-12">
-        <div className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-sky-500/15 blur-2xl" />
-
         <div className="relative flex flex-col items-center justify-center">
           {!weather ? (
             <p className="text-white/50 text-3xl">Loading weather...</p>
@@ -1516,11 +1484,11 @@ function WeatherView({ weather }: { weather: WeatherData | null }) {
 
               <div className="flex items-center gap-16 text-3xl text-white/70">
                 <span className="flex items-center gap-3">
-                  <Droplets className="h-9 w-9 text-sky-300" />
+                  <Droplets className="h-9 w-9 lu-text-schedule" />
                   {weather.current.humidity}%
                 </span>
                 <span className="flex items-center gap-3">
-                  <Wind className="h-9 w-9 text-sky-300" />
+                  <Wind className="h-9 w-9 lu-text-schedule" />
                   {Math.round(weather.current.wind_speed)} mph
                 </span>
               </div>
@@ -1558,15 +1526,10 @@ function ScheduleView({
   return (
     <div className="relative w-full h-full flex items-center justify-center">
       {/* Ambient violet glow orbs */}
-      <div className="lu-ambient pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute -top-40 -left-40 h-[28rem] w-[28rem] rounded-full bg-primary/15 blur-3xl animate-pulse" style={{ animationDuration: "6s" }} />
-        <div className="absolute -bottom-40 right-1/4 h-96 w-96 rounded-full bg-fuchsia-500/10 blur-3xl animate-pulse" style={{ animationDuration: "8s", animationDelay: "2s" }} />
-      </div>
+
 
       <div className="relative w-full max-w-6xl lu-panel p-12 text-center">
-        <div className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-primary/15 blur-2xl" />
-
-        {item ? (
+{item ? (
           <div className="relative">
             {/* Status label  -  Now or Up Next */}
             <div className="flex items-center justify-center gap-4 mb-10">
@@ -1576,12 +1539,12 @@ function ScheduleView({
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full lu-bg-now opacity-75" />
                     <span className="relative inline-flex h-5 w-5 rounded-full lu-bg-now" />
                   </span>
-                  <span className="text-3xl font-bold uppercase tracking-[0.3em] lu-text-now">Happening Now</span>
+                  <span className="text-3xl font-bold uppercase tracking-[0.12em] lu-text-now">Happening Now</span>
                 </>
               ) : (
                 <>
                   <ChevronRight className="h-9 w-9 text-primary" />
-                  <span className="text-3xl font-bold uppercase tracking-[0.3em] text-primary">Up Next</span>
+                  <span className="text-3xl font-bold uppercase tracking-[0.12em] text-primary">Up Next</span>
                 </>
               )}
             </div>
@@ -1660,15 +1623,10 @@ function MealView({
   return (
     <div className="relative w-full h-full flex items-center justify-center select-none">
       {/* Ambient amber glow orbs */}
-      <div className="lu-ambient pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute -top-40 -left-40 h-[28rem] w-[28rem] rounded-full bg-amber-500/15 blur-3xl animate-pulse" style={{ animationDuration: "6s" }} />
-        <div className="absolute -bottom-40 -right-40 h-[32rem] w-[32rem] rounded-full bg-orange-500/10 blur-3xl animate-pulse" style={{ animationDuration: "8s", animationDelay: "2s" }} />
-      </div>
+
 
       <div className="relative w-full max-w-6xl lu-panel p-12 text-center">
-        <div className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-amber-500/15 blur-2xl" />
-
-        {!nextMeal ? (
+{!nextMeal ? (
           <div className="relative flex flex-col items-center">
             <UtensilsCrossed className="h-32 w-32 text-white/30 mb-6" />
             <h2 className="text-5xl font-bold text-white/60">No Upcoming Meals</h2>
@@ -1680,7 +1638,7 @@ function MealView({
                 content below is the dominant element. */}
             <div className="inline-flex items-center gap-3 px-5 py-2 rounded-full border lu-pin-warm-border lu-priority-normal-surface mb-8">
               {getEventIcon(nextMeal.title, true, "sm")}
-              <span className="text-2xl uppercase tracking-[0.25em] font-bold lu-text-meal opacity-90">
+              <span className="text-2xl uppercase tracking-[0.12em] font-bold lu-text-meal opacity-90">
                 {mealLabel} · {nextMeal.title}
               </span>
             </div>
@@ -1780,16 +1738,12 @@ function MapView({
   return (
     <div className="relative w-full h-full flex gap-6">
       {/* Ambient glow orbs - matched to destination color */}
-      <div className="lu-ambient pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <div className={`absolute -top-40 -left-40 h-[28rem] w-[28rem] rounded-full ${cc.glow} blur-3xl animate-pulse`} style={{ animationDuration: "6s" }} />
-        <div className={`absolute -bottom-40 right-1/3 h-96 w-96 rounded-full ${cc.glow} blur-3xl animate-pulse`} style={{ animationDuration: "8s", animationDelay: "2s", opacity: 0.6 }} />
-      </div>
+
 
       {/* Left side - Event info card */}
       <div className="w-[26rem] shrink-0 flex flex-col">
         <div className={`flex-1 relative overflow-hidden lu-panel p-7 flex flex-col justify-center`}>
-          <div className={`absolute -top-12 -right-12 h-40 w-40 rounded-full ${cc.glow} blur-2xl`} />
-          <div className="relative">
+<div className="relative">
             {featuredItem ? (
               <>
                 <div className="flex items-center gap-3 mb-5">
@@ -1972,18 +1926,10 @@ function MapView({
                 }}
               >
                 {isFeatured && (
-                  <>
-                    {/* Pulsing ring */}
-                    <div 
-                      className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-16 h-16 rounded-full animate-ping"
-                      style={{ backgroundColor: hex, opacity: 0.4 }}
-                    />
-                    {/* Solid ring */}
-                    <div 
-                      className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-12 h-12 rounded-full"
-                      style={{ backgroundColor: hex, opacity: 0.3 }}
-                    />
-                  </>
+                  <div 
+                    className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-12 h-12 rounded-full"
+                    style={{ backgroundColor: hex, opacity: 0.28 }}
+                  />
                 )}
                 {isPrev && (
                   <div 
@@ -2046,45 +1992,38 @@ function VolunteersView({
   return (
     <div className="relative w-full h-full flex items-center justify-center">
       {/* Ambient rose glow orbs */}
-      <div className="lu-ambient pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute -top-40 -left-40 h-[28rem] w-[28rem] rounded-full bg-rose-500/15 blur-3xl animate-pulse" style={{ animationDuration: "6s" }} />
-        <div className="absolute -bottom-40 -right-40 h-[32rem] w-[32rem] rounded-full bg-pink-500/10 blur-3xl animate-pulse" style={{ animationDuration: "8s", animationDelay: "2s" }} />
-      </div>
+
 
       {!volunteerSchedule ? (
         <div className="relative w-full max-w-3xl lu-panel p-12 flex flex-col items-center justify-center">
-          <div className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-rose-500/15 blur-2xl" />
           <Users className="h-32 w-32 text-white/30 mb-8 relative" />
-          <h2 className="text-5xl font-bold text-white/60 relative">No Volunteer Schedule</h2>
+          <h2 className="text-5xl font-semibold text-white/60 relative">No Volunteer Schedule</h2>
         </div>
       ) : (
         <div className="relative w-full max-w-7xl flex flex-col items-center">
           {/* Header panel  -  bigger time-slot title and tagline so it reads
               clearly from the back of the room. */}
           <div className="relative w-full overflow-hidden lu-panel p-10 mb-6 text-center">
-            <div className="absolute -top-12 left-1/2 -translate-x-1/2 h-48 w-96 rounded-full bg-rose-500/15 blur-3xl" />
             <div className="relative flex items-center justify-center gap-5 mb-3">
-              <div className="rounded-2xl bg-rose-500/15 p-4 border border-rose-400/20">
-                <Users className="h-10 w-10 text-rose-300" />
+              <div className="rounded-2xl lu-pin-coral-surface p-4 border lu-pin-coral-border">
+                <Users className="h-10 w-10 lu-pin-coral-text" />
               </div>
               <h2 className="text-6xl font-bold">{volunteerTimeSlot}</h2>
             </div>
-            <p className="text-2xl text-rose-300/80 uppercase tracking-[0.3em] font-bold">Devotional Assignments</p>
+            <p className="text-2xl lu-pin-coral-text opacity-80 uppercase tracking-[0.12em] font-semibold">Devotional Assignments</p>
           </div>
 
           {/* Roles grid  -  every role card scaled up so the assignee name is
               the dominant element. Labels are still de-emphasized but now
               large enough to be legible across the room. */}
           <div className="relative w-full overflow-hidden lu-panel p-8">
-            <div className="absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-rose-500/10 blur-2xl" />
-            <div className="absolute -top-10 -right-10 h-40 w-40 rounded-full bg-pink-500/10 blur-2xl" />
             <div className="relative grid grid-cols-1 md:grid-cols-2 gap-5">
               {roles.map((role, index) => (
                 <div
                   key={index}
                   className="p-6 lu-panel-inner"
                 >
-                  <p className="text-rose-300/80 text-lg uppercase tracking-[0.2em] font-bold mb-3">{role.label}</p>
+                  <p className="lu-pin-coral-text opacity-80 text-lg uppercase tracking-[0.12em] font-semibold mb-3">{role.label}</p>
                   <p className="text-4xl font-semibold leading-tight text-balance">{role.value}</p>
                   {role.subtitle && (
                     <p className="text-white/55 text-xl italic mt-2 text-balance">({role.subtitle})</p>
@@ -2104,23 +2043,18 @@ function AnnouncementsView({ announcements }: { announcements: Announcement[] })
   return (
     <div className="relative w-full h-full flex items-center justify-center">
       {/* Ambient amber glow orbs */}
-      <div className="lu-ambient pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute -top-40 -left-40 h-[28rem] w-[28rem] rounded-full bg-amber-500/15 blur-3xl animate-pulse" style={{ animationDuration: "6s" }} />
-        <div className="absolute -bottom-40 -right-40 h-[32rem] w-[32rem] rounded-full bg-yellow-500/10 blur-3xl animate-pulse" style={{ animationDuration: "8s", animationDelay: "2s" }} />
-      </div>
+
 
       {announcements.length === 0 ? (
         <div className="relative w-full max-w-2xl lu-panel p-12 flex flex-col items-center justify-center">
-          <div className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-amber-500/15 blur-2xl" />
-          <Megaphone className="h-24 w-24 lu-text-meal opacity-60 mb-6 relative" />
+<Megaphone className="h-24 w-24 lu-text-meal opacity-60 mb-6 relative" />
           <h2 className="text-4xl font-bold lu-text-meal opacity-80 relative">No Announcements</h2>
         </div>
       ) : (
         <div className="relative w-full max-w-7xl flex flex-col items-center">
           {/* Header panel */}
           <div className="relative w-full overflow-hidden lu-panel p-7 mb-5 text-center">
-            <div className="absolute -top-12 left-1/2 -translate-x-1/2 h-48 w-96 rounded-full bg-amber-500/15 blur-3xl" />
-            <div className="relative flex items-center justify-center gap-4">
+<div className="relative flex items-center justify-center gap-4">
               <div className="rounded-xl lu-announce-header p-3 border">
                 <Megaphone className="h-7 w-7 lu-text-meal" />
               </div>
@@ -2144,8 +2078,7 @@ function AnnouncementsView({ announcements }: { announcements: Announcement[] })
                   key={announcement.id}
                   className={`relative overflow-hidden lu-panel border ${palette.border} p-6`}
                 >
-                  <div className={`absolute -top-10 -right-10 h-32 w-32 rounded-full ${palette.glow} blur-2xl`} />
-                  {palette.badge && (
+{palette.badge && (
                     <div className="relative mb-3">
                       <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-[0.2em] ${palette.icon} bg-white/[0.05] border ${palette.border}`}>
                         {palette.badge}
