@@ -861,7 +861,7 @@ export default function LiveUpdatesPage() {
             />
           </div>
           <h1 className="text-xl font-bold tracking-wide whitespace-nowrap">
-            RENDEZVOUS 2026
+            RENDEZVOUS 2027
           </h1>
         </div>
 
@@ -915,34 +915,32 @@ export default function LiveUpdatesPage() {
 
       {/* Keyboard Controls Footer - hidden in fullscreen or when controls are hidden (press H to toggle) */}
       {!isFullscreen && showControls && (
-      <footer className="shrink-0 px-12 py-6 border-t border-primary/20">
-        <div className="flex items-center gap-6 justify-center flex-wrap">
-          <span className="text-white/50 text-lg">Keyboard Controls:</span>
-          <KeyButton label="1 All" active={currentView === "all"} />
-          <KeyButton label="2 Weather" active={currentView === "weather"} />
-          <KeyButton label="3 Schedule" active={currentView === "schedule"} />
-          <KeyButton label="4 Meal" active={currentView === "meal"} />
-          <KeyButton label="5 Map" active={currentView === "map"} />
+      <footer className="shrink-0 border-t border-primary/20 px-12 py-6">
+        <p className="mb-4 text-center text-sm text-white/50">Number keys switch views on a connected keyboard.</p>
+        <div className="flex flex-wrap items-center justify-center gap-4">
+          <KeyButton shortcut="1" name="All" active={currentView === "all"} />
+          <KeyButton shortcut="2" name="Weather" active={currentView === "weather"} />
+          <KeyButton shortcut="3" name="Schedule" active={currentView === "schedule"} />
+          <KeyButton shortcut="4" name="Meal" active={currentView === "meal"} />
+          <KeyButton shortcut="5" name="Map" active={currentView === "map"} />
           {hasVolunteerData && (
-            <KeyButton label="6 Volunteers" active={currentView === "volunteers"} />
+            <KeyButton shortcut="6" name="Volunteers" active={currentView === "volunteers"} />
           )}
           {announcements.length > 0 && (
-            <KeyButton label="7 Announcements" active={currentView === "announcements"} />
+            <KeyButton shortcut="7" name="Announcements" active={currentView === "announcements"} />
           )}
-          <KeyButton label="8 WiFi" active={currentView === "wifi"} />
-          <KeyButton label="9 Up Next" active={currentView === "upcoming"} />
-          <KeyButton label="0/A Auto" active={isAutoRotating} />
-          <KeyButton label="F Fullscreen" active={isFullscreen} />
+          <KeyButton shortcut="8" name="WiFi" active={currentView === "wifi"} />
+          <KeyButton shortcut="9" name="Up next" active={currentView === "upcoming"} />
+          <KeyButton shortcut="0" name="Auto rotate" active={isAutoRotating} />
+          <KeyButton shortcut="F" name="Fullscreen" active={isFullscreen} />
 
           {/* Per-view zoom controls  -  saved to localStorage so each TV
               remembers its preferred size for each panel. The widget is
               intentionally larger / brighter than the keyboard hints so it's
               easy to find on a projection screen. The label includes the
               current view name so it's obvious that resizing is per-page. */}
-          <div className="flex items-center gap-2 ml-2 px-4 py-2 rounded-xl border border-cyan-400/30 bg-cyan-400/[0.06] shadow-[0_0_24px_-8px_theme(colors.cyan.400/0.4)]">
-            <span className="text-cyan-200 text-base font-semibold uppercase tracking-wider mr-1">
-              {currentView} size
-            </span>
+          <div className="ml-2 flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-4 py-2">
+            <span className="mr-1 text-base font-semibold text-primary">{currentView} size</span>
             <button
               type="button"
               onClick={zoomOut}
@@ -991,14 +989,19 @@ export default function LiveUpdatesPage() {
   )
 }
 
-function KeyButton({ label, active }: { label: string; active?: boolean }) {
+function KeyButton({ name, shortcut, active }: { name: string; shortcut?: string; active?: boolean }) {
   return (
-    <span className={`px-5 py-2.5 rounded-lg text-lg font-medium transition-colors ${
-      active 
-        ? "bg-orange-600 text-white" 
-        : "bg-white/10 text-white/80 hover:bg-white/20"
-    }`}>
-      {label}
+    <span
+      className={`inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-base font-medium transition-colors ${
+        active ? "bg-primary text-primary-foreground" : "bg-white/10 text-white/80 hover:bg-white/20"
+      }`}
+    >
+      {shortcut ? (
+        <kbd className="rounded border border-white/15 bg-white/10 px-1.5 py-0.5 font-mono text-xs opacity-80">
+          {shortcut}
+        </kbd>
+      ) : null}
+      {name}
     </span>
   )
 }
@@ -1150,7 +1153,7 @@ function AllView({
               />
             </div>
             <div className="inline-flex items-center gap-3">
-              <span className="lu-kicker text-primary">2026</span>
+              <span className="lu-kicker text-primary">2027</span>
             </div>
           </div>
 

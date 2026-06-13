@@ -637,24 +637,28 @@
   }
 }
 
-/* Live updates display board — lake-teal dark, flat panels */
+/* Brand dark shell — live updates display board, silent mode, etc. */
+.brand-dark-shell,
 .live-updates-shell {
   background: oklch(0.13 0.025 195);
   color: oklch(0.96 0.01 178);
 }
 
+.brand-dark-shell .brand-dark-surface,
 .live-updates-shell .lu-panel {
   border: 1px solid oklch(0.38 0.045 175 / 0.45);
   background: oklch(0.17 0.028 195);
   border-radius: var(--radius-xl);
 }
 
+.brand-dark-shell .brand-dark-surface-soft,
 .live-updates-shell .lu-panel-soft {
   border: 1px solid oklch(0.32 0.04 175 / 0.35);
   background: oklch(0.15 0.025 195);
   border-radius: var(--radius-lg);
 }
 
+.brand-dark-shell .brand-dark-surface-inner,
 .live-updates-shell .lu-panel-inner {
   border: 1px solid oklch(0.3 0.035 175 / 0.35);
   background: oklch(0.14 0.022 195);

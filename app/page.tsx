@@ -1,6 +1,8 @@
 "use client"
 
 import type { ReactNode } from "react"
+import { useEffect } from "react"
+import dynamic from "next/dynamic"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import {
@@ -18,7 +20,14 @@ import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { HeroSection } from "@/components/hero-section"
 import { RegistrationCountdown2027 } from "@/components/registration-countdown-2027"
-import { MuxVideoPlayer } from "@/components/mux-video-player"
+
+const MuxVideoPlayer = dynamic(
+  () => import("@/components/mux-video-player").then((mod) => mod.MuxVideoPlayer),
+  {
+    ssr: false,
+    loading: () => <div className="aspect-video w-full animate-pulse rounded-xl bg-muted" aria-hidden="true" />,
+  },
+)
 
 const retreatFacts = [
   {
@@ -81,6 +90,10 @@ function ExpectPanel({
 }
 
 export default function HomePage() {
+  useEffect(() => {
+    void import("@mux/mux-player-react")
+  }, [])
+
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader isHomepage />

@@ -583,7 +583,7 @@ export default function Map2026Page() {
         <section className="border-b bg-secondary pt-24 pb-12 md:pt-28 md:pb-16">
           <div className="container mx-auto px-6">
             <div className="mx-auto max-w-4xl text-center">
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-secondary-foreground/20 bg-secondary-foreground/10 backdrop-blur-sm px-4 py-2 text-sm font-medium text-secondary-foreground">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-medium text-foreground">
                 <Sparkles className="h-4 w-4" />
                 {ALL_REGISTRATIONS.length} Families Registered
               </div>
@@ -608,7 +608,7 @@ export default function Map2026Page() {
         </section>
 
         {/* Map Legend */}
-        <section className="border-b py-4 bg-gradient-to-br from-primary/5 to-accent/5">
+        <section className="border-b border-primary/15 bg-surface-highlight py-4">
           <div className="container mx-auto px-6">
             <div className="flex flex-wrap items-center justify-center gap-6">
               <div className="flex items-center gap-2">
@@ -677,7 +677,7 @@ export default function Map2026Page() {
               <div className="w-full lg:w-80 xl:w-96 flex flex-col gap-4">
                 {/* Selected Family Details */}
                 {selectedRegistration && (
-                  <Card className="border-2 border-primary bg-gradient-to-br from-card to-primary/5 shadow-lg">
+                  <Card className="border-2 border-primary bg-card shadow-lg">
                     <CardHeader className="pb-2">
                       <div className="flex items-start justify-between">
                         <CardTitle className="text-lg flex items-center gap-2">
@@ -766,7 +766,7 @@ export default function Map2026Page() {
                 )}
 
                 {/* Attendee List */}
-                <Card className="flex-1 border-border/50 bg-gradient-to-br from-card to-muted/30 transition-all hover:shadow-xl">
+                <Card className="flex-1 border-border/50 bg-card transition-all hover:shadow-xl">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-lg flex items-center gap-2">
                       <MapPin className="h-5 w-5 text-primary" />
@@ -774,7 +774,7 @@ export default function Map2026Page() {
                     </CardTitle>
                     <CardDescription className="flex items-center justify-between gap-2 flex-wrap">
                       <span>
-                        {filteredRegistrations.length} {filteredRegistrations.length === 1 ? "family" : "families"} — click to view details
+                        {filteredRegistrations.length} {filteredRegistrations.length === 1 ? "family" : "families"}. Click to view details.
                       </span>
                       <span className="inline-flex items-center gap-1 text-xs text-muted-foreground/70">
                         <ChevronUp className="h-3 w-3" />
@@ -795,7 +795,9 @@ export default function Map2026Page() {
                             <button
                               key={reg.id}
                               className={`w-full px-4 py-3 text-left transition-all hover:bg-primary/5 ${
-                                selectedRegistration?.id === reg.id ? "bg-primary/10 border-l-4 border-l-primary" : ""
+                                selectedRegistration?.id === reg.id
+                                  ? "border border-primary/30 bg-primary/10 ring-1 ring-primary/20"
+                                  : "border border-transparent"
                               }`}
                               onClick={() => setSelectedRegistration(reg)}
                             >

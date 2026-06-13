@@ -212,6 +212,10 @@ export default function FAQPage() {
               <p className="faq-videos-campfire-script">Around the campfire</p>
               <h2 className="text-section-title text-balance">Stephen &amp; Ranae tell the Rendezvous story</h2>
               <p className="mt-2 text-muted-foreground">Six short clips. Tap one to listen in.</p>
+              <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+                Captions start off. After you tap play, use the CC button in the player controls. On iPhone,
+                iOS may still show captions if Subtitles and Captioning is enabled in Settings → Accessibility.
+              </p>
             </header>
             <div className="faq-videos-campfire-grid grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {faqVideos.map((video) => (

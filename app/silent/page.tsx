@@ -12,12 +12,11 @@ export default function SilentPhonePage() {
   const [timeRemaining, setTimeRemaining] = useState(SILENT_DURATION)
   const [isPaused, setIsPaused] = useState(false)
 
-  // Countdown timer
   useEffect(() => {
     if (!isActive || isPaused) return
 
     const interval = setInterval(() => {
-      setTimeRemaining(prev => {
+      setTimeRemaining((prev) => {
         if (prev <= 1) {
           setIsActive(false)
           return SILENT_DURATION
@@ -29,14 +28,12 @@ export default function SilentPhonePage() {
     return () => clearInterval(interval)
   }, [isActive, isPaused])
 
-  // Format time as MM:SS
   const formatTime = useCallback((seconds: number) => {
     const mins = Math.floor(seconds / 60)
     const secs = seconds % 60
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
   }, [])
 
-  // Calculate progress percentage
   const progress = ((SILENT_DURATION - timeRemaining) / SILENT_DURATION) * 100
 
   const handleStart = () => {
@@ -46,7 +43,7 @@ export default function SilentPhonePage() {
   }
 
   const handlePauseResume = () => {
-    setIsPaused(prev => !prev)
+    setIsPaused((prev) => !prev)
   }
 
   const handleStop = () => {
@@ -61,56 +58,46 @@ export default function SilentPhonePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-950 text-white flex flex-col">
-      {/* Header */}
-      <header className="p-4 flex items-center justify-between border-b border-white/10">
-        <Link href="/" className="text-white/60 hover:text-white transition-colors">
+    <div className="brand-dark-shell flex min-h-screen flex-col">
+      <header className="flex items-center justify-between border-b border-primary/20 p-4">
+        <Link href="/" className="focus-ring rounded-sm text-[oklch(0.72_0.03_178)] hover:text-[oklch(0.96_0.01_178)]">
           &larr; Back
         </Link>
         <h1 className="text-lg font-semibold">Silent Mode</h1>
-        <div className="w-16" />
+        <div className="w-16" aria-hidden="true" />
       </header>
 
-      {/* Main content */}
-      <main className="flex-1 flex flex-col items-center justify-center p-8">
+      <main id="main-content" className="flex flex-1 flex-col items-center justify-center p-8">
         {!isActive ? (
-          // Inactive state
-          <div className="text-center space-y-8">
+          <div className="space-y-8 text-center">
             <div className="relative">
-              <div className="w-48 h-48 rounded-full bg-slate-800 border-4 border-slate-700 flex items-center justify-center mx-auto">
-                <Volume2 className="w-24 h-24 text-slate-500" />
+              <div className="brand-dark-surface mx-auto flex h-48 w-48 items-center justify-center rounded-full border-4 border-primary/30">
+                <Volume2 className="h-24 w-24 text-primary" aria-hidden="true" />
               </div>
             </div>
 
             <div className="space-y-2">
-              <h2 className="text-3xl font-bold">Silence Your Phone</h2>
-              <p className="text-white/60 max-w-md">
-                Activate silent mode for 30 minutes during sessions or assemblies. 
-                A timer will remind you when it&apos;s safe to unmute.
+              <h2 className="text-3xl font-bold">Silence your phone</h2>
+              <p className="mx-auto max-w-md text-[oklch(0.72_0.03_178)]">
+                Activate silent mode for 30 minutes during sessions or assemblies. A timer will remind
+                you when it&apos;s safe to unmute.
               </p>
             </div>
 
-            <Button 
-              onClick={handleStart}
-              size="lg"
-              className="bg-red-600 hover:bg-red-700 text-white px-12 py-6 text-xl rounded-full"
-            >
-              <BellOff className="w-6 h-6 mr-3" />
-              Start Silent Mode
+            <Button onClick={handleStart} size="lg" variant="destructive" className="rounded-full px-12 py-6 text-xl">
+              <BellOff className="mr-3 h-6 w-6" aria-hidden="true" />
+              Start silent mode
             </Button>
 
-            <p className="text-white/40 text-sm flex items-center justify-center gap-2">
-              <Clock className="w-4 h-4" />
+            <p className="flex items-center justify-center gap-2 text-sm text-[oklch(0.62_0.03_178)]">
+              <Clock className="h-4 w-4" aria-hidden="true" />
               30 minutes
             </p>
           </div>
         ) : (
-          // Active state
-          <div className="text-center space-y-8">
-            {/* Circular progress */}
+          <div className="space-y-8 text-center">
             <div className="relative">
-              <svg className="w-64 h-64 transform -rotate-90">
-                {/* Background circle */}
+              <svg className="h-64 w-64 -rotate-90 transform" aria-hidden="true">
                 <circle
                   cx="128"
                   cy="128"
@@ -118,9 +105,8 @@ export default function SilentPhonePage() {
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="8"
-                  className="text-slate-800"
+                  className="text-[oklch(0.2_0.03_195)]"
                 />
-                {/* Progress circle */}
                 <circle
                   cx="128"
                   cy="128"
@@ -131,60 +117,47 @@ export default function SilentPhonePage() {
                   strokeLinecap="round"
                   strokeDasharray={2 * Math.PI * 120}
                   strokeDashoffset={2 * Math.PI * 120 * (1 - progress / 100)}
-                  className="text-red-500 transition-all duration-1000"
+                  className="text-destructive transition-all duration-1000"
                 />
               </svg>
-              
-              {/* Center content */}
+
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <VolumeX className={`w-16 h-16 mb-2 ${isPaused ? 'text-yellow-500' : 'text-red-500'}`} />
-                <span className="text-5xl font-mono font-bold">{formatTime(timeRemaining)}</span>
-                <span className="text-white/60 mt-2">
-                  {isPaused ? 'PAUSED' : 'SILENT MODE'}
-                </span>
+                <VolumeX
+                  className={`mb-2 h-16 w-16 ${isPaused ? "text-[oklch(0.75_0.12_85)]" : "text-destructive"}`}
+                  aria-hidden="true"
+                />
+                <span className="font-mono text-5xl font-bold tabular-nums">{formatTime(timeRemaining)}</span>
+                <span className="mt-2 text-[oklch(0.72_0.03_178)]">{isPaused ? "Paused" : "Silent mode"}</span>
               </div>
             </div>
 
             <div className="space-y-2">
-              <h2 className="text-2xl font-bold flex items-center justify-center gap-3">
-                <BellOff className={isPaused ? 'text-yellow-500' : 'text-red-500'} />
-                {isPaused ? 'Timer Paused' : 'Phone Should Be Silent'}
+              <h2 className="flex items-center justify-center gap-3 text-2xl font-bold">
+                <BellOff className={isPaused ? "text-[oklch(0.75_0.12_85)]" : "text-destructive"} aria-hidden="true" />
+                {isPaused ? "Timer paused" : "Phone should be silent"}
               </h2>
-              <p className="text-white/60">
-                {isPaused 
-                  ? 'Resume the timer when ready' 
-                  : 'Please keep your phone on silent or vibrate'}
+              <p className="text-[oklch(0.72_0.03_178)]">
+                {isPaused ? "Resume the timer when ready." : "Please keep your phone on silent or vibrate."}
               </p>
             </div>
 
-            {/* Controls */}
-            <div className="flex items-center justify-center gap-4">
-              <Button
-                onClick={handlePauseResume}
-                variant="outline"
-                size="lg"
-                className="border-white/20 hover:bg-white/10"
-              >
+            <div className="flex flex-wrap items-center justify-center gap-4">
+              <Button onClick={handlePauseResume} variant="outline" size="lg" className="border-primary/25 bg-transparent hover:bg-primary/10">
                 {isPaused ? (
                   <>
-                    <Play className="w-5 h-5 mr-2" />
+                    <Play className="mr-2 h-5 w-5" aria-hidden="true" />
                     Resume
                   </>
                 ) : (
                   <>
-                    <Pause className="w-5 h-5 mr-2" />
+                    <Pause className="mr-2 h-5 w-5" aria-hidden="true" />
                     Pause
                   </>
                 )}
               </Button>
 
-              <Button
-                onClick={handleReset}
-                variant="outline"
-                size="lg"
-                className="border-white/20 hover:bg-white/10"
-              >
-                <RotateCcw className="w-5 h-5 mr-2" />
+              <Button onClick={handleReset} variant="outline" size="lg" className="border-primary/25 bg-transparent hover:bg-primary/10">
+                <RotateCcw className="mr-2 h-5 w-5" aria-hidden="true" />
                 Reset
               </Button>
 
@@ -192,26 +165,24 @@ export default function SilentPhonePage() {
                 onClick={handleStop}
                 variant="outline"
                 size="lg"
-                className="border-red-500/50 text-red-400 hover:bg-red-500/10"
+                className="border-destructive/50 text-destructive hover:bg-destructive/10"
               >
-                <Bell className="w-5 h-5 mr-2" />
-                End Silent
+                <Bell className="mr-2 h-5 w-5" aria-hidden="true" />
+                End silent
               </Button>
             </div>
 
-            {/* Reminder */}
-            <div className="bg-slate-800/50 rounded-xl p-4 max-w-md mx-auto border border-white/10">
-              <p className="text-sm text-white/70">
-                <span className="font-semibold text-white">Reminder:</span> When the timer ends, 
-                you can unmute your phone. Please be respectful during sessions and assemblies.
+            <div className="brand-dark-surface mx-auto max-w-md rounded-xl p-4">
+              <p className="text-sm text-[oklch(0.78_0.02_178)]">
+                <span className="font-semibold text-[oklch(0.96_0.01_178)]">Reminder:</span> When the timer
+                ends, you can unmute your phone. Please be respectful during sessions and assemblies.
               </p>
             </div>
           </div>
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="p-4 text-center text-white/40 text-sm border-t border-white/10">
+      <footer className="border-t border-primary/20 p-4 text-center text-sm text-[oklch(0.62_0.03_178)]">
         Rendezvous 2027
       </footer>
     </div>
