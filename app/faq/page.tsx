@@ -75,6 +75,12 @@ const faqItems: FaqItem[] = [
       "All meals are provided and included in your registration. However, if you have specific dietary needs or allergies, please note them during registration and we'll do our best to accommodate you. You're welcome to bring snacks for your family.",
   },
   {
+    id: "video-captions",
+    question: "Can I turn off captions on the FAQ videos?",
+    answer:
+      "Yes. Videos start with captions off. Tap play, then use the CC button in the player controls. On iPhone, iOS may still show captions if Subtitles and Captioning is turned on in Settings → Accessibility → Subtitles & Captioning.",
+  },
+  {
     id: "refund-policy",
     question: "What's the refund policy?",
     answer: (
@@ -205,7 +211,7 @@ export default function FAQPage() {
             <header className="mb-8 md:mb-10">
               <p className="faq-videos-campfire-script">Around the campfire</p>
               <h2 className="text-section-title text-balance">Stephen &amp; Ranae tell the Rendezvous story</h2>
-              <p className="mt-2 text-muted-foreground">Six short clips—grab one and listen in</p>
+              <p className="mt-2 text-muted-foreground">Six short clips. Tap one to listen in.</p>
             </header>
             <div className="faq-videos-campfire-grid grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {faqVideos.map((video) => (

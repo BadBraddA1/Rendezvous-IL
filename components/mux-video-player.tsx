@@ -142,6 +142,7 @@ export function MuxVideoPlayer({
           preload="metadata"
           playsInline
           defaultHiddenCaptions
+          title={title}
           onPlaying={() => {
             playingRef.current = true
             revealPlayer()

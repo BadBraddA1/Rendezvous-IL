@@ -100,7 +100,7 @@ interface MealData {
 }
 
 // SCHEDULE_ITEMS is sourced from `lib/schedule-data.ts` (single source of truth).
-// Update times / titles / locations there — both the printable schedule, the
+// Update times / titles / locations there  -  both the printable schedule, the
 // downloadable PDF, and this Live Updates page will stay in sync.
 const SCHEDULE_ITEMS: ScheduleItem[] = LU_SCHEDULE_ITEMS as ScheduleItem[]
 
@@ -185,7 +185,7 @@ function getEventIcon(
 }
 
 // TEST MODE: Set to true ONLY during development to simulate the event clock.
-// MUST be false in production — when true, the LU page ignores real time and
+// MUST be false in production  -  when true, the LU page ignores real time and
 // pins to TEST_DATE, which made every device show the wrong time.
 const TEST_MODE = false
 const TEST_DATE = new Date('2027-05-03T12:55:00')
@@ -237,15 +237,15 @@ function getWeatherIcon(weatherId: number, iconCode: string, size: "sm" | "md" |
 // NOTE: bump the version suffix on this key whenever the underlying defaults
 // change, so previously-saved zoom levels don't compound on top of new defaults
 // and break the layout.
-//   v1: viewport-scaled base (broken — overshooting at 1080p).
+//   v1: viewport-scaled base (broken  -  overshooting at 1080p).
 //   v2: reduced range.
-//   v3: fixed 16px rem + zoom multiplier (1× default — too small for projection).
+//   v3: fixed 16px rem + zoom multiplier (1× default  -  too small for projection).
 //   v4: starts at 1.75× by default and goes up to 4× so the page is readable
 //       on classroom projectors / TVs across the room out of the box.
-//   v5: defaults back to 1× per user request — they want to opt in to bigger
+//   v5: defaults back to 1× per user request  -  they want to opt in to bigger
 //       sizing per device rather than getting it automatically.
 const ZOOM_STORAGE_KEY = "lu_view_zoom_v5"
-const ZOOM_BASE_PX = 16          // browser default — Tailwind text-* sizes assume this
+const ZOOM_BASE_PX = 16          // browser default  -  Tailwind text-* sizes assume this
 const ZOOM_DEFAULT = 1            // 100% out of the box; bump up per-view as needed
 const ZOOM_MIN = 0.75
 const ZOOM_MAX = 4
@@ -298,7 +298,7 @@ export default function LiveUpdatesPage() {
   // The user-controllable zoom multiplier (1× – 2.5×) lets each TV pick a
   // size that's readable across the room. The previous viewport-scaled
   // baseline was overshooting badly (~50px at 1080p), making text-2xl
-  // render at 76px and breaking every layout — this is the fix for that.
+  // render at 76px and breaking every layout  -  this is the fix for that.
   useEffect(() => {
     if (typeof document === "undefined") return
     const root = document.documentElement
@@ -309,7 +309,7 @@ export default function LiveUpdatesPage() {
     }
   }, [currentZoom])
   const [currentTime, setCurrentTime] = useState(new Date())
-  // Admin mode (?admin=1) — gates the ice cream challenge editor.
+  // Admin mode (?admin=1)  -  gates the ice cream challenge editor.
   // Without this flag, Stephen and Brian will not see any controls or hidden state.
   const [adminMode, setAdminMode] = useState(false)
   useEffect(() => {
@@ -364,12 +364,12 @@ export default function LiveUpdatesPage() {
   // Auto-refresh when a new deployment is detected.
   //
   // The /api/version endpoint returns a BUILD_TIME that changes on each deploy.
-  // We store the version we loaded with and poll every 30 seconds — when the
+  // We store the version we loaded with and poll every 30 seconds  -  when the
   // server's version differs from ours, we reload the page so the TVs pick up
   // the new code automatically without anyone having to manually refresh.
   //
   // We preserve both fullscreen AND the current view/slide across the reload
-  // so the experience is seamless — the page comes back to exactly where it was.
+  // so the experience is seamless  -  the page comes back to exactly where it was.
   const FULLSCREEN_RESTORE_KEY = "lu_restore_fullscreen"
   const VIEW_RESTORE_KEY = "lu_restore_view"
   const AUTO_ROTATE_RESTORE_KEY = "lu_restore_auto_rotate"
@@ -406,7 +406,7 @@ export default function LiveUpdatesPage() {
       }
     }
 
-    // Restore controls visibility — hide controls on restore for clean TV display
+    // Restore controls visibility  -  hide controls on restore for clean TV display
     const savedControls = sessionStorage.getItem(CONTROLS_RESTORE_KEY)
     if (savedControls !== null) {
       sessionStorage.removeItem(CONTROLS_RESTORE_KEY)
@@ -421,7 +421,7 @@ export default function LiveUpdatesPage() {
       // browsers (and Chrome in kiosk mode) allow it.
       setTimeout(() => {
         document.documentElement.requestFullscreen?.().catch(() => {
-          // Browser blocked it — user will need to press F again.
+          // Browser blocked it  -  user will need to press F again.
         })
       }, 300)
     }
@@ -435,10 +435,10 @@ export default function LiveUpdatesPage() {
         const res = await fetch("/api/version", { cache: "no-store" })
         const data = await res.json()
         if (!initialVersion) {
-          // First load — record the version we started with.
+          // First load  -  record the version we started with.
           initialVersion = data.version
         } else if (data.version !== initialVersion) {
-          // Server version changed — a new deploy happened.
+          // Server version changed  -  a new deploy happened.
           // Stash ALL UI state so we can restore it after reload.
           sessionStorage.setItem(VIEW_RESTORE_KEY, currentView)
           sessionStorage.setItem(AUTO_ROTATE_RESTORE_KEY, String(isAutoRotating))
@@ -450,7 +450,7 @@ export default function LiveUpdatesPage() {
           window.location.reload()
         }
       } catch {
-        // Network blip — ignore and try again next interval.
+        // Network blip  -  ignore and try again next interval.
       }
     }
 
@@ -495,7 +495,7 @@ export default function LiveUpdatesPage() {
   //   even when "next meal" is tomorrow morning.
   // - Re-fetches every 2 minutes while the next meal is pinned, so the LU
   //   page recovers from transient API failures (TVs on flaky WiFi).
-  // - Does NOT clear `mealData` on error — we keep the last good payload
+  // - Does NOT clear `mealData` on error  -  we keep the last good payload
   //   so a brief network blip never reverts the screen to "coming soon".
   useEffect(() => {
     if (!nextMeal || !nextMeal.isMeal) {
@@ -538,7 +538,7 @@ export default function LiveUpdatesPage() {
   // Fetch volunteer schedule for the NEXT upcoming devotion.
   //
   // Earlier versions hard-coded clock cutoffs (e.g. "before 10:30 AM →
-  // Morning Devotion"), which broke on days that don't have both slots —
+  // Morning Devotion"), which broke on days that don't have both slots  - 
   // notably Monday, which has no Morning Devotion at all. The card would
   // ask the API for `Monday Morning Devotion`, get nothing, and show a
   // stale or empty schedule.
@@ -576,7 +576,7 @@ export default function LiveUpdatesPage() {
 
         const targetDateStr = nextAssembly.date
 
-        // Friendly label like "Tuesday Morning Devotion" — derived from the
+        // Friendly label like "Tuesday Morning Devotion"  -  derived from the
         // ScheduleItem's own `date` so it always matches the row we'll
         // request from the API.
         const [y, m, d] = targetDateStr.split("-").map(Number)
@@ -845,12 +845,12 @@ export default function LiveUpdatesPage() {
 
   return (
     <div className="live-updates-shell h-screen max-h-screen overflow-hidden flex flex-col text-[oklch(0.96_0.01_178)]">
-      {/* Header — kept minimal: a tiny logo + the clock. Everything else
+      {/* Header  -  kept minimal: a tiny logo + the clock. Everything else
           (WiFi, branding tagline, etc.) was removed so the views below get
           maximum vertical space and aren't competing with header noise. */}
-      <header className="shrink-0 flex items-center justify-between gap-6 px-8 py-4 border-b border-white/10">
+      <header className="shrink-0 flex items-center justify-between gap-6 px-8 py-4 border-b border-primary/20">
         <div className="flex items-center gap-3 min-w-0 shrink">
-          <div className="relative h-11 w-11 shrink-0 rounded-lg bg-white/5 border border-white/10 p-1.5 flex items-center justify-center">
+          <div className="relative h-11 w-11 shrink-0 rounded-lg bg-white/5 border border-primary/20 p-1.5 flex items-center justify-center">
             <Image
               src="/rendezvous-logo.png"
               alt="Rendezvous Homeschool Family Retreat"
@@ -915,7 +915,7 @@ export default function LiveUpdatesPage() {
 
       {/* Keyboard Controls Footer - hidden in fullscreen or when controls are hidden (press H to toggle) */}
       {!isFullscreen && showControls && (
-      <footer className="shrink-0 px-12 py-6 border-t border-white/10">
+      <footer className="shrink-0 px-12 py-6 border-t border-primary/20">
         <div className="flex items-center gap-6 justify-center flex-wrap">
           <span className="text-white/50 text-lg">Keyboard Controls:</span>
           <KeyButton label="1 All" active={currentView === "all"} />
@@ -934,7 +934,7 @@ export default function LiveUpdatesPage() {
           <KeyButton label="0/A Auto" active={isAutoRotating} />
           <KeyButton label="F Fullscreen" active={isFullscreen} />
 
-          {/* Per-view zoom controls — saved to localStorage so each TV
+          {/* Per-view zoom controls  -  saved to localStorage so each TV
               remembers its preferred size for each panel. The widget is
               intentionally larger / brighter than the keyboard hints so it's
               easy to find on a projection screen. The label includes the
@@ -1034,7 +1034,7 @@ function ScheduleCard({
   }
 
   return (
-    <div className="group relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-violet-500/[0.08] via-white/[0.03] to-transparent p-7">
+    <div className="group relative overflow-hidden lu-panel p-7">
       <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-primary/10 blur-2xl" />
       <div className="relative">
         <div className="flex items-center gap-3 mb-6">
@@ -1125,16 +1125,14 @@ function AllView({
   return (
     <div className="relative w-full h-full mx-auto flex flex-col overflow-hidden">
       {/* Ambient background orbs for depth */}
-      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+      <div className="lu-ambient pointer-events-none absolute inset-0 -z-10 overflow-hidden">
         <div className="absolute -top-40 -left-40 h-[28rem] w-[28rem] rounded-full bg-orange-500/10 blur-3xl animate-pulse" style={{ animationDuration: "6s" }} />
         <div className="absolute top-1/3 -right-40 h-[32rem] w-[32rem] rounded-full bg-amber-500/10 blur-3xl animate-pulse" style={{ animationDuration: "8s", animationDelay: "2s" }} />
         <div className="absolute -bottom-40 left-1/3 h-96 w-96 rounded-full bg-rose-500/8 blur-3xl animate-pulse" style={{ animationDuration: "7s", animationDelay: "4s" }} />
       </div>
 
       {/* HERO BANNER - Logo, tagline, featured event */}
-      <div className="relative mb-6 shrink-0 overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.08] via-white/[0.04] to-transparent backdrop-blur-sm">
-        {/* Decorative gradient stripe */}
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-orange-400/60 to-transparent" />
+      <div className="relative mb-6 shrink-0 overflow-hidden lu-panel">
         <div className="absolute -top-24 left-1/2 -translate-x-1/2 h-48 w-[40rem] rounded-full bg-orange-500/20 blur-3xl" />
 
         <div className="relative grid grid-cols-12 gap-6 p-6">
@@ -1152,16 +1150,14 @@ function AllView({
               />
             </div>
             <div className="inline-flex items-center gap-3">
-              <span className="h-px w-8 bg-gradient-to-r from-transparent to-orange-400/60" />
-              <span className="text-xs font-bold uppercase tracking-[0.4em] text-orange-400">2026</span>
-              <span className="h-px w-8 bg-gradient-to-l from-transparent to-orange-400/60" />
+              <span className="lu-kicker text-primary">2026</span>
             </div>
           </div>
 
           {/* Right: Featured event spotlight */}
           <div className="col-span-7 flex flex-col justify-center">
             {featuredItem ? (
-              <div className="relative rounded-2xl border border-white/10 bg-gradient-to-br from-orange-500/10 via-white/[0.03] to-transparent p-6">
+              <div className="relative lu-panel-soft p-6">
                 <div className="flex items-center gap-3 mb-4">
                   {featuredIsNow ? (
                     <>
@@ -1169,7 +1165,7 @@ function AllView({
                         <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
                         <span className="relative inline-flex h-3 w-3 rounded-full bg-green-400" />
                       </span>
-                      <span className="text-sm font-bold uppercase tracking-[0.3em] text-green-400">Happening Now</span>
+                      <span className="lu-kicker text-green-400">Happening now</span>
                     </>
                   ) : (
                     <>
@@ -1179,18 +1175,18 @@ function AllView({
                   )}
                 </div>
                 <div className="flex items-start gap-6">
-                  <div className="shrink-0 rounded-2xl bg-white/5 border border-white/10 p-4">
+                  <div className="shrink-0 rounded-2xl bg-white/5 border border-primary/20 p-4">
                     {getEventIcon(featuredItem.title, featuredItem.isMeal, "lg")}
                   </div>
                   <div className="flex-1 min-w-0">
                     <h2 className="text-4xl font-bold leading-tight mb-3 text-balance">{featuredItem.title}</h2>
                     <div className="flex flex-wrap gap-3">
-                      <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-base">
+                      <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-primary/20 text-base">
                         <Clock className="h-4 w-4 text-orange-400" />
                         {featuredIsNow ? featuredItem.time : `${featuredItem.day} ${featuredItem.time}`}
                       </span>
                       {featuredItem.location && (
-                        <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-base">
+                        <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-primary/20 text-base">
                           <MapPin className="h-4 w-4 text-orange-400" />
                           {featuredItem.location}
                         </span>
@@ -1200,7 +1196,7 @@ function AllView({
                 </div>
               </div>
             ) : (
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-8 text-center">
+              <div className="rounded-2xl border border-primary/20 bg-white/[0.03] p-8 text-center">
                 <Bed className="h-16 w-16 text-white/30 mx-auto mb-4" />
                 <p className="text-2xl font-semibold text-white/60">Free Time</p>
                 <p className="text-base text-white/40 mt-2">Enjoy the retreat!</p>
@@ -1210,13 +1206,12 @@ function AllView({
         </div>
 
         {/* Decorative bottom stripe */}
-        <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-orange-400/30 to-transparent" />
       </div>
 
       {/* CARDS GRID */}
       <div className={`grid grid-cols-1 gap-6 flex-1 min-h-0 ${hasVolunteers ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
         {/* Weather Card */}
-        <div className="group relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-sky-500/[0.08] via-white/[0.03] to-transparent p-7">
+        <div className="group relative overflow-hidden lu-panel p-7">
           <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-sky-500/10 blur-2xl" />
           <div className="relative">
             <div className="flex items-center gap-3 mb-6">
@@ -1260,7 +1255,7 @@ function AllView({
         <ScheduleCard nowItem={nowItem} nextItem={nextItem} upcomingToday={upcomingToday} upcomingAll={upcomingAll} />
 
         {/* Next Meal Card */}
-        <div className="group relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-amber-500/[0.08] via-white/[0.03] to-transparent p-7">
+        <div className="group relative overflow-hidden lu-panel p-7">
           <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-amber-500/10 blur-2xl" />
           <div className="relative">
             <div className="flex items-center gap-3 mb-6">
@@ -1271,7 +1266,7 @@ function AllView({
             </div>
             {nextMeal ? (
               <div className="flex flex-col items-center justify-center text-center pt-2">
-                <div className="mb-4 rounded-2xl bg-white/5 border border-white/10 p-4">
+                <div className="mb-4 rounded-2xl bg-white/5 border border-primary/20 p-4">
                   {getEventIcon(nextMeal.title, true, "lg")}
                 </div>
                 <h3 className="text-2xl font-bold mb-3">{nextMeal.title}</h3>
@@ -1297,7 +1292,7 @@ function AllView({
 
         {/* Volunteer Schedule Card */}
         {hasVolunteers && (
-          <div className="group relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-rose-500/[0.08] via-white/[0.03] to-transparent p-7">
+          <div className="group relative overflow-hidden lu-panel p-7">
             <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-rose-500/10 blur-2xl" />
             <div className="relative">
               <div className="flex items-center gap-3 mb-6">
@@ -1326,10 +1321,10 @@ function AllView({
 }
 
 // Weather View - Full screen weather
-// Weather View — minimal: just temp, condition, and a single line of secondary
+// Weather View  -  minimal: just temp, condition, and a single line of secondary
 // stats (humidity + wind). The hourly forecast strip and the lengthy welcome
 // greeting were removed so the temp can be HUGE on TVs/projectors.
-// Wifi View — minimal full-screen panel showing only the network name and
+// Wifi View  -  minimal full-screen panel showing only the network name and
 // password in extra-large monospaced text so attendees can read it from the
 // back of the room. Mirrors the styling language of the other LU views
 // (rounded glow card, ambient orbs) but hard-leans on legibility.
@@ -1337,14 +1332,13 @@ function WifiView() {
   return (
     <div className="relative w-full h-full flex items-center justify-center">
       {/* Ambient cyan glow orbs */}
-      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+      <div className="lu-ambient pointer-events-none absolute inset-0 -z-10 overflow-hidden">
         <div className="absolute -top-40 -left-40 h-[28rem] w-[28rem] rounded-full bg-cyan-500/15 blur-3xl animate-pulse" style={{ animationDuration: "6s" }} />
         <div className="absolute -bottom-40 -right-40 h-[32rem] w-[32rem] rounded-full bg-sky-500/10 blur-3xl animate-pulse" style={{ animationDuration: "8s", animationDelay: "2s" }} />
       </div>
 
-      <div className="relative w-full max-w-5xl rounded-3xl border border-white/10 bg-gradient-to-br from-cyan-500/[0.10] via-white/[0.04] to-transparent p-12 text-center">
+      <div className="relative w-full max-w-5xl lu-panel p-12 text-center">
         <div className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-cyan-500/15 blur-2xl" />
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-300/40 to-transparent" />
 
         <div className="relative flex flex-col items-center">
           <div className="mb-8 rounded-3xl bg-cyan-500/15 border border-cyan-400/30 p-6">
@@ -1380,7 +1374,7 @@ function WifiView() {
   )
 }
 
-// Upcoming View — shows the next 3 events in large, readable cards.
+// Upcoming View  -  shows the next 3 events in large, readable cards.
 // Uses the same upcomingToday / upcomingAll data the ScheduleView has access
 // to, so the list is consistent with the now/next logic elsewhere.
 function UpcomingView({
@@ -1411,14 +1405,13 @@ function UpcomingView({
   return (
     <div className="relative w-full h-full flex items-center justify-center select-none">
       {/* Ambient indigo glow orbs */}
-      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+      <div className="lu-ambient pointer-events-none absolute inset-0 -z-10 overflow-hidden">
         <div className="absolute -top-40 -left-40 h-[28rem] w-[28rem] rounded-full bg-indigo-500/15 blur-3xl animate-pulse" style={{ animationDuration: "6s" }} />
         <div className="absolute -bottom-40 -right-40 h-[32rem] w-[32rem] rounded-full bg-purple-500/10 blur-3xl animate-pulse" style={{ animationDuration: "8s", animationDelay: "2s" }} />
       </div>
 
-      <div className="relative w-full max-w-6xl rounded-3xl border border-white/10 bg-gradient-to-br from-indigo-500/[0.10] via-white/[0.04] to-transparent p-10">
+      <div className="relative w-full max-w-6xl lu-panel p-10">
         <div className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-indigo-500/15 blur-2xl" />
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-indigo-300/40 to-transparent" />
 
         <div className="relative">
           {/* Header */}
@@ -1493,14 +1486,13 @@ function WeatherView({ weather }: { weather: WeatherData | null }) {
   return (
     <div className="relative w-full h-full flex items-center justify-center">
       {/* Ambient sky-blue glow orbs */}
-      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+      <div className="lu-ambient pointer-events-none absolute inset-0 -z-10 overflow-hidden">
         <div className="absolute -top-40 -left-40 h-[28rem] w-[28rem] rounded-full bg-sky-500/15 blur-3xl animate-pulse" style={{ animationDuration: "6s" }} />
         <div className="absolute -bottom-40 -right-40 h-[32rem] w-[32rem] rounded-full bg-cyan-500/10 blur-3xl animate-pulse" style={{ animationDuration: "8s", animationDelay: "2s" }} />
       </div>
 
-      <div className="relative w-full max-w-5xl rounded-3xl border border-white/10 bg-gradient-to-br from-sky-500/[0.10] via-white/[0.04] to-transparent p-12">
+      <div className="relative w-full max-w-5xl lu-panel p-12">
         <div className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-sky-500/15 blur-2xl" />
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sky-300/40 to-transparent" />
 
         <div className="relative flex flex-col items-center justify-center">
           {!weather ? (
@@ -1536,7 +1528,7 @@ function WeatherView({ weather }: { weather: WeatherData | null }) {
   )
 }
 
-// Schedule View — minimal: just shows ONE thing at a time.
+// Schedule View  -  minimal: just shows ONE thing at a time.
 //   - "Happening Now" if there's an active event
 //   - else "Up Next" if there's a future event
 //   - else a friendly idle state
@@ -1562,18 +1554,17 @@ function ScheduleView({
   return (
     <div className="relative w-full h-full flex items-center justify-center">
       {/* Ambient violet glow orbs */}
-      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+      <div className="lu-ambient pointer-events-none absolute inset-0 -z-10 overflow-hidden">
         <div className="absolute -top-40 -left-40 h-[28rem] w-[28rem] rounded-full bg-primary/15 blur-3xl animate-pulse" style={{ animationDuration: "6s" }} />
         <div className="absolute -bottom-40 right-1/4 h-96 w-96 rounded-full bg-fuchsia-500/10 blur-3xl animate-pulse" style={{ animationDuration: "8s", animationDelay: "2s" }} />
       </div>
 
-      <div className="relative w-full max-w-6xl rounded-3xl border border-white/10 bg-gradient-to-br from-violet-500/[0.10] via-white/[0.04] to-transparent p-12 text-center">
+      <div className="relative w-full max-w-6xl lu-panel p-12 text-center">
         <div className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-primary/15 blur-2xl" />
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-300/40 to-transparent" />
 
         {item ? (
           <div className="relative">
-            {/* Status label — Now or Up Next */}
+            {/* Status label  -  Now or Up Next */}
             <div className="flex items-center justify-center gap-4 mb-10">
               {showNow ? (
                 <>
@@ -1622,11 +1613,11 @@ function ScheduleView({
   )
 }
 
-// Meal View — the menu IS the hero.
+// Meal View  -  the menu IS the hero.
 // Layout (top → bottom): small meal-type chip, GIANT menu text, small time.
 // Earlier versions led with the meal title ("Breakfast") at text-7xl which
 // pushed the actual food info below the fold and made it the dominant element
-// — exactly the wrong priority for a sign telling people what to expect on
+//  -  exactly the wrong priority for a sign telling people what to expect on
 // the table. The food now uses the largest type on screen.
 function MealView({
   nextMeal,
@@ -1647,8 +1638,8 @@ function MealView({
 
   // Strip dietary parentheticals like "(GF)", "(DF, GF)", "(V)", "(GF/DF)"
   // from any menu text. Per the kitchen team, those tags clutter the LU
-  // display — anyone with dietary needs already has them on a printed sheet
-  // — so we render clean dish names only.
+  // display  -  anyone with dietary needs already has them on a printed sheet
+  //  -  so we render clean dish names only.
   const stripDietaryTags = (s: string) =>
     s
       .replace(/\s*\(\s*(?:GF|DF|V|VG|VEGAN|VEGETARIAN|N|NF|SF|EF)(?:\s*[,/&]\s*(?:GF|DF|V|VG|VEGAN|VEGETARIAN|N|NF|SF|EF))*\s*\)/gi, "")
@@ -1665,14 +1656,13 @@ function MealView({
   return (
     <div className="relative w-full h-full flex items-center justify-center select-none">
       {/* Ambient amber glow orbs */}
-      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+      <div className="lu-ambient pointer-events-none absolute inset-0 -z-10 overflow-hidden">
         <div className="absolute -top-40 -left-40 h-[28rem] w-[28rem] rounded-full bg-amber-500/15 blur-3xl animate-pulse" style={{ animationDuration: "6s" }} />
         <div className="absolute -bottom-40 -right-40 h-[32rem] w-[32rem] rounded-full bg-orange-500/10 blur-3xl animate-pulse" style={{ animationDuration: "8s", animationDelay: "2s" }} />
       </div>
 
-      <div className="relative w-full max-w-6xl rounded-3xl border border-white/10 bg-gradient-to-br from-amber-500/[0.10] via-white/[0.04] to-transparent p-12 text-center">
+      <div className="relative w-full max-w-6xl lu-panel p-12 text-center">
         <div className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-amber-500/15 blur-2xl" />
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-300/40 to-transparent" />
 
         {!nextMeal ? (
           <div className="relative flex flex-col items-center">
@@ -1800,7 +1790,7 @@ function MapView({
   }
 
   // Tailwind class lookup keyed by color name so the destination color flows through
-  // to the icon, label, and callout — all matching the map pin
+  // to the icon, label, and callout  -  all matching the map pin
   const colorClasses: Record<string, { 
     icon: string; 
     text: string; 
@@ -1821,16 +1811,15 @@ function MapView({
   return (
     <div className="relative w-full h-full flex gap-6">
       {/* Ambient glow orbs - matched to destination color */}
-      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+      <div className="lu-ambient pointer-events-none absolute inset-0 -z-10 overflow-hidden">
         <div className={`absolute -top-40 -left-40 h-[28rem] w-[28rem] rounded-full ${cc.glow} blur-3xl animate-pulse`} style={{ animationDuration: "6s" }} />
         <div className={`absolute -bottom-40 right-1/3 h-96 w-96 rounded-full ${cc.glow} blur-3xl animate-pulse`} style={{ animationDuration: "8s", animationDelay: "2s", opacity: 0.6 }} />
       </div>
 
       {/* Left side - Event info card */}
       <div className="w-[26rem] shrink-0 flex flex-col">
-        <div className={`flex-1 relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br ${cc.bg} via-white/[0.04] to-transparent p-7 flex flex-col justify-center`}>
+        <div className={`flex-1 relative overflow-hidden lu-panel p-7 flex flex-col justify-center`}>
           <div className={`absolute -top-12 -right-12 h-40 w-40 rounded-full ${cc.glow} blur-2xl`} />
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
           <div className="relative">
             {featuredItem ? (
               <>
@@ -1841,12 +1830,12 @@ function MapView({
                         <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
                         <span className="relative inline-flex h-3 w-3 rounded-full bg-green-400" />
                       </span>
-                      <span className="text-xs font-bold uppercase tracking-[0.3em] text-green-400">Happening Now</span>
+                      <span className="lu-kicker text-green-400">Happening now</span>
                     </>
                   ) : (
                     <>
                       <ChevronRight className={`h-5 w-5 ${cc.icon}`} />
-                      <span className={`text-xs font-bold uppercase tracking-[0.3em] ${cc.text}`}>Up Next</span>
+                      <span className={`lu-kicker ${cc.text}`}>Up next</span>
                     </>
                   )}
                 </div>
@@ -1859,7 +1848,7 @@ function MapView({
                   {isHappeningNow ? featuredItem.time : `${featuredItem.day} ${featuredItem.time}`}
                 </p>
                 {prevLocation && routePoints && (
-                  <div className="mt-5 p-3.5 rounded-xl bg-white/5 border border-white/10">
+                  <div className="mt-5 p-3.5 rounded-xl bg-white/5 border border-primary/20">
                     <div className="flex items-start gap-3">
                       <div className="flex flex-col items-center pt-1">
                         <div className="w-2.5 h-2.5 rounded-full bg-white/40" />
@@ -1874,7 +1863,7 @@ function MapView({
                   </div>
                 )}
                 {featuredLocation && (
-                  <div className={`mt-3 p-4 rounded-xl bg-gradient-to-br ${cc.bg} via-white/[0.03] to-transparent border ${cc.border}`}>
+                  <div className={`mt-3 p-4 rounded-xl lu-panel-inner border ${cc.border}`}>
                     <div className="flex items-start gap-3">
                       <MapPin className={`h-6 w-6 ${cc.icon} shrink-0 mt-1`} fill="currentColor" />
                       <div>
@@ -1922,7 +1911,7 @@ function MapView({
       </div>
 
       {/* Right side - Venue map */}
-      <div className={`flex-1 relative rounded-3xl border border-white/10 bg-gradient-to-br ${cc.bg} via-white/[0.03] to-transparent flex items-center justify-center p-3 pt-14 min-h-0`}>
+      <div className={`flex-1 relative lu-panel flex items-center justify-center p-3 pt-14 min-h-0`}>
         {/* Aspect-ratio wrapper. NOTE: no overflow-hidden so the pin's floating name label can render above the map for pins near the top edge. The image itself has rounded corners so the visual still looks clean. */}
         <div
           className="relative"
@@ -2093,24 +2082,23 @@ function VolunteersView({
   return (
     <div className="relative w-full h-full flex items-center justify-center">
       {/* Ambient rose glow orbs */}
-      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+      <div className="lu-ambient pointer-events-none absolute inset-0 -z-10 overflow-hidden">
         <div className="absolute -top-40 -left-40 h-[28rem] w-[28rem] rounded-full bg-rose-500/15 blur-3xl animate-pulse" style={{ animationDuration: "6s" }} />
         <div className="absolute -bottom-40 -right-40 h-[32rem] w-[32rem] rounded-full bg-pink-500/10 blur-3xl animate-pulse" style={{ animationDuration: "8s", animationDelay: "2s" }} />
       </div>
 
       {!volunteerSchedule ? (
-        <div className="relative w-full max-w-3xl rounded-3xl border border-white/10 bg-gradient-to-br from-rose-500/[0.10] via-white/[0.04] to-transparent p-12 flex flex-col items-center justify-center">
+        <div className="relative w-full max-w-3xl lu-panel p-12 flex flex-col items-center justify-center">
           <div className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-rose-500/15 blur-2xl" />
           <Users className="h-32 w-32 text-white/30 mb-8 relative" />
           <h2 className="text-5xl font-bold text-white/60 relative">No Volunteer Schedule</h2>
         </div>
       ) : (
         <div className="relative w-full max-w-7xl flex flex-col items-center">
-          {/* Header panel — bigger time-slot title and tagline so it reads
+          {/* Header panel  -  bigger time-slot title and tagline so it reads
               clearly from the back of the room. */}
-          <div className="relative w-full overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-rose-500/[0.10] via-white/[0.04] to-transparent p-10 mb-6 text-center">
+          <div className="relative w-full overflow-hidden lu-panel p-10 mb-6 text-center">
             <div className="absolute -top-12 left-1/2 -translate-x-1/2 h-48 w-96 rounded-full bg-rose-500/15 blur-3xl" />
-            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-rose-300/40 to-transparent" />
             <div className="relative flex items-center justify-center gap-5 mb-3">
               <div className="rounded-2xl bg-rose-500/15 p-4 border border-rose-400/20">
                 <Users className="h-10 w-10 text-rose-300" />
@@ -2120,17 +2108,17 @@ function VolunteersView({
             <p className="text-2xl text-rose-300/80 uppercase tracking-[0.3em] font-bold">Devotional Assignments</p>
           </div>
 
-          {/* Roles grid — every role card scaled up so the assignee name is
+          {/* Roles grid  -  every role card scaled up so the assignee name is
               the dominant element. Labels are still de-emphasized but now
               large enough to be legible across the room. */}
-          <div className="relative w-full overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-rose-500/[0.06] via-white/[0.03] to-transparent p-8">
+          <div className="relative w-full overflow-hidden lu-panel p-8">
             <div className="absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-rose-500/10 blur-2xl" />
             <div className="absolute -top-10 -right-10 h-40 w-40 rounded-full bg-pink-500/10 blur-2xl" />
             <div className="relative grid grid-cols-1 md:grid-cols-2 gap-5">
               {roles.map((role, index) => (
                 <div
                   key={index}
-                  className="p-6 rounded-2xl bg-gradient-to-br from-rose-500/[0.06] via-white/[0.02] to-transparent border border-white/10"
+                  className="p-6 lu-panel-inner"
                 >
                   <p className="text-rose-300/80 text-lg uppercase tracking-[0.2em] font-bold mb-3">{role.label}</p>
                   <p className="text-4xl font-semibold leading-tight text-balance">{role.value}</p>
@@ -2152,13 +2140,13 @@ function AnnouncementsView({ announcements }: { announcements: Announcement[] })
   return (
     <div className="relative w-full h-full flex items-center justify-center">
       {/* Ambient amber glow orbs */}
-      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+      <div className="lu-ambient pointer-events-none absolute inset-0 -z-10 overflow-hidden">
         <div className="absolute -top-40 -left-40 h-[28rem] w-[28rem] rounded-full bg-amber-500/15 blur-3xl animate-pulse" style={{ animationDuration: "6s" }} />
         <div className="absolute -bottom-40 -right-40 h-[32rem] w-[32rem] rounded-full bg-yellow-500/10 blur-3xl animate-pulse" style={{ animationDuration: "8s", animationDelay: "2s" }} />
       </div>
 
       {announcements.length === 0 ? (
-        <div className="relative w-full max-w-2xl rounded-3xl border border-white/10 bg-gradient-to-br from-amber-500/[0.10] via-white/[0.04] to-transparent p-12 flex flex-col items-center justify-center">
+        <div className="relative w-full max-w-2xl lu-panel p-12 flex flex-col items-center justify-center">
           <div className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-amber-500/15 blur-2xl" />
           <Megaphone className="h-24 w-24 text-amber-400/60 mb-6 relative" />
           <h2 className="text-4xl font-bold text-amber-300/80 relative">No Announcements</h2>
@@ -2166,9 +2154,8 @@ function AnnouncementsView({ announcements }: { announcements: Announcement[] })
       ) : (
         <div className="relative w-full max-w-7xl flex flex-col items-center">
           {/* Header panel */}
-          <div className="relative w-full overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-amber-500/[0.10] via-white/[0.04] to-transparent p-7 mb-5 text-center">
+          <div className="relative w-full overflow-hidden lu-panel p-7 mb-5 text-center">
             <div className="absolute -top-12 left-1/2 -translate-x-1/2 h-48 w-96 rounded-full bg-amber-500/15 blur-3xl" />
-            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-300/40 to-transparent" />
             <div className="relative flex items-center justify-center gap-4">
               <div className="rounded-xl bg-amber-500/15 p-3 border border-amber-400/20">
                 <Megaphone className="h-7 w-7 text-amber-300" />
@@ -2191,7 +2178,7 @@ function AnnouncementsView({ announcements }: { announcements: Announcement[] })
               return (
                 <div
                   key={announcement.id}
-                  className={`relative overflow-hidden rounded-2xl border ${palette.border} bg-gradient-to-br ${palette.bg} via-white/[0.03] to-transparent p-6`}
+                  className={`relative overflow-hidden lu-panel border ${palette.border} p-6`}
                 >
                   <div className={`absolute -top-10 -right-10 h-32 w-32 rounded-full ${palette.glow} blur-2xl`} />
                   {palette.badge && (

@@ -456,7 +456,7 @@
   min-width: 8rem;
 }
 
-/* Schedule draft notice — left-accent callout, clears fixed header (live accept variant 2) */
+/* Schedule draft notice — warm callout, clears fixed header */
 .schedule-draft-notice {
   display: flex;
   align-items: flex-start;
@@ -637,12 +637,40 @@
   }
 }
 
-/* Live updates display board — lake-teal dark, no glass blur */
+/* Live updates display board — lake-teal dark, flat panels */
 .live-updates-shell {
   background: oklch(0.13 0.025 195);
+  color: oklch(0.96 0.01 178);
+}
+
+.live-updates-shell .lu-panel {
+  border: 1px solid oklch(0.38 0.045 175 / 0.45);
+  background: oklch(0.17 0.028 195);
+  border-radius: var(--radius-xl);
+}
+
+.live-updates-shell .lu-panel-soft {
+  border: 1px solid oklch(0.32 0.04 175 / 0.35);
+  background: oklch(0.15 0.025 195);
+  border-radius: var(--radius-lg);
+}
+
+.live-updates-shell .lu-panel-inner {
+  border: 1px solid oklch(0.3 0.035 175 / 0.35);
+  background: oklch(0.14 0.022 195);
+  border-radius: var(--radius-lg);
+}
+
+.live-updates-shell .lu-kicker {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: oklch(0.72 0.08 175);
 }
 
 .live-updates-shell [class*="blur-3xl"],
-.live-updates-shell [class*="blur-2xl"] {
+.live-updates-shell [class*="blur-2xl"],
+.live-updates-shell .lu-ambient {
   display: none;
 }
