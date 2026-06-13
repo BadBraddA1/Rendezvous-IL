@@ -3,72 +3,72 @@ import { scheduleData } from "@/lib/schedule-data"
 
 export default function PrintableSchedulePage() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background text-foreground">
       {/* Print button - hidden when printing */}
-      <div className="fixed top-4 right-4 z-50">
+      <div className="fixed top-4 right-4 z-50 print:hidden">
         <a
           href="/api/schedule/pdf"
           download="rendezvous-2027-schedule.pdf"
-          className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors shadow-lg"
+          className="focus-ring flex min-h-11 items-center gap-2 rounded-lg bg-primary px-4 py-2 text-primary-foreground shadow-lg transition-colors hover:bg-primary/90"
         >
-          <Download className="h-4 w-4" />
+          <Download className="h-4 w-4" aria-hidden="true" />
           Download PDF
         </a>
       </div>
 
       {/* Back link - hidden when printing */}
-      <div className="print:hidden fixed top-4 left-4 z-50">
+      <div className="fixed top-4 left-4 z-50 print:hidden">
         <a
           href="/schedule"
-          className="flex items-center gap-2 bg-muted text-muted-foreground px-4 py-2 rounded-lg hover:bg-muted/80 transition-colors shadow-lg"
+          className="focus-ring flex min-h-11 items-center gap-2 rounded-lg bg-muted px-4 py-2 text-muted-foreground shadow-lg transition-colors hover:bg-muted/80"
         >
           &larr; Back to Schedule
         </a>
       </div>
 
       {/* Printable content */}
-      <div className="max-w-4xl mx-auto p-8 print:p-4 print:max-w-none">
-        {/* Header */}
-        <header className="text-center mb-8 print:mb-6 border-b-2 border-gray-900 pb-4">
-          <h1 className="text-3xl font-bold text-gray-900 print:text-2xl">Rendezvous 2027 Schedule</h1>
-          <p className="text-lg text-gray-600 mt-1 print:text-base">May 3-7, 2027</p>
-          <p className="text-gray-500 print:text-sm">Lake Williamson Christian Center, Carlinville, IL</p>
+      <div className="mx-auto max-w-4xl p-8 print:max-w-none print:p-4">
+        <header className="mb-8 border-b-2 border-foreground pb-4 text-center print:mb-6">
+          <h1 className="text-3xl font-bold print:text-2xl">Rendezvous 2027 Schedule</h1>
+          <p className="mt-1 text-lg text-muted-foreground print:text-base">May 3-7, 2027</p>
+          <p className="text-sm text-muted-foreground print:text-sm">
+            Lake Williamson Christian Center, Carlinville, IL
+          </p>
         </header>
 
-        {/* Schedule by day */}
         <div className="space-y-8 print:space-y-4">
           {scheduleData.map((day) => (
             <section key={day.day} className="print:break-inside-avoid-page">
-              {/* Day header */}
-              <div className="flex items-center gap-3 mb-4 print:mb-2 border-b border-gray-300 pb-2">
-                <div className="flex items-center justify-center w-10 h-10 print:w-8 print:h-8 rounded-full bg-gray-900 text-white font-bold text-lg print:text-base">
+              <div className="mb-4 flex items-center gap-3 border-b border-border pb-2 print:mb-2">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-foreground text-lg font-bold text-background print:h-8 print:w-8 print:text-base">
                   {day.day.charAt(0)}
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900 print:text-lg">{day.date} ({day.day})</h2>
+                  <h2 className="text-xl font-bold print:text-lg">
+                    {day.date} ({day.day})
+                  </h2>
                 </div>
               </div>
 
-              {/* Events table */}
               <table className="w-full text-sm print:text-xs">
                 <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left py-2 pr-4 font-semibold text-gray-700 w-32 print:w-24">Time</th>
-                    <th className="text-left py-2 pr-4 font-semibold text-gray-700">Event</th>
-                    <th className="text-left py-2 font-semibold text-gray-700 w-40 print:w-32">Location</th>
+                  <tr className="border-b border-border">
+                    <th className="w-32 py-2 pr-4 text-left font-semibold text-foreground print:w-24">Time</th>
+                    <th className="py-2 pr-4 text-left font-semibold text-foreground">Event</th>
+                    <th className="w-40 py-2 text-left font-semibold text-foreground print:w-32">Location</th>
                   </tr>
                 </thead>
                 <tbody>
                   {day.events.map((event, index) => (
-                    <tr key={index} className="border-b border-gray-100 print:break-inside-avoid">
-                      <td className="py-2 pr-4 align-top text-gray-600 whitespace-nowrap">{event.time}</td>
+                    <tr key={index} className="border-b border-border/60 print:break-inside-avoid">
+                      <td className="whitespace-nowrap py-2 pr-4 align-top text-muted-foreground">{event.time}</td>
                       <td className="py-2 pr-4 align-top">
-                        <span className="font-medium text-gray-900">{event.title}</span>
+                        <span className="font-medium text-foreground">{event.title}</span>
                         {event.note && (
-                          <span className="block text-gray-500 text-xs mt-0.5 italic">{event.note}</span>
+                          <span className="mt-0.5 block text-xs italic text-muted-foreground">{event.note}</span>
                         )}
                       </td>
-                      <td className="py-2 align-top text-gray-600">{event.location}</td>
+                      <td className="py-2 align-top text-muted-foreground">{event.location}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -77,10 +77,9 @@ export default function PrintableSchedulePage() {
           ))}
         </div>
 
-        {/* Footer */}
-        <footer className="mt-8 pt-4 border-t border-gray-300 text-center text-xs text-gray-500 print:mt-4">
+        <footer className="mt-8 border-t border-border pt-4 text-center text-xs text-muted-foreground print:mt-4">
           <p>Rendezvous 2027 &bull; Lake Williamson Christian Center &bull; Carlinville, IL</p>
-          <p className="mt-1">Visit rendezvous-il.vercel.app for live updates and announcements</p>
+          <p className="mt-1">Visit rendezvousil.com for live updates and announcements</p>
         </footer>
       </div>
     </div>

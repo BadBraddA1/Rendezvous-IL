@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState, type CSSProperties, type PointerEvent } from "react"
+import { flushSync, useEffect, useRef, useState, type CSSProperties, type PointerEvent } from "react"
 import MuxPlayer from "@mux/mux-player-react"
 import type MuxPlayerElement from "@mux/mux-player-react"
 import { Play } from "lucide-react"
@@ -11,6 +11,8 @@ type MuxVideoPlayerProps = {
   thumbnailWidth?: number
   thumbnailHeight?: number
   playButtonSize?: "md" | "lg"
+  /** When true, the player element mounts only after the first tap (FAQ grid). */
+  deferPlayer?: boolean
   /** When this flips from true to false, playback stops (e.g. another FAQ video selected). */
   isActive?: boolean
   onActivate?: () => void
@@ -26,14 +28,17 @@ export function MuxVideoPlayer({
   thumbnailWidth = 640,
   thumbnailHeight = 360,
   playButtonSize = "md",
+  deferPlayer = false,
   isActive = true,
   onActivate,
 }: MuxVideoPlayerProps) {
-  const playerRef = useRef<MuxPlayerElement>(null)
+  const playerRef = useRef<MuxPlayerElement | null>(null)
   const wasActiveRef = useRef(isActive)
   const playingRef = useRef(false)
   const gestureCompleteRef = useRef(false)
   const ignorePauseUntilRef = useRef(0)
+  const pendingPlayRef = useRef(false)
+  const [playerMounted, setPlayerMounted] = useState(!deferPlayer)
   const [revealed, setRevealed] = useState(false)
   const [launching, setLaunching] = useState(false)
 
@@ -44,17 +49,37 @@ export function MuxVideoPlayer({
     }
   }
 
+  const resetToPoster = () => {
+    playerRef.current?.pause()
+    playingRef.current = false
+    gestureCompleteRef.current = false
+    pendingPlayRef.current = false
+    setRevealed(false)
+    setLaunching(false)
+    if (deferPlayer) setPlayerMounted(false)
+  }
+
   // Only stop when another video takes over — not on the first tap while isActive is still false.
   useEffect(() => {
-    if (wasActiveRef.current && !isActive && revealed) {
-      playerRef.current?.pause()
-      playingRef.current = false
-      gestureCompleteRef.current = false
-      setRevealed(false)
-      setLaunching(false)
+    if (wasActiveRef.current && !isActive && (revealed || playerMounted)) {
+      resetToPoster()
     }
     wasActiveRef.current = isActive
-  }, [isActive, revealed])
+  }, [isActive, revealed, playerMounted, deferPlayer])
+
+  const attachPlayerRef = (element: MuxPlayerElement | null) => {
+    playerRef.current = element
+    if (element && pendingPlayRef.current) {
+      pendingPlayRef.current = false
+      ignorePauseUntilRef.current = Date.now() + 600
+      void element.play().catch(() => {
+        playingRef.current = false
+        gestureCompleteRef.current = false
+        setLaunching(false)
+        if (deferPlayer) setPlayerMounted(false)
+      })
+    }
+  }
 
   const startPlayback = (event: PointerEvent<HTMLButtonElement>) => {
     onActivate?.()
@@ -64,12 +89,17 @@ export function MuxVideoPlayer({
 
     const player = playerRef.current
     if (player) {
-      // Must run synchronously inside the pointer handler for iOS Safari.
       void player.play().catch(() => {
         playingRef.current = false
         gestureCompleteRef.current = false
         setLaunching(false)
       })
+      return
+    }
+
+    if (deferPlayer && !playerMounted) {
+      pendingPlayRef.current = true
+      flushSync(() => setPlayerMounted(true))
     }
   }
 
@@ -102,35 +132,35 @@ export function MuxVideoPlayer({
 
   return (
     <div className="relative aspect-video w-full touch-manipulation bg-muted">
-      <MuxPlayer
-        ref={playerRef}
-        playbackId={playbackId}
-        streamType="on-demand"
-        metadata={{ video_title: title }}
-        poster={muxThumbnail(playbackId, thumbnailWidth, thumbnailHeight)}
-        preload="metadata"
-        playsInline
-        onPlaying={() => {
-          playingRef.current = true
-          revealPlayer()
-        }}
-        onPause={() => {
-          if (Date.now() < ignorePauseUntilRef.current) return
-          if (playerRef.current?.paused) {
-            playingRef.current = false
-            gestureCompleteRef.current = false
-            setRevealed(false)
-            setLaunching(false)
+      {playerMounted && (
+        <MuxPlayer
+          ref={attachPlayerRef}
+          playbackId={playbackId}
+          streamType="on-demand"
+          metadata={{ video_title: title }}
+          poster={muxThumbnail(playbackId, thumbnailWidth, thumbnailHeight)}
+          preload="metadata"
+          playsInline
+          defaultHiddenCaptions
+          onPlaying={() => {
+            playingRef.current = true
+            revealPlayer()
+          }}
+          onPause={() => {
+            if (Date.now() < ignorePauseUntilRef.current) return
+            if (playerRef.current?.paused) {
+              resetToPoster()
+            }
+          }}
+          className={`absolute inset-0 h-full w-full ${showPoster ? "pointer-events-none" : ""}`}
+          style={
+            {
+              "--media-object-fit": "cover",
+              "--controls": showPoster ? "none" : undefined,
+            } as CSSProperties
           }
-        }}
-        className={`absolute inset-0 h-full w-full ${showPoster ? "pointer-events-none" : ""}`}
-        style={
-          {
-            "--media-object-fit": "cover",
-            "--controls": showPoster ? "none" : undefined,
-          } as CSSProperties
-        }
-      />
+        />
+      )}
       {showPoster && (
         <button
           type="button"

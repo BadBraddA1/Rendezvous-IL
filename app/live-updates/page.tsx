@@ -165,7 +165,7 @@ function getEventIcon(
   if (lowerTitle.includes('check-in') || lowerTitle.includes('checkout')) return <ClipboardCheck className={`${base} ${c("text-emerald-400")}`} />
   if (lowerTitle.includes('assembly') || lowerTitle.includes('announcement')) return <Megaphone className={`${base} ${c("text-rose-400")}`} />
   if (lowerTitle.includes('archery')) return <Target className={`${base} ${c("text-red-500")}`} />
-  if (lowerTitle.includes('dodgeball')) return <Volleyball className={`${base} ${c("text-violet-400")}`} />
+  if (lowerTitle.includes('dodgeball')) return <Volleyball className={`${base} ${c("text-primary")}`} />
   if (lowerTitle.includes('game') || lowerTitle.includes('knockout')) return <Gamepad2 className={`${base} ${c("text-fuchsia-400")}`} />
   if (lowerTitle.includes('obstacle') || lowerTitle.includes('rope')) return <Mountain className={`${base} ${c("text-stone-400")}`} />
   if (lowerTitle.includes('gym') || lowerTitle.includes('sport')) return <Dumbbell className={`${base} ${c("text-sky-400")}`} />
@@ -844,7 +844,7 @@ export default function LiveUpdatesPage() {
   const formattedDate = `${_weekdays[currentTime.getDay()]}, ${_months[currentTime.getMonth()]} ${currentTime.getDate()}`
 
   return (
-    <div className="h-screen max-h-screen overflow-hidden bg-black text-white flex flex-col">
+    <div className="live-updates-shell h-screen max-h-screen overflow-hidden flex flex-col text-[oklch(0.96_0.01_178)]">
       {/* Header — kept minimal: a tiny logo + the clock. Everything else
           (WiFi, branding tagline, etc.) was removed so the views below get
           maximum vertical space and aren't competing with header noise. */}
@@ -1034,14 +1034,14 @@ function ScheduleCard({
   }
 
   return (
-    <div className="group relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-violet-500/[0.08] via-white/[0.03] to-transparent backdrop-blur-sm p-7">
-      <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-violet-500/10 blur-2xl" />
+    <div className="group relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-violet-500/[0.08] via-white/[0.03] to-transparent p-7">
+      <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-primary/10 blur-2xl" />
       <div className="relative">
         <div className="flex items-center gap-3 mb-6">
-          <div className="rounded-xl bg-violet-500/15 p-2.5 border border-violet-400/20">
-            <Calendar className="h-5 w-5 text-violet-300" />
+          <div className="rounded-xl bg-primary/15 p-2.5 border border-violet-400/20">
+            <Calendar className="h-5 w-5 text-primary" />
           </div>
-          <span className="text-sm uppercase tracking-[0.2em] font-bold text-violet-300/90">Schedule</span>
+          <span className="text-sm uppercase tracking-[0.2em] font-bold text-primary/90">Schedule</span>
         </div>
         <div className="space-y-2.5">
           {eventsToShow.length > 0 ? (
@@ -1216,7 +1216,7 @@ function AllView({
       {/* CARDS GRID */}
       <div className={`grid grid-cols-1 gap-6 flex-1 min-h-0 ${hasVolunteers ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
         {/* Weather Card */}
-        <div className="group relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-sky-500/[0.08] via-white/[0.03] to-transparent backdrop-blur-sm p-7">
+        <div className="group relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-sky-500/[0.08] via-white/[0.03] to-transparent p-7">
           <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-sky-500/10 blur-2xl" />
           <div className="relative">
             <div className="flex items-center gap-3 mb-6">
@@ -1260,7 +1260,7 @@ function AllView({
         <ScheduleCard nowItem={nowItem} nextItem={nextItem} upcomingToday={upcomingToday} upcomingAll={upcomingAll} />
 
         {/* Next Meal Card */}
-        <div className="group relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-amber-500/[0.08] via-white/[0.03] to-transparent backdrop-blur-sm p-7">
+        <div className="group relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-amber-500/[0.08] via-white/[0.03] to-transparent p-7">
           <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-amber-500/10 blur-2xl" />
           <div className="relative">
             <div className="flex items-center gap-3 mb-6">
@@ -1297,7 +1297,7 @@ function AllView({
 
         {/* Volunteer Schedule Card */}
         {hasVolunteers && (
-          <div className="group relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-rose-500/[0.08] via-white/[0.03] to-transparent backdrop-blur-sm p-7">
+          <div className="group relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-rose-500/[0.08] via-white/[0.03] to-transparent p-7">
             <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-rose-500/10 blur-2xl" />
             <div className="relative">
               <div className="flex items-center gap-3 mb-6">
@@ -1342,7 +1342,7 @@ function WifiView() {
         <div className="absolute -bottom-40 -right-40 h-[32rem] w-[32rem] rounded-full bg-sky-500/10 blur-3xl animate-pulse" style={{ animationDuration: "8s", animationDelay: "2s" }} />
       </div>
 
-      <div className="relative w-full max-w-5xl rounded-3xl border border-white/10 bg-gradient-to-br from-cyan-500/[0.10] via-white/[0.04] to-transparent backdrop-blur-sm p-12 text-center">
+      <div className="relative w-full max-w-5xl rounded-3xl border border-white/10 bg-gradient-to-br from-cyan-500/[0.10] via-white/[0.04] to-transparent p-12 text-center">
         <div className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-cyan-500/15 blur-2xl" />
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-300/40 to-transparent" />
 
@@ -1416,7 +1416,7 @@ function UpcomingView({
         <div className="absolute -bottom-40 -right-40 h-[32rem] w-[32rem] rounded-full bg-purple-500/10 blur-3xl animate-pulse" style={{ animationDuration: "8s", animationDelay: "2s" }} />
       </div>
 
-      <div className="relative w-full max-w-6xl rounded-3xl border border-white/10 bg-gradient-to-br from-indigo-500/[0.10] via-white/[0.04] to-transparent backdrop-blur-sm p-10">
+      <div className="relative w-full max-w-6xl rounded-3xl border border-white/10 bg-gradient-to-br from-indigo-500/[0.10] via-white/[0.04] to-transparent p-10">
         <div className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-indigo-500/15 blur-2xl" />
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-indigo-300/40 to-transparent" />
 
@@ -1498,7 +1498,7 @@ function WeatherView({ weather }: { weather: WeatherData | null }) {
         <div className="absolute -bottom-40 -right-40 h-[32rem] w-[32rem] rounded-full bg-cyan-500/10 blur-3xl animate-pulse" style={{ animationDuration: "8s", animationDelay: "2s" }} />
       </div>
 
-      <div className="relative w-full max-w-5xl rounded-3xl border border-white/10 bg-gradient-to-br from-sky-500/[0.10] via-white/[0.04] to-transparent backdrop-blur-sm p-12">
+      <div className="relative w-full max-w-5xl rounded-3xl border border-white/10 bg-gradient-to-br from-sky-500/[0.10] via-white/[0.04] to-transparent p-12">
         <div className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-sky-500/15 blur-2xl" />
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sky-300/40 to-transparent" />
 
@@ -1563,12 +1563,12 @@ function ScheduleView({
     <div className="relative w-full h-full flex items-center justify-center">
       {/* Ambient violet glow orbs */}
       <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute -top-40 -left-40 h-[28rem] w-[28rem] rounded-full bg-violet-500/15 blur-3xl animate-pulse" style={{ animationDuration: "6s" }} />
+        <div className="absolute -top-40 -left-40 h-[28rem] w-[28rem] rounded-full bg-primary/15 blur-3xl animate-pulse" style={{ animationDuration: "6s" }} />
         <div className="absolute -bottom-40 right-1/4 h-96 w-96 rounded-full bg-fuchsia-500/10 blur-3xl animate-pulse" style={{ animationDuration: "8s", animationDelay: "2s" }} />
       </div>
 
-      <div className="relative w-full max-w-6xl rounded-3xl border border-white/10 bg-gradient-to-br from-violet-500/[0.10] via-white/[0.04] to-transparent backdrop-blur-sm p-12 text-center">
-        <div className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-violet-500/15 blur-2xl" />
+      <div className="relative w-full max-w-6xl rounded-3xl border border-white/10 bg-gradient-to-br from-violet-500/[0.10] via-white/[0.04] to-transparent p-12 text-center">
+        <div className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-primary/15 blur-2xl" />
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-300/40 to-transparent" />
 
         {item ? (
@@ -1585,8 +1585,8 @@ function ScheduleView({
                 </>
               ) : (
                 <>
-                  <ChevronRight className="h-9 w-9 text-violet-300" />
-                  <span className="text-3xl font-bold uppercase tracking-[0.3em] text-violet-300">Up Next</span>
+                  <ChevronRight className="h-9 w-9 text-primary" />
+                  <span className="text-3xl font-bold uppercase tracking-[0.3em] text-primary">Up Next</span>
                 </>
               )}
             </div>
@@ -1605,7 +1605,7 @@ function ScheduleView({
 
             {item.location && (
               <p className="text-3xl text-white/60 flex items-center justify-center gap-3 mt-6">
-                <MapPin className="h-9 w-9 text-violet-300" />
+                <MapPin className="h-9 w-9 text-primary" />
                 {item.location}
               </p>
             )}
@@ -1670,7 +1670,7 @@ function MealView({
         <div className="absolute -bottom-40 -right-40 h-[32rem] w-[32rem] rounded-full bg-orange-500/10 blur-3xl animate-pulse" style={{ animationDuration: "8s", animationDelay: "2s" }} />
       </div>
 
-      <div className="relative w-full max-w-6xl rounded-3xl border border-white/10 bg-gradient-to-br from-amber-500/[0.10] via-white/[0.04] to-transparent backdrop-blur-sm p-12 text-center">
+      <div className="relative w-full max-w-6xl rounded-3xl border border-white/10 bg-gradient-to-br from-amber-500/[0.10] via-white/[0.04] to-transparent p-12 text-center">
         <div className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-amber-500/15 blur-2xl" />
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-300/40 to-transparent" />
 
@@ -1828,7 +1828,7 @@ function MapView({
 
       {/* Left side - Event info card */}
       <div className="w-[26rem] shrink-0 flex flex-col">
-        <div className={`flex-1 relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br ${cc.bg} via-white/[0.04] to-transparent backdrop-blur-sm p-7 flex flex-col justify-center`}>
+        <div className={`flex-1 relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br ${cc.bg} via-white/[0.04] to-transparent p-7 flex flex-col justify-center`}>
           <div className={`absolute -top-12 -right-12 h-40 w-40 rounded-full ${cc.glow} blur-2xl`} />
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
           <div className="relative">
@@ -1922,7 +1922,7 @@ function MapView({
       </div>
 
       {/* Right side - Venue map */}
-      <div className={`flex-1 relative rounded-3xl border border-white/10 bg-gradient-to-br ${cc.bg} via-white/[0.03] to-transparent backdrop-blur-sm flex items-center justify-center p-3 pt-14 min-h-0`}>
+      <div className={`flex-1 relative rounded-3xl border border-white/10 bg-gradient-to-br ${cc.bg} via-white/[0.03] to-transparent flex items-center justify-center p-3 pt-14 min-h-0`}>
         {/* Aspect-ratio wrapper. NOTE: no overflow-hidden so the pin's floating name label can render above the map for pins near the top edge. The image itself has rounded corners so the visual still looks clean. */}
         <div
           className="relative"
@@ -2039,7 +2039,7 @@ function MapView({
                 )}
                 <MapPin
                   className={`relative drop-shadow-lg transition-all ${
-                    isFeatured ? "h-14 w-14 animate-bounce" 
+                    isFeatured ? "h-14 w-14" 
                     : isPrev ? "h-10 w-10" 
                     : "h-7 w-7 opacity-70"
                   }`}
@@ -2099,7 +2099,7 @@ function VolunteersView({
       </div>
 
       {!volunteerSchedule ? (
-        <div className="relative w-full max-w-3xl rounded-3xl border border-white/10 bg-gradient-to-br from-rose-500/[0.10] via-white/[0.04] to-transparent backdrop-blur-sm p-12 flex flex-col items-center justify-center">
+        <div className="relative w-full max-w-3xl rounded-3xl border border-white/10 bg-gradient-to-br from-rose-500/[0.10] via-white/[0.04] to-transparent p-12 flex flex-col items-center justify-center">
           <div className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-rose-500/15 blur-2xl" />
           <Users className="h-32 w-32 text-white/30 mb-8 relative" />
           <h2 className="text-5xl font-bold text-white/60 relative">No Volunteer Schedule</h2>
@@ -2108,7 +2108,7 @@ function VolunteersView({
         <div className="relative w-full max-w-7xl flex flex-col items-center">
           {/* Header panel — bigger time-slot title and tagline so it reads
               clearly from the back of the room. */}
-          <div className="relative w-full overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-rose-500/[0.10] via-white/[0.04] to-transparent backdrop-blur-sm p-10 mb-6 text-center">
+          <div className="relative w-full overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-rose-500/[0.10] via-white/[0.04] to-transparent p-10 mb-6 text-center">
             <div className="absolute -top-12 left-1/2 -translate-x-1/2 h-48 w-96 rounded-full bg-rose-500/15 blur-3xl" />
             <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-rose-300/40 to-transparent" />
             <div className="relative flex items-center justify-center gap-5 mb-3">
@@ -2123,7 +2123,7 @@ function VolunteersView({
           {/* Roles grid — every role card scaled up so the assignee name is
               the dominant element. Labels are still de-emphasized but now
               large enough to be legible across the room. */}
-          <div className="relative w-full overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-rose-500/[0.06] via-white/[0.03] to-transparent backdrop-blur-sm p-8">
+          <div className="relative w-full overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-rose-500/[0.06] via-white/[0.03] to-transparent p-8">
             <div className="absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-rose-500/10 blur-2xl" />
             <div className="absolute -top-10 -right-10 h-40 w-40 rounded-full bg-pink-500/10 blur-2xl" />
             <div className="relative grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -2158,7 +2158,7 @@ function AnnouncementsView({ announcements }: { announcements: Announcement[] })
       </div>
 
       {announcements.length === 0 ? (
-        <div className="relative w-full max-w-2xl rounded-3xl border border-white/10 bg-gradient-to-br from-amber-500/[0.10] via-white/[0.04] to-transparent backdrop-blur-sm p-12 flex flex-col items-center justify-center">
+        <div className="relative w-full max-w-2xl rounded-3xl border border-white/10 bg-gradient-to-br from-amber-500/[0.10] via-white/[0.04] to-transparent p-12 flex flex-col items-center justify-center">
           <div className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-amber-500/15 blur-2xl" />
           <Megaphone className="h-24 w-24 text-amber-400/60 mb-6 relative" />
           <h2 className="text-4xl font-bold text-amber-300/80 relative">No Announcements</h2>
@@ -2166,7 +2166,7 @@ function AnnouncementsView({ announcements }: { announcements: Announcement[] })
       ) : (
         <div className="relative w-full max-w-7xl flex flex-col items-center">
           {/* Header panel */}
-          <div className="relative w-full overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-amber-500/[0.10] via-white/[0.04] to-transparent backdrop-blur-sm p-7 mb-5 text-center">
+          <div className="relative w-full overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-amber-500/[0.10] via-white/[0.04] to-transparent p-7 mb-5 text-center">
             <div className="absolute -top-12 left-1/2 -translate-x-1/2 h-48 w-96 rounded-full bg-amber-500/15 blur-3xl" />
             <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-300/40 to-transparent" />
             <div className="relative flex items-center justify-center gap-4">
@@ -2191,7 +2191,7 @@ function AnnouncementsView({ announcements }: { announcements: Announcement[] })
               return (
                 <div
                   key={announcement.id}
-                  className={`relative overflow-hidden rounded-2xl border ${palette.border} bg-gradient-to-br ${palette.bg} via-white/[0.03] to-transparent backdrop-blur-sm p-6`}
+                  className={`relative overflow-hidden rounded-2xl border ${palette.border} bg-gradient-to-br ${palette.bg} via-white/[0.03] to-transparent p-6`}
                 >
                   <div className={`absolute -top-10 -right-10 h-32 w-32 rounded-full ${palette.glow} blur-2xl`} />
                   {palette.badge && (

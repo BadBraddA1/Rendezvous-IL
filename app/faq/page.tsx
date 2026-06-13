@@ -148,6 +148,7 @@ function VideoCard({
         <MuxVideoPlayer
           playbackId={video.id}
           title={video.title}
+          deferPlayer
           isActive={isActive}
           onActivate={onPlay}
         />

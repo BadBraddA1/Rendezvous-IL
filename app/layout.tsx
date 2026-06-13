@@ -48,7 +48,7 @@ export const metadata: Metadata = {
   title: "Rendezvous 2027 — Christian Homeschool Family Retreat",
   description:
     "A 5 day / 4 night Christian homeschool family retreat at Lake Williamson Christian Center, Carlinville, IL. May 3–7, 2027. Registration opens January 1, 2027.",
-  generator: "v0.app",
+  generator: "Next.js",
   icons: {
     icon: "/rendezvous-logo.png",
     apple: "/rendezvous-logo.png",
