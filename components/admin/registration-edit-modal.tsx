@@ -17,8 +17,8 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Plus, Trash2, Save, QrCode, CheckCircle2, RotateCcw, Shirt, HandHelping, Heart } from "lucide-react"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Plus, Trash2, Save, QrCode, CheckCircle2, RotateCcw } from "lucide-react"
+import { Tabs, TabsContent } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
 import { AdminConfirmDialog } from "./admin-confirm-dialog"
 import { normalizeStringArray } from "@/lib/normalize-string-array"
@@ -536,60 +536,63 @@ export function RegistrationEditModal({ registration, open, onClose, onSave }: P
       : 0
   const paymentProgress = totalCost > 0 ? Math.min(100, (paidAmount / totalCost) * 100) : 0
 
+  const sectionOptions = [
+    { value: "contact", label: "Contact" },
+    { value: "attendees", label: `Attendees (${familyMembers.length})` },
+    { value: "tshirts", label: `T-Shirts (${tshirtOrders.length})` },
+    { value: "volunteers", label: `Volunteers (${volunteers.length})` },
+    { value: "payment", label: "Payment" },
+    { value: "checkin", label: "Check-In" },
+    { value: "health", label: "Health" },
+  ]
+
   return (
     <>
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-h-[92dvh] max-w-[min(100vw-1.5rem,64rem)] overflow-y-auto p-4 sm:p-6">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-3">
-            <span>Edit Registration - {reg?.family_last_name || registration.family_last_name} Family</span>
+      <DialogContent className="flex max-h-[92dvh] w-[calc(100vw-1rem)] max-w-5xl flex-col gap-0 overflow-hidden p-0 sm:max-w-5xl">
+        <DialogHeader className="shrink-0 border-b px-4 py-4 text-left sm:px-6">
+          <DialogTitle className="flex flex-wrap items-center gap-2 text-left text-base leading-snug sm:text-lg">
+            <span className="min-w-0 break-words">
+              Edit Registration - {reg?.family_last_name || registration.family_last_name} Family
+            </span>
             {reg?.checked_in && (
-              <Badge variant="default" className="gap-1">
+              <Badge variant="default" className="gap-1 shrink-0">
                 <CheckCircle2 className="h-3 w-3" />
                 Checked In
               </Badge>
             )}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-left">
             Manage attendees, t-shirts, volunteers, payment, and check-in for this family.
           </DialogDescription>
         </DialogHeader>
 
         {loading || !reg ? (
-          <div className="flex items-center justify-center py-12">
+          <div className="flex flex-1 items-center justify-center py-12">
             <p className="text-muted-foreground">Loading registration details...</p>
           </div>
         ) : (
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <div className="-mx-1 overflow-x-auto px-1 pb-1">
-              <TabsList className="inline-flex h-auto w-max max-w-none flex-nowrap gap-0.5 p-1">
-                <TabsTrigger value="contact" className="shrink-0 flex-none px-3 text-xs sm:text-sm">
-                  Contact
-                </TabsTrigger>
-                <TabsTrigger value="attendees" className="shrink-0 flex-none px-3 text-xs sm:text-sm">
-                  Attendees ({familyMembers.length})
-                </TabsTrigger>
-                <TabsTrigger value="tshirts" className="shrink-0 flex-none gap-1 px-3 text-xs sm:text-sm">
-                  <Shirt className="h-3 w-3" />
-                  T-Shirts ({tshirtOrders.length})
-                </TabsTrigger>
-                <TabsTrigger value="volunteers" className="shrink-0 flex-none gap-1 px-3 text-xs sm:text-sm">
-                  <HandHelping className="h-3 w-3" />
-                  Volunteers ({volunteers.length})
-                </TabsTrigger>
-                <TabsTrigger value="payment" className="shrink-0 flex-none px-3 text-xs sm:text-sm">
-                  Payment
-                </TabsTrigger>
-                <TabsTrigger value="checkin" className="shrink-0 flex-none gap-1 px-3 text-xs sm:text-sm">
-                  <QrCode className="h-3 w-3" />
-                  Check-In
-                </TabsTrigger>
-                <TabsTrigger value="health" className="shrink-0 flex-none gap-1 px-3 text-xs sm:text-sm">
-                  <Heart className="h-3 w-3" />
-                  Health
-                </TabsTrigger>
-              </TabsList>
+          <div className="flex min-h-0 flex-1 flex-col">
+            <div className="shrink-0 border-b bg-muted/30 px-4 py-3 sm:px-6">
+              <Label htmlFor="registration-section" className="mb-1.5 block text-xs text-muted-foreground">
+                Section
+              </Label>
+              <Select value={activeTab} onValueChange={setActiveTab}>
+                <SelectTrigger id="registration-section" className="w-full bg-background">
+                  <SelectValue placeholder="Choose a section" />
+                </SelectTrigger>
+                <SelectContent>
+                  {sectionOptions.map((section) => (
+                    <SelectItem key={section.value} value={section.value}>
+                      {section.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
+
+            <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
 
             {/* CONTACT */}
             <TabsContent value="contact" className="space-y-4">
@@ -991,9 +994,11 @@ export function RegistrationEditModal({ registration, open, onClose, onSave }: P
               )}
             </TabsContent>
           </Tabs>
+            </div>
+          </div>
         )}
 
-        <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        <DialogFooter className="shrink-0 gap-2 border-t px-4 py-4 sm:px-6">
           <Button variant="outline" onClick={onClose} disabled={saving || loading} className="min-h-11 w-full sm:w-auto">
             Close
           </Button>
