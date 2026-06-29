@@ -4,27 +4,31 @@ import { Button } from "@/components/ui/button"
 import { BookOpen, ExternalLink } from "lucide-react"
 
 export default function BibleBowlPage() {
-  const pdfUrl = "https://yixdedkxmmcaglqi.public.blob.vercel-storage.com/REN26PP.pdf"
+  const pdfUrl = "https://pewpackers.com/pdf/1-Samuel-Memory-Work"
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="min-h-screen bg-background">
       <SiteHeader />
 
       <main
         id="main-content"
-        className="site-container section-sm flex-1 pb-16 pt-[calc(5.5rem+env(safe-area-inset-top,0px))] md:pb-20"
+        className="site-container site-below-header-loose site-page-intro pb-16 md:pb-20"
       >
-        <div className="mx-auto max-w-2xl text-center">
-          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-surface-highlight">
-            <BookOpen className="h-8 w-8 text-primary" aria-hidden="true" />
-          </div>
-          <h1 className="text-page-title mb-6 text-balance">Bible Bowl</h1>
+        <div className="mx-auto max-w-2xl">
+          <header className="mb-8 text-center md:mb-10">
+            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-surface-highlight">
+              <BookOpen className="h-8 w-8 text-primary" aria-hidden="true" />
+            </div>
+            <h1 className="text-page-title text-balance">Bible Bowl</h1>
+          </header>
+
           <div className="measure-prose mx-auto mb-8 space-y-4 text-left text-muted-foreground">
             <p>
               Bible Bowl is open to anyone who wants to participate, from toddlers through adults.
             </p>
             <p>
-              For 2027, lessons and memory work will be from the book of <strong className="text-foreground">1 Samuel</strong>.
+              For 2027, lessons and memory work will be from the book of{" "}
+              <strong className="text-brand-coral-ink">1 Samuel</strong>.
             </p>
             <p>Three levels of the test are available:</p>
             <ol className="list-decimal space-y-2 pl-6">
