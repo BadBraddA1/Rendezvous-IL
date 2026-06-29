@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Camera, Church, Loader2, Search, Users } from "lucide-react"
+import { Camera, Church, Loader2, Mail, MapPin, Phone, Search, Users } from "lucide-react"
 import {
   parseRegistrationEventYear,
   registrationYearLabel,
@@ -32,6 +32,10 @@ type DirectoryFamily = {
   directory_blurb: string | null
   husband_first_name: string | null
   wife_first_name: string | null
+  email: string | null
+  formatted_address: string | null
+  husband_phone: string | null
+  wife_phone: string | null
   member_count: number
   member_names: string[]
 }
@@ -141,6 +145,10 @@ export default function DirectoryPage() {
         family.directory_blurb,
         family.husband_first_name,
         family.wife_first_name,
+        family.email,
+        family.formatted_address,
+        family.husband_phone,
+        family.wife_phone,
         family.member_names.join(" "),
       ]
         .filter(Boolean)
@@ -167,8 +175,8 @@ export default function DirectoryPage() {
               </Badge>
               <h1 className="text-section-title text-balance">Family Directory</h1>
               <p className="text-lead text-muted-foreground">
-                Meet other homeschool families coming to Rendezvous. Photos are uploaded by each
-                family from their account profile.
+                Meet other homeschool families coming to Rendezvous. Each listing includes contact
+                info, congregation, and attendees from your family profile.
               </p>
             </div>
             {enabledYears.length > 1 && eventYear !== null && (
@@ -328,6 +336,56 @@ export default function DirectoryPage() {
                             <Church className="mt-0.5 h-4 w-4 shrink-0" />
                             <span className="min-w-0 break-words">{family.home_congregation}</span>
                           </p>
+                        )}
+                        {family.email && (
+                          <p className="flex items-start gap-2 text-sm">
+                            <Mail className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                            <a
+                              href={`mailto:${family.email}`}
+                              className="min-w-0 break-all text-primary hover:underline"
+                            >
+                              {family.email}
+                            </a>
+                          </p>
+                        )}
+                        {family.formatted_address && (
+                          <p className="flex items-start gap-2 text-sm text-muted-foreground">
+                            <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
+                            <span className="min-w-0 break-words">{family.formatted_address}</span>
+                          </p>
+                        )}
+                        {(family.husband_phone || family.wife_phone) && (
+                          <div className="space-y-1 text-sm">
+                            {family.husband_phone && (
+                              <p className="flex items-start gap-2">
+                                <Phone className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                                <span className="min-w-0 break-words">
+                                  {family.husband_first_name ? `${family.husband_first_name}: ` : ""}
+                                  <a
+                                    href={`tel:${family.husband_phone.replace(/[^\d+]/g, "")}`}
+                                    className="text-primary hover:underline"
+                                  >
+                                    {family.husband_phone}
+                                  </a>
+                                </span>
+                              </p>
+                            )}
+                            {family.wife_phone &&
+                              family.wife_phone !== family.husband_phone && (
+                                <p className="flex items-start gap-2">
+                                  <Phone className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                                  <span className="min-w-0 break-words">
+                                    {family.wife_first_name ? `${family.wife_first_name}: ` : ""}
+                                    <a
+                                      href={`tel:${family.wife_phone.replace(/[^\d+]/g, "")}`}
+                                      className="text-primary hover:underline"
+                                    >
+                                      {family.wife_phone}
+                                    </a>
+                                  </span>
+                                </p>
+                              )}
+                          </div>
                         )}
                         <div className="space-y-1 text-sm text-muted-foreground">
                           <p className="flex items-center gap-2">

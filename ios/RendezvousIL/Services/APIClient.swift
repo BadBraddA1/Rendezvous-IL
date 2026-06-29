@@ -319,6 +319,10 @@ struct DirectoryFamily: Decodable, Identifiable {
     let directory_blurb: String?
     let husband_first_name: String?
     let wife_first_name: String?
+    let email: String?
+    let formatted_address: String?
+    let husband_phone: String?
+    let wife_phone: String?
     let member_count: Int
     let member_names: [String]
 }

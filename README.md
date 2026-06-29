@@ -62,7 +62,7 @@ pnpm db:verify
 ## Family directory (`/directory`)
 
 - Registered families can upload a photo and short blurb from `/account/profile`; listings appear at `/directory` for the same event year.
-- **Listing is on by default** for registered families (`directory_opt_in`); families opt out from profile if they do not want to appear. Photos are optional — families without a photo still show name, congregation, and attendees.
+- **Listing is on by default** for registered families (`directory_opt_in`); families opt out from profile if they do not want to appear. Photos are optional — families without a photo still show name, congregation, contact info, and attendees.
 - **Year visibility** is controlled on the admin dashboard (`/admin`) — toggles per year in `app_settings` (`directory_enabled_2026`, `directory_enabled_2027`). Defaults: **2026 on**, **2027 off** until registration opens.
 - Public API: `GET /api/directory/years` returns enabled years; `GET /api/directory?year=` requires sign-in + registration for that year (admins can preview disabled years).
 - Admin API: `GET/POST /api/admin/directory/status` (POST requires `admin` role).

@@ -20,6 +20,10 @@ struct DirectoryView: View {
                 family.directory_blurb,
                 family.husband_first_name,
                 family.wife_first_name,
+                family.email,
+                family.formatted_address,
+                family.husband_phone,
+                family.wife_phone,
                 family.member_names.joined(separator: " "),
             ]
             .compactMap { $0 }
@@ -232,7 +236,52 @@ private struct DirectoryFamilyCard: View {
                 Label(congregation, systemImage: "building.2")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                    .lineLimit(2)
+                    .lineLimit(3)
+            }
+
+            if let email = family.email, !email.isEmpty {
+                if let url = URL(string: "mailto:\(email)") {
+                    Link(destination: url) {
+                        Label(email, systemImage: "envelope")
+                            .font(.caption)
+                            .lineLimit(2)
+                    }
+                }
+            }
+
+            if let address = family.formatted_address, !address.isEmpty {
+                Label(address, systemImage: "mappin.and.ellipse")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(3)
+            }
+
+            if let husbandPhone = family.husband_phone, !husbandPhone.isEmpty {
+                if let url = URL(string: "tel:\(husbandPhone.filter { $0.isNumber || $0 == "+" })") {
+                    Link(destination: url) {
+                        Label(
+                            phoneLabel(name: family.husband_first_name, number: husbandPhone),
+                            systemImage: "phone"
+                        )
+                        .font(.caption)
+                        .lineLimit(2)
+                    }
+                }
+            }
+
+            if let wifePhone = family.wife_phone,
+               !wifePhone.isEmpty,
+               wifePhone != family.husband_phone {
+                if let url = URL(string: "tel:\(wifePhone.filter { $0.isNumber || $0 == "+" })") {
+                    Link(destination: url) {
+                        Label(
+                            phoneLabel(name: family.wife_first_name, number: wifePhone),
+                            systemImage: "phone"
+                        )
+                        .font(.caption)
+                        .lineLimit(2)
+                    }
+                }
             }
 
             Text("\(family.member_count) attendee\(family.member_count == 1 ? "" : "s")")
@@ -250,6 +299,13 @@ private struct DirectoryFamilyCard: View {
         }
         .padding(12)
         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    private func phoneLabel(name: String?, number: String) -> String {
+        if let name, !name.isEmpty {
+            return "\(name): \(number)"
+        }
+        return number
     }
 }
 

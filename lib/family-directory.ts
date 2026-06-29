@@ -77,8 +77,27 @@ export type FamilyDirectoryEntry = {
   directory_blurb: string | null
   husband_first_name: string | null
   wife_first_name: string | null
+  email: string | null
+  formatted_address: string | null
+  husband_phone: string | null
+  wife_phone: string | null
   member_count: number
   member_names: string[]
+}
+
+export function formatFamilyDirectoryAddress(parts: {
+  address?: string | null
+  city?: string | null
+  state?: string | null
+  zip?: string | null
+}): string | null {
+  const street = parts.address?.trim()
+  const city = parts.city?.trim()
+  const state = parts.state?.trim()
+  const zip = parts.zip?.trim()
+  const cityStateZip = [city, [state, zip].filter(Boolean).join(" ")].filter(Boolean).join(", ")
+  const segments = [street, cityStateZip].filter(Boolean)
+  return segments.length > 0 ? segments.join(", ") : null
 }
 
 export type FamilyDirectorySettings = {
@@ -291,6 +310,13 @@ async function queryDirectoryEntries(year: RegistrationEventYear): Promise<Famil
       f.directory_blurb,
       f.husband_first_name,
       f.wife_first_name,
+      f.email,
+      f.address,
+      f.city,
+      f.state,
+      f.zip,
+      f.husband_phone,
+      f.wife_phone,
       COUNT(fm.id) as member_count,
       GROUP_CONCAT(fm.first_name, ', ') as member_names_csv
     FROM families f
@@ -325,6 +351,15 @@ function mapDirectoryEntry(row: SqlRow): FamilyDirectoryEntry {
     directory_blurb: row.directory_blurb ? String(row.directory_blurb) : null,
     husband_first_name: row.husband_first_name ? String(row.husband_first_name) : null,
     wife_first_name: row.wife_first_name ? String(row.wife_first_name) : null,
+    email: row.email ? String(row.email) : null,
+    formatted_address: formatFamilyDirectoryAddress({
+      address: row.address ? String(row.address) : null,
+      city: row.city ? String(row.city) : null,
+      state: row.state ? String(row.state) : null,
+      zip: row.zip ? String(row.zip) : null,
+    }),
+    husband_phone: row.husband_phone ? String(row.husband_phone).trim() : null,
+    wife_phone: row.wife_phone ? String(row.wife_phone).trim() : null,
     member_count: Number(row.member_count ?? 0),
     member_names: row.member_names_csv
       ? String(row.member_names_csv)

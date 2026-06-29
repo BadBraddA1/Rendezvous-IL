@@ -216,9 +216,9 @@ export function FamilyDirectoryPhotoCard({ settings, onChange, eventYear = 2027 
                 Hide our family from the attendee directory
               </Label>
               <p className="text-sm text-muted-foreground">
-                Registered families appear in the directory by default. Other attendees can see your
-                last name, congregation, attendees, and optional photo or note. Phone numbers and
-                addresses stay private.
+                Registered families appear in the directory by default. Other registered attendees can
+                see your contact info, congregation, attendees, and optional photo or note. Opt out
+                below if you prefer not to appear.
               </p>
             </div>
           </div>
