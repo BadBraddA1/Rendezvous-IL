@@ -77,6 +77,7 @@ interface FamilyMember {
   date_of_birth?: string | null
   grade?: string
   gender: string
+  phone?: string | null
   special_needs?: boolean
   notes?: string
 }
@@ -419,7 +420,7 @@ export default function FamilyProfilePage() {
                 Contact Information
               </Label>
               <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
+                <div className="space-y-2 sm:col-span-2">
                   <Label htmlFor="email">Email</Label>
                   <Input
                     id="email"
@@ -428,25 +429,11 @@ export default function FamilyProfilePage() {
                     onChange={(e) => setEditedFamily({ ...editedFamily, email: e.target.value })}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="husband_phone">Husband&apos;s Phone</Label>
-                  <Input
-                    id="husband_phone"
-                    type="tel"
-                    value={editedFamily.husband_phone || ""}
-                    onChange={(e) => setEditedFamily({ ...editedFamily, husband_phone: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="wife_phone">Wife&apos;s Phone</Label>
-                  <Input
-                    id="wife_phone"
-                    type="tel"
-                    value={editedFamily.wife_phone || ""}
-                    onChange={(e) => setEditedFamily({ ...editedFamily, wife_phone: e.target.value })}
-                  />
-                </div>
               </div>
+              <p className="text-sm text-muted-foreground">
+                Add phone numbers on each family member below so the directory shows the right
+                person for each number.
+              </p>
             </div>
 
             <Separator />
@@ -570,6 +557,7 @@ export default function FamilyProfilePage() {
                             <span>{formatAgeGroupLabel(member.age_group)}</span>
                           )}
                           {member.grade && <span>• Grade {member.grade}</span>}
+                          {member.phone && <span>• {member.phone}</span>}
                         </div>
                       </div>
                     </div>
@@ -668,6 +656,7 @@ function MemberDialog({
     member_type: "adult",
     age_group: "adult",
     gender: "",
+    phone: "",
     grade: "",
     special_needs: false,
     notes: "",
@@ -790,6 +779,19 @@ function MemberDialog({
             />
           </div>
         </div>
+
+        {(formData.member_type === "adult" || formData.member_type === "teen") && (
+          <div className="space-y-2">
+            <Label htmlFor="memberPhone">Phone (for directory)</Label>
+            <Input
+              id="memberPhone"
+              type="tel"
+              value={formData.phone || ""}
+              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              placeholder="Shown on the family directory with this member's name"
+            />
+          </div>
+        )}
 
         {hasBirthday && classifiedFromBirthday && (
           <div className="rounded-lg border bg-muted/40 p-3 text-sm space-y-1">

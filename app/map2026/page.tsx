@@ -41,6 +41,7 @@ import {
   mapStaticRegistrationsToAttendees,
   toLeafletRegistration,
 } from "@/lib/map-attendees"
+import { DirectoryContactPhones } from "@/components/directory/directory-contact-phones"
 
 const MAP_PASSWORD = "Rendezvous2026"
 const STORAGE_KEY = "map2026_unlocked"
@@ -132,6 +133,7 @@ export default function Map2026Page() {
   const [searchQuery, setSearchQuery] = useState("")
   const [allAttendees, setAllAttendees] = useState<MapAttendee[]>([])
   const [syncedWithDirectory, setSyncedWithDirectory] = useState(false)
+  const [viewerFamilyId, setViewerFamilyId] = useState<number | null>(null)
   const [directoryCount, setDirectoryCount] = useState(0)
   const [loadingRegistrations, setLoadingRegistrations] = useState(false)
   const [registrationsError, setRegistrationsError] = useState<string | null>(null)
@@ -151,6 +153,7 @@ export default function Map2026Page() {
           const data = await response.json()
           setAllAttendees(data.attendees || [])
           setSyncedWithDirectory(true)
+          setViewerFamilyId(data.viewerFamilyId ?? null)
           setDirectoryCount(data.directoryCount ?? data.attendees?.length ?? 0)
           return
         }
@@ -159,6 +162,7 @@ export default function Map2026Page() {
       const staticRegs = await loadMap2026Registrations()
       setAllAttendees(mapStaticRegistrationsToAttendees(staticRegs))
       setSyncedWithDirectory(false)
+      setViewerFamilyId(null)
       setDirectoryCount(0)
     } catch (error) {
       console.error("[Map] Failed to load attendees:", error)
@@ -555,13 +559,13 @@ export default function Map2026Page() {
                             <User className="h-5 w-5 text-primary shrink-0" />
                             <span className="truncate">{selectedAttendee.lastName} Family</span>
                           </CardTitle>
-                          {(selectedAttendee.husbandFirstName || selectedAttendee.wifeFirstName) && (
-                            <p className="text-sm text-muted-foreground">
-                              {[selectedAttendee.husbandFirstName, selectedAttendee.wifeFirstName]
-                                .filter(Boolean)
-                                .join(" & ")}
-                            </p>
-                          )}
+                      {(selectedAttendee.husbandFirstName || selectedAttendee.wifeFirstName) && (
+                        <p className="text-sm text-muted-foreground">
+                          {[selectedAttendee.husbandFirstName, selectedAttendee.wifeFirstName]
+                            .filter(Boolean)
+                            .join(" & ")}
+                        </p>
+                      )}
                         </div>
                         <Button
                           variant="ghost"
@@ -610,31 +614,7 @@ export default function Map2026Page() {
                           </div>
                         </div>
                       )}
-                      {(selectedAttendee.husbandPhone || selectedAttendee.wifePhone) && (
-                        <div className="flex items-start gap-3">
-                          <Phone className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                          <div className="min-w-0">
-                            <p className="text-xs text-muted-foreground font-medium">Phone</p>
-                            {selectedAttendee.husbandPhone && (
-                              <a href={`tel:${selectedAttendee.husbandPhone}`} className="text-primary hover:underline block break-words">
-                                {selectedAttendee.husbandFirstName
-                                  ? `${selectedAttendee.husbandFirstName}: `
-                                  : ""}
-                                {selectedAttendee.husbandPhone}
-                              </a>
-                            )}
-                            {selectedAttendee.wifePhone &&
-                              selectedAttendee.wifePhone !== selectedAttendee.husbandPhone && (
-                                <a href={`tel:${selectedAttendee.wifePhone}`} className="text-primary hover:underline block break-words">
-                                  {selectedAttendee.wifeFirstName
-                                    ? `${selectedAttendee.wifeFirstName}: `
-                                    : ""}
-                                  {selectedAttendee.wifePhone}
-                                </a>
-                              )}
-                          </div>
-                        </div>
-                      )}
+                      <DirectoryContactPhones contacts={selectedAttendee.contact_phones} />
                       {selectedAttendee.homeCongregation && (
                         <div className="flex items-start gap-3">
                           <Church className="h-4 w-4 text-primary mt-0.5 shrink-0" />
@@ -716,7 +696,10 @@ export default function Map2026Page() {
                         )}
                       </div>
 
-                      {syncedWithDirectory && (
+                      {syncedWithDirectory &&
+                        selectedAttendee.familyId !== null &&
+                        viewerFamilyId !== null &&
+                        selectedAttendee.familyId === viewerFamilyId && (
                         <Button asChild variant="outline" size="sm" className="w-full min-h-11">
                           <Link href="/account/profile">Update your directory listing</Link>
                         </Button>

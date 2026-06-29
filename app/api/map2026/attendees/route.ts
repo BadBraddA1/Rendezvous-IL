@@ -5,6 +5,7 @@ import {
   userHasRegistrationForYear,
 } from "@/lib/family-directory"
 import { isDirectoryYearEnabled } from "@/lib/directory-settings"
+import { resolveFamilyForUser } from "@/lib/family-auth"
 import { getCurrentAdmin } from "@/lib/clerk-auth"
 import { loadMap2026Registrations } from "@/lib/map2026-registrations"
 import { mergeDirectoryWithMapCoords } from "@/lib/map-attendees"
@@ -47,12 +48,14 @@ export async function GET(request: Request) {
     ])
 
     const attendees = mergeDirectoryWithMapCoords(directory, geocoded)
+    const viewerFamily = await resolveFamilyForUser(userId, email)
 
     return NextResponse.json({
       year,
       syncedWithDirectory: true,
       directoryCount: directory.length,
       mapCount: attendees.length,
+      viewerFamilyId: viewerFamily?.id ?? null,
       attendees,
     })
   } catch (error) {

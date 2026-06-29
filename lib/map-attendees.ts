@@ -1,5 +1,7 @@
 import type { FamilyDirectoryEntry } from "@/lib/family-directory"
 import type { Map2026Registration } from "@/lib/map2026-registrations"
+import type { DirectoryContactPhone } from "@/lib/directory-contacts"
+import { contactPhoneSearchHaystack } from "@/lib/directory-contacts"
 
 export type MapAttendee = {
   id: number
@@ -7,8 +9,7 @@ export type MapAttendee = {
   registrationId: number | null
   lastName: string
   email: string | null
-  husbandPhone: string | null
-  wifePhone: string | null
+  contact_phones: DirectoryContactPhone[]
   husbandFirstName: string | null
   wifeFirstName: string | null
   homeCongregation: string | null
@@ -52,8 +53,7 @@ export function mergeDirectoryWithMapCoords(
       registrationId: geo.id,
       lastName: family.family_last_name,
       email: family.email,
-      husbandPhone: family.husband_phone,
-      wifePhone: family.wife_phone,
+      contact_phones: family.contact_phones,
       husbandFirstName: family.husband_first_name,
       wifeFirstName: family.wife_first_name,
       homeCongregation: family.home_congregation,
@@ -82,8 +82,14 @@ export function mapStaticRegistrationsToAttendees(
       registrationId: reg.id,
       lastName: reg.lastName,
       email: reg.email || null,
-      husbandPhone: reg.husbandPhone || null,
-      wifePhone: reg.wifePhone || null,
+      contact_phones: [
+        ...(reg.husbandPhone?.trim()
+          ? [{ member_id: null, name: "", phone: reg.husbandPhone.trim() }]
+          : []),
+        ...(reg.wifePhone?.trim() && reg.wifePhone.trim() !== reg.husbandPhone?.trim()
+          ? [{ member_id: null, name: "", phone: reg.wifePhone.trim() }]
+          : []),
+      ],
       husbandFirstName: null,
       wifeFirstName: null,
       homeCongregation: reg.homeCongregation || null,
@@ -115,9 +121,11 @@ export function filterMapAttendees(attendees: MapAttendee[], query: string): Map
       attendee.address?.toLowerCase().includes(trimmed) ||
       attendee.directory_blurb?.toLowerCase().includes(trimmed) ||
       memberHaystack.includes(trimmed) ||
+      contactPhoneSearchHaystack(attendee.contact_phones).toLowerCase().includes(trimmed) ||
       (numericQuery &&
-        (attendee.husbandPhone?.replace(/\D/g, "").includes(numericQuery) ||
-          attendee.wifePhone?.replace(/\D/g, "").includes(numericQuery)))
+        contactPhoneSearchHaystack(attendee.contact_phones)
+          .replace(/\D/g, "")
+          .includes(numericQuery))
     )
   })
 }
@@ -128,8 +136,8 @@ export function toLeafletRegistration(attendee: MapAttendee) {
     id: attendee.registrationId ?? attendee.id,
     lastName: attendee.lastName,
     email: attendee.email || "",
-    husbandPhone: attendee.husbandPhone || "",
-    wifePhone: attendee.wifePhone || "",
+    husbandPhone: attendee.contact_phones[0]?.phone || "",
+    wifePhone: attendee.contact_phones[1]?.phone || "",
     homeCongregation: attendee.homeCongregation || "",
     fullAddress: attendee.fullAddress || "",
     address: attendee.address || "",

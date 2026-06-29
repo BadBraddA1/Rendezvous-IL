@@ -174,6 +174,7 @@ CREATE TABLE IF NOT EXISTS family_members_v2 (
   member_type TEXT,
   age_group TEXT,
   grade TEXT,
+  phone TEXT,
   special_needs INTEGER DEFAULT 0,
   notes TEXT
 );

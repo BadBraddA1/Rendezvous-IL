@@ -32,7 +32,7 @@ struct FamilyDirectoryManageView: View {
             } else {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
-                        Text("Registered families appear in the directory by default. Other attendees can see your contact info, congregation, and optional photo or note.")
+                        Text("Registered families appear in the directory by default. Add phone numbers on each family member so the directory shows the right name with each number.")
                             .foregroundStyle(.secondary)
 
                         photoPreview

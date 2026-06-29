@@ -17,7 +17,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Camera, Church, Loader2, Mail, MapPin, MapPinned, Phone, Search, Users } from "lucide-react"
+import { Camera, Church, Loader2, Mail, MapPin, MapPinned, Search, Users } from "lucide-react"
+import { DirectoryContactPhones } from "@/components/directory/directory-contact-phones"
+import { contactPhoneSearchHaystack } from "@/lib/directory-contacts"
+import type { DirectoryContactPhone } from "@/lib/directory-contacts"
 import {
   parseRegistrationEventYear,
   registrationYearLabel,
@@ -34,8 +37,7 @@ type DirectoryFamily = {
   wife_first_name: string | null
   email: string | null
   formatted_address: string | null
-  husband_phone: string | null
-  wife_phone: string | null
+  contact_phones: DirectoryContactPhone[]
   member_count: number
   member_names: string[]
 }
@@ -147,8 +149,7 @@ export default function DirectoryPage() {
         family.wife_first_name,
         family.email,
         family.formatted_address,
-        family.husband_phone,
-        family.wife_phone,
+        contactPhoneSearchHaystack(family.contact_phones),
         family.member_names.join(" "),
       ]
         .filter(Boolean)
@@ -362,39 +363,7 @@ export default function DirectoryPage() {
                             <span className="min-w-0 break-words">{family.formatted_address}</span>
                           </p>
                         )}
-                        {(family.husband_phone || family.wife_phone) && (
-                          <div className="space-y-1 text-sm">
-                            {family.husband_phone && (
-                              <p className="flex items-start gap-2">
-                                <Phone className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                                <span className="min-w-0 break-words">
-                                  {family.husband_first_name ? `${family.husband_first_name}: ` : ""}
-                                  <a
-                                    href={`tel:${family.husband_phone.replace(/[^\d+]/g, "")}`}
-                                    className="text-primary hover:underline"
-                                  >
-                                    {family.husband_phone}
-                                  </a>
-                                </span>
-                              </p>
-                            )}
-                            {family.wife_phone &&
-                              family.wife_phone !== family.husband_phone && (
-                                <p className="flex items-start gap-2">
-                                  <Phone className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                                  <span className="min-w-0 break-words">
-                                    {family.wife_first_name ? `${family.wife_first_name}: ` : ""}
-                                    <a
-                                      href={`tel:${family.wife_phone.replace(/[^\d+]/g, "")}`}
-                                      className="text-primary hover:underline"
-                                    >
-                                      {family.wife_phone}
-                                    </a>
-                                  </span>
-                                </p>
-                              )}
-                          </div>
-                        )}
+                        <DirectoryContactPhones contacts={family.contact_phones} className="space-y-1" />
                         <div className="space-y-1 text-sm text-muted-foreground">
                           <p className="flex items-center gap-2">
                             <Users className="h-4 w-4 shrink-0" />

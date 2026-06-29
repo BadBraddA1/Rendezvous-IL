@@ -111,12 +111,12 @@ export async function POST(request: Request) {
         await sql`
           INSERT INTO family_members_v2 
             (family_id, first_name, last_name, member_type, age_group, 
-             grade, gender, special_needs, notes, date_of_birth)
+             grade, gender, special_needs, notes, date_of_birth, phone)
           VALUES 
             (${change.family_id}, ${memberData.first_name}, ${memberData.last_name},
              ${memberData.member_type}, ${memberData.age_group}, ${memberData.grade || null},
              ${memberData.gender}, ${memberData.special_needs || false}, ${memberData.notes || null},
-             ${memberData.date_of_birth || null})
+             ${memberData.date_of_birth || null}, ${memberData.phone || null})
         `
       } else if (change.change_type === 'update_member') {
         // Update existing member
@@ -134,7 +134,8 @@ export async function POST(request: Request) {
               gender = ${memberData.gender},
               special_needs = ${memberData.special_needs || false},
               notes = ${memberData.notes || null},
-              date_of_birth = COALESCE(${memberData.date_of_birth || null}, date_of_birth)
+              date_of_birth = COALESCE(${memberData.date_of_birth || null}, date_of_birth),
+              phone = ${memberData.phone || null}
           WHERE id = ${change.member_id} AND family_id = ${change.family_id}
         `
       } else if (change.change_type === 'remove_member') {

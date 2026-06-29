@@ -311,6 +311,12 @@ struct ScheduleAnnouncementsResponse: Decodable {
     let announcements: [Announcement]?
 }
 
+struct DirectoryContactPhone: Decodable {
+    let member_id: Int?
+    let name: String
+    let phone: String
+}
+
 struct DirectoryFamily: Decodable, Identifiable {
     let id: Int
     let family_last_name: String
@@ -321,8 +327,7 @@ struct DirectoryFamily: Decodable, Identifiable {
     let wife_first_name: String?
     let email: String?
     let formatted_address: String?
-    let husband_phone: String?
-    let wife_phone: String?
+    let contact_phones: [DirectoryContactPhone]
     let member_count: Int
     let member_names: [String]
 }

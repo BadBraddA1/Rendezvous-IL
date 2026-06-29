@@ -1,6 +1,11 @@
 import { sql, type SqlRow } from "@/lib/db"
 import type { RegistrationEventYear } from "@/lib/registration-event-years"
 import { getSqliteErrorMessage, isMissingSqliteColumn } from "@/lib/sqlite-errors"
+import {
+  buildDirectoryContactPhones,
+  contactPhoneSearchHaystack,
+  type DirectoryContactPhone,
+} from "@/lib/directory-contacts"
 
 let directorySchemaReady: Promise<void> | null = null
 
@@ -18,6 +23,7 @@ async function runFamilyDirectoryMigrations() {
     "ALTER TABLE families ADD COLUMN directory_opt_in INTEGER DEFAULT 1",
     "ALTER TABLE families ADD COLUMN directory_blurb TEXT",
     "ALTER TABLE families ADD COLUMN photo_updated_at TEXT",
+    "ALTER TABLE family_members_v2 ADD COLUMN phone TEXT",
     "ALTER TABLE registrations ADD COLUMN event_year INTEGER DEFAULT 2026",
   ]
 
@@ -79,10 +85,14 @@ export type FamilyDirectoryEntry = {
   wife_first_name: string | null
   email: string | null
   formatted_address: string | null
-  husband_phone: string | null
-  wife_phone: string | null
+  contact_phones: DirectoryContactPhone[]
   member_count: number
   member_names: string[]
+}
+
+type DirectoryEntryDraft = Omit<FamilyDirectoryEntry, "contact_phones"> & {
+  legacy_husband_phone: string | null
+  legacy_wife_phone: string | null
 }
 
 export function formatFamilyDirectoryAddress(parts: {
@@ -287,7 +297,8 @@ export async function fetchDirectoryEntries(
   await ensureFamilyDirectorySchema()
 
   try {
-    return await queryDirectoryEntries(year)
+    const entries = await queryDirectoryEntries(year)
+    return attachDirectoryContactPhones(entries)
   } catch (error) {
     if (
       isMissingSqliteColumn(error, "photo_url") ||
@@ -300,7 +311,7 @@ export async function fetchDirectoryEntries(
   }
 }
 
-async function queryDirectoryEntries(year: RegistrationEventYear): Promise<FamilyDirectoryEntry[]> {
+async function queryDirectoryEntries(year: RegistrationEventYear): Promise<DirectoryEntryDraft[]> {
   const rows = await sql`
     SELECT
       f.id,
@@ -338,10 +349,48 @@ async function queryDirectoryEntries(year: RegistrationEventYear): Promise<Famil
     ORDER BY f.family_last_name ASC
   `
 
-  return rows.map(mapDirectoryEntry)
+  return rows.map((row) => mapDirectoryEntry(row))
 }
 
-function mapDirectoryEntry(row: SqlRow): FamilyDirectoryEntry {
+async function attachDirectoryContactPhones(
+  entries: DirectoryEntryDraft[],
+): Promise<FamilyDirectoryEntry[]> {
+  if (entries.length === 0) return []
+
+  const memberRows = await sql`
+    SELECT id, family_id, first_name, last_name, phone
+    FROM family_members_v2
+    WHERE phone IS NOT NULL AND TRIM(phone) != ''
+  `
+
+  const membersByFamily = new Map<number, typeof memberRows>()
+  const familyIds = new Set(entries.map((entry) => entry.id))
+
+  for (const row of memberRows) {
+    const familyId = Number(row.family_id)
+    if (!familyIds.has(familyId)) continue
+    const bucket = membersByFamily.get(familyId) || []
+    bucket.push(row)
+    membersByFamily.set(familyId, bucket)
+  }
+
+  return entries.map((entry) => ({
+    ...entry,
+    contact_phones: buildDirectoryContactPhones({
+      members: (membersByFamily.get(entry.id) || []).map((row) => ({
+        id: Number(row.id),
+        family_id: Number(row.family_id),
+        first_name: String(row.first_name ?? ""),
+        last_name: String(row.last_name ?? ""),
+        phone: row.phone ? String(row.phone) : null,
+      })),
+      husband_phone: entry.legacy_husband_phone,
+      wife_phone: entry.legacy_wife_phone,
+    }),
+  }))
+}
+
+function mapDirectoryEntry(row: SqlRow): DirectoryEntryDraft {
   const photoUrl = row.photo_url ? String(row.photo_url).trim() : ""
   return {
     id: Number(row.id),
@@ -358,8 +407,8 @@ function mapDirectoryEntry(row: SqlRow): FamilyDirectoryEntry {
       state: row.state ? String(row.state) : null,
       zip: row.zip ? String(row.zip) : null,
     }),
-    husband_phone: row.husband_phone ? String(row.husband_phone).trim() : null,
-    wife_phone: row.wife_phone ? String(row.wife_phone).trim() : null,
+    legacy_husband_phone: row.husband_phone ? String(row.husband_phone).trim() : null,
+    legacy_wife_phone: row.wife_phone ? String(row.wife_phone).trim() : null,
     member_count: Number(row.member_count ?? 0),
     member_names: row.member_names_csv
       ? String(row.member_names_csv)

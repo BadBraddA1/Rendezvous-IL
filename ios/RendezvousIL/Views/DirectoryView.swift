@@ -22,8 +22,7 @@ struct DirectoryView: View {
                 family.wife_first_name,
                 family.email,
                 family.formatted_address,
-                family.husband_phone,
-                family.wife_phone,
+                family.contact_phones.map { "\($0.name) \($0.phone)" }.joined(separator: " "),
                 family.member_names.joined(separator: " "),
             ]
             .compactMap { $0 }
@@ -256,26 +255,11 @@ private struct DirectoryFamilyCard: View {
                     .lineLimit(3)
             }
 
-            if let husbandPhone = family.husband_phone, !husbandPhone.isEmpty {
-                if let url = URL(string: "tel:\(husbandPhone.filter { $0.isNumber || $0 == "+" })") {
+            ForEach(Array(family.contact_phones.enumerated()), id: \.offset) { _, contact in
+                if let url = URL(string: "tel:\(contact.phone.filter { $0.isNumber || $0 == "+" })") {
                     Link(destination: url) {
                         Label(
-                            phoneLabel(name: family.husband_first_name, number: husbandPhone),
-                            systemImage: "phone"
-                        )
-                        .font(.caption)
-                        .lineLimit(2)
-                    }
-                }
-            }
-
-            if let wifePhone = family.wife_phone,
-               !wifePhone.isEmpty,
-               wifePhone != family.husband_phone {
-                if let url = URL(string: "tel:\(wifePhone.filter { $0.isNumber || $0 == "+" })") {
-                    Link(destination: url) {
-                        Label(
-                            phoneLabel(name: family.wife_first_name, number: wifePhone),
+                            contact.name.isEmpty ? contact.phone : "\(contact.name): \(contact.phone)",
                             systemImage: "phone"
                         )
                         .font(.caption)
@@ -299,13 +283,6 @@ private struct DirectoryFamilyCard: View {
         }
         .padding(12)
         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
-    }
-
-    private func phoneLabel(name: String?, number: String) -> String {
-        if let name, !name.isEmpty {
-            return "\(name): \(number)"
-        }
-        return number
     }
 }
 
