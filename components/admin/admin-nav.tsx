@@ -11,8 +11,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { LayoutDashboard, Users, Settings, FileText, MapPin, MessageSquare, Utensils, Eye, ClipboardCheck, User, Home, Shield, DollarSign, ScanLine, UserCheck, QrCode, Megaphone, Star, Calculator, ChevronDown } from "lucide-react"
-import type { AdminRole } from "@/lib/clerk-auth"
-import { getAdminPermissions } from "@/lib/clerk-auth"
+import type { AdminRole } from "@/lib/admin-permissions"
+import { getAdminPermissions } from "@/lib/admin-permissions"
 
 interface AdminNavProps {
   currentPage: string

@@ -1,64 +1,18 @@
 import { auth, currentUser } from "@clerk/nextjs/server"
+import {
+  type AdminRole,
+  type AdminPermissions,
+  type AdminUser,
+  canCheckIn,
+  canEdit,
+  getAdminPermissions,
+  isAdminRole,
+  isFullAdmin,
+} from "@/lib/admin-permissions"
 
-export type AdminRole = "admin" | "editor" | "viewer" | "checkin"
+export type { AdminRole, AdminPermissions, AdminUser }
 
-export const ADMIN_ROLES: AdminRole[] = ["admin", "editor", "viewer", "checkin"]
-
-export interface AdminUser {
-  id: string
-  email: string
-  fullName: string
-  role: AdminRole
-}
-
-export interface AdminPermissions {
-  canViewDashboard: boolean
-  canViewRegistrations: boolean
-  canCheckIn: boolean
-  canEdit: boolean
-  canManageUsers: boolean
-}
-
-export function isAdminRole(role: string | undefined | null): role is AdminRole {
-  return !!role && ADMIN_ROLES.includes(role as AdminRole)
-}
-
-export function getAdminPermissions(role: AdminRole): AdminPermissions {
-  switch (role) {
-    case "admin":
-      return {
-        canViewDashboard: true,
-        canViewRegistrations: true,
-        canCheckIn: true,
-        canEdit: true,
-        canManageUsers: true,
-      }
-    case "editor":
-      return {
-        canViewDashboard: true,
-        canViewRegistrations: true,
-        canCheckIn: true,
-        canEdit: true,
-        canManageUsers: false,
-      }
-    case "viewer":
-      return {
-        canViewDashboard: true,
-        canViewRegistrations: true,
-        canCheckIn: false,
-        canEdit: false,
-        canManageUsers: false,
-      }
-    case "checkin":
-      return {
-        canViewDashboard: true,
-        canViewRegistrations: false,
-        canCheckIn: true,
-        canEdit: false,
-        canManageUsers: false,
-      }
-  }
-}
+export { ADMIN_ROLES, canCheckIn, canEdit, getAdminPermissions, isAdminRole, isFullAdmin } from "@/lib/admin-permissions"
 
 /**
  * Get the current user's admin role from Clerk metadata
@@ -133,27 +87,6 @@ export async function requireFullAdmin(role: AdminRole) {
     throw new Error("Insufficient permissions - admin access required")
   }
   return role
-}
-
-/**
- * Check if role can edit (editor or admin)
- */
-export function canEdit(role: AdminRole | null): boolean {
-  return !!role && getAdminPermissions(role).canEdit
-}
-
-/**
- * Check if role can run check-in
- */
-export function canCheckIn(role: AdminRole | null): boolean {
-  return !!role && getAdminPermissions(role).canCheckIn
-}
-
-/**
- * Check if role is full admin
- */
-export function isFullAdmin(role: AdminRole | null): boolean {
-  return role === "admin"
 }
 
 /**

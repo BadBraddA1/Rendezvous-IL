@@ -2,36 +2,29 @@
  * Admin authentication utilities using Clerk
  */
 
-import {
-  getCurrentAdmin,
-  getAdminPermissions,
-  isAdminRole,
-  requireCheckInApi,
-  type AdminRole,
-  type AdminUser,
-} from "@/lib/clerk-auth"
+import { getCurrentAdmin, requireCheckInApi } from "@/lib/clerk-auth"
+import { getAdminPermissions, isAdminRole } from "@/lib/admin-permissions"
 
-export type { AdminRole, AdminUser }
+export type { AdminRole, AdminUser } from "@/lib/admin-permissions"
+export { getAdminPermissions, isAdminRole }
 
 /**
  * Any admin role (admin, editor, viewer, checkin)
  */
-export async function checkAdminAuth(): Promise<AdminUser | null> {
+export async function checkAdminAuth() {
   return getCurrentAdmin()
 }
 
 /**
  * Check-in station access (admin, editor, or checkin role)
  */
-export async function checkCheckInAuth(): Promise<AdminUser | null> {
+export async function checkCheckInAuth() {
   try {
     return await requireCheckInApi()
   } catch {
     return null
   }
 }
-
-export { getAdminPermissions, isAdminRole }
 
 /**
  * Log an audit action
