@@ -67,7 +67,8 @@ export async function POST(request: Request) {
       // Apply the change based on type
       if (change.change_type === 'update_field') {
         // Update the family field - use specific field updates for safety
-        const fieldName = change.field_name
+        const fieldName =
+          change.field_name === "street" ? "address" : change.field_name
         const newValue = change.new_value
         const familyId = change.family_id
         
@@ -99,7 +100,10 @@ export async function POST(request: Request) {
         }
       } else if (change.change_type === 'add_member') {
         // Add new member
-        const memberData = change.member_data
+        const memberData =
+          typeof change.member_data === "string"
+            ? JSON.parse(change.member_data)
+            : change.member_data
         await sql`
           INSERT INTO family_members_v2 
             (family_id, first_name, last_name, member_type, age_group, 
@@ -111,7 +115,10 @@ export async function POST(request: Request) {
         `
       } else if (change.change_type === 'update_member') {
         // Update existing member
-        const memberData = change.member_data
+        const memberData =
+          typeof change.member_data === "string"
+            ? JSON.parse(change.member_data)
+            : change.member_data
         await sql`
           UPDATE family_members_v2
           SET first_name = ${memberData.first_name},

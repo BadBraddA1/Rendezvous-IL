@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { currentUser } from "@clerk/nextjs/server"
 import { sql } from "@/lib/db"
+import { resolveFamilyForUser } from "@/lib/family-auth"
 
 // POST - Add or update a family member (submitted for approval)
 export async function POST(request: Request) {
@@ -13,20 +14,11 @@ export async function POST(request: Request) {
 
     const userEmail = user.emailAddresses[0]?.emailAddress
     const memberData = await request.json()
+    const family = await resolveFamilyForUser(user.id, userEmail)
 
-    // Find family
-    const families = await sql`
-      SELECT * FROM families
-      WHERE clerk_user_id = ${user.id}
-         OR email = ${userEmail}
-      LIMIT 1
-    `
-
-    if (families.length === 0) {
+    if (!family) {
       return NextResponse.json({ error: "Family not found" }, { status: 404 })
     }
-
-    const family = families[0]
     const changeType = memberData.id ? 'update_member' : 'add_member'
 
     // Create pending change for member
@@ -61,20 +53,11 @@ export async function DELETE(request: Request) {
 
     const userEmail = user.emailAddresses[0]?.emailAddress
     const { memberId } = await request.json()
+    const family = await resolveFamilyForUser(user.id, userEmail)
 
-    // Find family
-    const families = await sql`
-      SELECT * FROM families
-      WHERE clerk_user_id = ${user.id}
-         OR email = ${userEmail}
-      LIMIT 1
-    `
-
-    if (families.length === 0) {
+    if (!family) {
       return NextResponse.json({ error: "Family not found" }, { status: 404 })
     }
-
-    const family = families[0]
 
     // Get current member data for the change record
     const members = await sql`

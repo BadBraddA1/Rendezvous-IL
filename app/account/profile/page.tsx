@@ -79,7 +79,7 @@ interface Family {
   email: string
   husband_phone?: string
   wife_phone?: string
-  street?: string
+  address?: string
   city: string
   state: string
   zip: string
@@ -109,6 +109,7 @@ export default function FamilyProfilePage() {
   const [memberDialogOpen, setMemberDialogOpen] = useState(false)
   const [editingMember, setEditingMember] = useState<FamilyMember | null>(null)
   const [successMessage, setSuccessMessage] = useState("")
+  const [errorMessage, setErrorMessage] = useState("")
 
   useEffect(() => {
     if (isLoaded && user) {
@@ -120,17 +121,22 @@ export default function FamilyProfilePage() {
 
   async function fetchProfile() {
     try {
-      console.log("[v0] Fetching family profile...")
       const response = await fetch("/api/family/profile")
       const data = await response.json()
-      console.log("[v0] Profile data received:", data)
+
+      if (!response.ok) {
+        setErrorMessage(data.error || "Failed to load family profile")
+        return
+      }
+
       setFamily(data.family)
       setPendingChanges(data.pendingChanges || [])
       if (data.family) {
         setEditedFamily(data.family)
       }
     } catch (error) {
-      console.error("[v0] Error fetching profile:", error)
+      console.error("Error fetching profile:", error)
+      setErrorMessage("Failed to load family profile. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -138,6 +144,8 @@ export default function FamilyProfilePage() {
 
   async function handleSaveProfile() {
     setSaving(true)
+    setErrorMessage("")
+    setSuccessMessage("")
     try {
       const response = await fetch("/api/family/profile", {
         method: "PUT",
@@ -146,14 +154,21 @@ export default function FamilyProfilePage() {
       })
       const data = await response.json()
       
-      if (data.success) {
-        setSuccessMessage(`${data.changesCount} change(s) submitted for admin approval`)
-        setIsEditing(false)
-        fetchProfile()
-        setTimeout(() => setSuccessMessage(""), 5000)
+      if (!response.ok) {
+        setErrorMessage(data.error || "Failed to save profile changes")
+        return
       }
+
+      if (data.changesCount > 0) {
+        setSuccessMessage(`${data.changesCount} change(s) submitted for admin approval`)
+      } else {
+        setSuccessMessage("No changes detected — your profile is already up to date")
+      }
+      fetchProfile()
+      setTimeout(() => setSuccessMessage(""), 5000)
     } catch (error) {
       console.error("Error saving profile:", error)
+      setErrorMessage("Failed to save profile changes. Please try again.")
     } finally {
       setSaving(false)
     }
@@ -207,21 +222,18 @@ export default function FamilyProfilePage() {
 
   if (!isLoaded || loading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-2xl mx-auto flex items-center justify-center min-h-[400px]">
+      <div className="mx-auto max-w-2xl flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
       </div>
     )
   }
 
   if (!user) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-md mx-auto">
+      <div className="mx-auto max-w-md">
           <Card>
             <CardHeader className="text-center">
-              <CardTitle>Sign In Required</CardTitle>
+              <CardTitle className="text-subheading">Sign In Required</CardTitle>
               <CardDescription>Please sign in to view your family profile</CardDescription>
             </CardHeader>
             <CardContent>
@@ -230,15 +242,13 @@ export default function FamilyProfilePage() {
               </Link>
             </CardContent>
           </Card>
-        </div>
       </div>
     )
   }
 
   if (!family) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-2xl mx-auto">
+      <div className="mx-auto max-w-2xl">
           <Link href="/account" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6">
             <ArrowLeft className="h-4 w-4" />
             Back to Dashboard
@@ -262,52 +272,57 @@ export default function FamilyProfilePage() {
               </Link>
             </CardContent>
           </Card>
-        </div>
       </div>
     )
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-2xl mx-auto space-y-6">
+    <div className="mx-auto max-w-2xl space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
           <Link href="/account">
-            <Button variant="ghost" size="icon">
-              <ArrowLeft className="h-5 w-5" />
+            <Button variant="ghost" size="icon" aria-label="Back to account dashboard">
+              <ArrowLeft className="h-5 w-5" aria-hidden="true" />
             </Button>
           </Link>
           <div className="flex-1">
-            <h1 className="text-2xl font-bold">Family Profile</h1>
-            <p className="text-muted-foreground">Manage your family information</p>
+            <h1 className="text-section-title">Family Profile</h1>
+            <p className="text-lead text-muted-foreground">Manage your family information</p>
           </div>
         </div>
 
         {/* Success Message */}
         {successMessage && (
-          <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3 dark:bg-green-950/20 dark:border-green-900">
-            <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
-            <p className="text-green-800 dark:text-green-200">{successMessage}</p>
+          <div className="flex items-center gap-3 rounded-lg border border-success/35 bg-surface-highlight p-4">
+            <CheckCircle className="h-5 w-5 shrink-0 text-success" aria-hidden="true" />
+            <p className="font-medium text-success">{successMessage}</p>
+          </div>
+        )}
+
+        {errorMessage && (
+          <div className="flex items-center gap-3 rounded-lg border border-destructive/35 bg-destructive/5 p-4">
+            <AlertCircle className="h-5 w-5 shrink-0 text-destructive" aria-hidden="true" />
+            <p className="font-medium text-destructive">{errorMessage}</p>
           </div>
         )}
 
         {/* Pending Changes Alert */}
         {pendingChanges.length > 0 && (
-          <Card className="border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/20">
+          <Card className="border border-warning/35 bg-surface-warm">
             <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center gap-2 text-amber-800 dark:text-amber-200">
-                <Clock className="h-5 w-5" />
+              <CardTitle className="flex items-center gap-2 text-widget-heading text-warning">
+                <Clock className="h-5 w-5" aria-hidden="true" />
                 Pending Changes
               </CardTitle>
-              <CardDescription className="text-amber-700 dark:text-amber-300">
+              <CardDescription className="text-on-surface">
                 You have {pendingChanges.length} change(s) awaiting admin approval
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
                 {pendingChanges.map((change) => (
-                  <div key={change.id} className="flex items-center gap-2 text-sm text-amber-800 dark:text-amber-200">
-                    <Badge variant="outline" className="border-amber-300 text-amber-700 dark:border-amber-700 dark:text-amber-300">
+                  <div key={change.id} className="flex items-center gap-2 text-sm text-on-surface">
+                    <Badge variant="outline" className="border-warning/35 text-warning">
                       {change.change_type.replace(/_/g, ' ')}
                     </Badge>
                     {change.field_name && (
@@ -407,11 +422,11 @@ export default function FamilyProfilePage() {
               </Label>
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="street">Street Address</Label>
+                  <Label htmlFor="address">Street Address</Label>
                   <Input
-                    id="street"
-                    value={editedFamily.street || ""}
-                    onChange={(e) => setEditedFamily({ ...editedFamily, street: e.target.value })}
+                    id="address"
+                    value={editedFamily.address || ""}
+                    onChange={(e) => setEditedFamily({ ...editedFamily, address: e.target.value })}
                   />
                 </div>
                 <div className="grid gap-4 sm:grid-cols-3">
@@ -514,20 +529,26 @@ export default function FamilyProfilePage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
-                      <Button 
-                        variant="ghost" 
+                      <Button
+                        variant="ghost"
                         size="icon"
                         onClick={() => {
                           setEditingMember(member)
                           setMemberDialogOpen(true)
                         }}
+                        aria-label={`Edit ${member.first_name} ${member.last_name}`}
                       >
-                        <Edit className="h-4 w-4" />
+                        <Edit className="h-4 w-4" aria-hidden="true" />
                       </Button>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
-                            <Trash2 className="h-4 w-4" />
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-destructive hover:text-destructive"
+                            aria-label={`Remove ${member.first_name} ${member.last_name}`}
+                          >
+                            <Trash2 className="h-4 w-4" aria-hidden="true" />
                           </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
@@ -580,7 +601,6 @@ export default function FamilyProfilePage() {
             </div>
           </CardContent>
         </Card>
-      </div>
     </div>
   )
 }

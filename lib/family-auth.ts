@@ -51,6 +51,50 @@ export interface FamilyMember {
 }
 
 /**
+ * Resolve a family for a signed-in Clerk user: by clerk_user_id, then email.
+ * Optionally links an unlinked family row to this Clerk account.
+ */
+export async function resolveFamilyForUser(
+  clerkUserId: string,
+  email: string | undefined,
+  options?: { autoLink?: boolean },
+): Promise<Family | null> {
+  const autoLink = options?.autoLink ?? true
+
+  const byClerk = await getFamilyByClerkId(clerkUserId)
+  if (byClerk) return byClerk
+
+  if (!email) return null
+
+  const byEmail = await getFamilyByEmail(email)
+  if (!byEmail) return null
+
+  if (autoLink && !byEmail.clerk_user_id) {
+    await linkFamilyToClerk(byEmail.id, clerkUserId)
+    return { ...byEmail, clerk_user_id: clerkUserId }
+  }
+
+  return byEmail
+}
+
+/**
+ * Full family_members_v2 rows for profile editing.
+ */
+export async function getFamilyMembersV2(familyId: number) {
+  try {
+    return await sql`
+      SELECT *
+      FROM family_members_v2
+      WHERE family_id = ${familyId}
+      ORDER BY first_name ASC
+    `
+  } catch (error) {
+    console.error("[Family Auth] Error fetching family members v2:", error)
+    return []
+  }
+}
+
+/**
  * Get the current user's linked family
  * Returns null if user is not signed in or not linked to a family
  */
