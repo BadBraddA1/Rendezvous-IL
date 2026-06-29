@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { checkCheckInAuth } from "@/lib/admin-auth"
+import { checkCheckInAuth, logAuditAction } from "@/lib/admin-auth"
+import { getRequestAuditMeta } from "@/lib/audit-log"
 import { sql } from "@/lib/db"
 import { normalizeRegistrationRow } from "@/lib/normalize-string-array"
 
@@ -28,6 +29,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     `
 
     const [registration] = await sql`SELECT * FROM registrations WHERE id = ${id}`
+    const { ipAddress, userAgent } = getRequestAuditMeta(req)
+    await logAuditAction(
+      admin.email,
+      "check_in_registration",
+      "registration",
+      Number(id),
+      { room_keys: keys, tshirts_distributed: tshirts_distributed ?? false },
+      ipAddress,
+      userAgent,
+    )
     return NextResponse.json({
       success: true,
       registration: registration ? normalizeRegistrationRow(registration) : null,
@@ -57,6 +68,16 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
         updated_at = NOW()
       WHERE id = ${id}
     `
+    const { ipAddress, userAgent } = getRequestAuditMeta(req)
+    await logAuditAction(
+      admin.email,
+      "undo_check_in",
+      "registration",
+      Number(id),
+      undefined,
+      ipAddress,
+      userAgent,
+    )
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error("[v0] Failed to undo check-in:", error)

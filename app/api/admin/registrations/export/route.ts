@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server"
 import { checkAdminAuth, logAuditAction } from "@/lib/admin-auth"
+import { getRequestAuditMeta } from "@/lib/audit-log"
 import { sql } from "@/lib/db"
 
-export async function GET() {
+export async function GET(req: Request) {
   const admin = await checkAdminAuth()
   if (!admin) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -62,7 +63,8 @@ export async function GET() {
 
     const csv = [headers, ...rows].map((row) => row.join(",")).join("\n")
 
-    await logAuditAction(admin.email, "export_registrations", "registrations")
+    const { ipAddress, userAgent } = getRequestAuditMeta(req)
+    await logAuditAction(admin.email, "export_registrations", "registrations", undefined, undefined, ipAddress, userAgent)
 
     return new NextResponse(csv, {
       headers: {

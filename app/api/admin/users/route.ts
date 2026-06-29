@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { clerkClient } from "@clerk/nextjs/server"
-import { requireAdminApi, requireFullAdminApi, AdminRole, isAdminRole } from "@/lib/clerk-auth"
+import { requireAdminApi, requireFullAdminApi, AdminRole, isAdminRole, logAuditAction } from "@/lib/clerk-auth"
 
 // GET - List all users
 export async function GET() {
@@ -37,8 +37,9 @@ export async function GET() {
 
 // PATCH - Update user role
 export async function PATCH(request: Request) {
+  let admin
   try {
-    await requireFullAdminApi()
+    admin = await requireFullAdminApi()
   } catch {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
@@ -69,6 +70,14 @@ export async function PATCH(request: Request) {
         role: role,
       },
     })
+
+    await logAuditAction(
+      "update_user_role",
+      "admin_user",
+      undefined,
+      { userId, role },
+      request,
+    )
 
     return NextResponse.json({ success: true, role })
   } catch (error) {

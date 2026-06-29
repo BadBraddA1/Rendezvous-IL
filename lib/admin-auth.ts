@@ -4,6 +4,7 @@
 
 import { getCurrentAdmin, requireCheckInApi } from "@/lib/clerk-auth"
 import { getAdminPermissions, isAdminRole } from "@/lib/admin-permissions"
+import { writeAuditLog } from "@/lib/audit-log"
 
 export type { AdminRole, AdminUser } from "@/lib/admin-permissions"
 export { getAdminPermissions, isAdminRole }
@@ -27,7 +28,7 @@ export async function checkCheckInAuth() {
 }
 
 /**
- * Log an audit action
+ * Persist an audit log entry to Turso.
  */
 export async function logAuditAction(
   adminEmail: string,
@@ -38,8 +39,7 @@ export async function logAuditAction(
   ipAddress?: string,
   userAgent?: string,
 ) {
-  console.log("[Audit]", {
-    timestamp: new Date().toISOString(),
+  await writeAuditLog({
     adminEmail,
     action,
     resourceType,

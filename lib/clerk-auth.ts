@@ -132,6 +132,7 @@ export async function logAuditAction(
   resourceType?: string,
   resourceId?: number,
   details?: Record<string, unknown>,
+  request?: Request,
 ) {
   const admin = await getCurrentAdmin()
 
@@ -140,14 +141,20 @@ export async function logAuditAction(
     return
   }
 
-  console.log("[Audit]", {
-    timestamp: new Date().toISOString(),
-    adminId: admin.id,
+  const ipAddress =
+    request?.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    request?.headers.get("x-real-ip") ||
+    undefined
+  const userAgent = request?.headers.get("user-agent") || undefined
+
+  const { writeAuditLog } = await import("@/lib/audit-log")
+  await writeAuditLog({
     adminEmail: admin.email,
-    role: admin.role,
     action,
     resourceType,
     resourceId,
-    details,
+    details: { ...details, role: admin.role },
+    ipAddress,
+    userAgent,
   })
 }

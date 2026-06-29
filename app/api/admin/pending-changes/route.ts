@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
-import { checkAdminAuth } from "@/lib/admin-auth"
+import { checkAdminAuth, logAuditAction } from "@/lib/admin-auth"
+import { getRequestAuditMeta } from "@/lib/audit-log"
 import { sql } from "@/lib/db"
 import { enrichPendingChanges } from "@/lib/pending-family-changes"
 
@@ -155,7 +156,22 @@ export async function POST(request: Request) {
       WHERE id = ${changeId}
     `
 
-    return NextResponse.json({ 
+    const { ipAddress, userAgent } = getRequestAuditMeta(request)
+    await logAuditAction(
+      admin.email,
+      action === "approve" ? "approve_pending_change" : "reject_pending_change",
+      "pending_family_change",
+      changeId,
+      {
+        change_type: change.change_type,
+        family_id: change.family_id,
+        notes: notes || null,
+      },
+      ipAddress,
+      userAgent,
+    )
+
+    return NextResponse.json({
       success: true, 
       message: action === 'approve' ? 'Change approved and applied' : 'Change rejected'
     })

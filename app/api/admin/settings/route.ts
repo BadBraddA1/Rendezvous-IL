@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { checkAdminAuth, logAuditAction } from "@/lib/admin-auth"
+import { getRequestAuditMeta } from "@/lib/audit-log"
 import { sql } from "@/lib/db"
 
 export async function GET() {
@@ -40,7 +41,8 @@ export async function PUT(req: NextRequest) {
       `
     }
 
-    await logAuditAction(admin.email, "update_settings", "system_settings", undefined, settings)
+    const { ipAddress, userAgent } = getRequestAuditMeta(req)
+    await logAuditAction(admin.email, "update_settings", "system_settings", undefined, settings, ipAddress, userAgent)
 
     return NextResponse.json({ success: true })
   } catch (error) {
