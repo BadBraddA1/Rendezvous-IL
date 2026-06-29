@@ -153,12 +153,15 @@ export default function DirectoryPage() {
   const alternateYear = enabledYears.find((year) => year !== eventYear)
 
   return (
-    <div className="flex min-h-dvh flex-col">
+    <div className="flex min-h-dvh min-w-0 flex-col overflow-x-clip">
       <SiteHeader />
-      <main id="main-content" className="site-below-header-loose flex-1">
-        <div className="site-container space-y-8">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div className="max-w-2xl space-y-2">
+      <main
+        id="main-content"
+        className="site-container site-below-header-loose site-page-intro min-w-0 flex-1 pb-16 md:pb-20"
+      >
+        <div className="space-y-8">
+          <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div className="min-w-0 max-w-2xl space-y-2">
               <Badge variant="secondary" className="w-fit">
                 Registered families only
               </Badge>
@@ -169,27 +172,29 @@ export default function DirectoryPage() {
               </p>
             </div>
             {enabledYears.length > 1 && eventYear !== null && (
-              <Select
-                value={String(eventYear)}
-                onValueChange={(value) => {
-                  const year = parseRegistrationEventYear(value)
-                  setEventYear(year)
-                  const url = new URL(window.location.href)
-                  url.searchParams.set("year", String(year))
-                  window.history.replaceState({}, "", url.toString())
-                }}
-              >
-                <SelectTrigger className="w-full min-h-11 lg:w-[220px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {enabledYears.map((year) => (
-                    <SelectItem key={year} value={String(year)}>
-                      {registrationYearLabel(year)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="w-full shrink-0 lg:w-[220px]">
+                <Select
+                  value={String(eventYear)}
+                  onValueChange={(value) => {
+                    const year = parseRegistrationEventYear(value)
+                    setEventYear(year)
+                    const url = new URL(window.location.href)
+                    url.searchParams.set("year", String(year))
+                    window.history.replaceState({}, "", url.toString())
+                  }}
+                >
+                  <SelectTrigger className="w-full min-h-11">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {enabledYears.map((year) => (
+                      <SelectItem key={year} value={String(year)}>
+                        {registrationYearLabel(year)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             )}
           </div>
 
@@ -257,8 +262,8 @@ export default function DirectoryPage() {
             </Card>
           ) : (
             <>
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="relative max-w-md flex-1">
+              <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="relative min-w-0 max-w-md flex-1">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     value={search}
@@ -285,24 +290,26 @@ export default function DirectoryPage() {
                   </CardContent>
                 </Card>
               ) : (
-                <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                <div className="grid min-w-0 gap-5 sm:grid-cols-2 xl:grid-cols-3">
                   {filteredFamilies.map((family) => (
-                    <Card key={family.id} className="overflow-hidden">
+                    <Card key={family.id} className="gap-0 overflow-hidden py-0 shadow-sm">
                       <div className="relative aspect-[4/3] bg-muted">
                         <Image
                           src={family.photo_url}
                           alt={`${family.family_last_name} family`}
                           fill
-                          className="object-cover"
+                          className="object-contain"
                           sizes="(max-width: 768px) 100vw, 33vw"
                           unoptimized
                         />
                       </div>
-                      <CardContent className="space-y-3 p-5">
-                        <div>
-                          <h2 className="text-lg font-semibold">{family.family_last_name} Family</h2>
+                      <CardContent className="min-w-0 space-y-3 p-5">
+                        <div className="min-w-0">
+                          <h2 className="text-lg font-semibold break-words">
+                            {family.family_last_name} Family
+                          </h2>
                           {(family.husband_first_name || family.wife_first_name) && (
-                            <p className="text-sm text-muted-foreground">
+                            <p className="text-sm text-muted-foreground break-words">
                               {[family.husband_first_name, family.wife_first_name]
                                 .filter(Boolean)
                                 .join(" & ")}
@@ -310,22 +317,27 @@ export default function DirectoryPage() {
                           )}
                         </div>
                         {family.home_congregation && (
-                          <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Church className="h-4 w-4 shrink-0" />
-                            {family.home_congregation}
+                          <p className="flex items-start gap-2 text-sm text-muted-foreground">
+                            <Church className="mt-0.5 h-4 w-4 shrink-0" />
+                            <span className="min-w-0 break-words">{family.home_congregation}</span>
                           </p>
                         )}
-                        <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Users className="h-4 w-4 shrink-0" />
-                          {family.member_count} attendee{family.member_count === 1 ? "" : "s"}
-                          {family.member_names.length > 0
-                            ? ` · ${family.member_names.slice(0, 4).join(", ")}${
-                                family.member_names.length > 4 ? "…" : ""
-                              }`
-                            : ""}
-                        </p>
+                        <div className="space-y-1 text-sm text-muted-foreground">
+                          <p className="flex items-center gap-2">
+                            <Users className="h-4 w-4 shrink-0" />
+                            {family.member_count} attendee{family.member_count === 1 ? "" : "s"}
+                          </p>
+                          {family.member_names.length > 0 && (
+                            <p className="min-w-0 break-words pl-6">
+                              {family.member_names.slice(0, 6).join(", ")}
+                              {family.member_names.length > 6 ? "…" : ""}
+                            </p>
+                          )}
+                        </div>
                         {family.directory_blurb && (
-                          <p className="rounded-lg bg-muted/50 p-3 text-sm">{family.directory_blurb}</p>
+                          <p className="min-w-0 break-words rounded-lg bg-muted/50 p-3 text-sm">
+                            {family.directory_blurb}
+                          </p>
                         )}
                       </CardContent>
                     </Card>

@@ -2,6 +2,7 @@
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
+@custom-variant motion-reduce (@media (prefers-reduced-motion: reduce));
 
 :root {
   /* Lake teal brand — neutrals tinted to hue 178, not generic blue-gray */
@@ -32,6 +33,7 @@
   --brand-sand: oklch(0.76 0.04 72);
   --success: oklch(0.42 0.11 145);
   --warning: oklch(0.45 0.12 62);
+  --info: oklch(0.48 0.09 200);
   --on-surface: oklch(0.30 0.04 195);
   --surface-tint: oklch(0.96 0.022 178);
   --surface-highlight: oklch(0.92 0.04 175);
@@ -41,7 +43,7 @@
   --chart-2: oklch(0.55 0.12 200);
   --chart-3: oklch(0.60 0.15 150);
   --chart-4: oklch(0.65 0.12 100);
-  --chart-5: oklch(0.50 0.18 320);
+  --chart-5: oklch(0.65 0.14 38);
   --radius: 0.75rem;
   --sidebar: oklch(0.97 0.012 178);
   --sidebar-foreground: oklch(0.22 0.035 195);
@@ -68,10 +70,24 @@
   --text-section: clamp(1.75rem, 1.35rem + 1.25vw, 2.25rem);
   --text-page: clamp(2rem, 1.5rem + 2.5vw, 3rem);
   --text-display: clamp(2.5rem, 2rem + 2.5vw, 3.5rem);
+  --text-day-title: clamp(1.25rem, 1.1rem + 0.4vw, 1.5rem);
+  --text-subheading: clamp(1.125rem, 1.05rem + 0.35vw, 1.375rem);
+  --text-widget: clamp(1.375rem, 1.2rem + 0.5vw, 1.625rem);
+  --text-amount: clamp(1.5rem, 1.35rem + 0.5vw, 1.875rem);
   --leading-body: 1.65;
   --leading-heading: 1.2;
   --leading-tight: 1.1;
   --measure: 65ch;
+
+  /* Stacking order: raised → chrome → floating → modal → toast → tooltip → skip link */
+  --z-raised: 10;
+  --z-chrome: 50;
+  --z-floating: 55;
+  --z-modal-backdrop: 60;
+  --z-modal: 70;
+  --z-toast: 80;
+  --z-tooltip: 90;
+  --z-skip-link: 100;
 
   /* Spacing (4pt base) */
   --space-tight: 0.75rem;
@@ -80,6 +96,18 @@
   --space-section-sm: clamp(2.5rem, 2rem + 2vw, 3.5rem);
   --space-section: clamp(3.5rem, 2.5rem + 4vw, 5rem);
   --space-section-lg: clamp(4.5rem, 3.5rem + 5vw, 6.5rem);
+
+  /* Fixed SiteHeader — bar height only; safe-area added in offset utilities */
+  --site-header-height: 4rem;
+  --site-header-gap: 2rem;
+  --site-header-offset: calc(var(--site-header-height) + env(safe-area-inset-top, 0px));
+}
+
+@media (min-width: 768px) {
+  :root {
+    --site-header-height: 4.5rem;
+    --site-header-gap: 1.5rem;
+  }
 }
 
 .dark {
@@ -107,7 +135,7 @@
   --chart-2: oklch(0.55 0.12 200);
   --chart-3: oklch(0.60 0.15 150);
   --chart-4: oklch(0.65 0.12 100);
-  --chart-5: oklch(0.50 0.18 320);
+  --chart-5: oklch(0.65 0.14 38);
   --sidebar: oklch(0.14 0.02 250);
   --sidebar-foreground: oklch(0.95 0.01 85);
   --sidebar-primary: oklch(0.65 0.12 175);
@@ -152,6 +180,7 @@
   --color-brand-lake: var(--brand-lake);
   --color-success: var(--success);
   --color-warning: var(--warning);
+  --color-info: var(--info);
   --color-on-surface: var(--on-surface);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
@@ -170,6 +199,16 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+}
+
+/**
+ * In-flow spacer paired with fixed SiteHeader (see components/site-header.tsx).
+ * Lives outside @layer so it always applies — padding utilities alone can lose to Tailwind layers.
+ */
+.site-header-spacer {
+  height: var(--site-header-offset);
+  flex-shrink: 0;
+  pointer-events: none;
 }
 
 @layer base {
@@ -228,6 +267,42 @@
     letter-spacing: var(--title-tracking, -0.025em);
   }
 
+  .text-day-title {
+    font-family: var(--font-display);
+    font-size: var(--text-day-title);
+    font-weight: 700;
+    line-height: var(--leading-heading);
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+  }
+
+  .text-subheading {
+    font-family: var(--font-display);
+    font-size: var(--text-subheading);
+    font-weight: 600;
+    line-height: var(--leading-heading);
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+
+  .text-widget-heading {
+    font-family: var(--font-display);
+    font-size: var(--text-widget);
+    font-weight: 700;
+    line-height: var(--leading-heading);
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+
+  .text-amount {
+    font-family: var(--font-sans);
+    font-size: var(--text-amount);
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+
   .text-lead {
     font-size: var(--text-lg);
     line-height: var(--leading-body);
@@ -259,6 +334,34 @@
     padding-block: var(--space-section-lg);
   }
 
+  .z-layer-raised {
+    z-index: var(--z-raised);
+  }
+
+  .z-layer-chrome {
+    z-index: var(--z-chrome);
+  }
+
+  .z-layer-floating {
+    z-index: var(--z-floating);
+  }
+
+  .z-layer-modal-backdrop {
+    z-index: var(--z-modal-backdrop);
+  }
+
+  .z-layer-modal {
+    z-index: var(--z-modal);
+  }
+
+  .z-layer-toast {
+    z-index: var(--z-toast);
+  }
+
+  .z-layer-tooltip {
+    z-index: var(--z-tooltip);
+  }
+
   .skip-link {
     position: absolute;
     width: 1px;
@@ -275,16 +378,82 @@
     padding-top: env(safe-area-inset-top, 0px);
   }
 
+  html {
+    scroll-padding-top: calc(var(--site-header-offset) + var(--site-header-gap) + 0.75rem);
+  }
+
+/** When the localhost page tour bar is visible, keep bottom content clear of the controls. */
+  body:has([aria-label="Page tour controls"]) #main-content {
+    padding-bottom: max(5rem, calc(env(safe-area-inset-bottom, 0px) + 4.5rem));
+  }
+
+  /**
+   * Breathing room below SiteHeader spacer — use on <main> or first section (not on the header).
+   * Full header offset is handled by `.site-header-spacer` in SiteHeader.
+   */
+  .site-below-header {
+    padding-top: var(--site-header-gap);
+  }
+
+  /** Extra clearance when the first row has icons / kickers (schedule title, dev tools, forms). */
+  .site-below-header-loose {
+    padding-top: calc(var(--site-header-gap) + 1rem);
+  }
+
+  @media (min-width: 768px) {
+    .site-below-header-loose {
+      padding-top: calc(var(--site-header-gap) + 0.75rem);
+    }
+  }
+
+  /** Pages without SiteHeader / spacer — full offset in one padding rule */
+  .site-below-header-standalone {
+    padding-top: calc(var(--site-header-offset) + var(--site-header-gap));
+  }
+
+  .site-below-header-standalone-loose {
+    padding-top: calc(var(--site-header-offset) + var(--site-header-gap) + 1rem);
+  }
+
+  @media (min-width: 768px) {
+    .site-below-header-standalone-loose {
+      padding-top: calc(var(--site-header-offset) + var(--site-header-gap) + 0.75rem);
+    }
+  }
+
+  /** Sticky sidebars / jump nav — sit flush below the fixed header */
+  .site-sticky-top {
+    top: calc(var(--site-header-offset) + var(--site-header-gap));
+  }
+
+  /** Anchor scroll targets (day sections, in-page links) */
+  .site-scroll-mt {
+    scroll-margin-top: calc(var(--site-header-offset) + var(--site-header-gap) + 0.75rem);
+  }
+
+  /** Optional breathing room inside an already-offset page shell */
+  .site-page-intro {
+    padding-top: 0.75rem;
+  }
+
+  @media (min-width: 768px) {
+    .site-page-intro {
+      padding-top: 1rem;
+    }
+  }
+
   .site-container {
     width: 100%;
     max-width: 80rem;
     margin-inline: auto;
-    padding-inline: max(1rem, env(safe-area-inset-left, 1rem));
+    padding-inline: max(1rem, env(safe-area-inset-left, 1rem))
+      max(1rem, env(safe-area-inset-right, 1rem));
   }
 
   @media (min-width: 640px) {
     .site-container {
-      padding-inline: max(1.5rem, env(safe-area-inset-left, 1.5rem));
+      padding-inline: max(1.5rem, env(safe-area-inset-left, 1.5rem))
+        max(1.5rem, env(safe-area-inset-right, 1.5rem));
     }
   }
 
@@ -297,9 +466,188 @@
     bottom: max(1.5rem, env(safe-area-inset-bottom, 1.5rem));
   }
 
+  .inset-safe-top {
+    top: max(1rem, env(safe-area-inset-top, 1rem));
+  }
+
+  /** Sticky prev/next row for multi-step forms on phones */
+  .form-sticky-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: var(--z-raised);
+    margin-inline: calc(-1 * max(1rem, env(safe-area-inset-left, 1rem)));
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    border-top: 1px solid var(--border);
+    background: var(--background);
+    padding: 1rem max(1rem, env(safe-area-inset-right, 1rem))
+      max(1rem, env(safe-area-inset-bottom, 1rem))
+      max(1rem, env(safe-area-inset-left, 1rem));
+  }
+
+  @media (min-width: 640px) {
+    .form-sticky-actions {
+      position: static;
+      margin-inline: 0;
+      border-top: 0;
+      background: transparent;
+      padding: 0;
+    }
+  }
+
+  .scroll-touch-x {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .scroll-touch-x::-webkit-scrollbar {
+    display: none;
+  }
+
   .touch-target {
     min-height: 2.75rem;
     min-width: 2.75rem;
+  }
+
+  /* Admin toolbars: full-width tap targets on narrow viewports */
+  .admin-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .admin-toolbar-primary {
+    min-width: min(100%, 12rem);
+    flex: 1 1 12rem;
+  }
+
+  .admin-toolbar-action {
+    min-height: 2.75rem;
+    flex: 1 1 auto;
+  }
+
+  /** Admin app shell — shared nav + content rhythm (product register: predictable density) */
+  .admin-shell {
+    display: flex;
+    min-height: 100vh;
+    min-height: 100dvh;
+    flex-direction: column;
+  }
+
+  .admin-main {
+    flex: 1 1 auto;
+    background: var(--background);
+    padding-block: max(1.5rem, env(safe-area-inset-bottom, 1.5rem));
+    padding-inline: max(1rem, env(safe-area-inset-right, 1rem))
+      max(1rem, env(safe-area-inset-left, 1rem));
+  }
+
+  @media (min-width: 640px) {
+    .admin-main {
+      padding-inline: max(1.5rem, env(safe-area-inset-right, 1.5rem))
+        max(1.5rem, env(safe-area-inset-left, 1.5rem));
+    }
+  }
+
+  .admin-container {
+    width: 100%;
+    max-width: 80rem;
+    margin-inline: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .admin-container--narrow {
+    max-width: 48rem;
+  }
+
+  .admin-container--compact {
+    max-width: 64rem;
+  }
+
+  .admin-page-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .admin-stat-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem 1.5rem;
+    padding: 0.875rem 1.25rem;
+    border: 1px solid color-mix(in oklch, var(--primary) 12%, var(--border));
+    border-radius: var(--radius-lg);
+    background: color-mix(in oklch, var(--surface-tint) 65%, transparent);
+  }
+
+  .admin-gate-screen {
+    display: flex;
+    min-height: 100vh;
+    min-height: 100dvh;
+    align-items: center;
+    justify-content: center;
+    padding: max(1rem, env(safe-area-inset-top, 1rem))
+      max(1rem, env(safe-area-inset-right, 1rem))
+      max(1rem, env(safe-area-inset-bottom, 1rem))
+      max(1rem, env(safe-area-inset-left, 1rem));
+    background: var(--background);
+  }
+
+  .admin-action-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    min-height: 2.75rem;
+    padding: 0.5rem 0.75rem;
+    margin-inline: -0.75rem;
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    transition: background-color 150ms ease-out;
+  }
+
+  .admin-action-row:hover {
+    background: color-mix(in oklch, var(--muted) 50%, transparent);
+  }
+
+  .admin-stat-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    min-width: min(100%, 7.5rem);
+    flex: 1 1 7.5rem;
+  }
+
+  .admin-stat-label {
+    font-size: var(--text-sm);
+    line-height: 1.35;
+    color: var(--muted-foreground);
+  }
+
+  .admin-stat-value {
+    font-size: var(--text-lg);
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .admin-stat-hint {
+    font-size: var(--text-xs);
+    line-height: 1.35;
+    color: var(--muted-foreground);
+  }
+
+  @media (min-width: 640px) {
+    .admin-toolbar-action {
+      flex: 0 0 auto;
+    }
   }
 
   .text-on-surface {
@@ -320,13 +668,21 @@
       min-height: 2.75rem;
       min-width: 2.75rem;
     }
+
+    [data-slot="dropdown-menu-item"] {
+      min-height: 2.75rem;
+    }
+
+    [data-slot="accordion-trigger"] {
+      min-height: 2.75rem;
+    }
   }
 
   .skip-link:focus {
     position: fixed;
     top: max(1rem, env(safe-area-inset-top, 1rem));
     left: max(1rem, env(safe-area-inset-left, 1rem));
-    z-index: 100;
+    z-index: var(--z-skip-link);
     width: auto;
     height: auto;
     margin: 0;
@@ -360,53 +716,30 @@
 /* --- Brand surfaces --- */
 
 .hero-lake-bg {
-  background: linear-gradient(
-    168deg,
-    var(--surface-highlight) 0%,
-    var(--background) 42%,
-    var(--surface-tint) 100%
-  );
+  background: var(--background);
 }
 
-/* --- Hero motion (visible by default; animates only when .hero-motion-ready) --- */
+/* --- Hero --- */
 
 .hero-year {
+  font-family: var(--font-display);
   font-size: clamp(2.75rem, 12vw, 6rem);
+  font-weight: 700;
+  line-height: var(--leading-tight);
+  letter-spacing: -0.03em;
   overflow-wrap: anywhere;
 }
 
-/* Hero year — coral-to-teal color wave through digits (live accept: speed 0.35, spread 0.3) */
-.hero-year--flow {
-  display: inline-flex;
-  justify-content: center;
+.text-eod-dates {
+  font-family: var(--font-display);
+  font-size: clamp(1.75rem, 1.35rem + 2vw, 2.5rem);
+  font-weight: 600;
+  line-height: var(--leading-heading);
+  letter-spacing: -0.02em;
+  text-wrap: balance;
 }
 
-.hero-year__digit {
-  display: inline-block;
-  color: var(--primary);
-  animation: hero-year-color-wave 2.91s var(--ease-out-quart) infinite;
-  animation-delay: calc(var(--digit-i, 0) * 0.17s);
-}
-
-@keyframes hero-year-color-wave {
-  0%,
-  18%,
-  100% {
-    color: var(--primary);
-    transform: translateY(0);
-  }
-  42%,
-  58% {
-    color: var(--brand-coral-ink);
-    transform: translateY(-3px);
-  }
-  72% {
-    color: var(--primary);
-    transform: translateY(0);
-  }
-}
-
-/* Registration countdown — Franklin sans numbers (live accept, scale 0.5) */
+/* Registration countdown — Franklin sans numbers */
 .registration-countdown-num {
   font-family: var(--font-sans);
   font-size: clamp(1.5rem, 4vw, 3rem);
@@ -419,6 +752,23 @@
 .registration-countdown-label {
   font-family: var(--font-sans);
   font-weight: 500;
+}
+
+/* Mono timer display — silent mode, check-in clocks */
+.text-timer-mono {
+  font-family: var(--font-mono);
+  font-size: clamp(2.25rem, 1.75rem + 2vw, 3rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Shared digit wells — lake-tinted lift on highlight/lake bands */
+.countdown-digit-cell {
+  border: 1px solid color-mix(in oklch, var(--primary) 22%, transparent);
+  background: color-mix(in oklch, var(--card) 88%, var(--surface-tint));
+  border-radius: var(--radius-lg);
 }
 
 /* Planning for 2027 — dates hero + fact chips (live accept variant 2) */
@@ -476,6 +826,35 @@
   box-shadow: 0 1px 2px color-mix(in oklch, var(--foreground) 6%, transparent);
 }
 
+/* Semantic status callouts — admin, registration, schedule */
+.callout-success {
+  color: var(--success);
+  background: color-mix(in oklch, var(--success) 8%, var(--surface-highlight));
+  border: 1px solid color-mix(in oklch, var(--success) 28%, transparent);
+  border-radius: var(--radius-md);
+}
+
+.callout-warning {
+  color: var(--warning);
+  background: color-mix(in oklch, var(--warning) 8%, var(--surface-warm));
+  border: 1px solid color-mix(in oklch, var(--warning) 32%, transparent);
+  border-radius: var(--radius-md);
+}
+
+.callout-info {
+  color: var(--info);
+  background: color-mix(in oklch, var(--primary) 8%, var(--surface-lake));
+  border: 1px solid color-mix(in oklch, var(--primary) 24%, transparent);
+  border-radius: var(--radius-md);
+}
+
+.callout-destructive {
+  color: var(--destructive);
+  background: color-mix(in oklch, var(--destructive) 8%, var(--card));
+  border: 1px solid color-mix(in oklch, var(--destructive) 28%, transparent);
+  border-radius: var(--radius-md);
+}
+
 @media (max-width: 639px) {
   .schedule-draft-notice {
     max-width: none;
@@ -491,6 +870,17 @@
 
 .schedule-day-nav::-webkit-scrollbar {
   display: none;
+}
+
+/* Defer off-screen schedule day paint until scrolled near */
+.schedule-day-section {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 720px;
+}
+
+.map-attendee-row {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 3.5rem;
 }
 
 /* About hero greeting — script kicker (live accept variant 2) */
@@ -518,26 +908,38 @@
   margin-bottom: 0.35rem;
 }
 
-.faq-videos-campfire-grid article:nth-child(odd) {
-  transform: rotate(-0.66deg);
-}
-
+.faq-videos-campfire-grid article:nth-child(odd),
 .faq-videos-campfire-grid article:nth-child(even) {
-  transform: rotate(0.66deg);
+  transform: none;
 }
 
 .faq-videos-campfire-grid article {
-  transition: transform var(--duration-normal) var(--ease-out-quart);
+  transition: border-color var(--duration-normal) var(--ease-out-quart);
 }
 
 .faq-videos-campfire-grid article:hover {
-  transform: rotate(0deg) translateY(-3px);
+  border-color: color-mix(in oklch, var(--primary) 35%, transparent);
 }
 
-@keyframes hero-reveal-up {
+.hero-tagline {
+  opacity: 1;
+  transition: opacity 400ms var(--ease-out-quart);
+}
+
+.hero-tagline:not(.hero-tagline--visible) {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .motion-status-enter {
+    animation: status-enter var(--duration-normal) var(--ease-out-quart);
+  }
+}
+
+@keyframes status-enter {
   from {
     opacity: 0;
-    transform: translateY(14px);
+    transform: translateY(4px);
   }
   to {
     opacity: 1;
@@ -545,38 +947,18 @@
   }
 }
 
-@keyframes hero-live-ping {
-  0% {
-    transform: scale(1);
-    opacity: 0.75;
-  }
-  75%,
-  100% {
-    transform: scale(2);
-    opacity: 0;
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .hero-motion-ready .hero-stagger {
-    animation: hero-reveal-up var(--duration-slow) var(--ease-out-quart) both;
-    animation-delay: calc(var(--i, 0) * 70ms);
-  }
-
-  .hero-live-ping {
-    animation: hero-live-ping 2s var(--ease-out-quart) infinite;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .hero-stagger,
-  .hero-live-ping,
-  .hero-year__digit {
-    animation: none !important;
+  .hero-tagline:not(.hero-tagline--visible) {
+    opacity: 1;
+    transform: none;
+  }
+
+  .hero-tagline {
+    transition: none;
   }
 }
 
-/* Legacy utility — prefer hero-stagger on marketing surfaces */
+/* Legacy utility — prefer transform-only motion on marketing surfaces */
 @keyframes fade-in-up {
   from {
     opacity: 0;
@@ -606,24 +988,14 @@
   animation: float 5s ease-in-out infinite;
 }
 
-@keyframes map-pin-highlight {
-  0%,
-  100% {
-    transform: translate(-50%, -100%) scale(1);
-  }
-  50% {
-    transform: translate(-50%, -100%) scale(1.08);
-  }
-}
-
 .map-pin-highlight {
-  animation: map-pin-highlight 1.2s var(--ease-out-quart) infinite;
+  z-index: var(--z-raised);
+  filter: drop-shadow(0 0 3px color-mix(in oklch, var(--primary) 20%, transparent));
 }
 
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-in-up,
-  .animate-float,
-  .map-pin-highlight {
+  .animate-float {
     animation: none !important;
   }
 
@@ -665,11 +1037,44 @@
   border-radius: var(--radius-lg);
 }
 
+.brand-dark-shell .brand-dark-text-muted {
+  color: oklch(0.72 0.03 178);
+}
+
+.brand-dark-shell .brand-dark-text-subtle {
+  color: oklch(0.62 0.03 178);
+}
+
+.brand-dark-shell .brand-dark-text-body {
+  color: oklch(0.78 0.02 178);
+}
+
+.brand-dark-shell .brand-dark-text-strong {
+  color: oklch(0.96 0.01 178);
+}
+
+.brand-dark-shell .brand-dark-track {
+  color: oklch(0.2 0.03 195);
+}
+
+.brand-dark-shell .brand-dark-paused {
+  color: oklch(0.75 0.12 85);
+}
+
+.brand-dark-shell .brand-dark-link {
+  color: oklch(0.72 0.03 178);
+}
+
+.brand-dark-shell .brand-dark-link:hover {
+  color: oklch(0.96 0.01 178);
+}
+
 .live-updates-shell .lu-kicker {
   font-size: 0.75rem;
   font-weight: 600;
-  letter-spacing: 0.12em;
+  letter-spacing: var(--lu-tracking-label, 0.1em);
   text-transform: uppercase;
+  line-height: 1.3;
   color: oklch(0.72 0.08 175);
 }
 
@@ -681,7 +1086,10 @@
 
 /* Live-updates semantic color — lake teal + coral family on dark shell */
 .live-updates-shell {
+  --lu-ink-body: oklch(0.92 0.012 178);
+  --lu-ink-secondary: oklch(0.78 0.025 195);
   --lu-ink-muted: oklch(0.68 0.02 195);
+  --lu-ink-subtle: oklch(0.58 0.02 195);
   --lu-now: oklch(0.55 0.12 155);
   --lu-now-bright: oklch(0.72 0.11 155);
   --lu-upcoming: oklch(0.72 0.12 38);
@@ -696,10 +1104,136 @@
   --lu-destructive: oklch(0.62 0.18 25);
   --lu-warning: oklch(0.72 0.12 38);
   --lu-announce: oklch(0.76 0.1 62);
+
+  /* Projection-board type ramp (scales with per-view html font-size zoom) */
+  --lu-leading-body: 1.55;
+  --lu-leading-display: 1.08;
+  --lu-tracking-label: 0.08em;
+  --lu-type-feature: clamp(2.75rem, 2.25rem + 1.5vw, 4.5rem);
+  --lu-type-board-xl: clamp(2.25rem, 1.85rem + 1.25vw, 3.75rem);
+  --lu-type-board-lg: clamp(1.875rem, 1.5rem + 1vw, 3rem);
+  --lu-type-board-md: clamp(1.5rem, 1.25rem + 0.75vw, 2.25rem);
+  --lu-type-board-sm: clamp(1.25rem, 1.1rem + 0.5vw, 1.75rem);
+  --lu-type-display: clamp(4.5rem, 3.5rem + 5vw, 8rem);
+  --lu-type-menu-main: clamp(3rem, 2.5rem + 2vw, 5rem);
+  --lu-type-menu-side: clamp(1.75rem, 1.5rem + 1vw, 2.5rem);
+  --lu-type-credential: clamp(2.5rem, 2rem + 2vw, 4.5rem);
+  --lu-type-display-sm: clamp(2.5rem, 2rem + 1.5vw, 3.75rem);
 }
 
+.live-updates-shell .lu-type-feature {
+  font-size: var(--lu-type-feature);
+  font-weight: 700;
+  line-height: var(--lu-leading-display);
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+.live-updates-shell .lu-type-board-xl {
+  font-size: var(--lu-type-board-xl);
+  font-weight: 700;
+  line-height: var(--lu-leading-display);
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+.live-updates-shell .lu-type-board-lg {
+  font-size: var(--lu-type-board-lg);
+  font-weight: 700;
+  line-height: var(--lu-leading-display);
+  text-wrap: balance;
+}
+
+.live-updates-shell .lu-type-board-md {
+  font-size: var(--lu-type-board-md);
+  font-weight: 600;
+  line-height: var(--lu-leading-body);
+}
+
+.live-updates-shell .lu-type-board-sm {
+  font-size: var(--lu-type-board-sm);
+  font-weight: 600;
+  line-height: var(--lu-leading-body);
+}
+
+.live-updates-shell .lu-type-display {
+  font-size: var(--lu-type-display);
+  font-weight: 300;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.live-updates-shell .lu-type-display-sm {
+  font-size: var(--lu-type-display-sm);
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.live-updates-shell .lu-type-menu-main {
+  font-size: var(--lu-type-menu-main);
+  font-weight: 700;
+  line-height: var(--lu-leading-display);
+  text-wrap: balance;
+}
+
+.live-updates-shell .lu-type-menu-side {
+  font-size: var(--lu-type-menu-side);
+  font-weight: 600;
+  line-height: 1.35;
+  text-wrap: balance;
+}
+
+.live-updates-shell .lu-type-credential {
+  font-family: var(--font-mono);
+  font-size: var(--lu-type-credential);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+
+.live-updates-shell .lu-type-label-lg {
+  font-size: var(--lu-type-board-sm);
+  font-weight: 600;
+  letter-spacing: var(--lu-tracking-label);
+  text-transform: uppercase;
+  line-height: 1.25;
+}
+
+.live-updates-shell .lu-type-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: var(--lu-tracking-label);
+  text-transform: uppercase;
+  line-height: 1.3;
+}
+
+.live-updates-shell .lu-type-label-sm {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  line-height: 1.35;
+}
+
+.live-updates-shell .lu-type-body-lg {
+  font-size: var(--lu-type-board-md);
+  line-height: var(--lu-leading-body);
+}
+
+.live-updates-shell .lu-text-body { color: var(--lu-ink-body); }
+.live-updates-shell .lu-text-secondary { color: var(--lu-ink-secondary); }
+.live-updates-shell .lu-text-muted { color: var(--lu-ink-muted); }
+.live-updates-shell .lu-text-subtle { color: var(--lu-ink-subtle); }
+
 .live-updates-shell .lu-text-now { color: var(--lu-now-bright); }
-.live-updates-shell .lu-bg-now { background: var(--lu-now-bright); }
+.live-updates-shell [class*="-glow"] {
+  display: none;
+}
+
+.live-updates-shell .lu-bg-now { background: var(--lu-now); }
 .live-updates-shell .lu-surface-now {
   background: color-mix(in oklch, var(--lu-now) 14%, transparent);
   border-color: color-mix(in oklch, var(--lu-now-bright) 35%, transparent);
