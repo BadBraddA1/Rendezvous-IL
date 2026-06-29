@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -10,64 +10,124 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { RegistrationEditModal } from "./registration-edit-modal"
 import { BulkEmailModal } from "./bulk-email-modal"
+import { AdminConfirmDialog } from "./admin-confirm-dialog"
+import { AdminListSkeleton, AdminRetryButton } from "./admin-panel-states"
 import { useToast } from "@/hooks/use-toast"
+import {
+  DEFAULT_REGISTRATION_EVENT_YEAR,
+  REGISTRATION_EVENT_YEARS,
+  REGISTRATION_YEAR_STORAGE_KEY,
+  parseRegistrationEventYear,
+  registrationYearLabel,
+  type RegistrationEventYear,
+} from "@/lib/registration-event-years"
+
+type AdminRegistrationRow = {
+  id: string
+  family_last_name: string
+  email: string
+  attendee_count: number
+  lodging_type: string
+  total_cost: number
+  registration_fee_paid?: boolean
+  full_payment_paid?: boolean
+  created_at: string
+  source?: "legacy" | "v2"
+  event_year?: RegistrationEventYear
+}
+
+function readStoredEventYear(): RegistrationEventYear {
+  if (typeof window === "undefined") return DEFAULT_REGISTRATION_EVENT_YEAR
+  return parseRegistrationEventYear(window.sessionStorage.getItem(REGISTRATION_YEAR_STORAGE_KEY))
+}
 
 export function RegistrationsTable() {
-  const [registrations, setRegistrations] = useState<any[]>([])
+  const [eventYear, setEventYear] = useState<RegistrationEventYear>(DEFAULT_REGISTRATION_EVENT_YEAR)
+  const [registrations, setRegistrations] = useState<AdminRegistrationRow[]>([])
+  const [searchInput, setSearchInput] = useState("")
   const [search, setSearch] = useState("")
   const [lodgingFilter, setLodgingFilter] = useState("all")
   const [loading, setLoading] = useState(true)
-  const [selectedRegistration, setSelectedRegistration] = useState<any | null>(null)
+  const [fetchError, setFetchError] = useState<string | null>(null)
+  const [selectedRegistration, setSelectedRegistration] = useState<AdminRegistrationRow | null>(null)
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set())
   const [emailModalOpen, setEmailModalOpen] = useState(false)
+  const [deletePending, setDeletePending] = useState<AdminRegistrationRow | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
-    fetchRegistrations()
-  }, [search, lodgingFilter])
+    setEventYear(readStoredEventYear())
+  }, [])
 
-  const fetchRegistrations = async () => {
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    window.sessionStorage.setItem(REGISTRATION_YEAR_STORAGE_KEY, String(eventYear))
+  }, [eventYear])
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setSearch(searchInput.trim()), 300)
+    return () => window.clearTimeout(timer)
+  }, [searchInput])
+
+  const fetchRegistrations = useCallback(async () => {
     setLoading(true)
+    setFetchError(null)
     try {
       const params = new URLSearchParams()
+      params.set("year", String(eventYear))
       if (search) params.append("search", search)
       if (lodgingFilter !== "all") params.append("lodging", lodgingFilter)
 
       const res = await fetch(`/api/admin/registrations?${params}`)
       if (!res.ok) {
-        console.error("[v0] Failed to fetch registrations:", res.status)
-        setRegistrations([])
-        return
+        throw new Error(`Could not load registrations (${res.status})`)
       }
       const data = await res.json()
-      // Defensive: ensure we always have an array
-      if (Array.isArray(data)) {
-        setRegistrations(data)
+      const rows = Array.isArray(data) ? data : data.registrations
+      if (Array.isArray(rows)) {
+        setRegistrations(rows)
       } else {
-        console.error("[v0] Registrations response not an array:", data)
-        setRegistrations([])
+        throw new Error("Unexpected response from registrations API")
       }
     } catch (error) {
       console.error("[v0] Error fetching registrations:", error)
       setRegistrations([])
+      setFetchError(error instanceof Error ? error.message : "Could not load registrations")
     } finally {
       setLoading(false)
     }
-  }
+  }, [eventYear, lodgingFilter, search])
+
+  useEffect(() => {
+    void fetchRegistrations()
+  }, [fetchRegistrations])
+
+  useEffect(() => {
+    setSelectedRows(new Set())
+  }, [eventYear])
 
   const handleExport = async () => {
-    const res = await fetch("/api/admin/registrations/export")
+    const res = await fetch(`/api/admin/registrations/export?year=${eventYear}`)
+    if (!res.ok) {
+      toast({ title: "Export failed", description: "Could not download CSV.", variant: "destructive" })
+      return
+    }
     const blob = await res.blob()
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement("a")
     a.href = url
-    a.download = `registrations-${new Date().toISOString().split("T")[0]}.csv`
+    a.download = `registrations-${eventYear}-${new Date().toISOString().split("T")[0]}.csv`
     a.click()
   }
 
   const handleExportBadges = async () => {
     const res = await fetch("/api/admin/registrations/export-badges")
+    if (!res.ok) {
+      toast({ title: "Export failed", description: "Could not download badge CSV.", variant: "destructive" })
+      return
+    }
     const blob = await res.blob()
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement("a")
@@ -85,12 +145,20 @@ export function RegistrationsTable() {
     setEmailModalOpen(true)
   }
 
-  const handleEditClick = (registration: any) => {
+  const handleEditClick = (registration: AdminRegistrationRow) => {
+    if (registration.source === "v2") {
+      toast({
+        title: "Family registration",
+        description: `${registrationYearLabel(eventYear)} registrations from family accounts are listed here for reference. Use Pending Changes or the family profile for updates.`,
+      })
+      return
+    }
     setSelectedRegistration(registration)
     setEditModalOpen(true)
   }
 
-  const handleSaveRegistration = async (updates: any) => {
+  const handleSaveRegistration = async (updates: Partial<AdminRegistrationRow>) => {
+    if (!selectedRegistration) return
     try {
       const res = await fetch(`/api/admin/registrations/${selectedRegistration.id}`, {
         method: "PATCH",
@@ -105,8 +173,8 @@ export function RegistrationsTable() {
         description: "Changes have been saved successfully.",
       })
 
-      fetchRegistrations()
-    } catch (error) {
+      void fetchRegistrations()
+    } catch {
       toast({
         title: "Error",
         description: "Failed to update registration.",
@@ -115,13 +183,20 @@ export function RegistrationsTable() {
     }
   }
 
-  const handleDelete = async (registrationId: string) => {
-    if (!confirm("Are you sure you want to delete this registration? This action cannot be undone.")) {
+  const performDelete = async () => {
+    if (!deletePending) return
+    if (deletePending.source === "v2") {
+      toast({
+        title: "Cannot delete here",
+        description: "Family-based registrations must be managed from the family registration flow.",
+        variant: "destructive",
+      })
+      setDeletePending(null)
       return
     }
-
+    setDeleting(true)
     try {
-      const res = await fetch(`/api/admin/registrations/${registrationId}`, {
+      const res = await fetch(`/api/admin/registrations/${deletePending.id}`, {
         method: "DELETE",
       })
 
@@ -129,16 +204,19 @@ export function RegistrationsTable() {
 
       toast({
         title: "Registration deleted",
-        description: "The registration has been permanently removed.",
+        description: `${deletePending.family_last_name} family has been permanently removed.`,
       })
 
-      fetchRegistrations()
-    } catch (error) {
+      setDeletePending(null)
+      void fetchRegistrations()
+    } catch {
       toast({
         title: "Error",
         description: "Failed to delete registration.",
         variant: "destructive",
       })
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -160,7 +238,7 @@ export function RegistrationsTable() {
     }
   }
 
-  const getPaymentStatus = (reg: any) => {
+  const getPaymentStatus = (reg: AdminRegistrationRow) => {
     if (reg.full_payment_paid) return { label: "Paid in Full", variant: "default" as const }
     if (reg.registration_fee_paid) return { label: "Reg Fee Paid", variant: "secondary" as const }
     return { label: "Unpaid", variant: "outline" as const }
@@ -169,20 +247,47 @@ export function RegistrationsTable() {
   return (
     <>
       <Card>
-        <CardContent className="p-6">
-          <div className="mb-6 flex items-center gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <CardContent className="p-4 sm:p-6">
+          <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-medium">{registrationYearLabel(eventYear)} registrations</p>
+              <p className="text-xs text-muted-foreground">
+                {eventYear === 2027
+                  ? "Current year. Legacy form submissions and family account registrations are kept separate."
+                  : "Archived event data from the 2026 registration form."}
+              </p>
+            </div>
+            <Select
+              value={String(eventYear)}
+              onValueChange={(value) => setEventYear(parseRegistrationEventYear(value))}
+            >
+              <SelectTrigger className="w-full min-h-11 sm:w-[220px]">
+                <SelectValue placeholder="Event year" />
+              </SelectTrigger>
+              <SelectContent>
+                {REGISTRATION_EVENT_YEARS.map((year) => (
+                  <SelectItem key={year} value={String(year)}>
+                    {registrationYearLabel(year)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="admin-toolbar mb-6">
+            <div className="admin-toolbar-primary relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
               <Input
                 placeholder="Search families..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                className="min-h-11 pl-9"
+                aria-label="Search registrations by family name or email"
               />
             </div>
 
             <Select value={lodgingFilter} onValueChange={setLodgingFilter}>
-              <SelectTrigger className="w-[200px]">
+              <SelectTrigger className="admin-toolbar-action w-full min-h-11 sm:w-[200px]">
                 <SelectValue placeholder="Filter by lodging" />
               </SelectTrigger>
               <SelectContent>
@@ -193,107 +298,151 @@ export function RegistrationsTable() {
               </SelectContent>
             </Select>
 
-            <Button onClick={handleExport} className="gap-2">
-              <Download className="h-4 w-4" />
+            <Button onClick={handleExport} className="admin-toolbar-action gap-2">
+              <Download className="h-4 w-4" aria-hidden="true" />
               Export CSV
             </Button>
 
-            <Button onClick={handleExportBadges} variant="outline" className="gap-2 bg-transparent">
-              <FileText className="h-4 w-4" />
+            <Button onClick={handleExportBadges} variant="outline" className="admin-toolbar-action gap-2 bg-transparent">
+              <FileText className="h-4 w-4" aria-hidden="true" />
               Name Badges
             </Button>
 
-            <Button onClick={handleBulkEmail} variant="outline" className="gap-2 bg-transparent">
-              <Mail className="h-4 w-4" />
+            <Button onClick={handleBulkEmail} variant="outline" className="admin-toolbar-action gap-2 bg-transparent">
+              <Mail className="h-4 w-4" aria-hidden="true" />
               Email All
             </Button>
           </div>
 
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12">
-                    <input
-                      type="checkbox"
-                      checked={selectedRows.size === registrations.length && registrations.length > 0}
-                      onChange={toggleAllRows}
-                      className="rounded border-gray-300"
-                    />
-                  </TableHead>
-                  <TableHead>Family Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Attendees</TableHead>
-                  <TableHead>Lodging</TableHead>
-                  <TableHead>Total</TableHead>
-                  <TableHead>Payment</TableHead>
-                  <TableHead>Registered</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loading ? (
+          {fetchError && !loading ? (
+            <div className="callout-destructive rounded-lg border p-4">
+              <p className="text-sm">{fetchError}</p>
+              <AdminRetryButton onRetry={() => void fetchRegistrations()} label="Reload registrations" />
+            </div>
+          ) : (
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center">
-                      Loading...
-                    </TableCell>
+                    <TableHead className="w-12">
+                      <input
+                        type="checkbox"
+                        checked={selectedRows.size === registrations.length && registrations.length > 0}
+                        onChange={toggleAllRows}
+                        className="rounded border-input"
+                        aria-label="Select all registrations"
+                      />
+                    </TableHead>
+                    <TableHead>Family Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Attendees</TableHead>
+                    <TableHead>Lodging</TableHead>
+                    <TableHead>Total</TableHead>
+                    <TableHead>Payment</TableHead>
+                    <TableHead>Registered</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
-                ) : registrations.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={9} className="text-center text-muted-foreground">
-                      No registrations found
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  registrations.map((reg) => {
-                    const paymentStatus = getPaymentStatus(reg)
-                    return (
-                      <TableRow key={reg.id}>
-                        <TableCell>
-                          <input
-                            type="checkbox"
-                            checked={selectedRows.has(reg.id)}
-                            onChange={() => toggleRowSelection(reg.id)}
-                            className="rounded border-gray-300"
-                          />
-                        </TableCell>
-                        <TableCell className="font-medium">{reg.family_last_name}</TableCell>
-                        <TableCell>{reg.email}</TableCell>
-                        <TableCell>{reg.attendee_count}</TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">{reg.lodging_type}</Badge>
-                        </TableCell>
-                        <TableCell>${reg.total_cost}</TableCell>
-                        <TableCell>
-                          <Badge variant={paymentStatus.variant}>{paymentStatus.label}</Badge>
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {new Date(reg.created_at).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Button variant="ghost" size="sm" onClick={() => handleEditClick(reg)}>
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDelete(reg.id)}
-                              className="text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })
-                )}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {loading ? (
+                    <TableRow>
+                      <TableCell colSpan={9}>
+                        <AdminListSkeleton rows={5} label="Loading registrations" />
+                      </TableCell>
+                    </TableRow>
+                  ) : registrations.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={9} className="text-center text-muted-foreground">
+                        {search
+                          ? `No ${eventYear} registrations match your search.`
+                          : `No ${eventYear} registrations found.`}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    registrations.map((reg) => {
+                      const paymentStatus = getPaymentStatus(reg)
+                      const familyLabel = reg.family_last_name || "family"
+                      return (
+                        <TableRow key={reg.id}>
+                          <TableCell>
+                            <input
+                              type="checkbox"
+                              checked={selectedRows.has(reg.id)}
+                              onChange={() => toggleRowSelection(reg.id)}
+                              className="rounded border-input"
+                              aria-label={`Select ${familyLabel} family`}
+                            />
+                          </TableCell>
+                          <TableCell className="min-w-0 max-w-[12rem] font-medium break-words">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span>{reg.family_last_name}</span>
+                              {reg.source === "v2" && (
+                                <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
+                                  Family
+                                </Badge>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="min-w-0 max-w-[16rem] break-all">{reg.email}</TableCell>
+                          <TableCell>{reg.attendee_count}</TableCell>
+                          <TableCell>
+                            <Badge variant="secondary">{reg.lodging_type}</Badge>
+                          </TableCell>
+                          <TableCell>${reg.total_cost}</TableCell>
+                          <TableCell>
+                            <Badge variant={paymentStatus.variant}>{paymentStatus.label}</Badge>
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {new Date(reg.created_at).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="touch-target shrink-0"
+                                onClick={() => handleEditClick(reg)}
+                                aria-label={`Edit ${familyLabel} registration`}
+                              >
+                                <Edit className="h-4 w-4" aria-hidden="true" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="touch-target shrink-0 text-destructive hover:text-destructive"
+                                onClick={() => setDeletePending(reg)}
+                                aria-label={`Delete ${familyLabel} registration`}
+                              >
+                                <Trash2 className="h-4 w-4" aria-hidden="true" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
+
+      <AdminConfirmDialog
+        open={deletePending !== null}
+        onOpenChange={(open) => {
+          if (!open && !deleting) setDeletePending(null)
+        }}
+        title="Delete registration?"
+        description={
+          deletePending
+            ? `Permanently remove the ${deletePending.family_last_name} family registration? This cannot be undone.`
+            : ""
+        }
+        confirmLabel="Delete registration"
+        loading={deleting}
+        onConfirm={performDelete}
+      />
 
       <RegistrationEditModal
         registration={selectedRegistration}

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { checkAdminAuth, logAuditAction } from "@/lib/admin-auth"
 import { getRequestAuditMeta } from "@/lib/audit-log"
 import { sql } from "@/lib/db"
+import { parseRegistrationEventYear } from "@/lib/registration-event-years"
 
 export async function GET(req: Request) {
   const admin = await checkAdminAuth()
@@ -10,6 +11,9 @@ export async function GET(req: Request) {
   }
 
   try {
+    const { searchParams } = new URL(req.url)
+    const year = parseRegistrationEventYear(searchParams.get("year"))
+
     const registrations = await sql`
       SELECT 
         r.family_last_name,
@@ -28,6 +32,7 @@ export async function GET(req: Request) {
         fm.age
       FROM registrations r
       LEFT JOIN family_members fm ON r.id = fm.registration_id
+      WHERE COALESCE(r.event_year, 2026) = ${year}
       ORDER BY r.created_at DESC
     `
 
@@ -69,7 +74,7 @@ export async function GET(req: Request) {
     return new NextResponse(csv, {
       headers: {
         "Content-Type": "text/csv",
-        "Content-Disposition": `attachment; filename="registrations-${new Date().toISOString().split("T")[0]}.csv"`,
+        "Content-Disposition": `attachment; filename="registrations-${year}-${new Date().toISOString().split("T")[0]}.csv"`,
       },
     })
   } catch (error) {

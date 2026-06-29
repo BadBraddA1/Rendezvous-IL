@@ -366,7 +366,8 @@ CREATE TABLE IF NOT EXISTS registrations (
   tshirts_distributed INTEGER DEFAULT 0,
   qr_code TEXT,
   check_in_notes TEXT,
-  checked_in_by TEXT
+  checked_in_by TEXT,
+  event_year INTEGER DEFAULT 2026
 );
 
 CREATE TABLE IF NOT EXISTS registrations_v2 (
@@ -498,6 +499,26 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   ip_address TEXT,
   user_agent TEXT,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS ios_device_tokens (
+  id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+  token TEXT NOT NULL UNIQUE,
+  bundle_id TEXT NOT NULL DEFAULT 'com.rendezvousil.app',
+  environment TEXT NOT NULL DEFAULT 'production',
+  is_active INTEGER DEFAULT 1,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS ios_activity_push_tokens (
+  id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+  activity_token TEXT NOT NULL UNIQUE,
+  bundle_id TEXT NOT NULL DEFAULT 'com.rendezvousil.app',
+  environment TEXT NOT NULL DEFAULT 'production',
+  is_active INTEGER DEFAULT 1,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
 PRAGMA foreign_keys = ON;
