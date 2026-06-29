@@ -6,7 +6,10 @@ import { ClerkProvider } from "@clerk/nextjs"
 import { ScrollToTop } from "@/components/scroll-to-top"
 import { OneSignalProvider } from "@/components/onesignal-provider"
 import { BackToTop } from "@/components/back-to-top"
+import { PageTourRoot } from "@/components/dev/page-tour-root"
 import { Toaster } from "@/components/ui/toaster"
+
+import { siteDescription, siteTitle } from "@/lib/site-metadata"
 
 import "./globals.css"
 
@@ -45,9 +48,8 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://rendezvousil.com"),
-  title: "Rendezvous 2027 — Christian Homeschool Family Retreat",
-  description:
-    "A 5 day / 4 night Christian homeschool family retreat at Lake Williamson Christian Center, Carlinville, IL. May 3–7, 2027. Registration opens January 1, 2027.",
+  title: siteTitle,
+  description: siteDescription,
   generator: "Next.js",
   icons: {
     icon: "/rendezvous-logo.png",
@@ -58,15 +60,13 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: "https://rendezvousil.com",
     siteName: "Rendezvous 2027",
-    title: "Rendezvous 2027 — Christian Homeschool Family Retreat",
-    description:
-      "A 5 day / 4 night Christian homeschool family retreat at Lake Williamson Christian Center, Carlinville, IL. May 3–7, 2027. Registration opens January 1, 2027.",
+    title: siteTitle,
+    description: siteDescription,
   },
   twitter: {
     card: "summary_large_image",
-    title: "Rendezvous 2027 — Christian Homeschool Family Retreat",
-    description:
-      "A 5 day / 4 night Christian homeschool family retreat at Lake Williamson Christian Center, Carlinville, IL. May 3–7, 2027. Registration opens January 1, 2027.",
+    title: siteTitle,
+    description: siteDescription,
   },
 }
 
@@ -89,6 +89,7 @@ export default function RootLayout({
           <OneSignalProvider />
           {children}
           <BackToTop />
+          <PageTourRoot />
           <Toaster />
           <Analytics />
         </ClerkProvider>

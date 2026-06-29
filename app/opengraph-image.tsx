@@ -1,8 +1,9 @@
 import { ImageResponse } from "next/og"
 import { readFile } from "node:fs/promises"
 import { join } from "node:path"
+import { ogImageAlt } from "@/lib/site-metadata"
 
-export const alt = "Rendezvous 2027 — Christian homeschool family retreat at Lake Williamson"
+export const alt = ogImageAlt
 export const size = { width: 1200, height: 630 }
 export const contentType = "image/png"
 
@@ -25,45 +26,52 @@ export default async function Image() {
           alignItems: "center",
           justifyContent: "center",
           backgroundColor: "#ffffff",
-          padding: "48px 64px",
+          padding: "40px 64px",
         }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={logoSrc}
           alt=""
-          width={420}
-          height={140}
-          style={{ objectFit: "contain", marginBottom: 36 }}
+          width={400}
+          height={132}
+          style={{ objectFit: "contain", marginBottom: 28 }}
         />
         <div
           style={{
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            gap: 12,
+            gap: 10,
             textAlign: "center",
           }}
         >
-          <div style={{ fontSize: 64, fontWeight: 700, color: lake, lineHeight: 1.05 }}>
+          <div style={{ fontSize: 60, fontWeight: 700, color: lake, lineHeight: 1.05 }}>
             May 3–7, 2027
           </div>
-          <div style={{ fontSize: 30, color: lakeMuted, lineHeight: 1.35, maxWidth: 900 }}>
+          <div style={{ fontSize: 28, color: lakeMuted, lineHeight: 1.35, maxWidth: 900 }}>
             Lake Williamson Christian Center · Carlinville, IL
+          </div>
+          <div style={{ fontSize: 26, fontWeight: 600, color: lake, lineHeight: 1.3, marginTop: 4 }}>
+            Christian Homeschool Family Retreat
           </div>
           <div
             style={{
-              marginTop: 20,
-              width: 80,
-              height: 4,
+              display: "flex",
+              alignItems: "center",
+              marginTop: 24,
+              padding: "16px 40px",
               backgroundColor: coral,
-              borderRadius: 2,
+              color: "#ffffff",
+              fontSize: 28,
+              fontWeight: 700,
+              borderRadius: 999,
+              letterSpacing: 0.2,
             }}
-          />
-          <div style={{ fontSize: 28, fontWeight: 600, color: lake, lineHeight: 1.3, marginTop: 8 }}>
-            Christian Homeschool Family Retreat
+          >
+            Register starting Jan 1, 2027 →
           </div>
-          <div style={{ fontSize: 22, color: lakeMuted, lineHeight: 1.3 }}>
+          <div style={{ fontSize: 22, color: lakeMuted, lineHeight: 1.3, marginTop: 12 }}>
             rendezvousil.com
           </div>
         </div>
