@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Camera, Church, Loader2, Mail, MapPin, Phone, Search, Users } from "lucide-react"
+import { Camera, Church, Loader2, Mail, MapPin, MapPinned, Phone, Search, Users } from "lucide-react"
 import {
   parseRegistrationEventYear,
   registrationYearLabel,
@@ -179,8 +179,16 @@ export default function DirectoryPage() {
                 info, congregation, and attendees from your family profile.
               </p>
             </div>
-            {enabledYears.length > 1 && eventYear !== null && (
-              <div className="w-full shrink-0 lg:w-[220px]">
+            <div className="flex w-full shrink-0 flex-col gap-3 sm:w-auto lg:items-end">
+              {eventYear === 2026 && (
+                <Button asChild variant="outline" className="min-h-11 w-full lg:w-[220px]">
+                  <Link href="/map2026">
+                    <MapPinned className="mr-2 h-4 w-4" />
+                    Map view
+                  </Link>
+                </Button>
+              )}
+              {enabledYears.length > 1 && eventYear !== null && (
                 <Select
                   value={String(eventYear)}
                   onValueChange={(value) => {
@@ -191,7 +199,7 @@ export default function DirectoryPage() {
                     window.history.replaceState({}, "", url.toString())
                   }}
                 >
-                  <SelectTrigger className="w-full min-h-11">
+                  <SelectTrigger className="w-full min-h-11 lg:w-[220px]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -202,8 +210,8 @@ export default function DirectoryPage() {
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
           {!isLoaded || yearsLoading || loading ? (

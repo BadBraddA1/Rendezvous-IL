@@ -67,6 +67,7 @@ pnpm db:verify
 - Public API: `GET /api/directory/years` returns enabled years; `GET /api/directory?year=` requires sign-in + registration for that year (admins can preview disabled years).
 - Admin API: `GET/POST /api/admin/directory/status` (POST requires `admin` role).
 - iOS: `DirectoryView` and `FamilyDirectoryManageView` in `ios/RendezvousIL/`.
+- **`/map2026` (Attendee)** merges the live directory with geocoded map pins when signed in (`GET /api/map2026/attendees?year=`). Password-only access falls back to archived static pins until sign-in.
 
 ## Scripts
 

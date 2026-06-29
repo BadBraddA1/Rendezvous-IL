@@ -2,13 +2,45 @@
 
 import { useState, useMemo, useCallback, useEffect } from "react"
 import dynamic from "next/dynamic"
+import Image from "next/image"
+import Link from "next/link"
+import { useUser } from "@clerk/nextjs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge" // still used in search results badge
-import { MapPin, Search, Mail, Phone, Church, Home, User, Users, X, Sparkles, RefreshCw, Lock, FileDown, ChevronUp, ChevronDown } from "lucide-react"
+import { Label } from "@/components/ui/label"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Badge } from "@/components/ui/badge"
+import {
+  MapPin,
+  Search,
+  Mail,
+  Phone,
+  Church,
+  Home,
+  User,
+  Users,
+  X,
+  Sparkles,
+  RefreshCw,
+  Lock,
+  FileDown,
+  ChevronUp,
+  ChevronDown,
+  AlertCircle,
+  Camera,
+  BookUser,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
+import { loadMap2026Registrations } from "@/lib/map2026-registrations"
+import { fetchJsonCached } from "@/lib/fetch-json-cache"
+import {
+  type MapAttendee,
+  filterMapAttendees,
+  mapStaticRegistrationsToAttendees,
+  toLeafletRegistration,
+} from "@/lib/map-attendees"
 
 const MAP_PASSWORD = "Rendezvous2026"
 const STORAGE_KEY = "map2026_unlocked"
@@ -16,7 +48,18 @@ const MAP_YEAR = 2026
 
 const LeafletMap = dynamic(
   () => import("@/components/ui/leaflet-map").then((mod) => mod.LeafletMap),
-  { ssr: false }
+  {
+    ssr: false,
+    loading: () => (
+      <div
+        className="h-[min(50dvh,28rem)] w-full animate-pulse rounded-xl bg-muted/40 lg:h-[calc(100dvh-420px)] lg:min-h-[320px]"
+        role="status"
+        aria-live="polite"
+      >
+        <span className="sr-only">Loading map</span>
+      </div>
+    ),
+  },
 )
 
 type FamilyMember = {
@@ -26,19 +69,7 @@ type FamilyMember = {
   age: number | null
   date_of_birth: string | null
   is_baptized: boolean
-}
-
-type Registration = {
-  id: number
-  lastName: string
-  email: string
-  husbandPhone: string
-  wifePhone: string
-  homeCongregation: string
-  fullAddress: string
-  address: string
-  lat: number
-  lng: number
+  registration_id?: number
 }
 
 const EVENT_CENTER = {
@@ -48,339 +79,13 @@ const EVENT_CENTER = {
   lng: -89.8807,
 }
 
-// All registrations with Geocodio-verified coordinates
-const ALL_REGISTRATIONS: Registration[] = [
-  {
-    id: 20,
-    lastName: "Bradd",
-    email: "stephenrbradd@gmail.com",
-    husbandPhone: "2179355058",
-    wifePhone: "3092517969",
-    homeCongregation: "Clinton COC",
-    fullAddress: "8754 Sunset Rd, Clinton, IL 61727",
-    address: "Clinton, IL",
-    lat: 40.157346,
-    lng: -88.981508,
-  },
-  {
-    id: 22,
-    lastName: "Bradd",
-    email: "badbradda1@gmail.com",
-    husbandPhone: "6362221841",
-    wifePhone: "6362221841",
-    homeCongregation: "Arnold COC",
-    fullAddress: "3820 Treebrook Dr, Imperial, MO 63052",
-    address: "Imperial, MO",
-    lat: 38.427198,
-    lng: -90.479615,
-  },
-  {
-    id: 44,
-    lastName: "Bradd",
-    email: "abelbradd@yahoo.com",
-    husbandPhone: "8723480946",
-    wifePhone: "5012304490",
-    homeCongregation: "Holly Springs Church",
-    fullAddress: "1139 Highway 367 N, Judsonia, AR 72081",
-    address: "Judsonia, AR",
-    lat: 35.292804,
-    lng: -91.609314,
-  },
-  {
-    id: 39,
-    lastName: "Bryan",
-    email: "patriciambryan@gmail.com",
-    husbandPhone: "4059195489",
-    wifePhone: "4059195253",
-    homeCongregation: "West Metro Church of Christ",
-    fullAddress: "12829 Torre Pines Ln, Yukon, OK 73099",
-    address: "Yukon, OK",
-    lat: 35.455367,
-    lng: -97.757887,
-  },
-  {
-    id: 28,
-    lastName: "Collins",
-    email: "collins4family@yahoo.com",
-    husbandPhone: "3048514106",
-    wifePhone: "3048510907",
-    homeCongregation: "Moorefield COC",
-    fullAddress: "42 Bogart Drive, Petersburg, WV 26847",
-    address: "Petersburg, WV",
-    lat: 39.014072,
-    lng: -79.097852,
-  },
-  {
-    id: 41,
-    lastName: "Cozort",
-    email: "abcozort@gmail.com",
-    husbandPhone: "2174948806",
-    wifePhone: "2172202329",
-    homeCongregation: "Wetumpka Church of Christ",
-    fullAddress: "246 Funderburk Ln, Tallassee, AL 36078",
-    address: "Tallassee, AL",
-    lat: 32.529822,
-    lng: -85.960917,
-  },
-  {
-    id: 30,
-    lastName: "Cozort",
-    email: "edycozort@gmail.com",
-    husbandPhone: "9014848753",
-    wifePhone: "2529558002",
-    homeCongregation: "Collierville Church of Christ",
-    fullAddress: "315 Southwick Drive, Southaven, MS 38671",
-    address: "Southaven, MS",
-    lat: 34.983314,
-    lng: -89.983915,
-  },
-  {
-    id: 27,
-    lastName: "Cozort",
-    email: "ncozort1491@gmail.com",
-    husbandPhone: "(816) 832-4181",
-    wifePhone: "(816) 832-4361",
-    homeCongregation: "Oak Grove Church of Christ",
-    fullAddress: "31303 E Colburn Rd, Grain Valley, MO 64029",
-    address: "Grain Valley, MO",
-    lat: 38.942319,
-    lng: -94.219315,
-  },
-  {
-    id: 35,
-    lastName: "English",
-    email: "family@poekee.com",
-    husbandPhone: "3098382819",
-    wifePhone: "3098385346",
-    homeCongregation: "Clinton COC",
-    fullAddress: "406 Cedar Dr, Clinton, IL 61727",
-    address: "Clinton, IL",
-    lat: 40.142916,
-    lng: -88.964249,
-  },
-  {
-    id: 42,
-    lastName: "Fahrenwald",
-    email: "kristyfah@gmail.com",
-    husbandPhone: "501-388-6004",
-    wifePhone: "501-322-0423",
-    homeCongregation: "Holly Springs Church of Christ",
-    fullAddress: "1139 Hwy 367N, Judsonia, AR 72081",
-    address: "Judsonia, AR",
-    lat: 35.292804,
-    lng: -91.609314,
-  },
-  {
-    id: 29,
-    lastName: "Ferrell",
-    email: "amandaferrell@gmail.com",
-    husbandPhone: "6622886302",
-    wifePhone: "9014388370",
-    homeCongregation: "Coldwater Church of Christ",
-    fullAddress: "4934 Rowsey Crossing Dr, Hernando, MS 38632",
-    address: "Hernando, MS",
-    lat: 34.811831,
-    lng: -90.077142,
-  },
-  {
-    id: 38,
-    lastName: "Floyd",
-    email: "jason_floyd32@yahoo.com",
-    husbandPhone: "7318796747",
-    wifePhone: "7318796657",
-    homeCongregation: "Bennington Church of Christ",
-    fullAddress: "1138 Shaftsbury Hollow Rd, North Bennington, VT 05257",
-    address: "North Bennington, VT",
-    lat: 43.005524,
-    lng: -73.247254,
-  },
-  {
-    id: 48,
-    lastName: "Green",
-    email: "timandamygreen@yahoo.com",
-    husbandPhone: "6124694986",
-    wifePhone: "3042102307",
-    homeCongregation: "Virginia Church of Christ",
-    fullAddress: "4524 Vermilion Trail, Gilbert, MN 55741",
-    address: "Gilbert, MN",
-    lat: 47.445939,
-    lng: -92.340277,
-  },
-  {
-    id: 50,
-    lastName: "Haley",
-    email: "melzsong75@gmail.com",
-    husbandPhone: "6149151005",
-    wifePhone: "6149151020",
-    homeCongregation: "Rager Road Church of Christ",
-    fullAddress: "258 W Main St, Alexandria, OH 43001",
-    address: "Alexandria, OH",
-    lat: 40.092369,
-    lng: -82.617656,
-  },
-  {
-    id: 43,
-    lastName: "Hanes",
-    email: "andrew.hanes@gmail.com",
-    husbandPhone: "3093062158",
-    wifePhone: "3093062157",
-    homeCongregation: "Clinton Church of Christ",
-    fullAddress: "303 N Sycamore St, Maroa, IL 61756",
-    address: "Maroa, IL",
-    lat: 40.039302,
-    lng: -88.963555,
-  },
-  {
-    id: 34,
-    lastName: "Manning",
-    email: "rebeccamanning81@yahoo.com",
-    husbandPhone: "7702311527",
-    wifePhone: "7706580402",
-    homeCongregation: "Somerville Church of Christ",
-    fullAddress: "422 N West St, Somerville, TN 38068",
-    address: "Somerville, TN",
-    lat: 35.248214,
-    lng: -89.351025,
-  },
-  {
-    id: 33,
-    lastName: "Meacham",
-    email: "paul3swife@gmail.com",
-    husbandPhone: "6362224527",
-    wifePhone: "9015816351",
-    homeCongregation: "Arnold COC",
-    fullAddress: "1544 Prehistoric Hill Dr, Imperial, MO 63052",
-    address: "Imperial, MO",
-    lat: 38.365176,
-    lng: -90.390082,
-  },
-  {
-    id: 49,
-    lastName: "Middlebrooks",
-    email: "dee.middlebrooks@yahoo.com",
-    husbandPhone: "4237622847",
-    wifePhone: "4237104781",
-    homeCongregation: "Ooltewah Church of Christ",
-    fullAddress: "122 Mattie Ln, Flintstone, GA 30725",
-    address: "Flintstone, GA",
-    lat: 34.934449,
-    lng: -85.359338,
-  },
-  {
-    id: 45,
-    lastName: "Morris",
-    email: "morrisfamilyeducation@gmail.com",
-    husbandPhone: "6155683877",
-    wifePhone: "6154975789",
-    homeCongregation: "West End Church of Christ",
-    fullAddress: "431 Union Academy Rd, Livingston, TN 38570",
-    address: "Livingston, TN",
-    lat: 36.282166,
-    lng: -85.285947,
-  },
-  {
-    id: 36,
-    lastName: "Nix",
-    email: "ahnix@hotmail.com",
-    husbandPhone: "9374704703",
-    wifePhone: "5733009248",
-    homeCongregation: "Mid-County Church of Christ",
-    fullAddress: "10770 US-36, Bradford, OH 45308",
-    address: "Bradford, OH",
-    lat: 40.119369,
-    lng: -84.408199,
-  },
-  {
-    id: 32,
-    lastName: "Parish",
-    email: "leefparish@gmail.com",
-    husbandPhone: "5807219027",
-    wifePhone: "5807219007",
-    homeCongregation: "Marlow Church of Christ",
-    fullAddress: "211 N 5th St, Marlow, OK 73055",
-    address: "Marlow, OK",
-    lat: 34.648947,
-    lng: -97.960835,
-  },
-  {
-    id: 46,
-    lastName: "Pasley",
-    email: "teacherdawn1011@gmail.com",
-    husbandPhone: "6016860178",
-    wifePhone: "6628720481",
-    homeCongregation: "Pisgah Church of Christ",
-    fullAddress: "361 Huckleberry Lane, Mineral Bluff, GA 30559",
-    address: "Mineral Bluff, GA",
-    lat: 34.935505,
-    lng: -84.291767,
-  },
-  {
-    id: 26,
-    lastName: "Smith",
-    email: "aprilandderrick@gmail.com",
-    husbandPhone: "5029194874",
-    wifePhone: "5023969165",
-    homeCongregation: "Mid County Church of Christ",
-    fullAddress: "45 Carrousel Dr, Troy, OH 45373",
-    address: "Troy, OH",
-    lat: 40.004840,
-    lng: -84.203273,
-  },
-  {
-    id: 40,
-    lastName: "Steele",
-    email: "molcat88@gmail.com",
-    husbandPhone: "419-203-4755",
-    wifePhone: "217-502-1362",
-    homeCongregation: "Paulding Church of Christ",
-    fullAddress: "203 W Wayne St, Paulding, OH 45879",
-    address: "Paulding, OH",
-    lat: 41.135258,
-    lng: -84.582264,
-  },
-  {
-    id: 25,
-    lastName: "Valentin",
-    email: "rachel.valentin37@gmail.com",
-    husbandPhone: "8154517138",
-    wifePhone: "6302728366",
-    homeCongregation: "Crystal Lake Church of Christ",
-    fullAddress: "3306 Christopher Lane, Johnsburg, IL 60051",
-    address: "Johnsburg, IL",
-    lat: 42.369569,
-    lng: -88.262358,
-  },
-  {
-    id: 37,
-    lastName: "Watson",
-    email: "deyrl@mac.com",
-    husbandPhone: "(217) 553-9938",
-    wifePhone: "2174142168",
-    homeCongregation: "Clinton COC",
-    fullAddress: "1260 N 1600 East Rd, Taylorville, IL 62568",
-    address: "Taylorville, IL",
-    lat: 39.534783,
-    lng: -89.229293,
-  },
-  {
-    id: 31,
-    lastName: "Zamfir",
-    email: "daniel.zamfir@live.com",
-    husbandPhone: "2243581981",
-    wifePhone: "",
-    homeCongregation: "Wetumpka Church of Christ",
-    fullAddress: "2060 Ware Rd, Tallassee, AL 36078",
-    address: "Tallassee, AL",
-    lat: 32.482025,
-    lng: -86.061850,
-  },
-]
 
 export default function Map2026Page() {
+  const { isSignedIn, isLoaded: isAuthLoaded } = useUser()
   const [isUnlocked, setIsUnlocked] = useState(false)
   const [isCheckingAttendee, setIsCheckingAttendee] = useState(true)
   const [passwordInput, setPasswordInput] = useState("")
-  const [passwordError, setPasswordError] = useState(false)
+  const [passwordError, setPasswordError] = useState<"empty" | "incorrect" | false>(false)
 
   // Check if user has attended this year (bypass password) or check sessionStorage
   useEffect(() => {
@@ -411,71 +116,137 @@ export default function Map2026Page() {
   }, [])
 
   const handleUnlock = () => {
+    if (!passwordInput.trim()) {
+      setPasswordError("empty")
+      return
+    }
     if (passwordInput === MAP_PASSWORD) {
       sessionStorage.setItem(STORAGE_KEY, "true")
       setIsUnlocked(true)
       setPasswordError(false)
     } else {
-      setPasswordError(true)
+      setPasswordError("incorrect")
     }
   }
 
   const [searchQuery, setSearchQuery] = useState("")
-  const [selectedRegistration, setSelectedRegistration] = useState<Registration | null>(null)
+  const [allAttendees, setAllAttendees] = useState<MapAttendee[]>([])
+  const [syncedWithDirectory, setSyncedWithDirectory] = useState(false)
+  const [directoryCount, setDirectoryCount] = useState(0)
+  const [loadingRegistrations, setLoadingRegistrations] = useState(false)
+  const [registrationsError, setRegistrationsError] = useState<string | null>(null)
+  const [selectedAttendee, setSelectedAttendee] = useState<MapAttendee | null>(null)
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([])
   const [loadingMembers, setLoadingMembers] = useState(false)
-  // Map of registrationId -> member names string for searching
+  const [membersError, setMembersError] = useState(false)
   const [allMemberNames, setAllMemberNames] = useState<Map<number, string>>(new Map())
 
-  // Fetch all family members once on mount for search purposes
-  useEffect(() => {
-    fetch("/api/family-members?all=true")
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) {
-          const map = new Map<number, string>()
-          data.forEach((m: FamilyMember & { registration_id: number }) => {
-            const existing = map.get(m.registration_id) || ""
-            map.set(m.registration_id, `${existing} ${m.first_name} ${m.last_name}`.toLowerCase())
-          })
-          setAllMemberNames(map)
+  const loadAttendees = useCallback(async () => {
+    setLoadingRegistrations(true)
+    setRegistrationsError(null)
+    try {
+      if (isSignedIn) {
+        const response = await fetch(`/api/map2026/attendees?year=${MAP_YEAR}`)
+        if (response.ok) {
+          const data = await response.json()
+          setAllAttendees(data.attendees || [])
+          setSyncedWithDirectory(true)
+          setDirectoryCount(data.directoryCount ?? data.attendees?.length ?? 0)
+          return
         }
+      }
+
+      const staticRegs = await loadMap2026Registrations()
+      setAllAttendees(mapStaticRegistrationsToAttendees(staticRegs))
+      setSyncedWithDirectory(false)
+      setDirectoryCount(0)
+    } catch (error) {
+      console.error("[Map] Failed to load attendees:", error)
+      setAllAttendees([])
+      setSyncedWithDirectory(false)
+      setRegistrationsError(
+        "We couldn't load the attendee list. Check your connection and try again.",
+      )
+    } finally {
+      setLoadingRegistrations(false)
+    }
+  }, [isSignedIn])
+
+  useEffect(() => {
+    if (!isUnlocked || !isAuthLoaded) return
+    void loadAttendees()
+  }, [isUnlocked, isAuthLoaded, loadAttendees])
+
+  useEffect(() => {
+    if (!isUnlocked || syncedWithDirectory) return
+    let cancelled = false
+    void fetchJsonCached<FamilyMember[]>("/api/family-members?all=true", 120_000)
+      .then((data) => {
+        if (cancelled || !Array.isArray(data)) return
+        const map = new Map<number, string>()
+        data.forEach((m) => {
+          if (m.registration_id == null) return
+          const existing = map.get(m.registration_id) || ""
+          map.set(m.registration_id, `${existing} ${m.first_name} ${m.last_name}`.toLowerCase())
+        })
+        setAllMemberNames(map)
       })
       .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [isUnlocked, syncedWithDirectory])
+
+  const loadFamilyMembers = useCallback(async (registrationId: number) => {
+    setLoadingMembers(true)
+    setMembersError(false)
+    try {
+      const data = await fetchJsonCached<FamilyMember[]>(
+        `/api/family-members?registrationId=${registrationId}`,
+        60_000,
+      )
+      setFamilyMembers(Array.isArray(data) ? data : [])
+    } catch {
+      setFamilyMembers([])
+      setMembersError(true)
+    } finally {
+      setLoadingMembers(false)
+    }
   }, [])
 
   useEffect(() => {
-    if (!selectedRegistration) {
+    if (!selectedAttendee || syncedWithDirectory) {
       setFamilyMembers([])
+      setMembersError(false)
       return
     }
-    setLoadingMembers(true)
-    fetch(`/api/family-members?registrationId=${selectedRegistration.id}`)
-      .then(res => res.json())
-      .then(data => setFamilyMembers(Array.isArray(data) ? data : []))
-      .catch(() => setFamilyMembers([]))
-      .finally(() => setLoadingMembers(false))
-  }, [selectedRegistration])
+    const registrationId = selectedAttendee.registrationId ?? selectedAttendee.id
+    void loadFamilyMembers(registrationId)
+  }, [selectedAttendee, syncedWithDirectory, loadFamilyMembers])
 
-  const filteredRegistrations = useMemo(() => {
-    if (!searchQuery.trim()) return ALL_REGISTRATIONS
-    const query = searchQuery.toLowerCase().trim()
-    const numericQuery = query.replace(/\D/g, "")
-    return ALL_REGISTRATIONS.filter((reg) =>
-      reg.lastName?.toLowerCase().includes(query) ||
-      reg.email?.toLowerCase().includes(query) ||
-      (numericQuery && reg.husbandPhone?.replace(/\D/g, "").includes(numericQuery)) ||
-      (numericQuery && reg.wifePhone?.replace(/\D/g, "").includes(numericQuery)) ||
-      reg.homeCongregation?.toLowerCase().includes(query) ||
-      reg.fullAddress?.toLowerCase().includes(query) ||
-      reg.address?.toLowerCase().includes(query) ||
-      allMemberNames.get(reg.id)?.includes(query)
-    )
-  }, [searchQuery, allMemberNames])
+  const filteredAttendees = useMemo(
+    () => filterMapAttendees(allAttendees, searchQuery),
+    [allAttendees, searchQuery],
+  )
 
-  const handleSelectRegistration = useCallback((reg: Registration) => {
-    setSelectedRegistration(reg)
+  const leafletRegistrations = useMemo(
+    () => filteredAttendees.map(toLeafletRegistration),
+    [filteredAttendees],
+  )
+
+  const handleSelectAttendee = useCallback((attendee: MapAttendee) => {
+    setSelectedAttendee(attendee)
   }, [])
+
+  const handleSelectLeafletRegistration = useCallback(
+    (registrationId: number) => {
+      const match = filteredAttendees.find(
+        (attendee) => (attendee.registrationId ?? attendee.id) === registrationId,
+      )
+      if (match) setSelectedAttendee(match)
+    },
+    [filteredAttendees],
+  )
 
   // Keyboard navigation: Arrow Down/Up to cycle through families
   useEffect(() => {
@@ -485,11 +256,11 @@ export default function Map2026Page() {
 
       if (e.key === "ArrowDown" || e.key === "ArrowUp") {
         e.preventDefault()
-        const list = filteredRegistrations
+        const list = filteredAttendees
         if (list.length === 0) return
 
-        const currentIndex = selectedRegistration
-          ? list.findIndex((r) => r.id === selectedRegistration.id)
+        const currentIndex = selectedAttendee
+          ? list.findIndex((attendee) => attendee.id === selectedAttendee.id)
           : -1
 
         let nextIndex: number
@@ -499,31 +270,36 @@ export default function Map2026Page() {
           nextIndex = currentIndex > 0 ? currentIndex - 1 : list.length - 1
         }
 
-        setSelectedRegistration(list[nextIndex])
+        setSelectedAttendee(list[nextIndex])
       }
     }
 
     window.addEventListener("keydown", handleKeyDown)
     return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [filteredRegistrations, selectedRegistration])
+  }, [filteredAttendees, selectedAttendee])
 
   // Loading state while checking attendee status
   if (isCheckingAttendee) {
     return (
-      <div className="min-h-screen bg-background flex flex-col">
+      <div className="min-h-screen bg-background">
         <SiteHeader />
-        <main id="main-content" className="flex-1 flex items-center justify-center p-6">
-          <Card className="w-full max-w-md">
-            <CardHeader className="text-center">
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-                <RefreshCw className="h-7 w-7 text-primary animate-spin" />
-              </div>
-              <CardTitle className="text-2xl">Checking Access</CardTitle>
-              <CardDescription>
-                Verifying your attendee status...
-              </CardDescription>
-            </CardHeader>
-          </Card>
+        <main
+          id="main-content"
+          className="site-container site-below-header-loose site-page-intro pb-16 md:pb-20"
+        >
+          <div className="mx-auto max-w-md py-8 md:py-12">
+            <Card className="w-full">
+              <CardHeader className="text-center">
+                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+                  <RefreshCw className="h-7 w-7 text-primary animate-spin" />
+                </div>
+                <CardTitle className="text-subheading">Checking Access</CardTitle>
+                <CardDescription>
+                  Verifying your attendee status...
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          </div>
         </main>
         <SiteFooter />
       </div>
@@ -533,41 +309,69 @@ export default function Map2026Page() {
   // Password gate (only shown if not a registered attendee)
   if (!isUnlocked) {
     return (
-      <div className="min-h-screen bg-background flex flex-col">
+      <div className="min-h-screen bg-background">
         <SiteHeader />
-        <main id="main-content" className="flex-1 flex items-center justify-center p-6">
-          <Card className="w-full max-w-md">
-            <CardHeader className="text-center">
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-                <Lock className="h-7 w-7 text-primary" />
-              </div>
-              <CardTitle className="text-2xl">Protected Page</CardTitle>
-              <CardDescription>
-                Enter the password to view the Attendee Map, or sign in if you&apos;re a registered attendee.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Input
-                  type="password"
-                  placeholder="Enter password"
-                  value={passwordInput}
-                  onChange={(e) => {
-                    setPasswordInput(e.target.value)
-                    setPasswordError(false)
-                  }}
-                  onKeyDown={(e) => e.key === "Enter" && handleUnlock()}
-                  className={`h-12 min-h-11 text-base ${passwordError ? "border-red-500 focus-visible:ring-red-500" : ""}`}
-                />
-                {passwordError && (
-                  <p className="text-sm text-red-500">Incorrect password. Please try again.</p>
-                )}
-              </div>
-              <Button onClick={handleUnlock} className="w-full">
-                Unlock
-              </Button>
-            </CardContent>
-          </Card>
+        <main
+          id="main-content"
+          className="site-container site-below-header-loose site-page-intro pb-16 md:pb-20"
+        >
+          <div className="mx-auto max-w-md py-8 md:py-12">
+            <Card className="w-full">
+              <CardHeader className="text-center">
+                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+                  <Lock className="h-7 w-7 text-primary" />
+                </div>
+                <CardTitle className="text-subheading">Protected Page</CardTitle>
+                <CardDescription>
+                  Enter the password to view the Attendee Map, or sign in if you&apos;re a registered attendee.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="map2026-password">Map password</Label>
+                  <Input
+                    id="map2026-password"
+                    type="password"
+                    autoComplete="current-password"
+                    placeholder="Enter password"
+                    value={passwordInput}
+                    onChange={(e) => {
+                      setPasswordInput(e.target.value)
+                      setPasswordError(false)
+                    }}
+                    onKeyDown={(e) => e.key === "Enter" && handleUnlock()}
+                    aria-invalid={passwordError ? true : undefined}
+                    aria-describedby={passwordError ? "map2026-password-error" : undefined}
+                    className={`h-12 min-h-11 text-base ${passwordError ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                  />
+                  {passwordError && (
+                    <p id="map2026-password-error" role="alert" className="text-sm text-destructive">
+                      {passwordError === "empty"
+                        ? "Enter the password to continue."
+                        : "Incorrect password. Please try again."}
+                    </p>
+                  )}
+                </div>
+                <Button
+                  onClick={handleUnlock}
+                  className="w-full"
+                  disabled={!passwordInput.trim()}
+                >
+                  Unlock
+                </Button>
+                <p className="text-center text-sm text-muted-foreground">
+                  Registered attendees can{" "}
+                  <Link
+                    href="/sign-in?redirect_url=/map2026"
+                    className="font-medium text-primary hover:underline"
+                  >
+                    sign in
+                  </Link>{" "}
+                  to skip this step.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
         </main>
         <SiteFooter />
       </div>
@@ -580,47 +384,64 @@ export default function Map2026Page() {
 
       <main id="main-content">
         {/* Hero Section */}
-        <section className="border-b bg-secondary pt-24 pb-12 md:pt-28 md:pb-16">
-          <div className="container mx-auto px-6">
+        <section className="site-below-header-loose site-page-intro border-b bg-secondary pb-12 md:pb-16">
+          <div className="site-container">
             <div className="mx-auto max-w-4xl text-center">
               <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-medium text-foreground">
                 <Sparkles className="h-4 w-4" />
-                {ALL_REGISTRATIONS.length} Families Registered
+                {allAttendees.length || loadingRegistrations ? (
+                  loadingRegistrations
+                    ? "Loading families…"
+                    : syncedWithDirectory
+                      ? `${allAttendees.length} on map · ${directoryCount} in directory`
+                      : `${allAttendees.length} Families Registered`
+                ) : (
+                  "Attendee Map & Directory"
+                )}
               </div>
-              <h1 className="mb-4 text-balance text-4xl font-bold tracking-tight text-secondary-foreground md:text-5xl">
-                Attendee Map
+              <h1 className="text-page-title mb-4 text-balance">
+                Attendee Map & Directory
               </h1>
               <p className="mb-6 text-balance text-lg text-secondary-foreground/70">
-                See where Rendezvous 2027 families are coming from across the country
+                See where Rendezvous {MAP_YEAR} families are coming from and browse the same
+                directory listings used on the family directory page.
               </p>
-              <Button asChild size="lg" className="gap-2">
-                <a
-                  href="/event-registration.pdf"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <FileDown className="h-5 w-5" />
-                  Download Event Registration PDF
-                </a>
-              </Button>
+              <div className="flex flex-wrap items-center justify-center gap-3">
+                <Button asChild size="lg" className="gap-2">
+                  <Link href={`/directory?year=${MAP_YEAR}`}>
+                    <BookUser className="h-5 w-5" />
+                    Card directory view
+                  </Link>
+                </Button>
+                <Button asChild size="lg" variant="outline" className="gap-2">
+                  <a
+                    href="/event-registration.pdf"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <FileDown className="h-5 w-5" />
+                    Event registration PDF
+                  </a>
+                </Button>
+              </div>
             </div>
           </div>
         </section>
 
         {/* Map Legend */}
         <section className="border-b border-primary/15 bg-surface-highlight py-4">
-          <div className="container mx-auto px-6">
+          <div className="site-container">
             <div className="flex flex-wrap items-center justify-center gap-6">
               <div className="flex items-center gap-2">
-                <div className="h-4 w-4 rounded-full bg-red-600" />
+                <div className="h-4 w-4 rounded-full bg-destructive" aria-hidden="true" />
                 <span className="text-sm font-medium">Lake Williamson (Event Center)</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="h-4 w-4 rounded-full bg-primary" />
+                <div className="h-4 w-4 rounded-full bg-primary" aria-hidden="true" />
                 <span className="text-sm font-medium">Registered Families</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="h-4 w-4 rounded-full bg-green-600" />
+                <div className="h-4 w-4 rounded-full bg-success" aria-hidden="true" />
                 <span className="text-sm font-medium">Selected Family</span>
               </div>
             </div>
@@ -629,12 +450,30 @@ export default function Map2026Page() {
 
         {/* Main Content */}
         <section className="py-8">
-          <div className="container mx-auto px-6">
+          <div className="site-container">
+            {!syncedWithDirectory && isAuthLoaded && !isSignedIn && (
+              <Alert className="mb-6 max-w-3xl">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Showing archived map pins.{" "}
+                  <Link href="/sign-in?redirect_url=/map2026" className="font-medium text-primary hover:underline">
+                    Sign in
+                  </Link>{" "}
+                  to sync with the live family directory, photos, and profile contact info.
+                </AlertDescription>
+              </Alert>
+            )}
+
             {/* Search */}
             <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
               <div className="relative flex-1 max-w-lg">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <label htmlFor="map2026-search" className="sr-only">
+                  Search attendees by name, email, phone, congregation, or city
+                </label>
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
                 <Input
+                  id="map2026-search"
+                  type="search"
                   placeholder="Search by name, email, phone, congregation, or city..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -654,21 +493,51 @@ export default function Map2026Page() {
               </div>
               {searchQuery && (
                 <Badge variant="secondary" className="whitespace-nowrap text-sm px-4 py-2">
-                  Showing {filteredRegistrations.length} of {ALL_REGISTRATIONS.length} families
+                  Showing {filteredAttendees.length} of {allAttendees.length} families
                 </Badge>
               )}
             </div>
 
+            {loadingRegistrations ? (
+              <div className="flex flex-col gap-6 lg:flex-row" role="status" aria-live="polite">
+                <div className="h-[min(52dvh,520px)] min-h-[240px] flex-1 animate-pulse rounded-xl bg-muted/40 lg:h-[calc(100dvh-350px)] lg:min-h-[400px]" />
+                <div className="w-full space-y-4 lg:w-80 xl:w-96">
+                  <div className="h-48 animate-pulse rounded-xl bg-muted/40" />
+                  <div className="h-64 animate-pulse rounded-xl bg-muted/40" />
+                </div>
+                <span className="sr-only">Loading attendee map data</span>
+              </div>
+            ) : registrationsError ? (
+              <Alert variant="destructive" className="max-w-lg">
+                <AlertCircle className="h-4 w-4" aria-hidden="true" />
+                <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <span>{registrationsError}</span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0 min-h-11 border-destructive/30 bg-background"
+                    onClick={() => void loadAttendees()}
+                  >
+                    Try again
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            ) : (
             <div className="flex flex-col gap-6 lg:flex-row">
               {/* Map */}
-              <Card className="flex-1 overflow-hidden border-border/50 bg-card shadow-xl">
+              <Card className="flex-1 overflow-hidden border-border/50 bg-card">
                 <CardContent className="p-0 h-full">
-                  <div className="h-[min(52dvh,520px)] min-h-[240px] sm:h-[min(56dvh,560px)] lg:h-[calc(100vh-350px)] lg:min-h-[400px]">
+                  <div className="h-[min(52dvh,520px)] min-h-[240px] sm:h-[min(56dvh,560px)] lg:h-[calc(100dvh-350px)] lg:min-h-[400px]">
                     <LeafletMap
                       center={EVENT_CENTER}
-                      registrations={filteredRegistrations}
-                      selectedId={selectedRegistration?.id ?? null}
-                      onSelectRegistration={handleSelectRegistration}
+                      registrations={leafletRegistrations}
+                      selectedId={
+                        selectedAttendee
+                          ? (selectedAttendee.registrationId ?? selectedAttendee.id)
+                          : null
+                      }
+                      onSelectRegistration={(reg) => handleSelectLeafletRegistration(reg.id)}
                     />
                   </div>
                 </CardContent>
@@ -677,19 +546,28 @@ export default function Map2026Page() {
               {/* Side Panel */}
               <div className="w-full lg:w-80 xl:w-96 flex flex-col gap-4">
                 {/* Selected Family Details */}
-                {selectedRegistration && (
-                  <Card className="border-2 border-primary bg-card shadow-lg">
+                {selectedAttendee && (
+                  <Card className="border border-primary/30 bg-card">
                     <CardHeader className="pb-2">
-                      <div className="flex items-start justify-between">
-                        <CardTitle className="text-lg flex items-center gap-2">
-                          <User className="h-5 w-5 text-primary shrink-0" />
-                          {selectedRegistration.lastName} Family
-                        </CardTitle>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 space-y-2">
+                          <CardTitle className="flex items-center gap-2 text-widget-heading">
+                            <User className="h-5 w-5 text-primary shrink-0" />
+                            <span className="truncate">{selectedAttendee.lastName} Family</span>
+                          </CardTitle>
+                          {(selectedAttendee.husbandFirstName || selectedAttendee.wifeFirstName) && (
+                            <p className="text-sm text-muted-foreground">
+                              {[selectedAttendee.husbandFirstName, selectedAttendee.wifeFirstName]
+                                .filter(Boolean)
+                                .join(" & ")}
+                            </p>
+                          )}
+                        </div>
                         <Button
                           variant="ghost"
                           size="icon"
                           className="focus-ring touch-target -mt-1 -mr-1 shrink-0"
-                          onClick={() => setSelectedRegistration(null)}
+                          onClick={() => setSelectedAttendee(null)}
                           aria-label="Close family details"
                         >
                           <X className="h-4 w-4" aria-hidden="true" />
@@ -697,64 +575,133 @@ export default function Map2026Page() {
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-3 text-sm">
-                      {selectedRegistration.email && (
+                      <div className="relative mx-auto aspect-[4/3] w-full overflow-hidden rounded-xl bg-muted">
+                        {selectedAttendee.photo_url ? (
+                          <Image
+                            src={selectedAttendee.photo_url}
+                            alt={`${selectedAttendee.lastName} family`}
+                            fill
+                            className="object-contain"
+                            sizes="320px"
+                            unoptimized
+                          />
+                        ) : (
+                          <div className="flex h-full flex-col items-center justify-center gap-2 text-muted-foreground">
+                            <Camera className="h-8 w-8" />
+                            <p className="text-xs">No photo yet</p>
+                          </div>
+                        )}
+                      </div>
+
+                      {selectedAttendee.directory_blurb && (
+                        <p className="rounded-lg bg-muted/50 p-3 text-sm">
+                          {selectedAttendee.directory_blurb}
+                        </p>
+                      )}
+
+                      {selectedAttendee.email && (
                         <div className="flex items-start gap-3">
                           <Mail className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                          <div>
+                          <div className="min-w-0">
                             <p className="text-xs text-muted-foreground font-medium">Email</p>
-                            <a href={`mailto:${selectedRegistration.email}`} className="text-primary hover:underline break-all">
-                              {selectedRegistration.email}
+                            <a href={`mailto:${selectedAttendee.email}`} className="text-primary hover:underline break-all">
+                              {selectedAttendee.email}
                             </a>
                           </div>
                         </div>
                       )}
-                      {(selectedRegistration.husbandPhone || selectedRegistration.wifePhone) && (
+                      {(selectedAttendee.husbandPhone || selectedAttendee.wifePhone) && (
                         <div className="flex items-start gap-3">
                           <Phone className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                          <div>
+                          <div className="min-w-0">
                             <p className="text-xs text-muted-foreground font-medium">Phone</p>
-                            {selectedRegistration.husbandPhone && (
-                              <a href={`tel:${selectedRegistration.husbandPhone}`} className="text-primary hover:underline block">
-                                Husband: {selectedRegistration.husbandPhone}
+                            {selectedAttendee.husbandPhone && (
+                              <a href={`tel:${selectedAttendee.husbandPhone}`} className="text-primary hover:underline block break-words">
+                                {selectedAttendee.husbandFirstName
+                                  ? `${selectedAttendee.husbandFirstName}: `
+                                  : ""}
+                                {selectedAttendee.husbandPhone}
                               </a>
                             )}
-                            {selectedRegistration.wifePhone && selectedRegistration.wifePhone !== selectedRegistration.husbandPhone && (
-                              <a href={`tel:${selectedRegistration.wifePhone}`} className="text-primary hover:underline block">
-                                Wife: {selectedRegistration.wifePhone}
-                              </a>
-                            )}
+                            {selectedAttendee.wifePhone &&
+                              selectedAttendee.wifePhone !== selectedAttendee.husbandPhone && (
+                                <a href={`tel:${selectedAttendee.wifePhone}`} className="text-primary hover:underline block break-words">
+                                  {selectedAttendee.wifeFirstName
+                                    ? `${selectedAttendee.wifeFirstName}: `
+                                    : ""}
+                                  {selectedAttendee.wifePhone}
+                                </a>
+                              )}
                           </div>
                         </div>
                       )}
-                      {selectedRegistration.homeCongregation && (
+                      {selectedAttendee.homeCongregation && (
                         <div className="flex items-start gap-3">
                           <Church className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                          <div>
+                          <div className="min-w-0">
                             <p className="text-xs text-muted-foreground font-medium">Congregation</p>
-                            <p>{selectedRegistration.homeCongregation}</p>
+                            <p className="break-words">{selectedAttendee.homeCongregation}</p>
                           </div>
                         </div>
                       )}
-                      {selectedRegistration.fullAddress && (
+                      {selectedAttendee.fullAddress && (
                         <div className="flex items-start gap-3">
                           <Home className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                          <div>
+                          <div className="min-w-0">
                             <p className="text-xs text-muted-foreground font-medium">Address</p>
-                            <p>{selectedRegistration.fullAddress}</p>
+                            <p className="break-words">{selectedAttendee.fullAddress}</p>
                           </div>
                         </div>
                       )}
 
-                      {/* Family Members */}
                       <div className="pt-1">
                         <div className="flex items-center gap-2 mb-2">
                           <Users className="h-4 w-4 text-primary shrink-0" />
-                          <p className="text-xs text-muted-foreground font-medium">Family Members</p>
+                          <p className="text-xs text-muted-foreground font-medium">
+                            Family Members
+                            {selectedAttendee.member_count > 0
+                              ? ` (${selectedAttendee.member_count})`
+                              : ""}
+                          </p>
                         </div>
-                        {loadingMembers ? (
-                          <div className="flex items-center gap-2 pl-6 text-xs text-muted-foreground">
-                            <RefreshCw className="h-3 w-3 animate-spin" />
-                            Loading...
+                        {syncedWithDirectory ? (
+                          selectedAttendee.member_names.length === 0 ? (
+                            <p className="pl-6 text-xs text-muted-foreground">No members listed</p>
+                          ) : (
+                            <div className="pl-6 space-y-1.5">
+                              {selectedAttendee.member_names.map((name, index) => (
+                                <div
+                                  key={`${name}-${index}`}
+                                  className="rounded-md bg-muted/50 px-3 py-1.5 text-xs font-medium"
+                                >
+                                  {name}
+                                </div>
+                              ))}
+                            </div>
+                          )
+                        ) : loadingMembers ? (
+                          <div className="flex items-center gap-2 pl-6 text-xs text-muted-foreground" role="status" aria-live="polite">
+                            <RefreshCw className="h-3 w-3 animate-spin" aria-hidden="true" />
+                            Loading members…
+                          </div>
+                        ) : membersError ? (
+                          <div className="pl-6 space-y-2" role="alert">
+                            <p className="text-xs text-destructive">
+                              Couldn&apos;t load family members.
+                            </p>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="min-h-11 text-xs"
+                              onClick={() => {
+                                const registrationId =
+                                  selectedAttendee.registrationId ?? selectedAttendee.id
+                                void loadFamilyMembers(registrationId)
+                              }}
+                            >
+                              Try again
+                            </Button>
                           </div>
                         ) : familyMembers.length === 0 ? (
                           <p className="pl-6 text-xs text-muted-foreground">No members found</p>
@@ -768,20 +715,28 @@ export default function Map2026Page() {
                           </div>
                         )}
                       </div>
+
+                      {syncedWithDirectory && (
+                        <Button asChild variant="outline" size="sm" className="w-full min-h-11">
+                          <Link href="/account/profile">Update your directory listing</Link>
+                        </Button>
+                      )}
                     </CardContent>
                   </Card>
                 )}
 
                 {/* Attendee List */}
-                <Card className="flex-1 border-border/50 bg-card transition-all hover:shadow-xl">
+                <Card className="flex-1 border-border/50 bg-card">
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-lg flex items-center gap-2">
+                    <CardTitle className="flex items-center gap-2 text-widget-heading">
                       <MapPin className="h-5 w-5 text-primary" />
-                      All Attendees
+                      {syncedWithDirectory ? "Directory on map" : "All Attendees"}
                     </CardTitle>
                     <CardDescription className="flex items-center justify-between gap-2 flex-wrap">
                       <span>
-                        {filteredRegistrations.length} {filteredRegistrations.length === 1 ? "family" : "families"}. Click to view details.
+                        {filteredAttendees.length}{" "}
+                        {filteredAttendees.length === 1 ? "family" : "families"} with map pins.
+                        Click to view details.
                       </span>
                       <span className="inline-flex items-center gap-1 text-xs text-muted-foreground/70">
                         <ChevronUp className="h-3 w-3" />
@@ -791,32 +746,38 @@ export default function Map2026Page() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="p-0">
-                    <div className="max-h-[40vh] overflow-y-auto lg:max-h-[calc(100vh-600px)] lg:min-h-[200px]">
-                      {filteredRegistrations.length === 0 ? (
+                    <div className="max-h-[40dvh] overflow-y-auto lg:max-h-[calc(100dvh-600px)] lg:min-h-[200px]">
+                      {filteredAttendees.length === 0 ? (
                         <div className="p-6 text-center text-sm text-muted-foreground">
-                          No families match your search
+                          {searchQuery.trim()
+                            ? "No families match your search."
+                            : syncedWithDirectory
+                              ? "No directory families have map coordinates yet."
+                              : "No registration data is available yet."}
                         </div>
                       ) : (
                         <div className="divide-y divide-border/50">
-                          {filteredRegistrations.map((reg) => (
+                          {filteredAttendees.map((attendee) => (
                             <button
                               type="button"
-                              key={reg.id}
-                              className={`focus-ring flex min-h-11 w-full items-center px-4 py-3 text-left transition-colors hover:bg-primary/5 active:bg-primary/10 ${
-                                selectedRegistration?.id === reg.id
+                              key={attendee.id}
+                              className={`map-attendee-row focus-ring flex min-h-11 w-full items-center px-4 py-3 text-left transition-colors hover:bg-primary/5 active:bg-primary/10 ${
+                                selectedAttendee?.id === attendee.id
                                   ? "border border-primary/30 bg-primary/10 ring-1 ring-primary/20"
                                   : "border border-transparent"
                               }`}
-                              onClick={() => setSelectedRegistration(reg)}
+                              onClick={() => handleSelectAttendee(attendee)}
                             >
-                              <div className="flex items-center justify-between gap-2">
+                              <div className="flex w-full items-center justify-between gap-2">
                                 <div className="min-w-0">
                                   <p className="font-medium text-foreground truncate">
-                                    {reg.lastName} Family
+                                    {attendee.lastName} Family
                                   </p>
-                                  <p className="text-xs text-muted-foreground truncate">{reg.address}</p>
+                                  <p className="text-xs text-muted-foreground truncate">
+                                    {attendee.address || attendee.fullAddress}
+                                  </p>
                                 </div>
-                                <MapPin className={`h-4 w-4 shrink-0 ${selectedRegistration?.id === reg.id ? "text-primary" : "text-muted-foreground"}`} />
+                                <MapPin className={`h-4 w-4 shrink-0 ${selectedAttendee?.id === attendee.id ? "text-primary" : "text-muted-foreground"}`} />
                               </div>
                             </button>
                           ))}
@@ -827,6 +788,7 @@ export default function Map2026Page() {
                 </Card>
               </div>
             </div>
+            )}
           </div>
         </section>
       </main>
