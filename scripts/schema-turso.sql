@@ -127,6 +127,10 @@ CREATE TABLE IF NOT EXISTS families (
   wife_phone TEXT,
   home_congregation TEXT,
   years_homeschooling INTEGER,
+  photo_url TEXT,
+  directory_opt_in INTEGER DEFAULT 0,
+  directory_blurb TEXT,
+  photo_updated_at TEXT,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 );

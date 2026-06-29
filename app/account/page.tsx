@@ -23,7 +23,8 @@ import {
   AlertCircle,
   ArrowRight,
   History,
-  Map
+  Map,
+  Camera,
 } from "lucide-react"
 
 export default async function AccountPage() {
@@ -55,14 +56,13 @@ export default async function AccountPage() {
   const registrations = userEmail ? await getFamilyRegistrations(userEmail) : []
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-4xl mx-auto space-y-8">
+    <div className="mx-auto max-w-4xl space-y-8">
         {/* Welcome Header */}
         <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">
+          <h1 className="text-section-title text-balance">
             Welcome, {user.firstName || "Friend"}!
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-lead text-muted-foreground">
             Manage your family profile and view your registration history.
           </p>
         </div>
@@ -71,7 +71,7 @@ export default async function AccountPage() {
         <div className="grid gap-4 sm:grid-cols-2">
           <Card className="border-primary/20 bg-primary/5">
             <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-widget-heading">
                 <Calendar className="h-5 w-5 text-primary" />
                 Register for 2027
               </CardTitle>
@@ -95,7 +95,7 @@ export default async function AccountPage() {
           {family && (
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-lg flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-widget-heading">
                   <Users className="h-5 w-5" />
                   Family Profile
                 </CardTitle>
@@ -107,6 +107,34 @@ export default async function AccountPage() {
                 <Button variant="outline" asChild className="w-full bg-transparent">
                   <Link href="/account/profile">
                     Manage Profile
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {family && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-widget-heading">
+                  <Camera className="h-5 w-5" />
+                  Family Directory
+                </CardTitle>
+                <CardDescription>
+                  Share a photo so other registered families can get to know you
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-2">
+                <Button asChild className="w-full">
+                  <Link href="/account/profile">
+                    Upload photo
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+                <Button variant="outline" asChild className="w-full bg-transparent">
+                  <Link href="/directory">
+                    Browse directory
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
@@ -179,7 +207,7 @@ export default async function AccountPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <AlertCircle className="h-5 w-5 text-amber-500" />
+                <AlertCircle className="h-5 w-5 text-warning" />
                 No Family Profile Linked
               </CardTitle>
               <CardDescription>
@@ -241,7 +269,7 @@ export default async function AccountPage() {
                         <div className="flex items-center gap-2">
                           <p className="font-medium">{reg.family_last_name} Family</p>
                           {reg.checked_in && (
-                            <Badge variant="outline" className="text-green-600 border-green-600">
+                            <Badge variant="outline" className="border-success/30 text-success">
                               <CheckCircle className="h-3 w-3 mr-1" />
                               Checked In
                             </Badge>
@@ -259,12 +287,12 @@ export default async function AccountPage() {
                         <div className="text-right">
                           <p className="font-semibold">${totalCost.toFixed(2)}</p>
                           {reg.full_payment_paid ? (
-                            <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
+                            <Badge className="border border-success/30 bg-surface-highlight text-success hover:bg-surface-highlight">
                               <CheckCircle className="h-3 w-3 mr-1" />
                               Paid in Full
                             </Badge>
                           ) : reg.registration_fee_paid ? (
-                            <Badge variant="secondary" className="bg-amber-100 text-amber-800">
+                            <Badge variant="secondary" className="border border-warning/30 bg-surface-warm text-warning">
                               <Clock className="h-3 w-3 mr-1" />
                               Deposit Paid
                             </Badge>
@@ -325,7 +353,7 @@ export default async function AccountPage() {
         {/* Account Info */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Account Information</CardTitle>
+            <CardTitle className="text-widget-heading">Account Information</CardTitle>
             <CardDescription>
               Your Clerk account details
             </CardDescription>
@@ -343,7 +371,6 @@ export default async function AccountPage() {
             </div>
           </CardContent>
         </Card>
-      </div>
     </div>
   )
 }

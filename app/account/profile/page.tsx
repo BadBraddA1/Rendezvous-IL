@@ -63,6 +63,10 @@ import {
   formatAgeGroupLabel,
   type ProfileMemberType,
 } from "@/lib/member-age"
+import {
+  FamilyDirectoryPhotoCard,
+  type FamilyDirectoryPhotoState,
+} from "@/components/family/family-directory-photo-card"
 
 interface FamilyMember {
   id?: number
@@ -93,6 +97,10 @@ interface Family {
   zip: string
   home_congregation: string
   members: FamilyMember[]
+  photo_url?: string | null
+  directory_opt_in?: boolean
+  directory_blurb?: string | null
+  photo_updated_at?: string | null
 }
 
 interface PendingChange {
@@ -121,6 +129,12 @@ export default function FamilyProfilePage() {
   const [editingMember, setEditingMember] = useState<FamilyMember | null>(null)
   const [successMessage, setSuccessMessage] = useState("")
   const [errorMessage, setErrorMessage] = useState("")
+  const [directorySettings, setDirectorySettings] = useState<FamilyDirectoryPhotoState>({
+    photo_url: null,
+    directory_opt_in: false,
+    directory_blurb: null,
+    photo_updated_at: null,
+  })
 
   useEffect(() => {
     if (isLoaded && user) {
@@ -145,6 +159,12 @@ export default function FamilyProfilePage() {
       setRegistrationBirthdays(data.registrationBirthdays || [])
       if (data.family) {
         setEditedFamily(data.family)
+        setDirectorySettings({
+          photo_url: data.family.photo_url ?? null,
+          directory_opt_in: Boolean(data.family.directory_opt_in),
+          directory_blurb: data.family.directory_blurb ?? null,
+          photo_updated_at: data.family.photo_updated_at ?? null,
+        })
       }
     } catch (error) {
       console.error("Error fetching profile:", error)
@@ -353,6 +373,11 @@ export default function FamilyProfilePage() {
             </CardContent>
           </Card>
         )}
+
+        <FamilyDirectoryPhotoCard
+          settings={directorySettings}
+          onChange={setDirectorySettings}
+        />
 
         {/* Family Information */}
         <Card>

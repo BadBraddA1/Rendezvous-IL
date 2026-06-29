@@ -25,6 +25,12 @@ struct MoreView: View {
                     NavigationLink { CheckInView() } label: {
                         Label("Staff check-in", systemImage: "person.badge.key")
                     }
+                    NavigationLink { DirectoryView() } label: {
+                        Label("Family directory", systemImage: "person.3.fill")
+                    }
+                    NavigationLink { FamilyDirectoryManageView() } label: {
+                        Label("Directory photo", systemImage: "camera.fill")
+                    }
                     NavigationLink { AccountView() } label: {
                         Label("Family account", systemImage: "person.crop.circle")
                     }

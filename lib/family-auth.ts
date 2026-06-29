@@ -20,6 +20,10 @@ export interface Family {
   wife_phone: string | null
   home_congregation: string | null
   years_homeschooling: number | null
+  photo_url: string | null
+  directory_opt_in: boolean
+  directory_blurb: string | null
+  photo_updated_at: string | null
   clerk_user_id: string | null
   created_at: string
   updated_at: string

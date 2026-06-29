@@ -87,6 +87,88 @@ actor APIClient {
         try await delete("/api/admin/registrations/\(id)/checkin")
     }
 
+    func getDirectory(year: Int) async throws -> DirectoryResponse {
+        try await get("/api/directory?year=\(year)")
+    }
+
+    func getFamilyDirectorySettings() async throws -> FamilyDirectorySettings {
+        let response: FamilyDirectorySettingsEnvelope = try await get("/api/family/directory")
+        return response.settings
+    }
+
+    func updateFamilyDirectorySettings(
+        directoryOptIn: Bool,
+        directoryBlurb: String?
+    ) async throws -> FamilyDirectorySettingsResponse {
+        try await patch(
+            "/api/family/directory",
+            body: FamilyDirectorySettingsBody(
+                directory_opt_in: directoryOptIn,
+                directory_blurb: directoryBlurb
+            )
+        )
+    }
+
+    func uploadFamilyDirectoryPhoto(imageData: Data, filename: String, mimeType: String) async throws -> FamilyDirectorySettingsResponse {
+        try await uploadMultipart(
+            "/api/family/directory",
+            fieldName: "photo",
+            fileData: imageData,
+            filename: filename,
+            mimeType: mimeType
+        )
+    }
+
+    func deleteFamilyDirectoryPhoto() async throws -> FamilyDirectorySettingsResponse {
+        try await delete("/api/family/directory")
+    }
+
+    func patch<T: Decodable, Body: Encodable>(
+        _ path: String,
+        body: Body,
+        as type: T.Type = T.self
+    ) async throws -> T {
+        let data = try JSONEncoder().encode(body)
+        return try await request(path, method: "PATCH", body: data, as: type)
+    }
+
+    private func uploadMultipart<T: Decodable>(
+        _ path: String,
+        fieldName: String,
+        fileData: Data,
+        filename: String,
+        mimeType: String
+    ) async throws -> T {
+        let boundary = "Boundary-\(UUID().uuidString)"
+        var body = Data()
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"\(fieldName)\"; filename=\"\(filename)\"\r\n".data(using: .utf8)!)
+        body.append("Content-Type: \(mimeType)\r\n\r\n".data(using: .utf8)!)
+        body.append(fileData)
+        body.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
+
+        let url = AppConfig.url(for: path)
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        request.setValue("RendezvousIL-iOS/1.0", forHTTPHeaderField: "User-Agent")
+        if let tokenProvider {
+            let token = try await tokenProvider()
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        request.httpBody = body
+
+        let (data, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse else {
+            throw APIError.badStatus(-1)
+        }
+        if http.statusCode == 401 { throw APIError.unauthorized }
+        guard (200 ... 299).contains(http.statusCode) else {
+            throw APIError.badStatus(http.statusCode)
+        }
+        return try decoder.decode(T.self, from: data)
+    }
+
     private func request<T: Decodable>(
         _ path: String,
         method: String,
@@ -223,4 +305,55 @@ struct VolunteerWeekResponse: Decodable {
 
 struct ScheduleAnnouncementsResponse: Decodable {
     let announcements: [Announcement]?
+}
+
+struct DirectoryFamily: Decodable, Identifiable {
+    let id: Int
+    let family_last_name: String
+    let home_congregation: String?
+    let photo_url: String
+    let directory_blurb: String?
+    let husband_first_name: String?
+    let wife_first_name: String?
+    let member_count: Int
+    let member_names: [String]
+}
+
+struct DirectoryResponse: Decodable {
+    let year: Int
+    let hasAccess: Bool?
+    let families: [DirectoryFamily]
+}
+
+struct FamilyDirectorySettings: Decodable {
+    let photo_url: String?
+    let directory_opt_in: Bool
+    let directory_blurb: String?
+    let photo_updated_at: String?
+
+    init(
+        photo_url: String? = nil,
+        directory_opt_in: Bool = false,
+        directory_blurb: String? = nil,
+        photo_updated_at: String? = nil
+    ) {
+        self.photo_url = photo_url
+        self.directory_opt_in = directory_opt_in
+        self.directory_blurb = directory_blurb
+        self.photo_updated_at = photo_updated_at
+    }
+}
+
+struct FamilyDirectorySettingsEnvelope: Decodable {
+    let settings: FamilyDirectorySettings
+}
+
+struct FamilyDirectorySettingsResponse: Decodable {
+    let success: Bool?
+    let settings: FamilyDirectorySettings
+}
+
+struct FamilyDirectorySettingsBody: Encodable {
+    let directory_opt_in: Bool
+    let directory_blurb: String?
 }

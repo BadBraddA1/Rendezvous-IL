@@ -1,0 +1,199 @@
+import SwiftUI
+
+struct DirectoryView: View {
+    @Environment(AppSession.self) private var session
+
+    @State private var year = AppConfig.eventYear
+    @State private var families: [DirectoryFamily] = []
+    @State private var search = ""
+    @State private var isLoading = false
+    @State private var errorMessage: String?
+
+    private var filteredFamilies: [DirectoryFamily] {
+        let query = search.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !query.isEmpty else { return families }
+        return families.filter { family in
+            let haystack = [
+                family.family_last_name,
+                family.home_congregation,
+                family.directory_blurb,
+                family.husband_first_name,
+                family.wife_first_name,
+                family.member_names.joined(separator: " "),
+            ]
+            .compactMap { $0 }
+            .joined(separator: " ")
+            .lowercased()
+            return haystack.contains(query)
+        }
+    }
+
+    var body: some View {
+        Group {
+            if !session.isSignedIn {
+                signedOutState
+            } else {
+                directoryContent
+            }
+        }
+        .navigationTitle("Family Directory")
+        .task {
+            await session.refreshAuth()
+            if session.isSignedIn {
+                await loadDirectory()
+            }
+        }
+    }
+
+    private var signedOutState: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Sign in to browse the family directory")
+                .font(.title3.weight(.semibold))
+            Text("Registered Rendezvous families can share a photo and short note so other attendees can get to know them.")
+                .foregroundStyle(.secondary)
+            AuthView()
+                .frame(minHeight: 360)
+        }
+        .padding()
+    }
+
+    private var directoryContent: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                Picker("Event year", selection: $year) {
+                    Text("Rendezvous 2027").tag(2027)
+                    Text("Rendezvous 2026").tag(2026)
+                }
+                .pickerStyle(.segmented)
+                .onChange(of: year) { _, _ in
+                    Task { await loadDirectory() }
+                }
+
+                HStack {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundStyle(.secondary)
+                    TextField("Search families", text: $search)
+                        .textInputAutocapitalization(.never)
+                }
+                .padding(12)
+                .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
+
+                if isLoading {
+                    ProgressView("Loading directory...")
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 40)
+                } else if let errorMessage {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text(errorMessage)
+                            .foregroundStyle(.secondary)
+                        NavigationLink("Manage your family photo") {
+                            FamilyDirectoryManageView()
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
+                    .padding()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
+                } else if filteredFamilies.isEmpty {
+                    VStack(spacing: 12) {
+                        Image(systemName: "person.3.fill")
+                            .font(.largeTitle)
+                            .foregroundStyle(.secondary)
+                        Text("No families listed for \(year) yet.")
+                            .foregroundStyle(.secondary)
+                        NavigationLink("Add your family photo") {
+                            FamilyDirectoryManageView()
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 32)
+                } else {
+                    Text("\(filteredFamilies.count) families")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 160), spacing: 16)], spacing: 16) {
+                        ForEach(filteredFamilies) { family in
+                            DirectoryFamilyCard(family: family)
+                        }
+                    }
+                }
+            }
+            .padding()
+        }
+    }
+
+    private func loadDirectory() async {
+        guard let client = session.apiClient else { return }
+        isLoading = true
+        errorMessage = nil
+        defer { isLoading = false }
+
+        do {
+            let response = try await client.getDirectory(year: year)
+            families = response.families
+        } catch {
+            families = []
+            errorMessage = error.localizedDescription
+        }
+    }
+}
+
+private struct DirectoryFamilyCard: View {
+    let family: DirectoryFamily
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            AsyncImage(url: URL(string: family.photo_url)) { phase in
+                switch phase {
+                case .success(let image):
+                    image
+                        .resizable()
+                        .scaledToFill()
+                default:
+                    Color(.secondarySystemGroupedBackground)
+                        .overlay {
+                            Image(systemName: "photo")
+                                .foregroundStyle(.secondary)
+                        }
+                }
+            }
+            .frame(height: 140)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+
+            Text("\(family.family_last_name) Family")
+                .font(.headline)
+                .lineLimit(2)
+
+            if let congregation = family.home_congregation, !congregation.isEmpty {
+                Label(congregation, systemImage: "building.2")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
+
+            Text("\(family.member_count) attendee\(family.member_count == 1 ? "" : "s")")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            if let blurb = family.directory_blurb, !blurb.isEmpty {
+                Text(blurb)
+                    .font(.caption)
+                    .foregroundStyle(.primary)
+                    .padding(8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color(.tertiarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 8))
+            }
+        }
+        .padding(12)
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
+    }
+}
+
+#Preview {
+    NavigationStack {
+        DirectoryView()
+            .environment(AppSession())
+    }
+}

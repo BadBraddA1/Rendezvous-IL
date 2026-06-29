@@ -6,6 +6,7 @@ import {
   getRegistrationBirthdayHints,
   resolveFamilyForUser,
 } from "@/lib/family-auth"
+import { getFamilyDirectorySettings } from "@/lib/family-directory"
 
 const PROFILE_FIELDS = [
   "family_last_name",
@@ -74,8 +75,10 @@ export async function GET() {
       member_data: parseMemberData(change.member_data),
     }))
 
+    const directory = await getFamilyDirectorySettings(family.id)
+
     return NextResponse.json({
-      family: { ...family, members },
+      family: { ...family, members, ...directory },
       pendingChanges,
       registrationBirthdays,
     })
