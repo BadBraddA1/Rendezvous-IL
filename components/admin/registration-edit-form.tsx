@@ -1,14 +1,7 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+import { useState, useEffect, useCallback, useMemo } from "react"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
@@ -17,11 +10,15 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Plus, Trash2, Save, QrCode, CheckCircle2, RotateCcw } from "lucide-react"
-import { Tabs, TabsContent } from "@/components/ui/tabs"
+import { Plus, Trash2, Save, QrCode, CheckCircle2, RotateCcw, ArrowLeft } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { AdminConfirmDialog } from "./admin-confirm-dialog"
 import { normalizeStringArray } from "@/lib/normalize-string-array"
+import {
+  registrationYearLabel,
+  type RegistrationEventYear,
+} from "@/lib/registration-event-years"
+import { cn } from "@/lib/utils"
 
 type Registration = {
   id: string | number
@@ -102,16 +99,58 @@ type ConfirmAction =
   | { kind: "undoCheckIn"; familyName: string }
 
 type Props = {
-  registration: Registration | null
-  open: boolean
-  onClose: () => void
-  onSave?: (updates: Partial<Registration>) => Promise<void>
+  registrationId: string
+  eventYear: RegistrationEventYear
 }
 
 const TSHIRT_SIZES = ["YS", "YM", "YL", "S", "M", "L", "XL", "2XL", "3XL"]
 const TSHIRT_COLORS = ["sage", "navy", "white", "black", "gray"]
 
-export function RegistrationEditModal({ registration, open, onClose, onSave }: Props) {
+type SectionConfig = {
+  id: string
+  label: string
+  description: string
+  count?: number
+}
+
+function EditSection({
+  id,
+  title,
+  description,
+  count,
+  children,
+}: {
+  id: string
+  title: string
+  description: string
+  count?: number
+  children: React.ReactNode
+}) {
+  return (
+    <section id={id} className="scroll-mt-40 rounded-xl border bg-card shadow-sm">
+      <div className="border-b bg-muted/50 px-5 py-4 sm:px-6">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
+            <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+          </div>
+          {count !== undefined && (
+            <Badge variant="secondary" className="shrink-0 text-sm tabular-nums">
+              {count} {count === 1 ? "item" : "items"}
+            </Badge>
+          )}
+        </div>
+      </div>
+      <div className="space-y-4 p-5 sm:p-6">{children}</div>
+    </section>
+  )
+}
+
+function scrollToSection(sectionId: string) {
+  document.getElementById(sectionId)?.scrollIntoView({ behavior: "smooth", block: "start" })
+}
+
+export function RegistrationEditForm({ registrationId, eventYear }: Props) {
   const [reg, setReg] = useState<Registration | null>(null)
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([])
   const [tshirtOrders, setTshirtOrders] = useState<TshirtOrder[]>([])
@@ -119,7 +158,7 @@ export function RegistrationEditModal({ registration, open, onClose, onSave }: P
   const [healthInfo, setHealthInfo] = useState<HealthInfo[]>([])
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [activeTab, setActiveTab] = useState("contact")
+  const [activeSection, setActiveSection] = useState("contact")
   const [roomKeysInput, setRoomKeysInput] = useState("")
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null)
   const [confirmLoading, setConfirmLoading] = useState(false)
@@ -158,13 +197,31 @@ export function RegistrationEditModal({ registration, open, onClose, onSave }: P
   )
 
   useEffect(() => {
-    if (registration && open) {
-      setActiveTab("contact")
-      void loadFullRegistration(registration.id)
-    }
-  }, [registration, open, loadFullRegistration])
+    setActiveSection("contact")
+    void loadFullRegistration(registrationId)
+  }, [registrationId, loadFullRegistration])
 
-  if (!registration) return null
+  useEffect(() => {
+    const sectionIds = ["contact", "attendees", "tshirts", "volunteers", "payment", "checkin", "health"]
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)
+        if (visible[0]?.target.id) {
+          setActiveSection(visible[0].target.id)
+        }
+      },
+      { rootMargin: "-40% 0px -45% 0px", threshold: [0, 0.25, 0.5, 1] },
+    )
+
+    for (const id of sectionIds) {
+      const element = document.getElementById(id)
+      if (element) observer.observe(element)
+    }
+
+    return () => observer.disconnect()
+  }, [loading, reg])
 
   const updateRegField = (field: keyof Registration, value: unknown) => {
     setReg((prev) => (prev ? ({ ...prev, [field]: value } as Registration) : prev))
@@ -202,7 +259,6 @@ export function RegistrationEditModal({ registration, open, onClose, onSave }: P
       })
       if (!res.ok) throw new Error("Failed to save")
       toast({ title: "Saved", description: "Registration updated successfully" })
-      if (onSave) await onSave(payload as Partial<Registration>)
     } catch (error) {
       console.error("[v0] Save failed:", error)
       toast({ title: "Error", description: "Failed to save changes", variant: "destructive" })
@@ -536,66 +592,126 @@ export function RegistrationEditModal({ registration, open, onClose, onSave }: P
       : 0
   const paymentProgress = totalCost > 0 ? Math.min(100, (paidAmount / totalCost) * 100) : 0
 
-  const sectionOptions = [
-    { value: "contact", label: "Contact" },
-    { value: "attendees", label: `Attendees (${familyMembers.length})` },
-    { value: "tshirts", label: `T-Shirts (${tshirtOrders.length})` },
-    { value: "volunteers", label: `Volunteers (${volunteers.length})` },
-    { value: "payment", label: "Payment" },
-    { value: "checkin", label: "Check-In" },
-    { value: "health", label: "Health" },
-  ]
+  const sections: SectionConfig[] = useMemo(
+    () => [
+      { id: "contact", label: "Contact", description: "Family contact info, address, lodging, and emergency contact" },
+      {
+        id: "attendees",
+        label: "Attendees",
+        description: "Everyone registered for this event — ages, costs, baptism status",
+        count: familyMembers.length,
+      },
+      {
+        id: "tshirts",
+        label: "T-Shirts",
+        description: "Merchandise orders and sizes",
+        count: tshirtOrders.length,
+      },
+      {
+        id: "volunteers",
+        label: "Volunteers",
+        description: "Worship and service signups from registration",
+        count: volunteers.length,
+      },
+      { id: "payment", label: "Payment", description: "Fees, payment status, notes, and cost breakdown" },
+      { id: "checkin", label: "Check-In", description: "QR code, room keys, and on-site status" },
+      {
+        id: "health",
+        label: "Health",
+        description: "Medical conditions and medication notes",
+        count: healthInfo.length,
+      },
+    ],
+    [familyMembers.length, healthInfo.length, tshirtOrders.length, volunteers.length],
+  )
+
+  const backHref = `/admin/registrations?year=${eventYear}`
+
+  if (loading || !reg) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <p className="text-muted-foreground">Loading registration details...</p>
+      </div>
+    )
+  }
 
   return (
     <>
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="flex max-h-[92dvh] w-[calc(100vw-1rem)] max-w-5xl flex-col gap-0 overflow-hidden p-0 sm:max-w-5xl">
-        <DialogHeader className="shrink-0 border-b px-4 py-4 text-left sm:px-6">
-          <DialogTitle className="flex flex-wrap items-center gap-2 text-left text-base leading-snug sm:text-lg">
-            <span className="min-w-0 break-words">
-              Edit Registration - {reg?.family_last_name || registration.family_last_name} Family
-            </span>
-            {reg?.checked_in && (
-              <Badge variant="default" className="gap-1 shrink-0">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0 space-y-2">
+          <Button asChild variant="ghost" size="sm" className="-ml-2 w-fit gap-2">
+            <Link href={backHref}>
+              <ArrowLeft className="h-4 w-4" />
+              Back to {registrationYearLabel(eventYear)} list
+            </Link>
+          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-section-title text-balance">
+              {reg.family_last_name} Family
+            </h1>
+            <Badge variant="outline">{registrationYearLabel(eventYear)}</Badge>
+            {reg.checked_in && (
+              <Badge className="gap-1">
                 <CheckCircle2 className="h-3 w-3" />
                 Checked In
               </Badge>
             )}
-          </DialogTitle>
-          <DialogDescription className="text-left">
-            Manage attendees, t-shirts, volunteers, payment, and check-in for this family.
-          </DialogDescription>
-        </DialogHeader>
-
-        {loading || !reg ? (
-          <div className="flex flex-1 items-center justify-center py-12">
-            <p className="text-muted-foreground">Loading registration details...</p>
           </div>
-        ) : (
-          <div className="flex min-h-0 flex-1 flex-col">
-            <div className="shrink-0 border-b bg-muted/30 px-4 py-3 sm:px-6">
-              <Label htmlFor="registration-section" className="mb-1.5 block text-xs text-muted-foreground">
-                Section
-              </Label>
-              <Select value={activeTab} onValueChange={setActiveTab}>
-                <SelectTrigger id="registration-section" className="w-full bg-background">
-                  <SelectValue placeholder="Choose a section" />
-                </SelectTrigger>
-                <SelectContent>
-                  {sectionOptions.map((section) => (
-                    <SelectItem key={section.value} value={section.value}>
-                      {section.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <p className="text-sm text-muted-foreground">
+            Registration #{reg.id} · {reg.email} · Registered{" "}
+            {reg.created_at ? new Date(reg.created_at).toLocaleDateString() : "—"}
+          </p>
+        </div>
+        <Button onClick={saveRegistration} disabled={saving} className="min-h-11 shrink-0 gap-2">
+          <Save className="h-4 w-4" />
+          {saving ? "Saving..." : "Save Contact & Payment"}
+        </Button>
+      </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <nav
+        aria-label="Registration sections"
+        className="sticky top-0 z-20 -mx-1 mb-6 rounded-xl border bg-background/95 px-2 py-3 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/85"
+      >
+        <p className="mb-2 px-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          Jump to section
+        </p>
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {sections.map((section) => (
+            <button
+              key={section.id}
+              type="button"
+              onClick={() => scrollToSection(section.id)}
+              className={cn(
+                "inline-flex shrink-0 items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm font-medium transition-colors",
+                activeSection === section.id
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border bg-card hover:bg-muted",
+              )}
+            >
+              <span>{section.label}</span>
+              {section.count !== undefined && (
+                <span
+                  className={cn(
+                    "rounded-full px-2 py-0.5 text-xs tabular-nums",
+                    activeSection === section.id
+                      ? "bg-primary-foreground/20 text-primary-foreground"
+                      : "bg-muted text-muted-foreground",
+                  )}
+                >
+                  {section.count}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      </nav>
 
-            {/* CONTACT */}
-            <TabsContent value="contact" className="space-y-4">
+      <div className="space-y-8 pb-24">
+        <EditSection
+          id="contact"
+          title="Contact Information"
+          description="Primary family contact details, address, lodging choice, and arrival notes."
+        >
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
                   <Label>Family Last Name</Label>
@@ -675,10 +791,14 @@ export function RegistrationEditModal({ registration, open, onClose, onSave }: P
                   <Input value={reg.emergency_contact_phone || ""} onChange={(e) => updateRegField("emergency_contact_phone", e.target.value)} />
                 </div>
               </div>
-            </TabsContent>
+        </EditSection>
 
-            {/* ATTENDEES */}
-            <TabsContent value="attendees" className="space-y-4">
+        <EditSection
+          id="attendees"
+          title="Attendees"
+          description="Each person on this registration. Save individual members after editing."
+          count={familyMembers.length}
+        >
               <div className="flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">Manage individual family members. Changes save when you click Save Member.</p>
                 <Button onClick={addFamilyMember} size="sm" className="gap-2">
@@ -746,10 +866,14 @@ export function RegistrationEditModal({ registration, open, onClose, onSave }: P
                   </div>
                 )}
               </div>
-            </TabsContent>
+        </EditSection>
 
-            {/* T-SHIRTS */}
-            <TabsContent value="tshirts" className="space-y-4">
+        <EditSection
+          id="tshirts"
+          title="T-Shirt Orders"
+          description={`Merchandise for this family. Running total: $${tshirtTotal.toFixed(2)}`}
+          count={tshirtOrders.length}
+        >
               <div className="flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">Manage t-shirt orders. Total: ${tshirtTotal.toFixed(2)}</p>
                 <Button onClick={addTshirt} size="sm" className="gap-2">
@@ -803,10 +927,14 @@ export function RegistrationEditModal({ registration, open, onClose, onSave }: P
                   </div>
                 )}
               </div>
-            </TabsContent>
+        </EditSection>
 
-            {/* VOLUNTEERS */}
-            <TabsContent value="volunteers" className="space-y-3">
+        <EditSection
+          id="volunteers"
+          title="Volunteer Signups"
+          description="Roles this family volunteered for during registration."
+          count={volunteers.length}
+        >
               <p className="text-sm text-muted-foreground">Volunteer roles selected at registration.</p>
               {volunteers.length === 0 ? (
                 <div className="rounded-lg border border-dashed p-8 text-center">
@@ -826,10 +954,13 @@ export function RegistrationEditModal({ registration, open, onClose, onSave }: P
                   </div>
                 ))
               )}
-            </TabsContent>
+        </EditSection>
 
-            {/* PAYMENT */}
-            <TabsContent value="payment" className="space-y-6">
+        <EditSection
+          id="payment"
+          title="Payment"
+          description="Track registration fees, lodging, and whether this family has paid in full."
+        >
               <div className="rounded-lg border p-4">
                 <h4 className="mb-3 font-semibold">Payment Progress</h4>
                 <div className="mb-2 flex items-center justify-between text-sm">
@@ -906,10 +1037,13 @@ export function RegistrationEditModal({ registration, open, onClose, onSave }: P
                   <div className="flex justify-between text-base"><span className="font-semibold">Total Due:</span><span className="font-bold">${totalCost.toFixed(2)}</span></div>
                 </div>
               </div>
-            </TabsContent>
+        </EditSection>
 
-            {/* CHECK-IN */}
-            <TabsContent value="checkin" className="space-y-4">
+        <EditSection
+          id="checkin"
+          title="Check-In"
+          description="On-site arrival: QR code, room keys, and t-shirt pickup."
+        >
               <div className="rounded-lg border p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -972,10 +1106,14 @@ export function RegistrationEditModal({ registration, open, onClose, onSave }: P
                   <Label htmlFor="tshirts-distributed" className="cursor-pointer">T-shirts distributed to family</Label>
                 </div>
               </div>
-            </TabsContent>
+        </EditSection>
 
-            {/* HEALTH */}
-            <TabsContent value="health" className="space-y-3">
+        <EditSection
+          id="health"
+          title="Health Information"
+          description="Conditions and medications reported at registration."
+          count={healthInfo.length}
+        >
               <p className="text-sm text-muted-foreground">Health information submitted for this family.</p>
               {healthInfo.length === 0 ? (
                 <div className="rounded-lg border border-dashed p-8 text-center">
@@ -992,23 +1130,20 @@ export function RegistrationEditModal({ registration, open, onClose, onSave }: P
                   </div>
                 ))
               )}
-            </TabsContent>
-          </Tabs>
-            </div>
-          </div>
-        )}
+        </EditSection>
+      </div>
 
-        <DialogFooter className="shrink-0 gap-2 border-t px-4 py-4 sm:px-6">
-          <Button variant="outline" onClick={onClose} disabled={saving || loading} className="min-h-11 w-full sm:w-auto">
-            Close
+      <div className="fixed inset-x-0 bottom-0 z-20 border-t bg-background/95 px-4 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] backdrop-blur sm:px-6">
+        <div className="admin-container flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <Button asChild variant="outline" className="min-h-11 w-full sm:w-auto">
+            <Link href={backHref}>Back to list</Link>
           </Button>
-          <Button onClick={saveRegistration} disabled={saving || loading} className="min-h-11 w-full gap-2 sm:w-auto">
+          <Button onClick={saveRegistration} disabled={saving} className="min-h-11 w-full gap-2 sm:w-auto">
             <Save className="h-4 w-4" />
             {saving ? "Saving..." : "Save Contact & Payment"}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+      </div>
 
     {confirmCopy && (
       <AdminConfirmDialog

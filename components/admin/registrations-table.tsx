@@ -1,6 +1,8 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
+import Link from "next/link"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -8,11 +10,11 @@ import { Badge } from "@/components/ui/badge"
 import { Download, Search, Edit, Trash2, Mail, FileText } from "lucide-react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { RegistrationEditModal } from "./registration-edit-modal"
 import { BulkEmailModal } from "./bulk-email-modal"
 import { AdminConfirmDialog } from "./admin-confirm-dialog"
 import { AdminListSkeleton, AdminRetryButton } from "./admin-panel-states"
 import { useToast } from "@/hooks/use-toast"
+import { parseLegacyRegistrationId } from "@/lib/admin-registration-queries"
 import {
   DEFAULT_REGISTRATION_EVENT_YEAR,
   REGISTRATION_EVENT_YEARS,
@@ -42,6 +44,8 @@ function readStoredEventYear(): RegistrationEventYear {
 }
 
 export function RegistrationsTable() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const [eventYear, setEventYear] = useState<RegistrationEventYear>(DEFAULT_REGISTRATION_EVENT_YEAR)
   const [registrations, setRegistrations] = useState<AdminRegistrationRow[]>([])
   const [searchInput, setSearchInput] = useState("")
@@ -49,8 +53,6 @@ export function RegistrationsTable() {
   const [lodgingFilter, setLodgingFilter] = useState("all")
   const [loading, setLoading] = useState(true)
   const [fetchError, setFetchError] = useState<string | null>(null)
-  const [selectedRegistration, setSelectedRegistration] = useState<AdminRegistrationRow | null>(null)
-  const [editModalOpen, setEditModalOpen] = useState(false)
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set())
   const [emailModalOpen, setEmailModalOpen] = useState(false)
   const [deletePending, setDeletePending] = useState<AdminRegistrationRow | null>(null)
@@ -58,13 +60,26 @@ export function RegistrationsTable() {
   const { toast } = useToast()
 
   useEffect(() => {
+    const yearFromUrl = searchParams.get("year")
+    if (yearFromUrl) {
+      setEventYear(parseRegistrationEventYear(yearFromUrl))
+      return
+    }
     setEventYear(readStoredEventYear())
-  }, [])
+  }, [searchParams])
 
   useEffect(() => {
     if (typeof window === "undefined") return
     window.sessionStorage.setItem(REGISTRATION_YEAR_STORAGE_KEY, String(eventYear))
   }, [eventYear])
+
+  const handleYearChange = (value: string) => {
+    const year = parseRegistrationEventYear(value)
+    setEventYear(year)
+    const params = new URLSearchParams(searchParams.toString())
+    params.set("year", String(year))
+    router.replace(`/admin/registrations?${params.toString()}`)
+  }
 
   useEffect(() => {
     const timer = window.setTimeout(() => setSearch(searchInput.trim()), 300)
@@ -145,42 +160,17 @@ export function RegistrationsTable() {
     setEmailModalOpen(true)
   }
 
-  const handleEditClick = (registration: AdminRegistrationRow) => {
-    if (registration.source === "v2") {
-      toast({
-        title: "Family registration",
-        description: `${registrationYearLabel(eventYear)} registrations from family accounts are listed here for reference. Use Pending Changes or the family profile for updates.`,
-      })
-      return
-    }
-    setSelectedRegistration(registration)
-    setEditModalOpen(true)
+  const handleEditUnavailable = (registration: AdminRegistrationRow) => {
+    toast({
+      title: "Family registration",
+      description: `${registrationYearLabel(eventYear)} family-account registrations are view-only here for now.`,
+    })
   }
 
-  const handleSaveRegistration = async (updates: Partial<AdminRegistrationRow>) => {
-    if (!selectedRegistration) return
-    try {
-      const res = await fetch(`/api/admin/registrations/${selectedRegistration.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updates),
-      })
-
-      if (!res.ok) throw new Error("Failed to update")
-
-      toast({
-        title: "Registration updated",
-        description: "Changes have been saved successfully.",
-      })
-
-      void fetchRegistrations()
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to update registration.",
-        variant: "destructive",
-      })
-    }
+  const getEditHref = (registration: AdminRegistrationRow) => {
+    const legacyId = parseLegacyRegistrationId(registration.id)
+    if (!legacyId) return null
+    return `/admin/registrations/${legacyId}?year=${eventYear}`
   }
 
   const performDelete = async () => {
@@ -257,10 +247,7 @@ export function RegistrationsTable() {
                   : "Archived event data from the 2026 registration form."}
               </p>
             </div>
-            <Select
-              value={String(eventYear)}
-              onValueChange={(value) => setEventYear(parseRegistrationEventYear(value))}
-            >
+            <Select value={String(eventYear)} onValueChange={handleYearChange}>
               <SelectTrigger className="w-full min-h-11 sm:w-[220px]">
                 <SelectValue placeholder="Event year" />
               </SelectTrigger>
@@ -362,6 +349,7 @@ export function RegistrationsTable() {
                     registrations.map((reg) => {
                       const paymentStatus = getPaymentStatus(reg)
                       const familyLabel = reg.family_last_name || "family"
+                      const editHref = getEditHref(reg)
                       return (
                         <TableRow key={reg.id}>
                           <TableCell>
@@ -375,7 +363,13 @@ export function RegistrationsTable() {
                           </TableCell>
                           <TableCell className="min-w-0 max-w-[12rem] font-medium break-words">
                             <div className="flex flex-wrap items-center gap-2">
-                              <span>{reg.family_last_name}</span>
+                              {editHref ? (
+                                <Link href={editHref} className="hover:text-primary hover:underline">
+                                  {reg.family_last_name}
+                                </Link>
+                              ) : (
+                                <span>{reg.family_last_name}</span>
+                              )}
                               {reg.source === "v2" && (
                                 <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
                                   Family
@@ -397,15 +391,28 @@ export function RegistrationsTable() {
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="touch-target shrink-0"
-                                onClick={() => handleEditClick(reg)}
-                                aria-label={`Edit ${familyLabel} registration`}
-                              >
-                                <Edit className="h-4 w-4" aria-hidden="true" />
-                              </Button>
+                              {editHref ? (
+                                <Button
+                                  asChild
+                                  variant="ghost"
+                                  size="icon"
+                                  className="touch-target shrink-0"
+                                >
+                                  <Link href={editHref} aria-label={`Edit ${familyLabel} registration`}>
+                                    <Edit className="h-4 w-4" aria-hidden="true" />
+                                  </Link>
+                                </Button>
+                              ) : (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="touch-target shrink-0"
+                                  onClick={() => handleEditUnavailable(reg)}
+                                  aria-label={`Edit ${familyLabel} registration`}
+                                >
+                                  <Edit className="h-4 w-4" aria-hidden="true" />
+                                </Button>
+                              )}
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -442,13 +449,6 @@ export function RegistrationsTable() {
         confirmLabel="Delete registration"
         loading={deleting}
         onConfirm={performDelete}
-      />
-
-      <RegistrationEditModal
-        registration={selectedRegistration}
-        open={editModalOpen}
-        onClose={() => setEditModalOpen(false)}
-        onSave={handleSaveRegistration}
       />
 
       <BulkEmailModal

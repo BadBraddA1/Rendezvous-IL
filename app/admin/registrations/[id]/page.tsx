@@ -1,16 +1,16 @@
 import { auth, currentUser } from "@clerk/nextjs/server"
 import { redirect } from "next/navigation"
-import { Suspense } from "react"
+import Link from "next/link"
 import { AdminNav } from "@/components/admin/admin-nav"
-import { RegistrationsTable } from "@/components/admin/registrations-table"
-import { AdminErrorBoundary } from "@/components/admin/admin-error-boundary"
+import { RegistrationEditForm } from "@/components/admin/registration-edit-form"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ShieldAlert, LogIn, Home } from "lucide-react"
-import Link from "next/link"
 import { getAdminPermissions } from "@/lib/clerk-auth"
+import { parseLegacyRegistrationId } from "@/lib/admin-registration-queries"
+import { parseRegistrationEventYear } from "@/lib/registration-event-years"
 
-type AdminRole = "admin" | "editor" | "viewer" | "checkin" | "checkin"
+type AdminRole = "admin" | "editor" | "viewer" | "checkin"
 
 async function getAdminInfo() {
   const { userId } = await auth()
@@ -33,15 +33,24 @@ async function getAdminInfo() {
   }
 }
 
-export default async function RegistrationsPage() {
+export default async function RegistrationEditPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ year?: string }>
+}) {
   const { userId } = await auth()
   const admin = await getAdminInfo()
+  const { id } = await params
+  const { year } = await searchParams
+  const eventYear = parseRegistrationEventYear(year)
+  const legacyId = parseLegacyRegistrationId(id)
 
   if (admin && !getAdminPermissions(admin.role).canViewRegistrations) {
     redirect("/admin/checkin")
   }
 
-  // Not logged in
   if (!userId) {
     return (
       <div className="admin-gate-screen">
@@ -51,13 +60,13 @@ export default async function RegistrationsPage() {
               <LogIn className="h-7 w-7 text-primary" />
             </div>
             <CardTitle className="text-subheading">Sign In Required</CardTitle>
-            <CardDescription>
-              Please sign in to access the admin dashboard.
-            </CardDescription>
+            <CardDescription>Please sign in to edit registrations.</CardDescription>
           </CardHeader>
           <CardContent className="flex justify-center">
             <Button asChild>
-              <Link href="/sign-in?redirect_url=/admin/registrations">Sign In</Link>
+              <Link href={`/sign-in?redirect_url=/admin/registrations/${id}?year=${eventYear}`}>
+                Sign In
+              </Link>
             </Button>
           </CardContent>
         </Card>
@@ -65,7 +74,6 @@ export default async function RegistrationsPage() {
     )
   }
 
-  // Logged in but not admin
   if (!admin) {
     return (
       <div className="admin-gate-screen">
@@ -75,14 +83,12 @@ export default async function RegistrationsPage() {
               <ShieldAlert className="h-7 w-7 text-destructive" />
             </div>
             <CardTitle className="text-subheading">Access Denied</CardTitle>
-            <CardDescription>
-              You don&apos;t have permission to access this page.
-            </CardDescription>
+            <CardDescription>You don&apos;t have permission to access this page.</CardDescription>
           </CardHeader>
           <CardContent className="flex justify-center gap-4">
             <Button variant="outline" asChild>
               <Link href="/account">
-                <Home className="h-4 w-4 mr-2" />
+                <Home className="mr-2 h-4 w-4" />
                 My Account
               </Link>
             </Button>
@@ -92,24 +98,38 @@ export default async function RegistrationsPage() {
     )
   }
 
+  if (!legacyId) {
+    return (
+      <div className="admin-shell">
+        <AdminNav currentPage="registrations" admin={admin} />
+        <main id="main-content" className="admin-main">
+          <div className="admin-container max-w-2xl py-12">
+            <Card>
+              <CardHeader>
+                <CardTitle>Family registration</CardTitle>
+                <CardDescription>
+                  This {eventYear} registration comes from the family account system and is not edited on this page yet.
+                  Use Pending Changes or the family profile for updates.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button asChild>
+                  <Link href={`/admin/registrations?year=${eventYear}`}>Back to registrations</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </main>
+      </div>
+    )
+  }
+
   return (
     <div className="admin-shell">
       <AdminNav currentPage="registrations" admin={admin} />
-
       <main id="main-content" className="admin-main">
-        <div className="admin-container">
-          <header className="admin-page-header">
-            <h1 className="text-section-title text-balance">Registration Management</h1>
-            <p className="text-lead text-muted-foreground">
-              View and edit registrations by event year. Pick 2026 for archived data or 2027 for the current event.
-            </p>
-          </header>
-
-          <AdminErrorBoundary>
-            <Suspense fallback={<p className="text-muted-foreground">Loading registrations...</p>}>
-              <RegistrationsTable />
-            </Suspense>
-          </AdminErrorBoundary>
+        <div className="admin-container max-w-5xl">
+          <RegistrationEditForm registrationId={legacyId} eventYear={eventYear} />
         </div>
       </main>
     </div>
