@@ -69,7 +69,19 @@ export async function GET(req: Request) {
     const csv = [headers, ...rows].map((row) => row.join(",")).join("\n")
 
     const { ipAddress, userAgent } = getRequestAuditMeta(req)
-    await logAuditAction(admin.email, "export_registrations", "registrations", undefined, undefined, ipAddress, userAgent)
+    await logAuditAction(
+      admin.email,
+      "export_registrations",
+      "registrations",
+      undefined,
+      {
+        year,
+        row_count: registrations.length,
+        family_count: new Set(registrations.map((row) => row.email)).size,
+      },
+      ipAddress,
+      userAgent,
+    )
 
     return new NextResponse(csv, {
       headers: {

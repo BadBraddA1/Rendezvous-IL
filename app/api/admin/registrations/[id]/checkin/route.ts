@@ -35,7 +35,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       "check_in_registration",
       "registration",
       Number(id),
-      { room_keys: keys, tshirts_distributed: tshirts_distributed ?? false },
+      {
+        family_last_name: registration?.family_last_name ?? null,
+        email: registration?.email ?? null,
+        room_keys: keys,
+        tshirts_distributed: tshirts_distributed ?? false,
+      },
       ipAddress,
       userAgent,
     )
@@ -55,6 +60,9 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 
   try {
     const { id } = await params
+    const [registration] = await sql`
+      SELECT family_last_name, email FROM registrations WHERE id = ${id}
+    `
     await sql`
       UPDATE registrations
       SET 
@@ -74,7 +82,10 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
       "undo_check_in",
       "registration",
       Number(id),
-      undefined,
+      {
+        family_last_name: registration?.family_last_name ?? null,
+        email: registration?.email ?? null,
+      },
       ipAddress,
       userAgent,
     )

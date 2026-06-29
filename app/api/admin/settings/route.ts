@@ -32,17 +32,39 @@ export async function PUT(req: NextRequest) {
 
   try {
     const settings = await req.json()
+    const beforeRows = await sql`SELECT setting_key, setting_value FROM system_settings`
+    const beforeMap = Object.fromEntries(
+      beforeRows.map((row) => [String(row.setting_key), String(row.setting_value ?? "")]),
+    )
+
+    const from: Record<string, string> = {}
+    const to: Record<string, string> = {}
 
     for (const [key, value] of Object.entries(settings)) {
+      const nextValue = String(value ?? "")
+      const previousValue = beforeMap[key] ?? ""
+      if (previousValue !== nextValue) {
+        from[key] = previousValue
+        to[key] = nextValue
+      }
+
       await sql`
         UPDATE system_settings
-        SET setting_value = ${value as string}, updated_by = ${admin.email}, updated_at = NOW()
+        SET setting_value = ${nextValue}, updated_by = ${admin.email}, updated_at = NOW()
         WHERE setting_key = ${key}
       `
     }
 
     const { ipAddress, userAgent } = getRequestAuditMeta(req)
-    await logAuditAction(admin.email, "update_settings", "system_settings", undefined, settings, ipAddress, userAgent)
+    await logAuditAction(
+      admin.email,
+      "update_settings",
+      "system_settings",
+      undefined,
+      Object.keys(to).length > 0 ? { from, to } : { message: "No setting values changed" },
+      ipAddress,
+      userAgent,
+    )
 
     return NextResponse.json({ success: true })
   } catch (error) {

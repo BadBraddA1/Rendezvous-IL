@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { checkAdminAuth, logAuditAction } from "@/lib/admin-auth"
-import { getRequestAuditMeta } from "@/lib/audit-log"
+import { getRequestAuditMeta, buildPendingChangeAuditDetails } from "@/lib/audit-log"
 import { sql } from "@/lib/db"
 import { enrichPendingChanges } from "@/lib/pending-family-changes"
 import { formatPhoneForStorage } from "@/lib/phone-format"
@@ -169,11 +169,7 @@ export async function POST(request: Request) {
       action === "approve" ? "approve_pending_change" : "reject_pending_change",
       "pending_family_change",
       changeId,
-      {
-        change_type: change.change_type,
-        family_id: change.family_id,
-        notes: notes || null,
-      },
+      buildPendingChangeAuditDetails(change, notes),
       ipAddress,
       userAgent,
     )

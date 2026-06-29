@@ -63,7 +63,10 @@ export async function PATCH(request: Request) {
     }
 
     const clerk = await clerkClient()
-    
+    const targetUser = await clerk.users.getUser(userId)
+    const previousRole = (targetUser.publicMetadata?.role as AdminRole | undefined) ?? null
+    const targetEmail = targetUser.emailAddresses[0]?.emailAddress || ""
+
     // Update user's public metadata with new role
     await clerk.users.updateUserMetadata(userId, {
       publicMetadata: {
@@ -75,7 +78,12 @@ export async function PATCH(request: Request) {
       "update_user_role",
       "admin_user",
       undefined,
-      { userId, role },
+      {
+        target_email: targetEmail,
+        user_id: userId,
+        from: { role: previousRole },
+        to: { role: role ?? null },
+      },
       request,
     )
 

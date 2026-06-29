@@ -48,6 +48,9 @@ export async function POST(request: Request) {
     const year = parseRegistrationEventYear(body.year)
     const enabled = Boolean(body.enabled)
 
+    const yearsBefore = await getDirectoryYearSettings()
+    const previousEnabled = yearsBefore.find((entry) => entry.year === year)?.enabled ?? false
+
     await setDirectoryYearEnabled(year as RegistrationEventYear, enabled)
 
     const user = await currentUser()
@@ -58,7 +61,11 @@ export async function POST(request: Request) {
       enabled ? "enable_directory_year" : "disable_directory_year",
       "directory",
       year,
-      { year, enabled },
+      {
+        year,
+        from: { enabled: previousEnabled },
+        to: { enabled },
+      },
       ipAddress,
       userAgent,
     )

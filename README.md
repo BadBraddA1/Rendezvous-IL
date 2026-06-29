@@ -57,6 +57,7 @@ pnpm db:verify
 - Profile edits do **not** write directly to Turso — they queue rows in `pending_family_changes` for admin approval at `/admin/pending-changes`.
 - Member type / age group: adults and teens skip the age-group picker; children with a registration birthday get age group auto-calculated (`lib/member-age.ts`).
 - Admin roles: `admin`, `editor`, `viewer`, and **`checkin`** (check-in station only — web + iOS). Permissions live in `lib/clerk-auth.ts` (`getAdminPermissions`).
+- **`/admin/audit`** — expandable activity feed: search, date range, action filters, before/after field changes, and summary stats (`GET /api/admin/audit?action=&from=&limit=`).
 - API: `GET/PUT /api/family/profile`, `POST/DELETE /api/family/members`
 
 ## Family directory (`/directory`)
