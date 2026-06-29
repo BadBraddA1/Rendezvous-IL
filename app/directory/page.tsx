@@ -45,6 +45,7 @@ export default function DirectoryPage() {
   const [search, setSearch] = useState("")
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
+  const [accessDenied, setAccessDenied] = useState(false)
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -61,9 +62,19 @@ export default function DirectoryPage() {
     async function loadDirectory() {
       setLoading(true)
       setError("")
+      setAccessDenied(false)
       try {
         const response = await fetch(`/api/directory?year=${eventYear}`)
         const data = await response.json()
+        if (response.status === 403) {
+          setFamilies([])
+          setAccessDenied(true)
+          setError(
+            data.error ||
+              `The family directory is only available to families registered for ${eventYear}.`,
+          )
+          return
+        }
         if (!response.ok) {
           throw new Error(data.error || "Could not load directory")
         }
@@ -158,10 +169,24 @@ export default function DirectoryPage() {
           ) : error ? (
             <Card className="max-w-2xl border-dashed">
               <CardHeader>
-                <CardTitle>Directory unavailable</CardTitle>
+                <CardTitle>{accessDenied ? "Registration required" : "Directory unavailable"}</CardTitle>
                 <CardDescription>{error}</CardDescription>
               </CardHeader>
               <CardContent className="flex flex-wrap gap-3">
+                {accessDenied && eventYear === 2027 && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      const year = 2026
+                      setEventYear(year)
+                      const url = new URL(window.location.href)
+                      url.searchParams.set("year", String(year))
+                      window.history.replaceState({}, "", url.toString())
+                    }}
+                  >
+                    Try Rendezvous 2026 directory
+                  </Button>
+                )}
                 <Button asChild>
                   <Link href="/account/profile">Upload your family photo</Link>
                 </Button>

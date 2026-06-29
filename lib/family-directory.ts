@@ -1,5 +1,42 @@
 import { sql, type SqlRow } from "@/lib/db"
 import type { RegistrationEventYear } from "@/lib/registration-event-years"
+import { getSqliteErrorMessage, isMissingSqliteColumn } from "@/lib/sqlite-errors"
+
+let directorySchemaReady: Promise<void> | null = null
+
+/** Adds directory photo columns on first use (safe if already migrated). */
+export async function ensureFamilyDirectorySchema(): Promise<void> {
+  if (!directorySchemaReady) {
+    directorySchemaReady = runFamilyDirectoryMigrations()
+  }
+  await directorySchemaReady
+}
+
+async function runFamilyDirectoryMigrations() {
+  const statements = [
+    "ALTER TABLE families ADD COLUMN photo_url TEXT",
+    "ALTER TABLE families ADD COLUMN directory_opt_in INTEGER DEFAULT 0",
+    "ALTER TABLE families ADD COLUMN directory_blurb TEXT",
+    "ALTER TABLE families ADD COLUMN photo_updated_at TEXT",
+    "ALTER TABLE registrations ADD COLUMN event_year INTEGER DEFAULT 2026",
+  ]
+
+  for (const statement of statements) {
+    try {
+      await sql.query(statement)
+    } catch (error) {
+      const message = getSqliteErrorMessage(error)
+      if (/duplicate column name/i.test(message)) continue
+      throw error
+    }
+  }
+
+  try {
+    await sql.query("UPDATE registrations SET event_year = 2026 WHERE event_year IS NULL")
+  } catch {
+    // Column may not exist on very old schemas; ignore.
+  }
+}
 
 export type FamilyDirectoryEntry = {
   id: number
@@ -47,13 +84,31 @@ export function photoExtensionForType(contentType: string): string {
 export async function getFamilyDirectorySettings(
   familyId: number,
 ): Promise<FamilyDirectorySettings | null> {
-  const [row] = await sql`
-    SELECT photo_url, directory_opt_in, directory_blurb, photo_updated_at
-    FROM families
-    WHERE id = ${familyId}
-  `
-  if (!row) return null
-  return mapDirectorySettings(row)
+  await ensureFamilyDirectorySchema()
+
+  try {
+    const [row] = await sql`
+      SELECT photo_url, directory_opt_in, directory_blurb, photo_updated_at
+      FROM families
+      WHERE id = ${familyId}
+    `
+    if (!row) return null
+    return mapDirectorySettings(row)
+  } catch (error) {
+    if (isMissingSqliteColumn(error, "photo_url")) {
+      return emptyDirectorySettings()
+    }
+    throw error
+  }
+}
+
+function emptyDirectorySettings(): FamilyDirectorySettings {
+  return {
+    photo_url: null,
+    directory_opt_in: false,
+    directory_blurb: null,
+    photo_updated_at: null,
+  }
 }
 
 export function mapDirectorySettings(row: SqlRow): FamilyDirectorySettings {
@@ -69,6 +124,8 @@ export async function updateFamilyDirectorySettings(
   familyId: number,
   settings: { directory_opt_in?: boolean; directory_blurb?: string | null },
 ) {
+  await ensureFamilyDirectorySchema()
+
   if (settings.directory_opt_in !== undefined) {
     await sql`
       UPDATE families
@@ -89,6 +146,8 @@ export async function updateFamilyDirectorySettings(
 }
 
 export async function setFamilyPhotoUrl(familyId: number, photoUrl: string | null) {
+  await ensureFamilyDirectorySchema()
+
   await sql`
     UPDATE families
     SET photo_url = ${photoUrl},
@@ -103,14 +162,10 @@ export async function userHasRegistrationForYear(
   email: string | undefined,
   year: RegistrationEventYear,
 ): Promise<boolean> {
-  if (email) {
-    const [legacy] = await sql`
-      SELECT id FROM registrations
-      WHERE LOWER(email) = LOWER(${email})
-        AND COALESCE(event_year, 2026) = ${year}
-      LIMIT 1
-    `
-    if (legacy) return true
+  await ensureFamilyDirectorySchema()
+
+  if (email && (await hasLegacyRegistrationForYear(email, year))) {
+    return true
   }
 
   const [familyReg] = await sql`
@@ -133,14 +188,69 @@ export async function userHasRegistrationForYear(
       LIMIT 1
     `
     if (familyEmailReg) return true
+
+    const [familyLinkedLegacy] = await sql`
+      SELECT r.id
+      FROM registrations r
+      JOIN families f ON LOWER(r.email) = LOWER(f.email)
+      WHERE f.clerk_user_id = ${clerkUserId}
+        AND COALESCE(r.event_year, 2026) = ${year}
+      LIMIT 1
+    `
+    if (familyLinkedLegacy) return true
   }
 
   return false
 }
 
+async function hasLegacyRegistrationForYear(
+  email: string,
+  year: RegistrationEventYear,
+): Promise<boolean> {
+  try {
+    const [row] = await sql`
+      SELECT id FROM registrations
+      WHERE LOWER(email) = LOWER(${email})
+        AND COALESCE(event_year, 2026) = ${year}
+      LIMIT 1
+    `
+    return Boolean(row)
+  } catch (error) {
+    if (isMissingSqliteColumn(error, "event_year") && year === 2026) {
+      const [row] = await sql`
+        SELECT id FROM registrations
+        WHERE LOWER(email) = LOWER(${email})
+        LIMIT 1
+      `
+      return Boolean(row)
+    }
+    if (isMissingSqliteColumn(error, "event_year")) {
+      return false
+    }
+    throw error
+  }
+}
+
 export async function fetchDirectoryEntries(
   year: RegistrationEventYear,
 ): Promise<FamilyDirectoryEntry[]> {
+  await ensureFamilyDirectorySchema()
+
+  try {
+    return await queryDirectoryEntries(year)
+  } catch (error) {
+    if (
+      isMissingSqliteColumn(error, "photo_url") ||
+      isMissingSqliteColumn(error, "directory_opt_in") ||
+      isMissingSqliteColumn(error, "event_year")
+    ) {
+      return []
+    }
+    throw error
+  }
+}
+
+async function queryDirectoryEntries(year: RegistrationEventYear): Promise<FamilyDirectoryEntry[]> {
   const rows = await sql`
     SELECT
       f.id,
@@ -173,7 +283,11 @@ export async function fetchDirectoryEntries(
     ORDER BY f.family_last_name ASC
   `
 
-  return rows.map((row) => ({
+  return rows.map(mapDirectoryEntry)
+}
+
+function mapDirectoryEntry(row: SqlRow): FamilyDirectoryEntry {
+  return {
     id: Number(row.id),
     family_last_name: String(row.family_last_name ?? ""),
     home_congregation: row.home_congregation ? String(row.home_congregation) : null,
@@ -188,5 +302,5 @@ export async function fetchDirectoryEntries(
           .map((name) => name.trim())
           .filter(Boolean)
       : [],
-  }))
+  }
 }

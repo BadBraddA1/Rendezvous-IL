@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { auth, currentUser } from "@clerk/nextjs/server"
-import { fetchDirectoryEntries, userHasRegistrationForYear } from "@/lib/family-directory"
+import { fetchDirectoryEntries, ensureFamilyDirectorySchema, userHasRegistrationForYear } from "@/lib/family-directory"
 import { parseRegistrationEventYear } from "@/lib/registration-event-years"
 
 export async function GET(request: Request) {
@@ -13,6 +13,7 @@ export async function GET(request: Request) {
   }
 
   try {
+    await ensureFamilyDirectorySchema()
     const user = await currentUser()
     const email = user?.emailAddresses?.[0]?.emailAddress
     const hasAccess = await userHasRegistrationForYear(userId, email, year)
