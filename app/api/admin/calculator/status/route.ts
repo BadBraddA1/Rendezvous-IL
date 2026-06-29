@@ -5,7 +5,7 @@ import { sql } from "@/lib/db"
 // Force dynamic to prevent build-time database connection
 export const dynamic = "force-dynamic"
 
-type AdminRole = "admin" | "editor" | "viewer"
+type AdminRole = "admin" | "editor" | "viewer" | "checkin"
 
 async function getAdminInfo() {
   const { userId } = await auth()
@@ -17,7 +17,7 @@ async function getAdminInfo() {
   const publicMetadata = user.publicMetadata as { role?: string } | undefined
   const role = publicMetadata?.role as AdminRole | undefined
 
-  if (!role || !["admin", "editor", "viewer"].includes(role)) {
+  if (!role || !(role === "admin" || role === "editor" || role === "viewer" || role === "checkin")) {
     return null
   }
 

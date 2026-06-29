@@ -79,17 +79,94 @@ export async function resolveFamilyForUser(
 
 /**
  * Full family_members_v2 rows for profile editing.
+ * Fills missing birthdays from the family's latest registration when names match.
  */
-export async function getFamilyMembersV2(familyId: number) {
+export async function getFamilyMembersV2(familyId: number, familyEmail?: string | null) {
   try {
-    return await sql`
+    const members = await sql`
       SELECT *
       FROM family_members_v2
       WHERE family_id = ${familyId}
       ORDER BY first_name ASC
     `
+
+    if (!familyEmail || members.length === 0) return members
+
+    const registrationMembers = await sql`
+      SELECT fm.first_name, fm.last_name, fm.date_of_birth
+      FROM family_members fm
+      JOIN registrations r ON r.id = fm.registration_id
+      WHERE LOWER(r.email) = LOWER(${familyEmail})
+        AND fm.date_of_birth IS NOT NULL
+        AND fm.date_of_birth != ''
+      ORDER BY r.created_at DESC
+    `
+
+    if (registrationMembers.length === 0) return members
+
+    return members.map((member) => {
+      if (member.date_of_birth) return member
+
+      const match = registrationMembers.find(
+        (reg) =>
+          normalizeName(reg.first_name) === normalizeName(member.first_name) &&
+          normalizeName(reg.last_name) === normalizeName(member.last_name),
+      )
+
+      return match?.date_of_birth
+        ? { ...member, date_of_birth: match.date_of_birth }
+        : member
+    })
   } catch (error) {
     console.error("[Family Auth] Error fetching family members v2:", error)
+    return []
+  }
+}
+
+function normalizeName(value: unknown): string {
+  return String(value ?? "")
+    .trim()
+    .toLowerCase()
+}
+
+export type RegistrationBirthdayHint = {
+  first_name: string
+  last_name: string
+  date_of_birth: string
+}
+
+/** Latest registration birthdays for a family email (for profile auto-fill). */
+export async function getRegistrationBirthdayHints(
+  familyEmail: string,
+): Promise<RegistrationBirthdayHint[]> {
+  try {
+    const rows = await sql`
+      SELECT fm.first_name, fm.last_name, fm.date_of_birth
+      FROM family_members fm
+      JOIN registrations r ON r.id = fm.registration_id
+      WHERE LOWER(r.email) = LOWER(${familyEmail})
+        AND fm.date_of_birth IS NOT NULL
+        AND fm.date_of_birth != ''
+      ORDER BY r.created_at DESC
+    `
+
+    const seen = new Set<string>()
+    const hints: RegistrationBirthdayHint[] = []
+
+    for (const row of rows) {
+      const key = `${normalizeName(row.first_name)}|${normalizeName(row.last_name)}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      hints.push({
+        first_name: String(row.first_name),
+        last_name: String(row.last_name),
+        date_of_birth: String(row.date_of_birth),
+      })
+    }
+
+    return hints
+  } catch (error) {
+    console.error("[Family Auth] Error fetching registration birthdays:", error)
     return []
   }
 }

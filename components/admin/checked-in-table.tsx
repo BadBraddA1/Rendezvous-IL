@@ -7,6 +7,10 @@ import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useToast } from "@/hooks/use-toast"
 import { RefreshCw, RotateCcw, KeyRound, CheckCircle2 } from "lucide-react"
+import { AdminConfirmDialog } from "./admin-confirm-dialog"
+import { AdminListSkeleton, AdminRetryButton } from "./admin-panel-states"
+import { AdminStatStrip, AdminStatItem } from "@/components/admin/admin-stat-strip"
+import { normalizeStringArray } from "@/lib/normalize-string-array"
 
 type CheckedInRow = {
   id: number
@@ -24,20 +28,37 @@ type CheckedInRow = {
   attendee_count?: number
 }
 
+function normalizeCheckedInRow(row: CheckedInRow): CheckedInRow {
+  return {
+    ...row,
+    room_keys: normalizeStringArray(row.room_keys),
+    attendee_count: Number(row.attendee_count ?? 0),
+    keys_returned: Boolean(row.keys_returned),
+    tshirts_distributed: Boolean(row.tshirts_distributed),
+  }
+}
+
 export function CheckedInTable() {
   const [rows, setRows] = useState<CheckedInRow[]>([])
   const [loading, setLoading] = useState(true)
+  const [fetchError, setFetchError] = useState<string | null>(null)
+  const [undoPending, setUndoPending] = useState<CheckedInRow | null>(null)
+  const [undoLoading, setUndoLoading] = useState(false)
   const { toast } = useToast()
 
   const fetchData = useCallback(async () => {
     setLoading(true)
+    setFetchError(null)
     try {
       const res = await fetch("/api/admin/registrations/checked-in")
+      if (!res.ok) throw new Error(`Could not load checked-in families (${res.status})`)
       const data = await res.json()
-      setRows(Array.isArray(data) ? data : [])
+      const list = Array.isArray(data) ? data : []
+      setRows(list.map((row) => normalizeCheckedInRow(row as CheckedInRow)))
     } catch (error) {
       console.error("[v0] Failed to fetch checked-in:", error)
       setRows([])
+      setFetchError(error instanceof Error ? error.message : "Could not load checked-in families")
     } finally {
       setLoading(false)
     }
@@ -49,15 +70,19 @@ export function CheckedInTable() {
     return () => clearInterval(interval)
   }, [fetchData])
 
-  const undoCheckIn = async (id: number, name: string) => {
-    if (!confirm(`Undo check-in for ${name} family?`)) return
+  const performUndoCheckIn = async () => {
+    if (!undoPending) return
+    setUndoLoading(true)
     try {
-      const res = await fetch(`/api/admin/registrations/${id}/checkin`, { method: "DELETE" })
+      const res = await fetch(`/api/admin/registrations/${undoPending.id}/checkin`, { method: "DELETE" })
       if (!res.ok) throw new Error("Failed")
-      toast({ title: "Check-in undone" })
+      toast({ title: "Check-in undone", description: `${undoPending.family_last_name} family can check in again.` })
+      setUndoPending(null)
       void fetchData()
     } catch {
-      toast({ title: "Error", description: "Could not undo", variant: "destructive" })
+      toast({ title: "Error", description: "Could not undo check-in.", variant: "destructive" })
+    } finally {
+      setUndoLoading(false)
     }
   }
 
@@ -81,68 +106,52 @@ export function CheckedInTable() {
   const keysOut = rows.filter((r) => (r.room_keys?.length || 0) > 0 && !r.keys_returned).length
 
   return (
-    <>
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Families Checked In</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">{total}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">People On-Site</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">{totalAttendees}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Motel Families</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">{motelFamilies}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Keys Out</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">{keysOut}</p>
-          </CardContent>
-        </Card>
-      </div>
+    <div className="space-y-6">
+      <AdminStatStrip>
+        <AdminStatItem label="Families checked in" value={total} />
+        <AdminStatItem label="People on-site" value={totalAttendees} />
+        <AdminStatItem label="Motel families" value={motelFamilies} />
+        <AdminStatItem label="Keys out" value={keysOut} />
+      </AdminStatStrip>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle>Currently Checked In</CardTitle>
-          <Button onClick={() => void fetchData()} variant="outline" size="sm" className="gap-2 bg-transparent">
-            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+          <Button
+            onClick={() => void fetchData()}
+            variant="outline"
+            className="admin-toolbar-action gap-2 self-start bg-transparent sm:self-auto"
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} aria-hidden="true" />
             Refresh
           </Button>
         </CardHeader>
         <CardContent>
+          {fetchError && !loading ? (
+            <div className="callout-destructive rounded-lg border p-4">
+              <p className="text-sm">{fetchError}</p>
+              <AdminRetryButton onRetry={() => void fetchData()} label="Reload checked-in list" />
+            </div>
+          ) : (
           <div className="rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Family</TableHead>
                   <TableHead>Lodging</TableHead>
-                  <TableHead>Checked In</TableHead>
-                  <TableHead>Members</TableHead>
-                  <TableHead>Keys</TableHead>
-                  <TableHead>T-Shirts</TableHead>
+                  <TableHead className="hidden md:table-cell">Checked In</TableHead>
+                  <TableHead className="hidden lg:table-cell">Members</TableHead>
+                  <TableHead className="hidden lg:table-cell">Keys</TableHead>
+                  <TableHead className="hidden md:table-cell">T-Shirts</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center">Loading...</TableCell>
+                    <TableCell colSpan={7}>
+                      <AdminListSkeleton rows={4} label="Loading checked-in families" />
+                    </TableCell>
                   </TableRow>
                 ) : rows.length === 0 ? (
                   <TableRow>
@@ -153,20 +162,23 @@ export function CheckedInTable() {
                 ) : (
                   rows.map((r) => (
                     <TableRow key={r.id}>
-                      <TableCell>
+                      <TableCell className="min-w-0">
                         <div>
-                          <p className="font-medium">{r.family_last_name}</p>
-                          <p className="text-xs text-muted-foreground">{r.email}</p>
+                          <p className="font-medium break-words">{r.family_last_name}</p>
+                          <p className="text-xs text-muted-foreground break-all">{r.email}</p>
+                          <p className="mt-1 text-xs text-muted-foreground md:hidden">
+                            {r.checked_in_at ? new Date(r.checked_in_at).toLocaleString() : "—"}
+                          </p>
                         </div>
                       </TableCell>
                       <TableCell>
                         <Badge variant="secondary" className="capitalize">{r.lodging_type || "—"}</Badge>
                       </TableCell>
-                      <TableCell className="text-sm">
+                      <TableCell className="hidden text-sm md:table-cell">
                         {r.checked_in_at ? new Date(r.checked_in_at).toLocaleString() : "—"}
                       </TableCell>
-                      <TableCell>{r.attendee_count}</TableCell>
-                      <TableCell>
+                      <TableCell className="hidden lg:table-cell">{r.attendee_count}</TableCell>
+                      <TableCell className="hidden lg:table-cell">
                         {r.room_keys && r.room_keys.length > 0 ? (
                           <div className="flex items-center gap-1">
                             <KeyRound className="h-3 w-3 text-muted-foreground" />
@@ -179,10 +191,10 @@ export function CheckedInTable() {
                           <span className="text-xs text-muted-foreground">—</span>
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden md:table-cell">
                         {r.tshirts_distributed ? (
                           <Badge variant="default" className="gap-1 text-xs">
-                            <CheckCircle2 className="h-3 w-3" />Given
+                            <CheckCircle2 className="h-3 w-3" aria-hidden="true" />Given
                           </Badge>
                         ) : (
                           <Badge variant="outline" className="text-xs">Pending</Badge>
@@ -192,22 +204,23 @@ export function CheckedInTable() {
                         <div className="flex gap-1">
                           {(r.room_keys?.length || 0) > 0 && (
                             <Button
-                              size="sm"
+                              size="icon"
                               variant="ghost"
+                              className="touch-target shrink-0"
                               onClick={() => toggleKeysReturned(r)}
-                              title={r.keys_returned ? "Mark keys not returned" : "Mark keys returned"}
+                              aria-label={r.keys_returned ? `Mark keys not returned for ${r.family_last_name} family` : `Mark keys returned for ${r.family_last_name} family`}
                             >
-                              <KeyRound className="h-4 w-4" />
+                              <KeyRound className="h-4 w-4" aria-hidden="true" />
                             </Button>
                           )}
                           <Button
-                            size="sm"
+                            size="icon"
                             variant="ghost"
-                            onClick={() => undoCheckIn(r.id, r.family_last_name)}
-                            className="text-destructive"
-                            title="Undo check-in"
+                            className="touch-target shrink-0 text-destructive hover:text-destructive"
+                            onClick={() => setUndoPending(r)}
+                            aria-label={`Undo check-in for ${r.family_last_name} family`}
                           >
-                            <RotateCcw className="h-4 w-4" />
+                            <RotateCcw className="h-4 w-4" aria-hidden="true" />
                           </Button>
                         </div>
                       </TableCell>
@@ -217,8 +230,25 @@ export function CheckedInTable() {
               </TableBody>
             </Table>
           </div>
+          )}
         </CardContent>
       </Card>
-    </>
+
+      <AdminConfirmDialog
+        open={undoPending !== null}
+        onOpenChange={(open) => {
+          if (!open && !undoLoading) setUndoPending(null)
+        }}
+        title="Undo check-in?"
+        description={
+          undoPending
+            ? `Undo check-in for the ${undoPending.family_last_name} family? They will need to check in again at the station.`
+            : ""
+        }
+        confirmLabel="Undo check-in"
+        loading={undoLoading}
+        onConfirm={performUndoCheckIn}
+      />
+    </div>
   )
 }

@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server"
 import { clerkClient } from "@clerk/nextjs/server"
-import { requireAdminApi, AdminRole } from "@/lib/clerk-auth"
+import { requireAdminApi, requireFullAdminApi, AdminRole, isAdminRole } from "@/lib/clerk-auth"
 
 // GET - List all users
 export async function GET() {
-  const adminCheck = await requireAdminApi()
-  if (adminCheck instanceof NextResponse) return adminCheck
+  try {
+    await requireFullAdminApi()
+  } catch {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
 
   try {
     const clerk = await clerkClient()
@@ -34,8 +37,11 @@ export async function GET() {
 
 // PATCH - Update user role
 export async function PATCH(request: Request) {
-  const adminCheck = await requireAdminApi("admin") // Only admins can change roles
-  if (adminCheck instanceof NextResponse) return adminCheck
+  try {
+    await requireFullAdminApi()
+  } catch {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
 
   try {
     const { userId, role } = await request.json()
@@ -48,10 +54,9 @@ export async function PATCH(request: Request) {
     }
 
     // Validate role
-    const validRoles = ["admin", "editor", "viewer", null]
-    if (!validRoles.includes(role)) {
+    if (role !== null && !isAdminRole(role)) {
       return NextResponse.json(
-        { error: "Invalid role. Must be admin, editor, viewer, or null" },
+        { error: "Invalid role. Must be admin, editor, viewer, checkin, or null" },
         { status: 400 }
       )
     }

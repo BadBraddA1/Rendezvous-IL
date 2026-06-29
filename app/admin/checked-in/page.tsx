@@ -1,6 +1,6 @@
 import { AdminNav } from "@/components/admin/admin-nav"
 import { CheckedInTable } from "@/components/admin/checked-in-table"
-import { getCurrentAdmin, isAuthenticated } from "@/lib/clerk-auth"
+import { getCurrentAdmin, getAdminPermissions, isAuthenticated } from "@/lib/clerk-auth"
 import { redirect } from "next/navigation"
 
 export default async function CheckedInPage() {
@@ -9,19 +9,19 @@ export default async function CheckedInPage() {
     redirect("/sign-in?redirect_url=/admin/checked-in")
   }
   const admin = await getCurrentAdmin()
-  if (!admin) {
+  if (!admin || !getAdminPermissions(admin.role).canCheckIn) {
     redirect("/admin")
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="admin-shell">
       <AdminNav currentPage="checked-in" admin={admin} />
-      <main id="main-content" className="flex-1 bg-background p-6">
-        <div className="container mx-auto space-y-6">
-          <div>
-            <h2 className="text-3xl font-bold tracking-tight">Checked-In Families</h2>
-            <p className="text-muted-foreground">Live view of families currently checked in</p>
-          </div>
+      <main id="main-content" className="admin-main">
+        <div className="admin-container">
+          <header className="admin-page-header">
+            <h1 className="text-section-title text-balance">Checked-In Families</h1>
+            <p className="text-lead text-muted-foreground">Live view of families currently checked in</p>
+          </header>
           <CheckedInTable />
         </div>
       </main>

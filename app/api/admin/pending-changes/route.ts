@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { checkAdminAuth } from "@/lib/admin-auth"
 import { sql } from "@/lib/db"
+import { enrichPendingChanges } from "@/lib/pending-family-changes"
 
 // GET - Fetch all pending changes for admin review
 export async function GET() {
@@ -11,7 +12,7 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const pendingChanges = await sql`
+    const pendingRows = await sql`
       SELECT 
         pc.*,
         f.family_last_name,
@@ -23,6 +24,8 @@ export async function GET() {
       WHERE pc.status = 'pending'
       ORDER BY pc.submitted_at DESC
     `
+
+    const pendingChanges = await enrichPendingChanges(pendingRows)
 
     return NextResponse.json({ pendingChanges })
   } catch (error) {
@@ -107,11 +110,12 @@ export async function POST(request: Request) {
         await sql`
           INSERT INTO family_members_v2 
             (family_id, first_name, last_name, member_type, age_group, 
-             grade, gender, special_needs, notes)
+             grade, gender, special_needs, notes, date_of_birth)
           VALUES 
             (${change.family_id}, ${memberData.first_name}, ${memberData.last_name},
              ${memberData.member_type}, ${memberData.age_group}, ${memberData.grade || null},
-             ${memberData.gender}, ${memberData.special_needs || false}, ${memberData.notes || null})
+             ${memberData.gender}, ${memberData.special_needs || false}, ${memberData.notes || null},
+             ${memberData.date_of_birth || null})
         `
       } else if (change.change_type === 'update_member') {
         // Update existing member
@@ -128,7 +132,8 @@ export async function POST(request: Request) {
               grade = ${memberData.grade || null},
               gender = ${memberData.gender},
               special_needs = ${memberData.special_needs || false},
-              notes = ${memberData.notes || null}
+              notes = ${memberData.notes || null},
+              date_of_birth = COALESCE(${memberData.date_of_birth || null}, date_of_birth)
           WHERE id = ${change.member_id} AND family_id = ${change.family_id}
         `
       } else if (change.change_type === 'remove_member') {

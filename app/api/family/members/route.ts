@@ -2,6 +2,34 @@ import { NextResponse } from "next/server"
 import { currentUser } from "@clerk/nextjs/server"
 import { sql } from "@/lib/db"
 import { resolveFamilyForUser } from "@/lib/family-auth"
+import {
+  ageGroupForMemberType,
+  deriveMemberClassification,
+  type ProfileMemberType,
+} from "@/lib/member-age"
+
+function normalizeMemberPayload(memberData: Record<string, unknown>) {
+  const normalized = { ...memberData }
+  const dob =
+    typeof normalized.date_of_birth === "string" ? normalized.date_of_birth : null
+
+  const fromBirthday = deriveMemberClassification(dob)
+  if (fromBirthday) {
+    normalized.member_type = fromBirthday.member_type
+    normalized.age_group = fromBirthday.age_group
+    normalized.computed_age = fromBirthday.age
+    return normalized
+  }
+
+  const memberType = normalized.member_type as ProfileMemberType | undefined
+  if (memberType && memberType !== "child") {
+    normalized.age_group = ageGroupForMemberType(memberType)
+  } else if (memberType === "child" && !normalized.age_group) {
+    normalized.age_group = ageGroupForMemberType("child")
+  }
+
+  return normalized
+}
 
 // POST - Add or update a family member (submitted for approval)
 export async function POST(request: Request) {
@@ -13,7 +41,7 @@ export async function POST(request: Request) {
     }
 
     const userEmail = user.emailAddresses[0]?.emailAddress
-    const memberData = await request.json()
+    const memberData = normalizeMemberPayload(await request.json())
     const family = await resolveFamilyForUser(user.id, userEmail)
 
     if (!family) {

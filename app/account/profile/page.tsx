@@ -56,6 +56,13 @@ import {
   Home,
   Edit
 } from "lucide-react"
+import {
+  ageAtEvent,
+  ageGroupForMemberType,
+  deriveMemberClassification,
+  formatAgeGroupLabel,
+  type ProfileMemberType,
+} from "@/lib/member-age"
 
 interface FamilyMember {
   id?: number
@@ -63,6 +70,7 @@ interface FamilyMember {
   last_name: string
   member_type: string
   age_group: string
+  date_of_birth?: string | null
   grade?: string
   gender: string
   special_needs?: boolean
@@ -102,6 +110,9 @@ export default function FamilyProfilePage() {
   const { user, isLoaded } = useUser()
   const [family, setFamily] = useState<Family | null>(null)
   const [pendingChanges, setPendingChanges] = useState<PendingChange[]>([])
+  const [registrationBirthdays, setRegistrationBirthdays] = useState<
+    { first_name: string; last_name: string; date_of_birth: string }[]
+  >([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [isEditing, setIsEditing] = useState(true)
@@ -131,6 +142,7 @@ export default function FamilyProfilePage() {
 
       setFamily(data.family)
       setPendingChanges(data.pendingChanges || [])
+      setRegistrationBirthdays(data.registrationBirthdays || [])
       if (data.family) {
         setEditedFamily(data.family)
       }
@@ -497,6 +509,7 @@ export default function FamilyProfilePage() {
                 </DialogTrigger>
                 <MemberDialog 
                   member={editingMember}
+                  registrationBirthdays={registrationBirthdays}
                   onSave={handleSaveMember}
                   saving={saving}
                 />
@@ -520,10 +533,17 @@ export default function FamilyProfilePage() {
                           {member.first_name} {member.last_name}
                         </p>
                         <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                          <Badge variant="secondary" className="text-xs">
+                          <Badge variant="secondary" className="text-xs capitalize">
                             {member.member_type}
                           </Badge>
-                          <span>{member.age_group}</span>
+                          {member.date_of_birth ? (
+                            <span>
+                              Age {ageAtEvent(member.date_of_birth)} at Rendezvous ·{" "}
+                              {formatAgeGroupLabel(member.age_group)}
+                            </span>
+                          ) : (
+                            <span>{formatAgeGroupLabel(member.age_group)}</span>
+                          )}
                           {member.grade && <span>• Grade {member.grade}</span>}
                         </div>
                       </div>
@@ -607,15 +627,17 @@ export default function FamilyProfilePage() {
 
 // Member Dialog Component
 function MemberDialog({ 
-  member, 
+  member,
+  registrationBirthdays,
   onSave, 
   saving 
 }: { 
   member: FamilyMember | null
+  registrationBirthdays: { first_name: string; last_name: string; date_of_birth: string }[]
   onSave: (member: FamilyMember) => void
   saving: boolean
 }) {
-  const [formData, setFormData] = useState<FamilyMember>({
+  const emptyMember: FamilyMember = {
     first_name: "",
     last_name: "",
     member_type: "adult",
@@ -623,25 +645,97 @@ function MemberDialog({
     gender: "",
     grade: "",
     special_needs: false,
-    notes: ""
-  })
+    notes: "",
+  }
+
+  const [formData, setFormData] = useState<FamilyMember>(emptyMember)
 
   useEffect(() => {
-    if (member) {
-      setFormData(member)
-    } else {
-      setFormData({
-        first_name: "",
-        last_name: "",
-        member_type: "adult",
-        age_group: "adult",
-        gender: "",
-        grade: "",
-        special_needs: false,
-        notes: ""
-      })
+    if (!member) {
+      setFormData(emptyMember)
+      return
     }
+
+    const classified = deriveMemberClassification(member.date_of_birth)
+    setFormData(
+      classified
+        ? {
+            ...member,
+            member_type: classified.member_type,
+            age_group: classified.age_group,
+          }
+        : member,
+    )
   }, [member])
+
+  useEffect(() => {
+    if (formData.date_of_birth || !formData.first_name || !formData.last_name) return
+
+    const match = registrationBirthdays.find(
+      (hint) =>
+        hint.first_name.trim().toLowerCase() === formData.first_name.trim().toLowerCase() &&
+        hint.last_name.trim().toLowerCase() === formData.last_name.trim().toLowerCase(),
+    )
+
+    if (!match) return
+
+    const classified = deriveMemberClassification(match.date_of_birth)
+    setFormData((prev) => ({
+      ...prev,
+      date_of_birth: match.date_of_birth,
+      member_type: classified?.member_type ?? prev.member_type,
+      age_group: classified?.age_group ?? prev.age_group,
+    }))
+  }, [
+    formData.first_name,
+    formData.last_name,
+    formData.date_of_birth,
+    registrationBirthdays,
+  ])
+
+  const classifiedFromBirthday = deriveMemberClassification(formData.date_of_birth)
+  const hasBirthday = Boolean(formData.date_of_birth)
+  const showAgeGroupPicker =
+    !hasBirthday && formData.member_type === "child"
+  const showGradeField =
+    formData.member_type === "child" || formData.member_type === "teen"
+
+  function handleMemberTypeChange(value: ProfileMemberType) {
+    setFormData((prev) => ({
+      ...prev,
+      member_type: value,
+      age_group: ageGroupForMemberType(value),
+    }))
+  }
+
+  function buildPayload(): FamilyMember {
+    if (classifiedFromBirthday) {
+      return {
+        ...formData,
+        member_type: classifiedFromBirthday.member_type,
+        age_group: classifiedFromBirthday.age_group,
+      }
+    }
+
+    if (formData.member_type === "child") {
+      return formData
+    }
+
+    return {
+      ...formData,
+      age_group: ageGroupForMemberType(formData.member_type as ProfileMemberType),
+    }
+  }
+
+  function formatBirthday(value: string) {
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return value
+    return date.toLocaleDateString("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    })
+  }
 
   return (
     <DialogContent className="max-w-md">
@@ -672,41 +766,62 @@ function MemberDialog({
           </div>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        {hasBirthday && classifiedFromBirthday && (
+          <div className="rounded-lg border bg-muted/40 p-3 text-sm space-y-1">
+            <p>
+              <span className="font-medium">Birthday:</span>{" "}
+              {formatBirthday(formData.date_of_birth!)}
+            </p>
+            <p>
+              <span className="font-medium">At Rendezvous 2027:</span> age{" "}
+              {classifiedFromBirthday.age} ·{" "}
+              {formatAgeGroupLabel(classifiedFromBirthday.age_group)}
+            </p>
+            <p className="text-muted-foreground">
+              Pulled from your registration — type and age group are set automatically.
+            </p>
+          </div>
+        )}
+
+        {!hasBirthday && (
           <div className="space-y-2">
             <Label htmlFor="memberType">Member Type</Label>
-            <Select 
-              value={formData.member_type} 
-              onValueChange={(value) => setFormData({ ...formData, member_type: value })}
+            <Select
+              value={formData.member_type}
+              onValueChange={(value) => handleMemberTypeChange(value as ProfileMemberType)}
             >
-              <SelectTrigger>
+              <SelectTrigger id="memberType">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="adult">Adult</SelectItem>
-                <SelectItem value="child">Child</SelectItem>
                 <SelectItem value="teen">Teen</SelectItem>
+                <SelectItem value="child">Child</SelectItem>
               </SelectContent>
             </Select>
           </div>
+        )}
+
+        {showAgeGroupPicker && (
           <div className="space-y-2">
             <Label htmlFor="ageGroup">Age Group</Label>
-            <Select 
-              value={formData.age_group} 
+            <Select
+              value={formData.age_group}
               onValueChange={(value) => setFormData({ ...formData, age_group: value })}
             >
-              <SelectTrigger>
+              <SelectTrigger id="ageGroup">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="adult">Adult</SelectItem>
-                <SelectItem value="13-17">Teen (13-17)</SelectItem>
-                <SelectItem value="6-12">Child (6-12)</SelectItem>
-                <SelectItem value="0-5">Young Child (0-5)</SelectItem>
+                <SelectItem value="6-12">Child (6–12)</SelectItem>
+                <SelectItem value="0-5">Young child (0–5)</SelectItem>
               </SelectContent>
             </Select>
+            <p className="text-xs text-muted-foreground">
+              No birthday on file yet — pick the closest group for now.
+            </p>
           </div>
-        </div>
+        )}
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
@@ -715,7 +830,7 @@ function MemberDialog({
               value={formData.gender} 
               onValueChange={(value) => setFormData({ ...formData, gender: value })}
             >
-              <SelectTrigger>
+              <SelectTrigger id="gender">
                 <SelectValue placeholder="Select gender" />
               </SelectTrigger>
               <SelectContent>
@@ -724,15 +839,17 @@ function MemberDialog({
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="grade">Grade (if applicable)</Label>
-            <Input
-              id="grade"
-              placeholder="e.g. 5th"
-              value={formData.grade || ""}
-              onChange={(e) => setFormData({ ...formData, grade: e.target.value })}
-            />
-          </div>
+          {showGradeField && (
+            <div className="space-y-2">
+              <Label htmlFor="grade">Grade (if applicable)</Label>
+              <Input
+                id="grade"
+                placeholder="e.g. 5th"
+                value={formData.grade || ""}
+                onChange={(e) => setFormData({ ...formData, grade: e.target.value })}
+              />
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-2">
@@ -758,7 +875,7 @@ function MemberDialog({
       </div>
       <DialogFooter>
         <Button 
-          onClick={() => onSave({ ...formData, id: member?.id })}
+          onClick={() => onSave({ ...buildPayload(), id: member?.id })}
           disabled={saving || !formData.first_name || !formData.last_name || !formData.gender}
         >
           {saving ? (

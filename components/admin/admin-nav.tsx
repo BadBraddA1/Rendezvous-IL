@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { LayoutDashboard, Users, Settings, FileText, MapPin, MessageSquare, Utensils, Eye, ClipboardCheck, User, Home, Shield, DollarSign, ScanLine, UserCheck, QrCode, Megaphone, Star, Calculator, ChevronDown } from "lucide-react"
 import type { AdminRole } from "@/lib/clerk-auth"
+import { getAdminPermissions } from "@/lib/clerk-auth"
 
 interface AdminNavProps {
   currentPage: string
@@ -27,7 +28,7 @@ type NavItem = {
   label: string
   icon: React.ComponentType<{ className?: string }>
   page: string
-  minRole?: AdminRole
+  show?: (role: AdminRole) => boolean
 }
 
 type NavGroup = {
@@ -43,54 +44,132 @@ export function AdminNav({ currentPage, admin }: AdminNavProps) {
       label: "Registrations",
       icon: Users,
       items: [
-        { href: "/admin/registrations", label: "All Registrations", icon: Users, page: "registrations" },
-        { href: "/admin/checkin", label: "Check-In", icon: ScanLine, page: "checkin", minRole: "editor" as AdminRole },
-        { href: "/admin/checked-in", label: "Checked In", icon: UserCheck, page: "checked-in" },
-        { href: "/admin/qr-codes", label: "QR Codes", icon: QrCode, page: "qr-codes", minRole: "editor" as AdminRole },
-        { href: "/admin/pending-changes", label: "Pending Changes", icon: ClipboardCheck, page: "pending-changes", minRole: "editor" as AdminRole },
-      ]
+        {
+          href: "/admin/registrations",
+          label: "All Registrations",
+          icon: Users,
+          page: "registrations",
+          show: (role) => getAdminPermissions(role).canViewRegistrations,
+        },
+        {
+          href: "/admin/checkin",
+          label: "Check-In",
+          icon: ScanLine,
+          page: "checkin",
+          show: (role) => getAdminPermissions(role).canCheckIn,
+        },
+        {
+          href: "/admin/checked-in",
+          label: "Checked In",
+          icon: UserCheck,
+          page: "checked-in",
+          show: (role) => getAdminPermissions(role).canCheckIn,
+        },
+        {
+          href: "/admin/qr-codes",
+          label: "QR Codes",
+          icon: QrCode,
+          page: "qr-codes",
+          show: (role) => getAdminPermissions(role).canEdit,
+        },
+        {
+          href: "/admin/pending-changes",
+          label: "Pending Changes",
+          icon: ClipboardCheck,
+          page: "pending-changes",
+          show: (role) => getAdminPermissions(role).canEdit,
+        },
+      ],
     },
     {
       label: "Communication",
       icon: MessageSquare,
       items: [
-        { href: "/admin/announcements", label: "Announcements", icon: Megaphone, page: "announcements", minRole: "editor" as AdminRole },
-        { href: "/admin/messaging", label: "Messaging", icon: MessageSquare, page: "messaging" },
-        { href: "/admin/feedback", label: "Feedback", icon: Star, page: "feedback" },
-      ]
+        {
+          href: "/admin/announcements",
+          label: "Announcements",
+          icon: Megaphone,
+          page: "announcements",
+          show: (role) => getAdminPermissions(role).canEdit,
+        },
+        {
+          href: "/admin/messaging",
+          label: "Messaging",
+          icon: MessageSquare,
+          page: "messaging",
+          show: (role) => getAdminPermissions(role).canViewRegistrations,
+        },
+        {
+          href: "/admin/feedback",
+          label: "Feedback",
+          icon: Star,
+          page: "feedback",
+          show: (role) => getAdminPermissions(role).canViewRegistrations,
+        },
+      ],
     },
     {
       label: "Event",
       icon: Utensils,
       items: [
-        { href: "/admin/meals", label: "Meals", icon: Utensils, page: "meals" },
-        { href: "/admin/map", label: "Map", icon: MapPin, page: "map" },
-      ]
+        {
+          href: "/admin/meals",
+          label: "Meals",
+          icon: Utensils,
+          page: "meals",
+          show: (role) => getAdminPermissions(role).canViewRegistrations,
+        },
+        {
+          href: "/admin/map",
+          label: "Map",
+          icon: MapPin,
+          page: "map",
+          show: (role) => getAdminPermissions(role).canViewRegistrations,
+        },
+      ],
     },
     {
       label: "Settings",
       icon: Settings,
       items: [
-        { href: "/admin/rates", label: "Rates", icon: DollarSign, page: "rates", minRole: "admin" as AdminRole },
-        { href: "/admin/calculator", label: "Calculator", icon: Calculator, page: "calculator", minRole: "admin" as AdminRole },
-        { href: "/admin/users", label: "Users", icon: Shield, page: "users", minRole: "admin" as AdminRole },
-        { href: "/admin/settings", label: "Settings", icon: Settings, page: "settings", minRole: "admin" as AdminRole },
-        { href: "/admin/audit", label: "Audit Logs", icon: FileText, page: "audit", minRole: "admin" as AdminRole },
-      ]
+        {
+          href: "/admin/rates",
+          label: "Rates",
+          icon: DollarSign,
+          page: "rates",
+          show: (role) => getAdminPermissions(role).canManageUsers,
+        },
+        {
+          href: "/admin/calculator",
+          label: "Calculator",
+          icon: Calculator,
+          page: "calculator",
+          show: (role) => getAdminPermissions(role).canManageUsers,
+        },
+        {
+          href: "/admin/users",
+          label: "Users",
+          icon: Shield,
+          page: "users",
+          show: (role) => getAdminPermissions(role).canManageUsers,
+        },
+        {
+          href: "/admin/settings",
+          label: "Settings",
+          icon: Settings,
+          page: "settings",
+          show: (role) => getAdminPermissions(role).canManageUsers,
+        },
+        {
+          href: "/admin/audit",
+          label: "Audit Logs",
+          icon: FileText,
+          page: "audit",
+          show: (role) => getAdminPermissions(role).canManageUsers,
+        },
+      ],
     },
   ]
-
-  // Role hierarchy for access control
-  const roleHierarchy: Record<AdminRole, number> = {
-    viewer: 1,
-    editor: 2,
-    admin: 3,
-  }
-
-  const hasAccess = (minRole?: AdminRole) => {
-    if (!minRole) return true
-    return roleHierarchy[admin.role] >= roleHierarchy[minRole]
-  }
 
   const getRoleBadgeVariant = (role: AdminRole) => {
     switch (role) {
@@ -98,19 +177,19 @@ export function AdminNav({ currentPage, admin }: AdminNavProps) {
         return "default"
       case "editor":
         return "secondary"
+      case "checkin":
+        return "secondary"
       case "viewer":
         return "outline"
     }
   }
 
-  // Check if any item in a group is active
-  const isGroupActive = (group: NavGroup) => {
-    return group.items.some(item => currentPage === item.page)
+  const getAccessibleItems = (items: NavItem[]) => {
+    return items.filter((item) => !item.show || item.show(admin.role))
   }
 
-  // Filter group items based on role access
-  const getAccessibleItems = (items: NavItem[]) => {
-    return items.filter(item => hasAccess(item.minRole))
+  const isGroupActive = (group: NavGroup) => {
+    return group.items.some((item) => currentPage === item.page)
   }
 
   return (
@@ -185,6 +264,12 @@ export function AdminNav({ currentPage, admin }: AdminNavProps) {
               <span>View Only</span>
             </div>
           )}
+          {admin.role === "checkin" && (
+            <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
+              <ScanLine className="h-4 w-4" />
+              <span>Check-In Staff</span>
+            </div>
+          )}
           <div className="hidden sm:block text-right">
             <p className="text-sm font-medium">{admin.fullName || admin.email}</p>
             <div className="flex items-center justify-end gap-2">
@@ -197,7 +282,7 @@ export function AdminNav({ currentPage, admin }: AdminNavProps) {
             afterSignOutUrl="/admin/login"
             appearance={{
               elements: {
-                avatarBox: "h-9 w-9"
+                avatarBox: "h-11 w-11"
               }
             }}
           >
@@ -209,15 +294,14 @@ export function AdminNav({ currentPage, admin }: AdminNavProps) {
         </div>
       </div>
       
-      {/* Mobile nav - uses same grouped approach but in a scrollable row */}
-      <div className="md:hidden border-t px-4 py-2 overflow-x-auto">
-        <nav className="flex gap-1">
+      {/* Mobile nav - scrollable row with 44px touch targets */}
+      <div className="md:hidden border-t px-4 py-2 overflow-x-auto scroll-touch-x">
+        <nav className="flex gap-2">
           {/* Dashboard */}
           <Link href="/admin">
             <Button 
               variant={currentPage === "dashboard" || currentPage === "" ? "secondary" : "ghost"} 
-              size="sm" 
-              className="gap-2 whitespace-nowrap"
+              className="min-h-11 gap-2 whitespace-nowrap"
             >
               <LayoutDashboard className="h-4 w-4" />
               Dashboard
@@ -237,8 +321,7 @@ export function AdminNav({ currentPage, admin }: AdminNavProps) {
                 <DropdownMenuTrigger asChild>
                   <Button 
                     variant={groupActive ? "secondary" : "ghost"} 
-                    size="sm" 
-                    className="gap-1.5 whitespace-nowrap"
+                    className="min-h-11 gap-1.5 whitespace-nowrap"
                   >
                     <GroupIcon className="h-4 w-4" />
                     {group.label}

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { ShieldAlert, LogIn, Home } from "lucide-react"
 import Link from "next/link"
 
-type AdminRole = "admin" | "editor" | "viewer"
+type AdminRole = "admin" | "editor" | "viewer" | "checkin"
 
 async function getAdminInfo() {
   const { userId } = await auth()
@@ -19,7 +19,7 @@ async function getAdminInfo() {
   const publicMetadata = user.publicMetadata as { role?: string } | undefined
   const role = publicMetadata?.role as AdminRole | undefined
 
-  if (!role || !["admin", "editor", "viewer"].includes(role)) {
+  if (!role || !(role === "admin" || role === "editor" || role === "viewer" || role === "checkin")) {
     return null
   }
 
@@ -46,13 +46,13 @@ export default async function MealsAdminPage() {
   // Not logged in
   if (!userId) {
     return (
-      <div className="min-h-screen bg-muted/30 flex items-center justify-center p-4">
+      <div className="admin-gate-screen">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
               <LogIn className="h-7 w-7 text-primary" />
             </div>
-            <CardTitle>Sign In Required</CardTitle>
+            <CardTitle className="text-subheading">Sign In Required</CardTitle>
             <CardDescription>
               Please sign in to access the admin dashboard.
             </CardDescription>
@@ -70,13 +70,13 @@ export default async function MealsAdminPage() {
   // Logged in but not admin
   if (!admin) {
     return (
-      <div className="min-h-screen bg-muted/30 flex items-center justify-center p-4">
+      <div className="admin-gate-screen">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-destructive/10">
               <ShieldAlert className="h-7 w-7 text-destructive" />
             </div>
-            <CardTitle>Access Denied</CardTitle>
+            <CardTitle className="text-subheading">Access Denied</CardTitle>
             <CardDescription>
               You don&apos;t have permission to access this page.
             </CardDescription>
@@ -97,11 +97,13 @@ export default async function MealsAdminPage() {
   const meals = await getMeals()
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="admin-shell">
       <AdminNav currentPage="meals" admin={admin} />
-      <main id="main-content" className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-bold mb-8">Meal Menu Management</h1>
+      <main id="main-content" className="admin-main">
+        <div className="admin-container admin-container--narrow">
+          <header className="admin-page-header">
+            <h1 className="text-section-title text-balance">Meal Menu Management</h1>
+          </header>
           <MealsForm initialMeals={meals} />
         </div>
       </main>

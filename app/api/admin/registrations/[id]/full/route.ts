@@ -1,11 +1,18 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { checkAdminAuth } from "@/lib/admin-auth"
+import { getAdminPermissions } from "@/lib/clerk-auth"
 import { sql } from "@/lib/db"
+import { normalizeRegistrationRow } from "@/lib/normalize-string-array"
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const admin = await checkAdminAuth()
   if (!admin) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  const permissions = getAdminPermissions(admin.role)
+  if (!permissions.canViewRegistrations && !permissions.canCheckIn) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 
   try {
@@ -57,11 +64,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     const totalCost = lodgingTotal + tshirtTotal + climbingTotal + regFee + scholarshipDonation
 
     return NextResponse.json({
-      registration: {
+      registration: normalizeRegistrationRow({
         ...registration,
         total_cost: totalCost,
         attendee_count: familyMembers.length,
-      },
+      }),
       family_members: familyMembers,
       tshirt_orders: tshirtOrders,
       health_info: healthInfo,

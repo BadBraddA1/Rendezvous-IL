@@ -55,6 +55,8 @@ pnpm db:verify
 
 - Clerk users are linked to a `families` row by `clerk_user_id` or matching registration email (auto-linked on first visit).
 - Profile edits do **not** write directly to Turso — they queue rows in `pending_family_changes` for admin approval at `/admin/pending-changes`.
+- Member type / age group: adults and teens skip the age-group picker; children with a registration birthday get age group auto-calculated (`lib/member-age.ts`).
+- Admin roles: `admin`, `editor`, `viewer`, and **`checkin`** (check-in station only — web + iOS). Permissions live in `lib/clerk-auth.ts` (`getAdminPermissions`).
 - API: `GET/PUT /api/family/profile`, `POST/DELETE /api/family/members`
 
 ## Scripts

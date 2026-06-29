@@ -1,9 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { checkAdminAuth } from "@/lib/admin-auth"
+import { checkCheckInAuth } from "@/lib/admin-auth"
 import { sql } from "@/lib/db"
+import { normalizeRegistrationRow } from "@/lib/normalize-string-array"
 
 export async function GET(req: NextRequest) {
-  const admin = await checkAdminAuth()
+  const admin = await checkCheckInAuth()
   if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   try {
@@ -24,16 +25,16 @@ export async function GET(req: NextRequest) {
         r.keys_returned,
         r.keys_returned_at,
         r.tshirts_distributed,
-        COUNT(fm.id)::int as attendee_count
+        COUNT(fm.id) as attendee_count
       FROM registrations r
       LEFT JOIN family_members fm ON fm.registration_id = r.id
-      WHERE r.checked_in = true
+      WHERE r.checked_in = 1
       GROUP BY r.id
-      ORDER BY r.checked_in_at DESC NULLS LAST
+      ORDER BY r.checked_in_at DESC
     `
-    return NextResponse.json(rows)
+    return NextResponse.json(rows.map((row) => normalizeRegistrationRow(row)))
   } catch (error) {
     console.error("[v0] Failed to fetch checked-in registrations:", error)
-    return NextResponse.json([], { status: 200 })
+    return NextResponse.json({ error: "Failed to fetch checked-in registrations" }, { status: 500 })
   }
 }

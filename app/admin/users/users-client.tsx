@@ -16,7 +16,7 @@ interface User {
   firstName: string | null
   lastName: string | null
   imageUrl: string
-  role: "admin" | "editor" | "viewer" | null
+  role: "admin" | "editor" | "viewer" | "checkin" | null
   createdAt: number
   lastSignInAt: number | null
 }
@@ -77,6 +77,7 @@ export function UsersClient() {
     const variants: Record<string, "default" | "secondary" | "outline"> = {
       admin: "default",
       editor: "secondary",
+      checkin: "secondary",
       viewer: "outline",
     }
     
@@ -104,11 +105,11 @@ export function UsersClient() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
+          <h1 className="text-section-title text-balance tracking-tight flex items-center gap-3">
             <Shield className="h-8 w-8" />
             User Management
           </h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-lead text-muted-foreground mt-1">
             Manage admin roles and permissions for all users
           </p>
         </div>
@@ -188,6 +189,7 @@ export function UsersClient() {
                       <SelectContent>
                         <SelectItem value="none">No Role</SelectItem>
                         <SelectItem value="viewer">Viewer</SelectItem>
+                        <SelectItem value="checkin">Check-In</SelectItem>
                         <SelectItem value="editor">Editor</SelectItem>
                         <SelectItem value="admin">Admin</SelectItem>
                       </SelectContent>
@@ -211,7 +213,7 @@ export function UsersClient() {
           <CardTitle>Role Permissions</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="p-4 rounded-lg border bg-card">
               <Badge variant="default" className="mb-2">Admin</Badge>
               <p className="text-sm text-muted-foreground">
@@ -221,7 +223,13 @@ export function UsersClient() {
             <div className="p-4 rounded-lg border bg-card">
               <Badge variant="secondary" className="mb-2">Editor</Badge>
               <p className="text-sm text-muted-foreground">
-                Can view and edit registrations, approve pending changes, and manage meals.
+                Can view and edit registrations, approve pending changes, run check-in, and manage meals.
+              </p>
+            </div>
+            <div className="p-4 rounded-lg border bg-card">
+              <Badge variant="secondary" className="mb-2">Check-In</Badge>
+              <p className="text-sm text-muted-foreground">
+                Check-in station only — web admin check-in, checked-in list, and the same flow in the iOS app.
               </p>
             </div>
             <div className="p-4 rounded-lg border bg-card">

@@ -20,6 +20,8 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Plus, Trash2, Save, QrCode, CheckCircle2, RotateCcw, Shirt, HandHelping, Heart } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
+import { AdminConfirmDialog } from "./admin-confirm-dialog"
+import { normalizeStringArray } from "@/lib/normalize-string-array"
 
 type Registration = {
   id: string | number
@@ -93,6 +95,12 @@ type HealthInfo = {
   medication_on_hand?: boolean
 }
 
+type ConfirmAction =
+  | { kind: "removeMember"; index: number; name: string }
+  | { kind: "removeTshirt"; index: number }
+  | { kind: "removeVolunteer"; id: number }
+  | { kind: "undoCheckIn"; familyName: string }
+
 type Props = {
   registration: Registration | null
   open: boolean
@@ -113,6 +121,8 @@ export function RegistrationEditModal({ registration, open, onClose, onSave }: P
   const [saving, setSaving] = useState(false)
   const [activeTab, setActiveTab] = useState("contact")
   const [roomKeysInput, setRoomKeysInput] = useState("")
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null)
+  const [confirmLoading, setConfirmLoading] = useState(false)
   const { toast } = useToast()
 
   const loadFullRegistration = useCallback(
@@ -122,12 +132,17 @@ export function RegistrationEditModal({ registration, open, onClose, onSave }: P
         const res = await fetch(`/api/admin/registrations/${regId}/full`)
         if (!res.ok) throw new Error("Failed to load registration")
         const data = await res.json()
-        setReg(data.registration)
+        const registration = {
+          ...data.registration,
+          room_keys: normalizeStringArray(data.registration?.room_keys),
+          pre_assigned_keys: normalizeStringArray(data.registration?.pre_assigned_keys),
+        }
+        setReg(registration)
         setFamilyMembers(data.family_members || [])
         setTshirtOrders(data.tshirt_orders || [])
         setVolunteers(data.volunteers || [])
         setHealthInfo(data.health_info || [])
-        setRoomKeysInput(((data.registration?.room_keys as string[]) || []).join(", "))
+        setRoomKeysInput(registration.room_keys.join(", "))
       } catch (error) {
         console.error("[v0] Failed to load registration details:", error)
         toast({
@@ -265,7 +280,6 @@ export function RegistrationEditModal({ registration, open, onClose, onSave }: P
       setFamilyMembers((prev) => prev.filter((_, i) => i !== index))
       return
     }
-    if (!confirm(`Remove ${member.first_name || "this member"}?`)) return
     try {
       const res = await fetch(`/api/admin/registrations/${reg.id}/family-members/${member.id}`, {
         method: "DELETE",
@@ -278,6 +292,19 @@ export function RegistrationEditModal({ registration, open, onClose, onSave }: P
     } catch {
       toast({ title: "Error", description: "Could not remove member", variant: "destructive" })
     }
+  }
+
+  const requestRemoveFamilyMember = (index: number) => {
+    const member = familyMembers[index]
+    if (!member.id) {
+      void removeFamilyMember(index)
+      return
+    }
+    setConfirmAction({
+      kind: "removeMember",
+      index,
+      name: member.first_name || "this member",
+    })
   }
 
   // ---------- T-SHIRTS ----------
@@ -332,7 +359,6 @@ export function RegistrationEditModal({ registration, open, onClose, onSave }: P
       setTshirtOrders((prev) => prev.filter((_, i) => i !== index))
       return
     }
-    if (!confirm("Remove this t-shirt order?")) return
     try {
       const res = await fetch(`/api/admin/registrations/${reg.id}/tshirts/${order.id}`, { method: "DELETE" })
       if (!res.ok) throw new Error("Failed")
@@ -344,9 +370,18 @@ export function RegistrationEditModal({ registration, open, onClose, onSave }: P
     }
   }
 
+  const requestRemoveTshirt = (index: number) => {
+    const order = tshirtOrders[index]
+    if (!order.id) {
+      void removeTshirt(index)
+      return
+    }
+    setConfirmAction({ kind: "removeTshirt", index })
+  }
+
   // ---------- VOLUNTEERS ----------
   const removeVolunteer = async (id: number) => {
-    if (!reg || !confirm("Remove this volunteer signup?")) return
+    if (!reg) return
     try {
       const res = await fetch(`/api/admin/registrations/${reg.id}/volunteers/${id}`, { method: "DELETE" })
       if (!res.ok) throw new Error("Failed")
@@ -354,6 +389,10 @@ export function RegistrationEditModal({ registration, open, onClose, onSave }: P
     } catch {
       toast({ title: "Error", description: "Could not remove volunteer", variant: "destructive" })
     }
+  }
+
+  const requestRemoveVolunteer = (id: number) => {
+    setConfirmAction({ kind: "removeVolunteer", id })
   }
 
   // ---------- CHECK-IN ----------
@@ -379,7 +418,7 @@ export function RegistrationEditModal({ registration, open, onClose, onSave }: P
   }
 
   const handleUndoCheckIn = async () => {
-    if (!reg || !confirm("Undo check-in for this family?")) return
+    if (!reg) return
     try {
       const res = await fetch(`/api/admin/registrations/${reg.id}/checkin`, { method: "DELETE" })
       if (!res.ok) throw new Error("Failed")
@@ -391,6 +430,65 @@ export function RegistrationEditModal({ registration, open, onClose, onSave }: P
       toast({ title: "Error", description: "Could not undo check-in", variant: "destructive" })
     }
   }
+
+  const requestUndoCheckIn = () => {
+    if (!reg) return
+    setConfirmAction({ kind: "undoCheckIn", familyName: reg.family_last_name || "this" })
+  }
+
+  const handleConfirmAction = async () => {
+    if (!confirmAction) return
+    setConfirmLoading(true)
+    try {
+      switch (confirmAction.kind) {
+        case "removeMember":
+          await removeFamilyMember(confirmAction.index)
+          break
+        case "removeTshirt":
+          await removeTshirt(confirmAction.index)
+          break
+        case "removeVolunteer":
+          await removeVolunteer(confirmAction.id)
+          break
+        case "undoCheckIn":
+          await handleUndoCheckIn()
+          break
+      }
+      setConfirmAction(null)
+    } finally {
+      setConfirmLoading(false)
+    }
+  }
+
+  const confirmCopy = (() => {
+    if (!confirmAction) return null
+    switch (confirmAction.kind) {
+      case "removeMember":
+        return {
+          title: "Remove family member?",
+          description: `Remove ${confirmAction.name} from this registration? Lodging totals will be recalculated.`,
+          confirmLabel: "Remove member",
+        }
+      case "removeTshirt":
+        return {
+          title: "Remove t-shirt order?",
+          description: "Remove this t-shirt order from the registration?",
+          confirmLabel: "Remove order",
+        }
+      case "removeVolunteer":
+        return {
+          title: "Remove volunteer signup?",
+          description: "Remove this volunteer signup from the registration?",
+          confirmLabel: "Remove signup",
+        }
+      case "undoCheckIn":
+        return {
+          title: "Undo check-in?",
+          description: `Undo check-in for the ${confirmAction.familyName} family? They will need to check in again.`,
+          confirmLabel: "Undo check-in",
+        }
+    }
+  })()
 
   const handleKeysReturned = async () => {
     if (!reg) return
@@ -439,8 +537,9 @@ export function RegistrationEditModal({ registration, open, onClose, onSave }: P
   const paymentProgress = totalCost > 0 ? Math.min(100, (paidAmount / totalCost) * 100) : 0
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-h-[92vh] max-w-5xl overflow-y-auto">
+      <DialogContent className="max-h-[92dvh] max-w-[min(100vw-1.5rem,64rem)] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
             <span>Edit Registration - {reg?.family_last_name || registration.family_last_name} Family</span>
@@ -581,7 +680,7 @@ export function RegistrationEditModal({ registration, open, onClose, onSave }: P
                         <Button onClick={() => persistFamilyMember(index)} size="sm" variant="outline" className="gap-1">
                           <Save className="h-3 w-3" />Save Member
                         </Button>
-                        <Button onClick={() => removeFamilyMember(index)} size="sm" variant="ghost" className="text-destructive">
+                        <Button onClick={() => requestRemoveFamilyMember(index)} size="sm" variant="ghost" className="touch-target-coarse shrink-0 text-destructive" aria-label={`Remove ${member.first_name || "family member"}`}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -678,7 +777,7 @@ export function RegistrationEditModal({ registration, open, onClose, onSave }: P
                     <Button onClick={() => persistTshirt(index)} size="sm" variant="outline">
                       <Save className="mr-1 h-3 w-3" />Save
                     </Button>
-                    <Button onClick={() => removeTshirt(index)} size="sm" variant="ghost" className="text-destructive">
+                    <Button onClick={() => requestRemoveTshirt(index)} size="sm" variant="ghost" className="touch-target-coarse shrink-0 text-destructive" aria-label="Remove t-shirt order">
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
@@ -706,7 +805,7 @@ export function RegistrationEditModal({ registration, open, onClose, onSave }: P
                       {v.volunteer_type && <p className="text-sm text-muted-foreground">{v.volunteer_type}</p>}
                       {v.notes && <p className="text-xs text-muted-foreground mt-1">{v.notes}</p>}
                     </div>
-                    <Button onClick={() => removeVolunteer(v.id)} size="sm" variant="ghost" className="text-destructive">
+                    <Button onClick={() => requestRemoveVolunteer(v.id)} size="sm" variant="ghost" className="touch-target-coarse shrink-0 text-destructive" aria-label={`Remove volunteer signup for ${v.volunteer_name}`}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
@@ -809,7 +908,7 @@ export function RegistrationEditModal({ registration, open, onClose, onSave }: P
                     )}
                   </div>
                   {reg.checked_in ? (
-                    <Button onClick={handleUndoCheckIn} variant="outline" className="gap-2 bg-transparent">
+                    <Button onClick={requestUndoCheckIn} variant="outline" className="gap-2 bg-transparent">
                       <RotateCcw className="h-4 w-4" />Undo Check-In
                     </Button>
                   ) : (
@@ -838,9 +937,9 @@ export function RegistrationEditModal({ registration, open, onClose, onSave }: P
                     placeholder="e.g. 101, 102"
                   />
                 </div>
-                {(reg.room_keys && reg.room_keys.length > 0) && (
+                {reg.room_keys && reg.room_keys.length > 0 && (
                   <div className="flex flex-wrap gap-2">
-                    {reg.room_keys.map((k) => (
+                    {normalizeStringArray(reg.room_keys).map((k) => (
                       <Badge key={k} variant="secondary">Key {k}</Badge>
                     ))}
                   </div>
@@ -882,16 +981,31 @@ export function RegistrationEditModal({ registration, open, onClose, onSave }: P
           </Tabs>
         )}
 
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={saving || loading}>
+        <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <Button variant="outline" onClick={onClose} disabled={saving || loading} className="min-h-11 w-full sm:w-auto">
             Close
           </Button>
-          <Button onClick={saveRegistration} disabled={saving || loading} className="gap-2">
+          <Button onClick={saveRegistration} disabled={saving || loading} className="min-h-11 w-full gap-2 sm:w-auto">
             <Save className="h-4 w-4" />
             {saving ? "Saving..." : "Save Contact & Payment"}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    {confirmCopy && (
+      <AdminConfirmDialog
+        open={confirmAction !== null}
+        onOpenChange={(open) => {
+          if (!open && !confirmLoading) setConfirmAction(null)
+        }}
+        title={confirmCopy.title}
+        description={confirmCopy.description}
+        confirmLabel={confirmCopy.confirmLabel}
+        loading={confirmLoading}
+        onConfirm={handleConfirmAction}
+      />
+    )}
+    </>
   )
 }

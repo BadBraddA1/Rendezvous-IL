@@ -24,6 +24,12 @@ import {
   AlertCircle,
   Inbox
 } from "lucide-react"
+import {
+  MEMBER_DIFF_FIELDS,
+  formatMemberValue,
+  memberFieldChanged,
+  type MemberSnapshot,
+} from "@/lib/pending-family-changes"
 
 interface PendingChange {
   id: number
@@ -34,16 +40,8 @@ interface PendingChange {
   old_value?: string
   new_value?: string
   member_id?: number
-  member_data?: {
-    first_name: string
-    last_name: string
-    member_type: string
-    age_group: string
-    gender: string
-    grade?: string
-    special_needs?: boolean
-    notes?: string
-  }
+  member_data?: MemberSnapshot | null
+  current_member?: MemberSnapshot | null
   status: string
   submitted_at: string
   family_last_name: string
@@ -111,11 +109,16 @@ export function PendingChangesClient({
 
   function getChangeTypeColor(type: string): string {
     switch (type) {
-      case 'update_field': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-      case 'add_member': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-      case 'update_member': return 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200'
-      case 'remove_member': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
+      case "update_field":
+        return "callout-info text-info"
+      case "add_member":
+        return "callout-success text-success"
+      case "update_member":
+        return "callout-warning text-warning"
+      case "remove_member":
+        return "callout-destructive text-destructive"
+      default:
+        return "bg-muted text-muted-foreground"
     }
   }
 
@@ -149,7 +152,7 @@ export function PendingChangesClient({
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
                 <div className="space-y-1">
-                  <CardTitle className="text-lg flex items-center gap-2">
+                  <CardTitle className="flex items-center gap-2 text-widget-heading">
                     {change.change_type.includes('member') ? (
                       <Users className="h-5 w-5" />
                     ) : (
@@ -178,11 +181,11 @@ export function PendingChangesClient({
                 <div className="p-4 rounded-lg bg-muted/50 mb-4">
                   <p className="text-sm font-medium mb-2">{formatFieldName(change.field_name)}</p>
                   <div className="flex items-center gap-3 text-sm">
-                    <span className="px-2 py-1 bg-red-100 text-red-800 rounded dark:bg-red-900/50 dark:text-red-200 line-through">
+                    <span className="callout-destructive rounded px-2 py-1 line-through">
                       {change.old_value || '(empty)'}
                     </span>
                     <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                    <span className="px-2 py-1 bg-green-100 text-green-800 rounded dark:bg-green-900/50 dark:text-green-200">
+                    <span className="callout-success rounded px-2 py-1">
                       {change.new_value || '(empty)'}
                     </span>
                   </div>
@@ -191,39 +194,7 @@ export function PendingChangesClient({
 
               {/* Member Changes */}
               {change.member_data && (
-                <div className="p-4 rounded-lg bg-muted/50 mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      <User className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <p className="font-medium">
-                        {change.member_data.first_name} {change.member_data.last_name}
-                      </p>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Badge variant="secondary" className="text-xs">
-                          {change.member_data.member_type}
-                        </Badge>
-                        <span>{change.member_data.age_group}</span>
-                        <span>• {change.member_data.gender}</span>
-                        {change.member_data.grade && (
-                          <span>• Grade {change.member_data.grade}</span>
-                        )}
-                      </div>
-                      {change.member_data.special_needs && (
-                        <Badge variant="outline" className="mt-1 text-xs">
-                          <AlertCircle className="h-3 w-3 mr-1" />
-                          Special needs
-                        </Badge>
-                      )}
-                      {change.member_data.notes && (
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Notes: {change.member_data.notes}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                <MemberChangeDetails change={change} />
               )}
 
               {/* Actions */}
@@ -232,7 +203,7 @@ export function PendingChangesClient({
                   <Button
                     onClick={() => handleAction(change.id, "approve")}
                     disabled={processing === change.id}
-                    className="bg-green-600 hover:bg-green-700"
+                    className="bg-success hover:bg-success/90"
                   >
                     {processing === change.id ? (
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -300,5 +271,137 @@ export function PendingChangesClient({
         </DialogContent>
       </Dialog>
     </>
+  )
+}
+
+function MemberChangeDetails({ change }: { change: PendingChange }) {
+  const proposed = change.member_data
+  const current = change.current_member
+
+  if (!proposed) return null
+
+  const displayName = [
+    proposed.first_name || current?.first_name,
+    proposed.last_name || current?.last_name,
+  ]
+    .filter(Boolean)
+    .join(" ")
+
+  if (change.change_type === "add_member") {
+    return (
+      <div className="mb-4 space-y-3 rounded-lg border border-success/30 bg-success/5 p-4">
+        <p className="text-sm font-medium text-success">Adding new member</p>
+        <MemberSnapshotCard title={displayName || "New member"} member={proposed} />
+      </div>
+    )
+  }
+
+  if (change.change_type === "remove_member") {
+    return (
+      <div className="mb-4 space-y-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+        <p className="text-sm font-medium text-destructive">Removing member</p>
+        <MemberSnapshotCard title={displayName || "Member"} member={current || proposed} />
+      </div>
+    )
+  }
+
+  return (
+    <div className="mb-4 space-y-4 rounded-lg border bg-muted/40 p-4">
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+          <User className="h-5 w-5 text-primary" />
+        </div>
+        <div>
+          <p className="font-medium">{displayName || "Member update"}</p>
+          <p className="text-sm text-muted-foreground">
+            Compare current profile data with the requested changes.
+          </p>
+        </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <MemberSnapshotCard title="Current" member={current} muted />
+        <MemberSnapshotCard title="Requested" member={proposed} highlight />
+      </div>
+
+      <div className="space-y-2 border-t pt-4">
+        <p className="text-sm font-medium">Changes</p>
+        {MEMBER_DIFF_FIELDS.filter((field) =>
+          memberFieldChanged(field.key, current, proposed),
+        ).map((field) => (
+          <div
+            key={field.key}
+            className="flex flex-col gap-1 rounded-md border bg-background p-3 text-sm sm:flex-row sm:items-center sm:gap-3"
+          >
+            <span className="min-w-28 font-medium text-muted-foreground">
+              {field.label}
+            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="rounded bg-destructive/10 px-2 py-1 text-destructive line-through">
+                {formatMemberValue(field.key, current?.[field.key])}
+              </span>
+              <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <span className="rounded bg-success/10 px-2 py-1 text-success">
+                {formatMemberValue(field.key, proposed[field.key])}
+              </span>
+            </div>
+          </div>
+        ))}
+        {MEMBER_DIFF_FIELDS.every(
+          (field) => !memberFieldChanged(field.key, current, proposed),
+        ) && (
+          <p className="text-sm text-muted-foreground">
+            No field differences detected — the submitted data matches the current record.
+          </p>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function MemberSnapshotCard({
+  title,
+  member,
+  muted = false,
+  highlight = false,
+}: {
+  title: string
+  member: MemberSnapshot | null | undefined
+  muted?: boolean
+  highlight?: boolean
+}) {
+  if (!member) {
+    return (
+      <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+        <p className="mb-2 font-medium text-foreground">{title}</p>
+        <p>No member data on file.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div
+      className={`rounded-lg border p-4 ${
+        highlight ? "border-warning/35 bg-warning/5" : muted ? "bg-background" : ""
+      }`}
+    >
+      <p className="mb-3 font-medium">{title}</p>
+      <dl className="space-y-2 text-sm">
+        {MEMBER_DIFF_FIELDS.map((field) => (
+          <div key={field.key} className="grid grid-cols-[7rem_1fr] gap-2">
+            <dt className="text-muted-foreground">{field.label}</dt>
+            <dd className="font-medium break-words">
+              {formatMemberValue(field.key, member[field.key])}
+            </dd>
+          </div>
+        ))}
+      </dl>
+      {member.special_needs && (
+        <Badge variant="outline" className="mt-3 text-xs">
+          <AlertCircle className="mr-1 h-3 w-3" />
+          Special needs
+        </Badge>
+      )}
+    </div>
   )
 }

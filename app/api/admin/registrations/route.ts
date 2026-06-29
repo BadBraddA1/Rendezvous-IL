@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { checkAdminAuth } from "@/lib/admin-auth"
+import { getAdminPermissions } from "@/lib/clerk-auth"
 import { sql } from "@/lib/db"
 
 export async function GET(req: NextRequest) {
@@ -13,6 +14,15 @@ export async function GET(req: NextRequest) {
     const search = searchParams.get("search") || ""
     const lodging = searchParams.get("lodging")
     const hasSearch = search.length > 0
+    const permissions = getAdminPermissions(admin.role)
+
+    if (!hasSearch && !permissions.canViewRegistrations) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+
+    if (hasSearch && !permissions.canViewRegistrations && !permissions.canCheckIn) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
     const hasLodging = lodging && lodging !== "all"
     const searchPattern = `%${search}%`
 

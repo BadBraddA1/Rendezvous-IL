@@ -11,6 +11,8 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { useToast } from "@/hooks/use-toast"
 import { QrCode, Search, Camera, CameraOff, CheckCircle2, RotateCcw, Loader2 } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
+import { AdminConfirmDialog } from "./admin-confirm-dialog"
+import { normalizeStringArray } from "@/lib/normalize-string-array"
 
 type Registration = {
   id: number
@@ -58,6 +60,7 @@ export function CheckinStation() {
   const [scannerActive, setScannerActive] = useState(false)
   const [roomKeys, setRoomKeys] = useState("")
   const [tshirtsDist, setTshirtsDist] = useState(false)
+  const [undoConfirmOpen, setUndoConfirmOpen] = useState(false)
   const scannerRef = useRef<{ stop: () => Promise<void>; clear: () => void } | null>(null)
   const { toast } = useToast()
 
@@ -116,7 +119,7 @@ export function CheckinStation() {
       }
       const data = await res.json()
       setResult(data)
-      setRoomKeys(((data.registration?.pre_assigned_keys as string[]) || []).join(", "))
+      setRoomKeys(normalizeStringArray(data.registration?.pre_assigned_keys).join(", "))
       setTshirtsDist(!!data.registration?.tshirts_distributed)
     } catch (error) {
       console.error("[v0] Lookup failed:", error)
@@ -160,7 +163,7 @@ export function CheckinStation() {
         family_members: data.family_members || [],
         tshirt_orders: data.tshirt_orders || [],
       })
-      setRoomKeys(((data.registration?.pre_assigned_keys as string[]) || []).join(", "))
+      setRoomKeys(normalizeStringArray(data.registration?.pre_assigned_keys).join(", "))
       setTshirtsDist(!!data.registration?.tshirts_distributed)
     } catch (error) {
       console.error("[v0] Could not load:", error)
@@ -192,7 +195,7 @@ export function CheckinStation() {
   }
 
   const handleUndoCheckIn = async () => {
-    if (!result || !confirm("Undo check-in for this family?")) return
+    if (!result) return
     setLoading(true)
     try {
       const res = await fetch(`/api/admin/registrations/${result.registration.id}/checkin`, { method: "DELETE" })
@@ -205,6 +208,7 @@ export function CheckinStation() {
       })
       setRoomKeys("")
       setTshirtsDist(false)
+      setUndoConfirmOpen(false)
       toast({ title: "Check-in undone" })
     } catch (error) {
       console.error("[v0] Undo failed:", error)
@@ -224,6 +228,7 @@ export function CheckinStation() {
   }
 
   return (
+    <>
     <div className="grid gap-6 md:grid-cols-2">
       {/* INPUT SIDE */}
       <Card>
@@ -323,7 +328,7 @@ export function CheckinStation() {
             <div className="space-y-4">
               <div>
                 <div className="flex items-center justify-between">
-                  <h3 className="text-xl font-bold">{result.registration.family_last_name} Family</h3>
+                  <h3 className="text-subheading">{result.registration.family_last_name} Family</h3>
                   {result.registration.checked_in ? (
                     <Badge variant="default" className="gap-1">
                       <CheckCircle2 className="h-3 w-3" />Checked In
@@ -392,9 +397,9 @@ export function CheckinStation() {
                     placeholder="101, 102"
                     disabled={result.registration.checked_in}
                   />
-                  {result.registration.pre_assigned_keys && result.registration.pre_assigned_keys.length > 0 && (
+                  {normalizeStringArray(result.registration.pre_assigned_keys).length > 0 && (
                     <p className="mt-1 text-xs text-muted-foreground">
-                      Pre-assigned: {result.registration.pre_assigned_keys.join(", ")}
+                      Pre-assigned: {normalizeStringArray(result.registration.pre_assigned_keys).join(", ")}
                     </p>
                   )}
                 </div>
@@ -411,7 +416,7 @@ export function CheckinStation() {
 
               <div className="flex gap-2">
                 {result.registration.checked_in ? (
-                  <Button onClick={handleUndoCheckIn} variant="outline" className="flex-1 gap-2 bg-transparent" disabled={loading}>
+                  <Button onClick={() => setUndoConfirmOpen(true)} variant="outline" className="flex-1 gap-2 bg-transparent" disabled={loading}>
                     <RotateCcw className="h-4 w-4" />Undo Check-In
                   </Button>
                 ) : (
@@ -427,5 +432,20 @@ export function CheckinStation() {
         </CardContent>
       </Card>
     </div>
+
+    <AdminConfirmDialog
+      open={undoConfirmOpen}
+      onOpenChange={setUndoConfirmOpen}
+      title="Undo check-in?"
+      description={
+        result
+          ? `Undo check-in for the ${result.registration.family_last_name} family? They will need to check in again.`
+          : ""
+      }
+      confirmLabel="Undo check-in"
+      loading={loading}
+      onConfirm={handleUndoCheckIn}
+    />
+    </>
   )
 }

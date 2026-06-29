@@ -1,53 +1,40 @@
 /**
  * Admin authentication utilities using Clerk
- * This file provides a compatibility layer for the old admin auth system
  */
 
-import { auth, currentUser } from "@clerk/nextjs/server"
+import {
+  getCurrentAdmin,
+  getAdminPermissions,
+  isAdminRole,
+  requireCheckInApi,
+  type AdminRole,
+  type AdminUser,
+} from "@/lib/clerk-auth"
 
-export type AdminRole = "admin" | "editor" | "viewer"
+export type { AdminRole, AdminUser }
 
 /**
- * Check admin authentication and return admin details
- * Returns null if user is not authenticated or not an admin
- * 
- * This replaces the old cookie-based checkAdminAuth function
+ * Any admin role (admin, editor, viewer, checkin)
  */
-export async function checkAdminAuth(): Promise<{
-  email: string
-  fullName: string
-  role: AdminRole
-} | null> {
-  const { userId } = await auth()
-
-  if (!userId) {
-    return null
-  }
-
-  const user = await currentUser()
-
-  if (!user) {
-    return null
-  }
-
-  // Check for role in public metadata (same as other pages)
-  const publicMetadata = user.publicMetadata as { role?: string } | undefined
-  const role = publicMetadata?.role as AdminRole | undefined
-
-  if (!role || !["admin", "editor", "viewer"].includes(role)) {
-    return null
-  }
-
-  return {
-    email: user.emailAddresses[0]?.emailAddress || "",
-    fullName: `${user.firstName || ""} ${user.lastName || ""}`.trim(),
-    role,
-  }
+export async function checkAdminAuth(): Promise<AdminUser | null> {
+  return getCurrentAdmin()
 }
 
 /**
+ * Check-in station access (admin, editor, or checkin role)
+ */
+export async function checkCheckInAuth(): Promise<AdminUser | null> {
+  try {
+    return await requireCheckInApi()
+  } catch {
+    return null
+  }
+}
+
+export { getAdminPermissions, isAdminRole }
+
+/**
  * Log an audit action
- * TODO: Store in database for production use
  */
 export async function logAuditAction(
   adminEmail: string,

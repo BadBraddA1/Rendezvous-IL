@@ -3,6 +3,7 @@ import { currentUser } from "@clerk/nextjs/server"
 import { sql } from "@/lib/db"
 import {
   getFamilyMembersV2,
+  getRegistrationBirthdayHints,
   resolveFamilyForUser,
 } from "@/lib/family-auth"
 
@@ -56,7 +57,10 @@ export async function GET() {
       return NextResponse.json({ family: null, pendingChanges: [] })
     }
 
-    const members = await getFamilyMembersV2(family.id)
+    const members = await getFamilyMembersV2(family.id, family.email)
+    const registrationBirthdays = family.email
+      ? await getRegistrationBirthdayHints(family.email)
+      : []
 
     const pendingRows = await sql`
       SELECT * FROM pending_family_changes
@@ -73,6 +77,7 @@ export async function GET() {
     return NextResponse.json({
       family: { ...family, members },
       pendingChanges,
+      registrationBirthdays,
     })
   } catch (error) {
     console.error("Error fetching family profile:", error)

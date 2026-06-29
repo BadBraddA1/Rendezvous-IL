@@ -1,9 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { checkAdminAuth } from "@/lib/admin-auth"
+import { checkCheckInAuth } from "@/lib/admin-auth"
 import { sql } from "@/lib/db"
+import { normalizeRegistrationRow } from "@/lib/normalize-string-array"
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ code: string }> }) {
-  const admin = await checkAdminAuth()
+  const admin = await checkCheckInAuth()
   if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   try {
@@ -33,7 +34,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ code
     `
 
     return NextResponse.json({
-      registration,
+      registration: normalizeRegistrationRow(registration),
       family_members: familyMembers,
       tshirt_orders: tshirtOrders,
     })
