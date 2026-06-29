@@ -35,7 +35,8 @@ function getClient(): Client {
 export function normalizeSql(query: string): string {
   return query
     .replace(/\bNOW\(\)/gi, "CURRENT_TIMESTAMP")
-    .replace(/::(int|integer|numeric|text|boolean|jsonb)\b/gi, "")
+    .replace(/::(int|integer|numeric|text|boolean|jsonb|date|timestamp)\b/gi, "")
+    .replace(/\s+NULLS\s+(FIRST|LAST)\b/gi, "")
     .replace(/\bILIKE\b/gi, "LIKE")
     .replace(/EXTRACT\(YEAR FROM ([^)]+)\)/gi, "strftime('%Y', $1)")
 }

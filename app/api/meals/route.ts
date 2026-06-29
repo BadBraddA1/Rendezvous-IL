@@ -13,17 +13,17 @@ export async function GET(request: Request) {
 
     if (date) {
       params.push(date)
-      query += ` AND date = $${params.length}`
+      query += ` AND date = ?`
     }
 
     if (mealType) {
       params.push(mealType)
-      query += ` AND meal_type = $${params.length}`
+      query += ` AND meal_type = ?`
     }
 
     query += ` ORDER BY date ASC, CASE meal_type WHEN 'breakfast' THEN 1 WHEN 'lunch' THEN 2 WHEN 'dinner' THEN 3 END`
 
-    const meals = await sql(query, params)
+    const meals = await sql.query(query, params)
 
     return NextResponse.json({ meals })
   } catch (error) {

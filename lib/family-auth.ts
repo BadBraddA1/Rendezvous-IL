@@ -321,21 +321,9 @@ export async function getFamilyMembers(familyId: number): Promise<FamilyMember[]
 export async function getExpressRegistrationData(familyEmail: string) {
   try {
     const [latestRegistration] = await sql`
-      SELECT 
-        r.*,
-        json_agg(
-          json_build_object(
-            'id', fm.id,
-            'first_name', fm.first_name,
-            'last_name', fm.last_name,
-            'age', fm.age,
-            'is_baptized', fm.is_baptized
-          )
-        ) as family_members
+      SELECT r.*
       FROM registrations r
-      LEFT JOIN family_members fm ON r.id = fm.registration_id
       WHERE LOWER(r.email) = LOWER(${familyEmail})
-      GROUP BY r.id
       ORDER BY r.created_at DESC
       LIMIT 1
     `
@@ -343,6 +331,13 @@ export async function getExpressRegistrationData(familyEmail: string) {
     if (!latestRegistration) {
       return null
     }
+
+    const familyMembers = await sql`
+      SELECT id, first_name, last_name, age, is_baptized
+      FROM family_members
+      WHERE registration_id = ${latestRegistration.id}
+      ORDER BY id ASC
+    `
 
     return {
       familyLastName: latestRegistration.family_last_name,
@@ -360,7 +355,7 @@ export async function getExpressRegistrationData(familyEmail: string) {
         phone: latestRegistration.emergency_contact_phone,
         relationship: latestRegistration.emergency_contact_relationship,
       },
-      familyMembers: latestRegistration.family_members?.filter((m: any) => m.id !== null) || [],
+      familyMembers,
     }
   } catch (error) {
     console.error("[Family Auth] Error fetching express registration data:", error)
