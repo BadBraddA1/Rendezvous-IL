@@ -4,7 +4,6 @@ import { Libre_Baskerville, Libre_Franklin, Source_Code_Pro, Dancing_Script } fr
 import { Analytics } from "@vercel/analytics/react"
 import { ClerkProvider } from "@clerk/nextjs"
 import { ScrollToTop } from "@/components/scroll-to-top"
-import { OneSignalProvider } from "@/components/onesignal-provider"
 import { BackToTop } from "@/components/back-to-top"
 import { PageTourRoot } from "@/components/dev/page-tour-root"
 import { Toaster } from "@/components/ui/toaster"
@@ -86,7 +85,6 @@ export default function RootLayout({
         </a>
         <ClerkProvider>
           <ScrollToTop />
-          <OneSignalProvider />
           {children}
           <BackToTop />
           <PageTourRoot />
