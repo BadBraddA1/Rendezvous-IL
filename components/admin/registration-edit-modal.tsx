@@ -561,23 +561,35 @@ export function RegistrationEditModal({ registration, open, onClose, onSave }: P
           </div>
         ) : (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-7">
-              <TabsTrigger value="contact">Contact</TabsTrigger>
-              <TabsTrigger value="attendees">Attendees ({familyMembers.length})</TabsTrigger>
-              <TabsTrigger value="tshirts">
-                <Shirt className="mr-1 h-3 w-3" />T-Shirts ({tshirtOrders.length})
-              </TabsTrigger>
-              <TabsTrigger value="volunteers">
-                <HandHelping className="mr-1 h-3 w-3" />Volunteers ({volunteers.length})
-              </TabsTrigger>
-              <TabsTrigger value="payment">Payment</TabsTrigger>
-              <TabsTrigger value="checkin">
-                <QrCode className="mr-1 h-3 w-3" />Check-In
-              </TabsTrigger>
-              <TabsTrigger value="health">
-                <Heart className="mr-1 h-3 w-3" />Health
-              </TabsTrigger>
-            </TabsList>
+            <div className="-mx-1 overflow-x-auto px-1 pb-1">
+              <TabsList className="inline-flex h-auto w-max max-w-none flex-nowrap gap-0.5 p-1">
+                <TabsTrigger value="contact" className="shrink-0 flex-none px-3 text-xs sm:text-sm">
+                  Contact
+                </TabsTrigger>
+                <TabsTrigger value="attendees" className="shrink-0 flex-none px-3 text-xs sm:text-sm">
+                  Attendees ({familyMembers.length})
+                </TabsTrigger>
+                <TabsTrigger value="tshirts" className="shrink-0 flex-none gap-1 px-3 text-xs sm:text-sm">
+                  <Shirt className="h-3 w-3" />
+                  T-Shirts ({tshirtOrders.length})
+                </TabsTrigger>
+                <TabsTrigger value="volunteers" className="shrink-0 flex-none gap-1 px-3 text-xs sm:text-sm">
+                  <HandHelping className="h-3 w-3" />
+                  Volunteers ({volunteers.length})
+                </TabsTrigger>
+                <TabsTrigger value="payment" className="shrink-0 flex-none px-3 text-xs sm:text-sm">
+                  Payment
+                </TabsTrigger>
+                <TabsTrigger value="checkin" className="shrink-0 flex-none gap-1 px-3 text-xs sm:text-sm">
+                  <QrCode className="h-3 w-3" />
+                  Check-In
+                </TabsTrigger>
+                <TabsTrigger value="health" className="shrink-0 flex-none gap-1 px-3 text-xs sm:text-sm">
+                  <Heart className="h-3 w-3" />
+                  Health
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
             {/* CONTACT */}
             <TabsContent value="contact" className="space-y-4">
