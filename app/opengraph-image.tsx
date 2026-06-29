@@ -6,13 +6,12 @@ export const alt = "Rendezvous 2027 — Christian homeschool family retreat at L
 export const size = { width: 1200, height: 630 }
 export const contentType = "image/png"
 
-export default async function Image() {
-  const [photoData, logoData] = await Promise.all([
-    readFile(join(process.cwd(), "public/rendezvous-group.jpg")),
-    readFile(join(process.cwd(), "public/rendezvous-logo.png")),
-  ])
+const lake = "#1a5c56"
+const lakeMuted = "#5a7875"
+const coral = "#b85c38"
 
-  const photoSrc = `data:image/jpeg;base64,${photoData.toString("base64")}`
+export default async function Image() {
+  const logoData = await readFile(join(process.cwd(), "public/rendezvous-logo.png"))
   const logoSrc = `data:image/png;base64,${logoData.toString("base64")}`
 
   return new ImageResponse(
@@ -23,48 +22,49 @@ export default async function Image() {
           height: "100%",
           display: "flex",
           flexDirection: "column",
-          justifyContent: "flex-end",
-          backgroundColor: "#1a2e32",
-          position: "relative",
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: "#ffffff",
+          padding: "48px 64px",
         }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={photoSrc}
+          src={logoSrc}
           alt=""
-          style={{
-            position: "absolute",
-            inset: 0,
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-            opacity: 0.5,
-          }}
+          width={420}
+          height={140}
+          style={{ objectFit: "contain", marginBottom: 36 }}
         />
         <div
           style={{
-            position: "absolute",
-            inset: 0,
-            background:
-              "linear-gradient(to top, rgba(26,46,50,0.96) 0%, rgba(26,46,50,0.55) 45%, rgba(26,46,50,0.15) 100%)",
-          }}
-        />
-        <div
-          style={{
-            position: "relative",
             display: "flex",
             flexDirection: "column",
-            padding: "56px 64px",
-            gap: 16,
+            alignItems: "center",
+            gap: 12,
+            textAlign: "center",
           }}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={logoSrc} alt="" width={300} height={100} style={{ objectFit: "contain" }} />
-          <div style={{ fontSize: 52, fontWeight: 700, color: "#f8fcfb", lineHeight: 1.1 }}>
+          <div style={{ fontSize: 64, fontWeight: 700, color: lake, lineHeight: 1.05 }}>
             May 3–7, 2027
           </div>
-          <div style={{ fontSize: 28, color: "#b8ddd6", lineHeight: 1.3 }}>
+          <div style={{ fontSize: 30, color: lakeMuted, lineHeight: 1.35, maxWidth: 900 }}>
             Lake Williamson Christian Center · Carlinville, IL
+          </div>
+          <div
+            style={{
+              marginTop: 20,
+              width: 80,
+              height: 4,
+              backgroundColor: coral,
+              borderRadius: 2,
+            }}
+          />
+          <div style={{ fontSize: 28, fontWeight: 600, color: lake, lineHeight: 1.3, marginTop: 8 }}>
+            Christian Homeschool Family Retreat
+          </div>
+          <div style={{ fontSize: 22, color: lakeMuted, lineHeight: 1.3 }}>
+            rendezvousil.com
           </div>
         </div>
       </div>
