@@ -3,7 +3,8 @@ import SwiftUI
 struct DirectoryView: View {
     @Environment(AppSession.self) private var session
 
-    @State private var year = AppConfig.eventYear
+    @State private var enabledYears: [Int] = [2026]
+    @State private var year = 2026
     @State private var families: [DirectoryFamily] = []
     @State private var search = ""
     @State private var isLoading = false
@@ -32,6 +33,8 @@ struct DirectoryView: View {
         Group {
             if !session.isSignedIn {
                 signedOutState
+            } else if enabledYears.isEmpty {
+                emptyDirectoryState
             } else {
                 directoryContent
             }
@@ -39,7 +42,8 @@ struct DirectoryView: View {
         .navigationTitle("Family Directory")
         .task {
             await session.refreshAuth()
-            if session.isSignedIn {
+            await loadEnabledYears()
+            if session.isSignedIn, !enabledYears.isEmpty {
                 await loadDirectory()
             }
         }
@@ -57,16 +61,29 @@ struct DirectoryView: View {
         .padding()
     }
 
+    private var emptyDirectoryState: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Directory not available")
+                .font(.title3.weight(.semibold))
+            Text("The family directory is not open for any event year yet.")
+                .foregroundStyle(.secondary)
+        }
+        .padding()
+    }
+
     private var directoryContent: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                Picker("Event year", selection: $year) {
-                    Text("Rendezvous 2027").tag(2027)
-                    Text("Rendezvous 2026").tag(2026)
-                }
-                .pickerStyle(.segmented)
-                .onChange(of: year) { _, _ in
-                    Task { await loadDirectory() }
+                if enabledYears.count > 1 {
+                    Picker("Event year", selection: $year) {
+                        ForEach(enabledYears, id: \.self) { enabledYear in
+                            Text("Rendezvous \(enabledYear)").tag(enabledYear)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .onChange(of: year) { _, _ in
+                        Task { await loadDirectory() }
+                    }
                 }
 
                 HStack {
@@ -86,6 +103,13 @@ struct DirectoryView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         Text(errorMessage)
                             .foregroundStyle(.secondary)
+                        if let alternateYear = enabledYears.first(where: { $0 != year }) {
+                            Button("Try Rendezvous \(alternateYear)") {
+                                year = alternateYear
+                                Task { await loadDirectory() }
+                            }
+                            .buttonStyle(.bordered)
+                        }
                         NavigationLink("Manage your family photo") {
                             FamilyDirectoryManageView()
                         }
@@ -121,6 +145,26 @@ struct DirectoryView: View {
                 }
             }
             .padding()
+        }
+    }
+
+    private func loadEnabledYears() async {
+        guard let client = session.apiClient else {
+            enabledYears = [2026]
+            year = 2026
+            return
+        }
+
+        do {
+            let response = try await client.getDirectoryYears()
+            let years = response.years.isEmpty ? [2026] : response.years
+            enabledYears = years
+            if !years.contains(year) {
+                year = years[0]
+            }
+        } catch {
+            enabledYears = [2026]
+            year = 2026
         }
     }
 

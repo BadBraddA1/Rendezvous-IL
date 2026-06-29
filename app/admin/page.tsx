@@ -12,6 +12,7 @@ import {
 import Link from "next/link"
 import { sql } from "@/lib/db"
 import { getCurrentAdmin, isAuthenticated } from "@/lib/clerk-auth"
+import { DirectoryYearToggles } from "@/components/admin/directory-year-toggles"
 
 export default async function AdminDashboard() {
   const authenticated = await isAuthenticated()
@@ -259,6 +260,8 @@ export default async function AdminDashboard() {
               </div>
             </CardContent>
           </Card>
+
+          <DirectoryYearToggles isAdmin={admin.role === "admin"} />
 
           {/* Primary Stats Grid */}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

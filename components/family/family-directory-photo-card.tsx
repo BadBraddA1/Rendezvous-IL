@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -31,6 +31,24 @@ export function FamilyDirectoryPhotoCard({ settings, onChange, eventYear = 2027 
   const [error, setError] = useState("")
   const [blurb, setBlurb] = useState(settings.directory_blurb || "")
   const [optIn, setOptIn] = useState(settings.directory_opt_in)
+  const [enabledYears, setEnabledYears] = useState<number[]>([2026])
+
+  useEffect(() => {
+    async function loadEnabledYears() {
+      try {
+        const response = await fetch("/api/directory/years")
+        const data = await response.json()
+        setEnabledYears(data.years?.length ? data.years : [2026])
+      } catch {
+        setEnabledYears([2026])
+      }
+    }
+    void loadEnabledYears()
+  }, [])
+
+  const previewYear = enabledYears.includes(eventYear)
+    ? eventYear
+    : enabledYears[0] ?? null
 
   async function handleUpload(file: File) {
     setUploading(true)
@@ -218,9 +236,11 @@ export function FamilyDirectoryPhotoCard({ settings, onChange, eventYear = 2027 
               {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Save directory settings
             </Button>
-            <Button asChild variant="outline">
-              <Link href={`/directory?year=${eventYear}`}>Preview directory</Link>
-            </Button>
+            {previewYear ? (
+              <Button asChild variant="outline">
+                <Link href={`/directory?year=${previewYear}`}>Preview directory</Link>
+              </Button>
+            ) : null}
           </div>
         </div>
 

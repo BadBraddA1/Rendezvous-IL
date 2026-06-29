@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import { auth, currentUser } from "@clerk/nextjs/server"
 import { fetchDirectoryEntries, ensureFamilyDirectorySchema, userHasRegistrationForYear } from "@/lib/family-directory"
+import { isDirectoryYearEnabled } from "@/lib/directory-settings"
+import { getCurrentAdmin } from "@/lib/clerk-auth"
 import { parseRegistrationEventYear } from "@/lib/registration-event-years"
 
 export async function GET(request: Request) {
@@ -14,6 +16,19 @@ export async function GET(request: Request) {
 
   try {
     await ensureFamilyDirectorySchema()
+
+    const yearEnabled = await isDirectoryYearEnabled(year)
+    const admin = yearEnabled ? null : await getCurrentAdmin()
+    if (!yearEnabled && !admin) {
+      return NextResponse.json(
+        {
+          error: `The Rendezvous ${year} family directory is not open yet.`,
+          disabled: true,
+        },
+        { status: 403 },
+      )
+    }
+
     const user = await currentUser()
     const email = user?.emailAddresses?.[0]?.emailAddress
     const hasAccess = await userHasRegistrationForYear(userId, email, year)

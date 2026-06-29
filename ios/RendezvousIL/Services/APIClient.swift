@@ -91,6 +91,10 @@ actor APIClient {
         try await get("/api/directory?year=\(year)")
     }
 
+    func getDirectoryYears() async throws -> DirectoryYearsResponse {
+        try await get("/api/directory/years")
+    }
+
     func getFamilyDirectorySettings() async throws -> FamilyDirectorySettings {
         let response: FamilyDirectorySettingsEnvelope = try await get("/api/family/directory")
         return response.settings
@@ -323,6 +327,10 @@ struct DirectoryResponse: Decodable {
     let year: Int
     let hasAccess: Bool?
     let families: [DirectoryFamily]
+}
+
+struct DirectoryYearsResponse: Decodable {
+    let years: [Int]
 }
 
 struct FamilyDirectorySettings: Decodable {

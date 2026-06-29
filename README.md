@@ -59,6 +59,14 @@ pnpm db:verify
 - Admin roles: `admin`, `editor`, `viewer`, and **`checkin`** (check-in station only — web + iOS). Permissions live in `lib/clerk-auth.ts` (`getAdminPermissions`).
 - API: `GET/PUT /api/family/profile`, `POST/DELETE /api/family/members`
 
+## Family directory (`/directory`)
+
+- Registered families can upload a photo and short blurb from `/account/profile`; listings appear at `/directory` for the same event year.
+- **Year visibility** is controlled on the admin dashboard (`/admin`) — toggles per year in `app_settings` (`directory_enabled_2026`, `directory_enabled_2027`). Defaults: **2026 on**, **2027 off** until registration opens.
+- Public API: `GET /api/directory/years` returns enabled years; `GET /api/directory?year=` requires sign-in + registration for that year (admins can preview disabled years).
+- Admin API: `GET/POST /api/admin/directory/status` (POST requires `admin` role).
+- iOS: `DirectoryView` and `FamilyDirectoryManageView` in `ios/RendezvousIL/`.
+
 ## Scripts
 
 | Command | Description |

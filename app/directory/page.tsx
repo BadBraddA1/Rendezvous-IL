@@ -19,8 +19,6 @@ import {
 } from "@/components/ui/select"
 import { Camera, Church, Loader2, Search, Users } from "lucide-react"
 import {
-  DEFAULT_REGISTRATION_EVENT_YEAR,
-  REGISTRATION_EVENT_YEARS,
   parseRegistrationEventYear,
   registrationYearLabel,
   type RegistrationEventYear,
@@ -38,22 +36,59 @@ type DirectoryFamily = {
   member_names: string[]
 }
 
+function pickDirectoryYear(
+  requestedYear: RegistrationEventYear,
+  enabledYears: RegistrationEventYear[],
+): RegistrationEventYear | null {
+  if (enabledYears.length === 0) return null
+  if (enabledYears.includes(requestedYear)) return requestedYear
+  return enabledYears[0]
+}
+
 export default function DirectoryPage() {
   const { isLoaded, isSignedIn } = useUser()
-  const [eventYear, setEventYear] = useState<RegistrationEventYear>(DEFAULT_REGISTRATION_EVENT_YEAR)
+  const [enabledYears, setEnabledYears] = useState<RegistrationEventYear[]>([])
+  const [yearsLoading, setYearsLoading] = useState(true)
+  const [eventYear, setEventYear] = useState<RegistrationEventYear | null>(null)
   const [families, setFamilies] = useState<DirectoryFamily[]>([])
   const [search, setSearch] = useState("")
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [accessDenied, setAccessDenied] = useState(false)
+  const [directoryDisabled, setDirectoryDisabled] = useState(false)
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    setEventYear(parseRegistrationEventYear(params.get("year")))
+    async function loadEnabledYears() {
+      setYearsLoading(true)
+      try {
+        const response = await fetch("/api/directory/years")
+        const data = await response.json()
+        const years = (data.years || []) as RegistrationEventYear[]
+        setEnabledYears(years)
+
+        const params = new URLSearchParams(window.location.search)
+        const requestedYear = parseRegistrationEventYear(params.get("year"))
+        const selectedYear = pickDirectoryYear(requestedYear, years)
+        setEventYear(selectedYear)
+
+        if (selectedYear && String(selectedYear) !== params.get("year")) {
+          const url = new URL(window.location.href)
+          url.searchParams.set("year", String(selectedYear))
+          window.history.replaceState({}, "", url.toString())
+        }
+      } catch {
+        setEnabledYears([2026])
+        setEventYear(2026)
+      } finally {
+        setYearsLoading(false)
+      }
+    }
+
+    void loadEnabledYears()
   }, [])
 
   useEffect(() => {
-    if (!isLoaded) return
+    if (!isLoaded || yearsLoading || eventYear === null) return
     if (!isSignedIn) {
       setLoading(false)
       return
@@ -63,16 +98,22 @@ export default function DirectoryPage() {
       setLoading(true)
       setError("")
       setAccessDenied(false)
+      setDirectoryDisabled(false)
       try {
         const response = await fetch(`/api/directory?year=${eventYear}`)
         const data = await response.json()
         if (response.status === 403) {
           setFamilies([])
-          setAccessDenied(true)
-          setError(
-            data.error ||
-              `The family directory is only available to families registered for ${eventYear}.`,
-          )
+          if (data.disabled) {
+            setDirectoryDisabled(true)
+            setError(data.error || "This directory year is not open yet.")
+          } else {
+            setAccessDenied(true)
+            setError(
+              data.error ||
+                `The family directory is only available to families registered for ${eventYear}.`,
+            )
+          }
           return
         }
         if (!response.ok) {
@@ -88,7 +129,7 @@ export default function DirectoryPage() {
     }
 
     void loadDirectory()
-  }, [eventYear, isLoaded, isSignedIn])
+  }, [eventYear, isLoaded, isSignedIn, yearsLoading])
 
   const filteredFamilies = useMemo(() => {
     const query = search.trim().toLowerCase()
@@ -109,6 +150,8 @@ export default function DirectoryPage() {
     })
   }, [families, search])
 
+  const alternateYear = enabledYears.find((year) => year !== eventYear)
+
   return (
     <div className="flex min-h-dvh flex-col">
       <SiteHeader />
@@ -125,33 +168,45 @@ export default function DirectoryPage() {
                 family from their account profile.
               </p>
             </div>
-            <Select
-              value={String(eventYear)}
-              onValueChange={(value) => {
-                const year = parseRegistrationEventYear(value)
-                setEventYear(year)
-                const url = new URL(window.location.href)
-                url.searchParams.set("year", String(year))
-                window.history.replaceState({}, "", url.toString())
-              }}
-            >
-              <SelectTrigger className="w-full min-h-11 lg:w-[220px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {REGISTRATION_EVENT_YEARS.map((year) => (
-                  <SelectItem key={year} value={String(year)}>
-                    {registrationYearLabel(year)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {enabledYears.length > 1 && eventYear !== null && (
+              <Select
+                value={String(eventYear)}
+                onValueChange={(value) => {
+                  const year = parseRegistrationEventYear(value)
+                  setEventYear(year)
+                  const url = new URL(window.location.href)
+                  url.searchParams.set("year", String(year))
+                  window.history.replaceState({}, "", url.toString())
+                }}
+              >
+                <SelectTrigger className="w-full min-h-11 lg:w-[220px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {enabledYears.map((year) => (
+                    <SelectItem key={year} value={String(year)}>
+                      {registrationYearLabel(year)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
-          {!isLoaded || loading ? (
+          {!isLoaded || yearsLoading || loading ? (
             <div className="flex items-center justify-center py-16">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
+          ) : enabledYears.length === 0 ? (
+            <Card className="max-w-2xl border-dashed">
+              <CardHeader>
+                <CardTitle>Directory not available</CardTitle>
+                <CardDescription>
+                  The family directory is not open for any event year yet. Check back after
+                  registration opens.
+                </CardDescription>
+              </CardHeader>
+            </Card>
           ) : !isSignedIn ? (
             <Card className="max-w-lg">
               <CardHeader>
@@ -169,22 +224,27 @@ export default function DirectoryPage() {
           ) : error ? (
             <Card className="max-w-2xl border-dashed">
               <CardHeader>
-                <CardTitle>{accessDenied ? "Registration required" : "Directory unavailable"}</CardTitle>
+                <CardTitle>
+                  {directoryDisabled
+                    ? "Directory not open yet"
+                    : accessDenied
+                      ? "Registration required"
+                      : "Directory unavailable"}
+                </CardTitle>
                 <CardDescription>{error}</CardDescription>
               </CardHeader>
               <CardContent className="flex flex-wrap gap-3">
-                {accessDenied && eventYear === 2027 && (
+                {alternateYear && (directoryDisabled || accessDenied) && (
                   <Button
                     variant="outline"
                     onClick={() => {
-                      const year = 2026
-                      setEventYear(year)
+                      setEventYear(alternateYear)
                       const url = new URL(window.location.href)
-                      url.searchParams.set("year", String(year))
+                      url.searchParams.set("year", String(alternateYear))
                       window.history.replaceState({}, "", url.toString())
                     }}
                   >
-                    Try Rendezvous 2026 directory
+                    Try {registrationYearLabel(alternateYear)}
                   </Button>
                 )}
                 <Button asChild>
