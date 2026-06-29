@@ -19,6 +19,7 @@ import {
   type RegistrationEventYear,
 } from "@/lib/registration-event-years"
 import { cn } from "@/lib/utils"
+import { formatPhoneForStorage } from "@/lib/phone-format"
 
 type Registration = {
   id: string | number
@@ -235,8 +236,8 @@ export function RegistrationEditForm({ registrationId, eventYear }: Props) {
       const payload = {
         family_last_name: reg.family_last_name,
         email: reg.email,
-        husband_phone: reg.husband_phone,
-        wife_phone: reg.wife_phone,
+        husband_phone: formatPhoneForStorage(reg.husband_phone) ?? reg.husband_phone,
+        wife_phone: formatPhoneForStorage(reg.wife_phone) ?? reg.wife_phone,
         address: reg.address,
         city: reg.city,
         state: reg.state,
@@ -249,7 +250,8 @@ export function RegistrationEditForm({ registrationId, eventYear }: Props) {
         payment_notes: reg.payment_notes,
         arrival_notes: reg.arrival_notes,
         emergency_contact_name: reg.emergency_contact_name,
-        emergency_contact_phone: reg.emergency_contact_phone,
+        emergency_contact_phone:
+          formatPhoneForStorage(reg.emergency_contact_phone) ?? reg.emergency_contact_phone,
         emergency_contact_relationship: reg.emergency_contact_relationship,
       }
       const res = await fetch(`/api/admin/registrations/${reg.id}`, {

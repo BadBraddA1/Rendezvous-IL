@@ -63,6 +63,7 @@ import {
   formatAgeGroupLabel,
   type ProfileMemberType,
 } from "@/lib/member-age"
+import { formatPhoneNumber } from "@/lib/phone-format"
 import {
   FamilyDirectoryPhotoCard,
   type FamilyDirectoryPhotoState,
@@ -788,6 +789,12 @@ function MemberDialog({
               type="tel"
               value={formData.phone || ""}
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              onBlur={(e) => {
+                const formatted = formatPhoneNumber(e.target.value) || e.target.value
+                if (formatted !== (formData.phone || "")) {
+                  setFormData({ ...formData, phone: formatted })
+                }
+              }}
               placeholder="Shown on the family directory with this member's name"
             />
           </div>

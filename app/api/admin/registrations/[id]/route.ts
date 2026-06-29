@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { checkAdminAuth } from "@/lib/admin-auth"
 import { sql } from "@/lib/db"
+import { formatPhoneForStorage } from "@/lib/phone-format"
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const admin = await checkAdminAuth()
@@ -50,10 +51,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       await sql`UPDATE registrations SET email = ${updates.email} WHERE id = ${id}`
     }
     if (updates.husband_phone !== undefined) {
-      await sql`UPDATE registrations SET husband_phone = ${updates.husband_phone} WHERE id = ${id}`
+      await sql`UPDATE registrations SET husband_phone = ${formatPhoneForStorage(updates.husband_phone)} WHERE id = ${id}`
     }
     if (updates.wife_phone !== undefined) {
-      await sql`UPDATE registrations SET wife_phone = ${updates.wife_phone} WHERE id = ${id}`
+      await sql`UPDATE registrations SET wife_phone = ${formatPhoneForStorage(updates.wife_phone)} WHERE id = ${id}`
+    }
+    if (updates.emergency_contact_phone !== undefined) {
+      await sql`UPDATE registrations SET emergency_contact_phone = ${formatPhoneForStorage(updates.emergency_contact_phone)} WHERE id = ${id}`
     }
     if (updates.address !== undefined) {
       await sql`UPDATE registrations SET address = ${updates.address} WHERE id = ${id}`

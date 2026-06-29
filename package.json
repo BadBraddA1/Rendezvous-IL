@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "db:verify": "node scripts/verify-turso.mjs"
+    "db:verify": "node scripts/verify-turso.mjs",
+    "db:normalize-phones": "node scripts/normalize-phone-numbers.mjs"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.3.3",

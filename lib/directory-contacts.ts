@@ -1,3 +1,5 @@
+import { formatPhoneForStorage } from "@/lib/phone-format"
+
 export type DirectoryContactPhone = {
   member_id: number | null
   name: string
@@ -25,7 +27,7 @@ export function buildDirectoryContactPhones(input: {
   const fromMembers = input.members
     .map((member) => ({
       member,
-      phone: member.phone?.trim() || "",
+      phone: formatPhoneForStorage(member.phone) || "",
     }))
     .filter((entry) => entry.phone.length > 0)
     .map(({ member, phone }) => ({
@@ -41,7 +43,7 @@ export function buildDirectoryContactPhones(input: {
   const legacy: DirectoryContactPhone[] = []
   const seen = new Set<string>()
   for (const phone of [input.husband_phone, input.wife_phone]) {
-    const trimmed = phone?.trim()
+    const trimmed = formatPhoneForStorage(phone) || ""
     if (!trimmed || seen.has(trimmed)) continue
     seen.add(trimmed)
     legacy.push({

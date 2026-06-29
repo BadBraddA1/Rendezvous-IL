@@ -7,6 +7,7 @@ import {
   deriveMemberClassification,
   type ProfileMemberType,
 } from "@/lib/member-age"
+import { formatPhoneForStorage } from "@/lib/phone-format"
 
 function normalizeMemberPayload(memberData: Record<string, unknown>) {
   const normalized = { ...memberData }
@@ -26,6 +27,10 @@ function normalizeMemberPayload(memberData: Record<string, unknown>) {
     normalized.age_group = ageGroupForMemberType(memberType)
   } else if (memberType === "child" && !normalized.age_group) {
     normalized.age_group = ageGroupForMemberType("child")
+  }
+
+  if (normalized.phone !== undefined) {
+    normalized.phone = formatPhoneForStorage(String(normalized.phone ?? "")) ?? ""
   }
 
   return normalized

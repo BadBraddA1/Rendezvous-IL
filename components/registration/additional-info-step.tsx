@@ -7,7 +7,12 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Plus, Trash2, AlertCircle } from "lucide-react"
 import type { RegistrationData, HealthInfo } from "@/types/registration"
+import { formatPhoneNumber } from "@/lib/phone-format"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+
+function formatPhoneOnBlur(value: string) {
+  return formatPhoneNumber(value) || value
+}
 
 type Props = {
   data: RegistrationData
@@ -109,6 +114,12 @@ export function AdditionalInfoStep({ data, updateData }: Props) {
               placeholder="(555) 555-5555"
               value={data.emergencyContactPhone}
               onChange={(e) => updateData({ emergencyContactPhone: e.target.value })}
+              onBlur={(e) => {
+                const formatted = formatPhoneOnBlur(e.target.value)
+                if (formatted !== data.emergencyContactPhone) {
+                  updateData({ emergencyContactPhone: formatted })
+                }
+              }}
               required
             />
           </div>
@@ -169,8 +180,13 @@ export function AdditionalInfoStep({ data, updateData }: Props) {
                     </Label>
                   </div>
                 </div>
-                <Button variant="ghost" size="icon" onClick={() => removeHealthInfo(info.id)}>
-                  <Trash2 className="h-4 w-4" />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => removeHealthInfo(info.id)}
+                  aria-label="Remove health information entry"
+                >
+                  <Trash2 className="h-4 w-4" aria-hidden="true" />
                 </Button>
               </div>
             ))}

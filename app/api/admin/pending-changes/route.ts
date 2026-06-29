@@ -3,6 +3,7 @@ import { checkAdminAuth, logAuditAction } from "@/lib/admin-auth"
 import { getRequestAuditMeta } from "@/lib/audit-log"
 import { sql } from "@/lib/db"
 import { enrichPendingChanges } from "@/lib/pending-family-changes"
+import { formatPhoneForStorage } from "@/lib/phone-format"
 
 // GET - Fetch all pending changes for admin review
 export async function GET() {
@@ -73,7 +74,10 @@ export async function POST(request: Request) {
         // Update the family field - use specific field updates for safety
         const fieldName =
           change.field_name === "street" ? "address" : change.field_name
-        const newValue = change.new_value
+        const phoneFields = new Set(["husband_phone", "wife_phone"])
+        const newValue = phoneFields.has(fieldName)
+          ? formatPhoneForStorage(change.new_value)
+          : change.new_value
         const familyId = change.family_id
         
         // Handle known fields explicitly
@@ -108,6 +112,7 @@ export async function POST(request: Request) {
           typeof change.member_data === "string"
             ? JSON.parse(change.member_data)
             : change.member_data
+        const memberPhone = formatPhoneForStorage(memberData.phone)
         await sql`
           INSERT INTO family_members_v2 
             (family_id, first_name, last_name, member_type, age_group, 
@@ -116,7 +121,7 @@ export async function POST(request: Request) {
             (${change.family_id}, ${memberData.first_name}, ${memberData.last_name},
              ${memberData.member_type}, ${memberData.age_group}, ${memberData.grade || null},
              ${memberData.gender}, ${memberData.special_needs || false}, ${memberData.notes || null},
-             ${memberData.date_of_birth || null}, ${memberData.phone || null})
+             ${memberData.date_of_birth || null}, ${memberPhone})
         `
       } else if (change.change_type === 'update_member') {
         // Update existing member
@@ -124,6 +129,7 @@ export async function POST(request: Request) {
           typeof change.member_data === "string"
             ? JSON.parse(change.member_data)
             : change.member_data
+        const memberPhone = formatPhoneForStorage(memberData.phone)
         await sql`
           UPDATE family_members_v2
           SET first_name = ${memberData.first_name},
@@ -135,7 +141,7 @@ export async function POST(request: Request) {
               special_needs = ${memberData.special_needs || false},
               notes = ${memberData.notes || null},
               date_of_birth = COALESCE(${memberData.date_of_birth || null}, date_of_birth),
-              phone = ${memberData.phone || null}
+              phone = ${memberPhone}
           WHERE id = ${change.member_id} AND family_id = ${change.family_id}
         `
       } else if (change.change_type === 'remove_member') {

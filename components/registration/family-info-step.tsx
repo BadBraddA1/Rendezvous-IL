@@ -1,14 +1,30 @@
 "use client"
 
+import { useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { CustomDateSelector } from "@/components/registration/custom-date-selector"
 import { Plus, Trash2, Star } from "lucide-react"
 import type { RegistrationData, FamilyMember } from "@/types/registration"
+import { formatPhoneNumber } from "@/lib/phone-format"
+
+function formatPhoneOnBlur(value: string) {
+  return formatPhoneNumber(value) || value
+}
 
 type Props = {
   data: RegistrationData
@@ -16,6 +32,8 @@ type Props = {
 }
 
 export function FamilyInfoStep({ data, updateData }: Props) {
+  const [memberPendingRemoval, setMemberPendingRemoval] = useState<FamilyMember | null>(null)
+
   const addFamilyMember = () => {
     const newMember: FamilyMember = {
       id: Date.now().toString(),
@@ -35,19 +53,28 @@ export function FamilyInfoStep({ data, updateData }: Props) {
 
   const removeFamilyMember = (id: string) => {
     const memberToRemove = data.familyMembers.find((m) => m.id === id)
-
-    if (memberToRemove && (memberToRemove.firstName.trim() !== "" || memberToRemove.dateOfBirth)) {
-      const confirmRemove = window.confirm(
-        `Are you sure you want to remove ${memberToRemove.firstName || "this family member"}? This action cannot be undone.`,
-      )
-      if (!confirmRemove) {
-        return
-      }
+    if (!memberToRemove || data.familyMembers.length <= 1) {
+      return
     }
 
-    if (data.familyMembers.length > 1) {
-      updateData({ familyMembers: data.familyMembers.filter((m) => m.id !== id) })
+    if (memberToRemove.firstName.trim() !== "" || memberToRemove.dateOfBirth) {
+      setMemberPendingRemoval(memberToRemove)
+      return
     }
+
+    updateData({ familyMembers: data.familyMembers.filter((m) => m.id !== id) })
+  }
+
+  const confirmRemoveFamilyMember = () => {
+    if (!memberPendingRemoval || data.familyMembers.length <= 1) {
+      setMemberPendingRemoval(null)
+      return
+    }
+
+    updateData({
+      familyMembers: data.familyMembers.filter((m) => m.id !== memberPendingRemoval.id),
+    })
+    setMemberPendingRemoval(null)
   }
 
   const updateFamilyMember = (id: string, updates: Partial<FamilyMember>) => {
@@ -112,6 +139,10 @@ export function FamilyInfoStep({ data, updateData }: Props) {
               placeholder="(555) 555-5555"
               value={data.husbandPhone}
               onChange={(e) => updateData({ husbandPhone: e.target.value })}
+              onBlur={(e) => {
+                const formatted = formatPhoneOnBlur(e.target.value)
+                if (formatted !== data.husbandPhone) updateData({ husbandPhone: formatted })
+              }}
             />
           </div>
           <div>
@@ -122,6 +153,10 @@ export function FamilyInfoStep({ data, updateData }: Props) {
               placeholder="(555) 555-5555"
               value={data.wifePhone}
               onChange={(e) => updateData({ wifePhone: e.target.value })}
+              onBlur={(e) => {
+                const formatted = formatPhoneOnBlur(e.target.value)
+                if (formatted !== data.wifePhone) updateData({ wifePhone: formatted })
+              }}
             />
           </div>
         </div>
@@ -410,8 +445,9 @@ export function FamilyInfoStep({ data, updateData }: Props) {
                 size="icon"
                 onClick={() => removeFamilyMember(member.id)}
                 disabled={data.familyMembers.length === 1}
+                aria-label={`Remove ${member.firstName || "family member"}`}
               >
-                <Trash2 className="h-4 w-4" />
+                <Trash2 className="h-4 w-4" aria-hidden="true" />
               </Button>
             </div>
           ))}
@@ -436,6 +472,30 @@ export function FamilyInfoStep({ data, updateData }: Props) {
           rows={3}
         />
       </div>
+
+      <AlertDialog
+        open={memberPendingRemoval !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setMemberPendingRemoval(null)
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove family member?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {memberPendingRemoval
+                ? `Remove ${memberPendingRemoval.firstName || "this family member"} from your registration? This cannot be undone.`
+                : "Remove this family member from your registration? This cannot be undone."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep this member</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmRemoveFamilyMember}>Remove member</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

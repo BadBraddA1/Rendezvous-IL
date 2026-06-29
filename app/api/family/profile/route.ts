@@ -7,6 +7,7 @@ import {
   resolveFamilyForUser,
 } from "@/lib/family-auth"
 import { getFamilyDirectorySettings } from "@/lib/family-directory"
+import { formatPhoneForStorage } from "@/lib/phone-format"
 
 const PROFILE_FIELDS = [
   "family_last_name",
@@ -39,6 +40,11 @@ function normalizeProfileUpdates(updates: Record<string, unknown>) {
     normalized.address = normalized.street
   }
   delete normalized.street
+  for (const field of ["husband_phone", "wife_phone"] as const) {
+    if (normalized[field] !== undefined) {
+      normalized[field] = formatPhoneForStorage(String(normalized[field] ?? "")) ?? ""
+    }
+  }
   return normalized
 }
 
