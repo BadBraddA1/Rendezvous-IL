@@ -131,7 +131,7 @@ export default function FamilyProfilePage() {
   const [errorMessage, setErrorMessage] = useState("")
   const [directorySettings, setDirectorySettings] = useState<FamilyDirectoryPhotoState>({
     photo_url: null,
-    directory_opt_in: false,
+    directory_opt_in: true,
     directory_blurb: null,
     photo_updated_at: null,
   })

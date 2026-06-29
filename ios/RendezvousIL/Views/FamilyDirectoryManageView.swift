@@ -7,12 +7,12 @@ struct FamilyDirectoryManageView: View {
 
     @State private var settings = FamilyDirectorySettings(
         photo_url: nil,
-        directory_opt_in: false,
+        directory_opt_in: true,
         directory_blurb: nil,
         photo_updated_at: nil
     )
     @State private var blurb = ""
-    @State private var optIn = false
+    @State private var optIn = true
     @State private var pickerItem: PhotosPickerItem?
     @State private var isLoading = false
     @State private var isSaving = false
@@ -32,7 +32,7 @@ struct FamilyDirectoryManageView: View {
             } else {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
-                        Text("Share a family photo for the attendee directory. Other registered families can see your photo, last name, congregation, and short note.")
+                        Text("Registered families appear in the attendee directory by default. Add an optional photo and note, or hide your listing below.")
                             .foregroundStyle(.secondary)
 
                         photoPreview
@@ -56,8 +56,10 @@ struct FamilyDirectoryManageView: View {
                             .disabled(isLoading)
                         }
 
-                        Toggle("Show our family in the directory", isOn: $optIn)
-                            .disabled(settings.photo_url == nil)
+                        Toggle("Hide our family from the directory", isOn: Binding(
+                            get: { !optIn },
+                            set: { optIn = !$0 }
+                        ))
 
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Short note (optional)")

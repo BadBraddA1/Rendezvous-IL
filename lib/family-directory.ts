@@ -15,7 +15,7 @@ export async function ensureFamilyDirectorySchema(): Promise<void> {
 async function runFamilyDirectoryMigrations() {
   const statements = [
     "ALTER TABLE families ADD COLUMN photo_url TEXT",
-    "ALTER TABLE families ADD COLUMN directory_opt_in INTEGER DEFAULT 0",
+    "ALTER TABLE families ADD COLUMN directory_opt_in INTEGER DEFAULT 1",
     "ALTER TABLE families ADD COLUMN directory_blurb TEXT",
     "ALTER TABLE families ADD COLUMN photo_updated_at TEXT",
     "ALTER TABLE registrations ADD COLUMN event_year INTEGER DEFAULT 2026",
@@ -36,13 +36,44 @@ async function runFamilyDirectoryMigrations() {
   } catch {
     // Column may not exist on very old schemas; ignore.
   }
+
+  await migrateDirectoryListingDefaults()
+}
+
+const DIRECTORY_LISTING_DEFAULTS_KEY = "directory_listing_defaults_v2"
+
+async function migrateDirectoryListingDefaults() {
+  try {
+    const [row] = await sql`
+      SELECT value FROM app_settings WHERE key = ${DIRECTORY_LISTING_DEFAULTS_KEY}
+    `
+    if (row?.value === "1") return
+
+    await sql`
+      UPDATE families
+      SET directory_opt_in = 1
+      WHERE directory_opt_in IS NULL OR directory_opt_in = 0
+    `
+    await sql`
+      INSERT INTO app_settings (key, value, updated_at)
+      VALUES (${DIRECTORY_LISTING_DEFAULTS_KEY}, '1', CURRENT_TIMESTAMP)
+      ON CONFLICT (key) DO UPDATE SET value = '1', updated_at = CURRENT_TIMESTAMP
+    `
+  } catch {
+    // app_settings may not exist on very old schemas; listing query still uses COALESCE.
+  }
+}
+
+export function isFamilyDirectoryListed(value: unknown): boolean {
+  if (value === null || value === undefined) return true
+  return Number(value) !== 0
 }
 
 export type FamilyDirectoryEntry = {
   id: number
   family_last_name: string
   home_congregation: string | null
-  photo_url: string
+  photo_url: string | null
   directory_blurb: string | null
   husband_first_name: string | null
   wife_first_name: string | null
@@ -105,7 +136,7 @@ export async function getFamilyDirectorySettings(
 function emptyDirectorySettings(): FamilyDirectorySettings {
   return {
     photo_url: null,
-    directory_opt_in: false,
+    directory_opt_in: true,
     directory_blurb: null,
     photo_updated_at: null,
   }
@@ -114,7 +145,7 @@ function emptyDirectorySettings(): FamilyDirectorySettings {
 export function mapDirectorySettings(row: SqlRow): FamilyDirectorySettings {
   return {
     photo_url: row.photo_url ? String(row.photo_url) : null,
-    directory_opt_in: Boolean(row.directory_opt_in),
+    directory_opt_in: isFamilyDirectoryListed(row.directory_opt_in),
     directory_blurb: row.directory_blurb ? String(row.directory_blurb) : null,
     photo_updated_at: row.photo_updated_at ? String(row.photo_updated_at) : null,
   }
@@ -264,9 +295,7 @@ async function queryDirectoryEntries(year: RegistrationEventYear): Promise<Famil
       GROUP_CONCAT(fm.first_name, ', ') as member_names_csv
     FROM families f
     LEFT JOIN family_members_v2 fm ON fm.family_id = f.id
-    WHERE f.directory_opt_in = 1
-      AND f.photo_url IS NOT NULL
-      AND TRIM(f.photo_url) != ''
+    WHERE COALESCE(f.directory_opt_in, 1) = 1
       AND (
         EXISTS (
           SELECT 1 FROM registrations r
@@ -287,11 +316,12 @@ async function queryDirectoryEntries(year: RegistrationEventYear): Promise<Famil
 }
 
 function mapDirectoryEntry(row: SqlRow): FamilyDirectoryEntry {
+  const photoUrl = row.photo_url ? String(row.photo_url).trim() : ""
   return {
     id: Number(row.id),
     family_last_name: String(row.family_last_name ?? ""),
     home_congregation: row.home_congregation ? String(row.home_congregation) : null,
-    photo_url: String(row.photo_url),
+    photo_url: photoUrl || null,
     directory_blurb: row.directory_blurb ? String(row.directory_blurb) : null,
     husband_first_name: row.husband_first_name ? String(row.husband_first_name) : null,
     wife_first_name: row.wife_first_name ? String(row.wife_first_name) : null,

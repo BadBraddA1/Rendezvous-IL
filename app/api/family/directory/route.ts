@@ -53,16 +53,6 @@ export async function PATCH(request: Request) {
           ? String(body.directory_blurb).slice(0, 280)
           : null
 
-    if (directory_opt_in) {
-      const current = await getFamilyDirectorySettings(family.id)
-      if (!current?.photo_url) {
-        return NextResponse.json(
-          { error: "Upload a family photo before listing in the directory." },
-          { status: 400 },
-        )
-      }
-    }
-
     await updateFamilyDirectorySettings(family.id, {
       directory_opt_in,
       directory_blurb,
@@ -130,10 +120,6 @@ export async function DELETE() {
 
     const current = await getFamilyDirectorySettings(family.id)
     await setFamilyPhotoUrl(family.id, null)
-    await updateFamilyDirectorySettings(family.id, {
-      directory_opt_in: false,
-      directory_blurb: null,
-    })
     await deleteFamilyPhotoIfStored(current?.photo_url)
 
     const settings = await getFamilyDirectorySettings(family.id)

@@ -187,20 +187,38 @@ struct DirectoryView: View {
 private struct DirectoryFamilyCard: View {
     let family: DirectoryFamily
 
+    private var directoryPhotoPlaceholder: some View {
+        Color(.secondarySystemGroupedBackground)
+            .overlay {
+                VStack(spacing: 8) {
+                    Image(systemName: "person.3.fill")
+                        .font(.title2)
+                        .foregroundStyle(.secondary)
+                    Text("No photo yet")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            AsyncImage(url: URL(string: family.photo_url)) { phase in
-                switch phase {
-                case .success(let image):
-                    image
-                        .resizable()
-                        .scaledToFill()
-                default:
-                    Color(.secondarySystemGroupedBackground)
-                        .overlay {
-                            Image(systemName: "photo")
-                                .foregroundStyle(.secondary)
+            Group {
+                if let photoUrl = family.photo_url, !photoUrl.isEmpty, let url = URL(string: photoUrl) {
+                    AsyncImage(url: url) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .scaledToFill()
+                        case .failure, .empty:
+                            directoryPhotoPlaceholder
+                        @unknown default:
+                            directoryPhotoPlaceholder
                         }
+                    }
+                } else {
+                    directoryPhotoPlaceholder
                 }
             }
             .frame(height: 140)

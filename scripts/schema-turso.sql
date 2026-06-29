@@ -128,7 +128,7 @@ CREATE TABLE IF NOT EXISTS families (
   home_congregation TEXT,
   years_homeschooling INTEGER,
   photo_url TEXT,
-  directory_opt_in INTEGER DEFAULT 0,
+  directory_opt_in INTEGER DEFAULT 1,
   directory_blurb TEXT,
   photo_updated_at TEXT,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP,

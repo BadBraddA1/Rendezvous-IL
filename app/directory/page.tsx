@@ -28,7 +28,7 @@ type DirectoryFamily = {
   id: number
   family_last_name: string
   home_congregation: string | null
-  photo_url: string
+  photo_url: string | null
   directory_blurb: string | null
   husband_first_name: string | null
   wife_first_name: string | null
@@ -282,7 +282,7 @@ export default function DirectoryPage() {
                   <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
                     <Camera className="h-10 w-10 text-muted-foreground" />
                     <p className="text-muted-foreground">
-                      No families have shared a photo for {eventYear} yet.
+                      No registered families are listed for {eventYear} yet.
                     </p>
                     <Button asChild>
                       <Link href="/account/profile">Be the first to add yours</Link>
@@ -294,14 +294,21 @@ export default function DirectoryPage() {
                   {filteredFamilies.map((family) => (
                     <Card key={family.id} className="gap-0 overflow-hidden py-0 shadow-sm">
                       <div className="relative aspect-[4/3] bg-muted">
-                        <Image
-                          src={family.photo_url}
-                          alt={`${family.family_last_name} family`}
-                          fill
-                          className="object-contain"
-                          sizes="(max-width: 768px) 100vw, 33vw"
-                          unoptimized
-                        />
+                        {family.photo_url ? (
+                          <Image
+                            src={family.photo_url}
+                            alt={`${family.family_last_name} family`}
+                            fill
+                            className="object-contain"
+                            sizes="(max-width: 768px) 100vw, 33vw"
+                            unoptimized
+                          />
+                        ) : (
+                          <div className="flex h-full flex-col items-center justify-center gap-2 px-4 text-center text-muted-foreground">
+                            <Users className="h-10 w-10" />
+                            <p className="text-sm">No photo yet</p>
+                          </div>
+                        )}
                       </div>
                       <CardContent className="min-w-0 space-y-3 p-5">
                         <div className="min-w-0">

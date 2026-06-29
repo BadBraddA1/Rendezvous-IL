@@ -315,7 +315,7 @@ struct DirectoryFamily: Decodable, Identifiable {
     let id: Int
     let family_last_name: String
     let home_congregation: String?
-    let photo_url: String
+    let photo_url: String?
     let directory_blurb: String?
     let husband_first_name: String?
     let wife_first_name: String?
@@ -341,7 +341,7 @@ struct FamilyDirectorySettings: Decodable {
 
     init(
         photo_url: String? = nil,
-        directory_opt_in: Bool = false,
+        directory_opt_in: Bool = true,
         directory_blurb: String? = nil,
         photo_updated_at: String? = nil
     ) {

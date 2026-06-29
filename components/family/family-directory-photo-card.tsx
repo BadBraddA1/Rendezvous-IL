@@ -31,6 +31,11 @@ export function FamilyDirectoryPhotoCard({ settings, onChange, eventYear = 2027 
   const [error, setError] = useState("")
   const [blurb, setBlurb] = useState(settings.directory_blurb || "")
   const [optIn, setOptIn] = useState(settings.directory_opt_in)
+
+  useEffect(() => {
+    setOptIn(settings.directory_opt_in)
+    setBlurb(settings.directory_blurb || "")
+  }, [settings.directory_blurb, settings.directory_opt_in])
   const [enabledYears, setEnabledYears] = useState<number[]>([2026])
 
   useEffect(() => {
@@ -84,8 +89,7 @@ export function FamilyDirectoryPhotoCard({ settings, onChange, eventYear = 2027 
         throw new Error(data.error || "Could not remove photo")
       }
       onChange(data.settings)
-      setOptIn(false)
-      setBlurb("")
+      setBlurb(data.settings.directory_blurb || "")
     } catch (removeError) {
       setError(removeError instanceof Error ? removeError.message : "Could not remove photo")
     } finally {
@@ -124,11 +128,11 @@ export function FamilyDirectoryPhotoCard({ settings, onChange, eventYear = 2027 
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Camera className="h-5 w-5" />
-          Family Directory Photo
+          Family Directory
         </CardTitle>
         <CardDescription>
-          Upload a family photo for the Rendezvous {eventYear} attendee directory. Only families who
-          opt in and are registered for {eventYear} appear in the listing.
+          Registered {eventYear} families are listed in the attendee directory by default. Add an
+          optional photo and note here, or opt out if you prefer not to appear.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
@@ -203,18 +207,18 @@ export function FamilyDirectoryPhotoCard({ settings, onChange, eventYear = 2027 
         <div className="space-y-3 rounded-xl border bg-muted/30 p-4">
           <div className="flex items-start gap-3">
             <Checkbox
-              id="directory-opt-in"
-              checked={optIn}
-              disabled={!settings.photo_url}
-              onCheckedChange={(checked) => setOptIn(Boolean(checked))}
+              id="directory-opt-out"
+              checked={!optIn}
+              onCheckedChange={(checked) => setOptIn(!Boolean(checked))}
             />
             <div className="space-y-1">
-              <Label htmlFor="directory-opt-in" className="cursor-pointer font-medium">
-                Show our family in the attendee directory
+              <Label htmlFor="directory-opt-out" className="cursor-pointer font-medium">
+                Hide our family from the attendee directory
               </Label>
               <p className="text-sm text-muted-foreground">
-                Other registered families can see your photo, last name, congregation, and short note.
-                Phone numbers and addresses stay private.
+                Registered families appear in the directory by default. Other attendees can see your
+                last name, congregation, attendees, and optional photo or note. Phone numbers and
+                addresses stay private.
               </p>
             </div>
           </div>
