@@ -1,4 +1,4 @@
-import { AdminNav } from "@/components/admin/admin-nav"
+import { AdminStatStrip, AdminStatItem } from "@/components/admin/admin-stat-strip"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -7,12 +7,14 @@ import {
   Users, DollarSign, ShieldX, LogIn, 
   Megaphone, Star, ClipboardCheck, AlertCircle, 
   Calendar, Home, Tent, Truck, Car,
-  UserPlus, Calculator, Clock, CheckCircle2
+  Calculator, Clock, CheckCircle2
 } from "lucide-react"
 import Link from "next/link"
 import { sql } from "@/lib/db"
 import { getCurrentAdmin, isAuthenticated } from "@/lib/clerk-auth"
+import { AdminNav } from "@/components/admin/admin-nav"
 import { DirectoryYearToggles } from "@/components/admin/directory-year-toggles"
+import { RegistrationPreviewToggles } from "@/components/admin/registration-preview-toggles"
 
 export default async function AdminDashboard() {
   const authenticated = await isAuthenticated()
@@ -21,13 +23,13 @@ export default async function AdminDashboard() {
   // Not logged in at all
   if (!authenticated) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+      <div className="admin-gate-screen">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
               <LogIn className="h-7 w-7 text-primary" />
             </div>
-            <CardTitle className="text-2xl">Admin Sign In Required</CardTitle>
+            <CardTitle className="text-subheading">Admin Sign In Required</CardTitle>
             <CardDescription>
               Please sign in to access the admin dashboard.
             </CardDescription>
@@ -45,13 +47,13 @@ export default async function AdminDashboard() {
   // Not an admin
   if (!admin) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+      <div className="admin-gate-screen">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-destructive/10">
               <ShieldX className="h-7 w-7 text-destructive" />
             </div>
-            <CardTitle className="text-2xl">Access Denied</CardTitle>
+            <CardTitle className="text-subheading">Access Denied</CardTitle>
             <CardDescription>
               You don&apos;t have permission to access the admin dashboard.
             </CardDescription>
@@ -211,22 +213,22 @@ export default async function AdminDashboard() {
   const registrationProgress = Math.min((stats2027.registrations / registrationGoal) * 100, 100)
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="admin-shell">
       <AdminNav currentPage="dashboard" admin={admin} />
 
-      <main id="main-content" className="flex-1 bg-background p-6">
-        <div className="container mx-auto space-y-6">
+      <main id="main-content" className="admin-main">
+        <div className="admin-container">
           {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-3xl font-bold tracking-tight">Rendezvous 2027</h2>
+                <h1 className="text-section-title text-balance">Rendezvous 2027</h1>
                 <Badge variant="outline" className="text-primary border-primary">
                   <Calendar className="h-3 w-3 mr-1" />
                   Planning Phase
                 </Badge>
               </div>
-              <p className="text-muted-foreground">Welcome back, {admin.fullName || admin.email}</p>
+              <p className="text-lead text-muted-foreground">Welcome back, {admin.fullName || admin.email}</p>
             </div>
             <div className="flex gap-2">
               <Button asChild variant="outline">
@@ -248,8 +250,8 @@ export default async function AdminDashboard() {
           <Card>
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">2027 Registration Progress</CardTitle>
-                <span className="text-2xl font-bold">{stats2027.registrations} / {registrationGoal}</span>
+                <CardTitle className="text-widget-heading">2027 Registration Progress</CardTitle>
+                <span className="text-lg font-semibold tabular-nums">{stats2027.registrations} / {registrationGoal}</span>
               </div>
             </CardHeader>
             <CardContent>
@@ -262,78 +264,48 @@ export default async function AdminDashboard() {
           </Card>
 
           <DirectoryYearToggles isAdmin={admin.role === "admin"} />
+          <RegistrationPreviewToggles isAdmin={admin.role === "admin"} />
 
-          {/* Primary Stats Grid */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Registered Families</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats2027.registrations}</div>
-                <p className="text-xs text-muted-foreground">
-                  {stats2027.registeredAttendees} total attendees
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Express Pre-Registrations</CardTitle>
-                <Clock className="h-4 w-4 text-blue-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats2027.expressRegistrations}</div>
-                <p className="text-xs text-muted-foreground">
-                  Families planning to attend
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-                <DollarSign className="h-4 w-4 text-green-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">${stats2027.totalRevenue.toLocaleString()}</div>
-                <p className="text-xs text-muted-foreground">
-                  ${stats2027.balanceDue.toLocaleString()} balance due
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Family Database</CardTitle>
-                <UserPlus className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats2027.totalFamilies}</div>
-                <p className="text-xs text-muted-foreground">
-                  {stats2027.totalMembers} total members
-                </p>
-              </CardContent>
-            </Card>
-          </div>
+          {/* Primary stats */}
+          <AdminStatStrip>
+            <AdminStatItem
+              label="Registered families"
+              value={stats2027.registrations}
+              hint={`${stats2027.registeredAttendees} total attendees`}
+            />
+            <AdminStatItem
+              label="Express pre-registrations"
+              value={stats2027.expressRegistrations}
+              hint="Families planning to attend"
+            />
+            <AdminStatItem
+              label="Total revenue"
+              value={`$${stats2027.totalRevenue.toLocaleString()}`}
+              hint={`$${stats2027.balanceDue.toLocaleString()} balance due`}
+            />
+            <AdminStatItem
+              label="Family database"
+              value={stats2027.totalFamilies}
+              hint={`${stats2027.totalMembers} total members`}
+            />
+          </AdminStatStrip>
 
           {/* Two Column Layout */}
           <div className="grid gap-4 lg:grid-cols-2">
             {/* Lodging Breakdown */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Lodging Distribution</CardTitle>
+                <CardTitle className="text-widget-heading">Lodging Distribution</CardTitle>
                 <CardDescription>2027 registration breakdown by lodging type</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Home className="h-4 w-4 text-blue-600" />
+                    <Home className="h-4 w-4 text-muted-foreground" />
                     <span>Motel</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="font-bold">{stats2027.lodgingBreakdown.motel}</span>
+                    <span className="font-semibold tabular-nums">{stats2027.lodgingBreakdown.motel}</span>
                     {stats2027.registrations > 0 && (
                       <Badge variant="secondary" className="text-xs">
                         {Math.round((stats2027.lodgingBreakdown.motel / stats2027.registrations) * 100)}%
@@ -343,11 +315,11 @@ export default async function AdminDashboard() {
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Truck className="h-4 w-4 text-green-600" />
+                    <Truck className="h-4 w-4 text-muted-foreground" />
                     <span>RV</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="font-bold">{stats2027.lodgingBreakdown.rv}</span>
+                    <span className="font-semibold tabular-nums">{stats2027.lodgingBreakdown.rv}</span>
                     {stats2027.registrations > 0 && (
                       <Badge variant="secondary" className="text-xs">
                         {Math.round((stats2027.lodgingBreakdown.rv / stats2027.registrations) * 100)}%
@@ -357,11 +329,11 @@ export default async function AdminDashboard() {
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Tent className="h-4 w-4 text-orange-600" />
+                    <Tent className="h-4 w-4 text-muted-foreground" />
                     <span>Tent</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="font-bold">{stats2027.lodgingBreakdown.tent}</span>
+                    <span className="font-semibold tabular-nums">{stats2027.lodgingBreakdown.tent}</span>
                     {stats2027.registrations > 0 && (
                       <Badge variant="secondary" className="text-xs">
                         {Math.round((stats2027.lodgingBreakdown.tent / stats2027.registrations) * 100)}%
@@ -371,11 +343,11 @@ export default async function AdminDashboard() {
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Car className="h-4 w-4 text-purple-600" />
+                    <Car className="h-4 w-4 text-muted-foreground" />
                     <span>Drive-In</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="font-bold">{stats2027.lodgingBreakdown.drivein}</span>
+                    <span className="font-semibold tabular-nums">{stats2027.lodgingBreakdown.drivein}</span>
                     {stats2027.registrations > 0 && (
                       <Badge variant="secondary" className="text-xs">
                         {Math.round((stats2027.lodgingBreakdown.drivein / stats2027.registrations) * 100)}%
@@ -389,23 +361,23 @@ export default async function AdminDashboard() {
             {/* Payment Status */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Payment Status</CardTitle>
+                <CardTitle className="text-widget-heading">Payment Status</CardTitle>
                 <CardDescription>2027 payment collection progress</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                    <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
                     <span>Paid in Full</span>
                   </div>
-                  <span className="font-bold">{stats2027.fullyPaid}</span>
+                  <span className="font-semibold tabular-nums">{stats2027.fullyPaid}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-yellow-600" />
+                    <Clock className="h-4 w-4 text-muted-foreground" />
                     <span>Deposit Only</span>
                   </div>
-                  <span className="font-bold">{stats2027.registrations - stats2027.fullyPaid}</span>
+                  <span className="font-semibold tabular-nums">{stats2027.registrations - stats2027.fullyPaid}</span>
                 </div>
                 <div className="border-t pt-4 space-y-2">
                   <div className="flex justify-between text-sm">
@@ -414,7 +386,7 @@ export default async function AdminDashboard() {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Balance Remaining</span>
-                    <span className="font-medium text-orange-600">${stats2027.balanceDue.toLocaleString()}</span>
+                    <span className="font-medium text-warning">${stats2027.balanceDue.toLocaleString()}</span>
                   </div>
                 </div>
               </CardContent>
@@ -423,29 +395,29 @@ export default async function AdminDashboard() {
             {/* Action Items */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
+                <CardTitle className="text-widget-heading flex items-center gap-2">
                   <ClipboardCheck className="h-4 w-4" />
                   Action Items
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Link href="/admin/pending-changes" className="flex justify-between items-center text-sm hover:bg-muted/50 p-2 rounded-md -mx-2">
+                <Link href="/admin/pending-changes" className="admin-action-row">
                   <span className="flex items-center gap-2">
-                    {actionItems.pendingChanges > 0 && <AlertCircle className="h-4 w-4 text-orange-600" />}
+                    {actionItems.pendingChanges > 0 && <AlertCircle className="h-4 w-4 text-warning" />}
                     Pending Family Changes
                   </span>
                   <Badge variant={actionItems.pendingChanges > 0 ? "default" : "secondary"}>
                     {actionItems.pendingChanges}
                   </Badge>
                 </Link>
-                <Link href="/admin/announcements" className="flex justify-between items-center text-sm hover:bg-muted/50 p-2 rounded-md -mx-2">
+                <Link href="/admin/announcements" className="admin-action-row">
                   <span className="flex items-center gap-2">
                     <Megaphone className="h-4 w-4 text-muted-foreground" />
                     Active Announcements
                   </span>
                   <Badge variant="secondary">{actionItems.activeAnnouncements}</Badge>
                 </Link>
-                <Link href="/admin/feedback" className="flex justify-between items-center text-sm hover:bg-muted/50 p-2 rounded-md -mx-2">
+                <Link href="/admin/feedback" className="admin-action-row">
                   <span className="flex items-center gap-2">
                     <Star className="h-4 w-4 text-muted-foreground" />
                     2027 Feedback
@@ -458,16 +430,16 @@ export default async function AdminDashboard() {
             {/* Family Insights */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Family Insights</CardTitle>
+                <CardTitle className="text-widget-heading">Family Insights</CardTitle>
                 <CardDescription>Returning vs new families for 2027</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span>Returning Families</span>
                   <div className="flex items-center gap-2">
-                    <span className="font-bold">{returningFamilies}</span>
+                    <span className="font-semibold tabular-nums">{returningFamilies}</span>
                     {stats2027.registrations > 0 && (
-                      <Badge variant="outline" className="text-green-600 border-green-200">
+                      <Badge variant="outline" className="border-success/30 text-success">
                         {Math.round((returningFamilies / stats2027.registrations) * 100)}%
                       </Badge>
                     )}
@@ -476,9 +448,9 @@ export default async function AdminDashboard() {
                 <div className="flex items-center justify-between">
                   <span>New Families</span>
                   <div className="flex items-center gap-2">
-                    <span className="font-bold">{newFamilies}</span>
+                    <span className="font-semibold tabular-nums">{newFamilies}</span>
                     {stats2027.registrations > 0 && (
-                      <Badge variant="outline" className="text-blue-600 border-blue-200">
+                      <Badge variant="outline" className="border-primary/30 text-primary">
                         {Math.round((newFamilies / stats2027.registrations) * 100)}%
                       </Badge>
                     )}
@@ -498,31 +470,31 @@ export default async function AdminDashboard() {
           {/* Quick Links */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Quick Actions</CardTitle>
+              <CardTitle className="text-widget-heading">Quick Actions</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-                <Button asChild variant="outline" className="justify-start">
+              <div className="admin-toolbar">
+                <Button asChild variant="outline" className="admin-toolbar-action justify-start gap-2">
                   <Link href="/admin/registrations">
-                    <Users className="h-4 w-4 mr-2" />
+                    <Users className="h-4 w-4" />
                     View All Registrations
                   </Link>
                 </Button>
-                <Button asChild variant="outline" className="justify-start">
+                <Button asChild variant="outline" className="admin-toolbar-action justify-start gap-2">
                   <Link href="/admin/announcements">
-                    <Megaphone className="h-4 w-4 mr-2" />
+                    <Megaphone className="h-4 w-4" />
                     Post Announcement
                   </Link>
                 </Button>
-                <Button asChild variant="outline" className="justify-start">
+                <Button asChild variant="outline" className="admin-toolbar-action justify-start gap-2">
                   <Link href="/admin/meals">
-                    <Calendar className="h-4 w-4 mr-2" />
+                    <Calendar className="h-4 w-4" />
                     Manage Meals
                   </Link>
                 </Button>
-                <Button asChild variant="outline" className="justify-start">
+                <Button asChild variant="outline" className="admin-toolbar-action justify-start gap-2">
                   <Link href="/admin/feedback">
-                    <Star className="h-4 w-4 mr-2" />
+                    <Star className="h-4 w-4" />
                     View Feedback
                   </Link>
                 </Button>

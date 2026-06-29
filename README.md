@@ -58,6 +58,7 @@ pnpm db:verify
 - Member type / age group: adults and teens skip the age-group picker; children with a registration birthday get age group auto-calculated (`lib/member-age.ts`).
 - Admin roles: `admin`, `editor`, `viewer`, and **`checkin`** (check-in station only — web + iOS). Permissions live in `lib/clerk-auth.ts` (`getAdminPermissions`).
 - **`/admin/audit`** — expandable activity feed: search, date range, action filters, before/after field changes, and summary stats (`GET /api/admin/audit?action=&from=&limit=`).
+- **Registration previews** (`/admin`) — toggles for admin test registration (`/registration-test2026`) and express registration preview (`/account/express-registration`); stored in `app_settings`.
 - API: `GET/PUT /api/family/profile`, `POST/DELETE /api/family/members`
 
 ## Family directory (`/directory`)

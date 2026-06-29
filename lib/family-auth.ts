@@ -346,6 +346,7 @@ export async function getExpressRegistrationData(familyEmail: string) {
     return {
       familyLastName: latestRegistration.family_last_name,
       email: latestRegistration.email,
+      lodgingType: latestRegistration.lodging_type,
       address: latestRegistration.address,
       city: latestRegistration.city,
       state: latestRegistration.state,

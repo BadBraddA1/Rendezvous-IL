@@ -1,4 +1,5 @@
 import { sql } from "@/lib/db"
+import { toDbTimestampIso } from "@/lib/db-timestamp"
 
 export type AuditLogEntry = {
   id: number
@@ -75,7 +76,7 @@ export async function listAuditLogs(filters: AuditLogFilters = {}): Promise<Audi
     resourceType: row.resource_type ? String(row.resource_type) : null,
     resourceId: row.resource_id ? String(row.resource_id) : null,
     metadata: parseDetails(row.details),
-    createdAt: String(row.created_at),
+    createdAt: toDbTimestampIso(row.created_at) ?? String(row.created_at),
     adminEmail: row.admin_email ? String(row.admin_email) : null,
     ipAddress: row.ip_address ? String(row.ip_address) : null,
     userAgent: row.user_agent ? String(row.user_agent) : null,

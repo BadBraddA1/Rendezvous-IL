@@ -32,31 +32,33 @@ import {
 } from "@/lib/audit-display"
 import { AdminListSkeleton, AdminRetryButton } from "./admin-panel-states"
 import { cn } from "@/lib/utils"
+import {
+  centralDateKey,
+  formatAuditDetailTimestamp,
+  formatAuditGroupLabel,
+  formatAuditListTimestamp,
+  parseDbTimestamp,
+} from "@/lib/db-timestamp"
 
-function formatTimestamp(iso: string) {
-  const d = new Date(iso)
-  const now = new Date()
-  const diffMs = now.getTime() - d.getTime()
-  const diffMin = Math.floor(diffMs / 60000)
-  const diffHr = Math.floor(diffMs / 3600000)
-  const diffDay = Math.floor(diffMs / 86400000)
+function groupByDate(logs: AuditLogEntry[]): { label: string; logs: AuditLogEntry[] }[] {
+  const groups = new Map<string, AuditLogEntry[]>()
 
-  let relative: string
-  if (diffMin < 1) relative = "Just now"
-  else if (diffMin < 60) relative = `${diffMin}m ago`
-  else if (diffHr < 24) relative = `${diffHr}h ago`
-  else if (diffDay < 7) relative = `${diffDay}d ago`
-  else relative = ""
+  for (const log of logs) {
+    const date = parseDbTimestamp(log.createdAt)
+    const sortKey = date ? centralDateKey(date) : formatAuditGroupLabel(log.createdAt)
 
-  const absolute = new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: d.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(d)
+    if (!groups.has(sortKey)) {
+      groups.set(sortKey, [])
+    }
+    groups.get(sortKey)!.push(log)
+  }
 
-  return { relative, absolute }
+  return Array.from(groups.entries())
+    .sort(([left], [right]) => right.localeCompare(left))
+    .map(([, groupedLogs]) => ({
+      label: formatAuditGroupLabel(groupedLogs[0]?.createdAt ?? ""),
+      logs: groupedLogs,
+    }))
 }
 
 function resolveAuditActionIcon(action: string): LucideIcon {
@@ -114,38 +116,6 @@ function MetadataChanges({ meta }: { meta: Record<string, unknown> }) {
       ))}
     </div>
   )
-}
-
-function groupByDate(logs: AuditLogEntry[]): { label: string; logs: AuditLogEntry[] }[] {
-  const groups = new Map<string, AuditLogEntry[]>()
-  const now = new Date()
-  const todayKey = now.toDateString()
-  const yesterday = new Date(now)
-  yesterday.setDate(yesterday.getDate() - 1)
-  const yesterdayKey = yesterday.toDateString()
-
-  for (const log of logs) {
-    const d = new Date(log.createdAt)
-    const dateKey = d.toDateString()
-    let label: string
-    if (dateKey === todayKey) label = "Today"
-    else if (dateKey === yesterdayKey) label = "Yesterday"
-    else {
-      label = new Intl.DateTimeFormat("en-US", {
-        weekday: "long",
-        month: "long",
-        day: "numeric",
-      }).format(d)
-    }
-
-    if (!groups.has(label)) groups.set(label, [])
-    groups.get(label)!.push(log)
-  }
-
-  return Array.from(groups.entries()).map(([label, groupedLogs]) => ({
-    label,
-    logs: groupedLogs,
-  }))
 }
 
 export function AuditLogs() {
@@ -338,7 +308,7 @@ export function AuditLogs() {
                   {group.logs.map((log) => {
                     const info = resolveAuditAction(log.action)
                     const ActionIcon = resolveAuditActionIcon(log.action)
-                    const ts = formatTimestamp(log.createdAt)
+                    const ts = formatAuditListTimestamp(log.createdAt)
                     const isExpanded = expandedId === log.id
                     const detailMeta = publicAuditMetadata(log.metadata)
 
@@ -406,17 +376,7 @@ export function AuditLogs() {
                             ) : null}
                             <div className="audit-detail__row">
                               <span className="audit-detail__label">Timestamp</span>
-                              <span>
-                                {new Intl.DateTimeFormat("en-US", {
-                                  weekday: "short",
-                                  month: "short",
-                                  day: "numeric",
-                                  year: "numeric",
-                                  hour: "numeric",
-                                  minute: "2-digit",
-                                  second: "2-digit",
-                                }).format(new Date(log.createdAt))}
-                              </span>
+                              <span>{formatAuditDetailTimestamp(log.createdAt)}</span>
                             </div>
                             {detailMeta ? (
                               <div className="audit-detail__section">

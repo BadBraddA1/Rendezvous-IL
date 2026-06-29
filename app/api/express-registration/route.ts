@@ -1,9 +1,14 @@
 import { NextResponse } from "next/server"
 import { sql } from "@/lib/db"
 import { getCurrentFamily } from "@/lib/family-auth"
+import { canAccessExpressRegistrationPreview } from "@/lib/registration-access"
 
 export async function GET() {
   try {
+    if (!(await canAccessExpressRegistrationPreview())) {
+      return NextResponse.json({ error: "Express registration preview is not available" }, { status: 403 })
+    }
+
     const family = await getCurrentFamily()
     
     if (!family) {
@@ -29,6 +34,10 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    if (!(await canAccessExpressRegistrationPreview())) {
+      return NextResponse.json({ error: "Express registration preview is not available" }, { status: 403 })
+    }
+
     const family = await getCurrentFamily()
     
     if (!family) {
@@ -87,6 +96,10 @@ export async function POST(request: Request) {
 
 export async function DELETE() {
   try {
+    if (!(await canAccessExpressRegistrationPreview())) {
+      return NextResponse.json({ error: "Express registration preview is not available" }, { status: 403 })
+    }
+
     const family = await getCurrentFamily()
     
     if (!family) {

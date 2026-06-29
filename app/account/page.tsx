@@ -1,12 +1,14 @@
 import { currentUser } from "@clerk/nextjs/server"
 import { redirect } from "next/navigation"
 import Link from "next/link"
-import { 
-  getCurrentFamily, 
-  getFamilyRegistrations, 
+import {
+  getCurrentFamily,
+  getExpressRegistrationData,
   getFamilyByEmail,
-  linkFamilyToClerk 
+  getFamilyRegistrations,
+  linkFamilyToClerk,
 } from "@/lib/family-auth"
+import { canAccessExpressRegistrationPreview } from "@/lib/registration-access"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -54,6 +56,7 @@ export default async function AccountPage() {
 
   // Get registration history
   const registrations = userEmail ? await getFamilyRegistrations(userEmail) : []
+  const expressPreviewEnabled = await canAccessExpressRegistrationPreview()
 
   return (
     <div className="mx-auto max-w-4xl space-y-8">
@@ -76,19 +79,29 @@ export default async function AccountPage() {
                 Register for 2027
               </CardTitle>
               <CardDescription>
-                {registrations.length > 0 
-                  ? "Use express registration with your saved info"
-                  : "Start your registration for Rendezvous 2027"
-                }
+                {expressPreviewEnabled
+                  ? "Preview express registration with your saved family profile"
+                  : registrations.length > 0
+                    ? "Use express registration with your saved info when it opens"
+                    : "Start your registration for Rendezvous 2027"}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button asChild className="w-full">
-                <Link href={registrations.length > 0 ? "/registration?express=true" : "/registration"}>
-                  {registrations.length > 0 ? "Express Registration" : "Start Registration"}
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
+              {expressPreviewEnabled ? (
+                <Button asChild className="w-full">
+                  <Link href="/account/express-registration">
+                    Test express registration
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+              ) : (
+                <Button asChild className="w-full">
+                  <Link href={registrations.length > 0 ? "/registration?express=true" : "/registration"}>
+                    {registrations.length > 0 ? "Express Registration" : "Start Registration"}
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+              )}
             </CardContent>
           </Card>
 

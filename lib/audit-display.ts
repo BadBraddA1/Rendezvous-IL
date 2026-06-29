@@ -5,6 +5,16 @@ export const AUDIT_ACTION_LABELS: Record<string, { label: string; color: string 
   reject_pending_change: { label: "Profile change rejected", color: "danger" },
   enable_directory_year: { label: "Directory enabled", color: "success" },
   disable_directory_year: { label: "Directory disabled", color: "warning" },
+  enable_registration_test: { label: "Registration test enabled", color: "brand" },
+  disable_registration_test: { label: "Registration test disabled", color: "neutral" },
+  enable_express_registration_preview: {
+    label: "Express registration preview enabled",
+    color: "brand",
+  },
+  disable_express_registration_preview: {
+    label: "Express registration preview disabled",
+    color: "neutral",
+  },
   export_registrations: { label: "Registrations exported", color: "brand" },
   check_in_registration: { label: "Family checked in", color: "success" },
   undo_check_in: { label: "Check-in undone", color: "warning" },
