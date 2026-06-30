@@ -14,16 +14,16 @@ export default async function QrCodesPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="admin-shell">
       <div className="print:hidden">
         <AdminNav currentPage="qr-codes" admin={admin} />
       </div>
-      <main id="main-content" className="flex-1 bg-background p-6 print:p-0">
-        <div className="container mx-auto space-y-6 print:max-w-none">
-          <div className="print:hidden">
-            <h2 className="text-3xl font-bold tracking-tight">Family QR Codes</h2>
-            <p className="text-muted-foreground">Printable QR cards for check-in</p>
-          </div>
+      <main id="main-content" className="admin-main print:p-0">
+        <div className="admin-container print:max-w-none">
+          <header className="admin-page-header print:hidden">
+            <h1 className="text-section-title text-balance">Family QR Codes</h1>
+            <p className="text-lead text-muted-foreground">Printable QR cards for check-in</p>
+          </header>
           <QrCodesPrint />
         </div>
       </main>

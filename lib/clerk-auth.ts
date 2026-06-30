@@ -40,6 +40,11 @@ export async function getAdminRole(): Promise<AdminRole | null> {
  * Returns null if not authenticated or not an admin
  */
 export async function getCurrentAdmin(): Promise<AdminUser | null> {
+  const { userId } = await auth({ acceptsToken: "session_token" })
+  if (!userId) {
+    return null
+  }
+
   const user = await currentUser()
 
   if (!user) {
@@ -65,7 +70,7 @@ export async function getCurrentAdmin(): Promise<AdminUser | null> {
  * Check if current user is authenticated (but may not be admin)
  */
 export async function isAuthenticated(): Promise<boolean> {
-  const { userId } = await auth()
+  const { userId } = await auth({ acceptsToken: "session_token" })
   return !!userId
 }
 

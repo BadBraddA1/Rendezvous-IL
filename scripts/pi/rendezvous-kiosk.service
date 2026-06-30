@@ -1,0 +1,23 @@
+[Unit]
+Description=Rendezvous IL Live Updates Chromium Kiosk
+Documentation=https://rendezvousil.com/live-updates
+# Bookworm: start with the desktop session (linger + desktop autologin required).
+# install-kiosk.sh also adds ~/.config/autostart as a fallback if this unit is late.
+After=dbus.service network-online.target graphical-session-pre.target graphical-session.target
+Wants=network-online.target dbus.service
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+EnvironmentFile=-%h/.config/rendezvous-kiosk/env
+ExecStartPre=INSTALL_DIR/wait-for-display.sh
+ExecStart=INSTALL_DIR/chromium-kiosk.sh
+Restart=always
+RestartSec=5
+# wait-for-display.sh may block up to KIOSK_DISPLAY_WAIT_SEC (default 120s)
+TimeoutStartSec=180
+TimeoutStopSec=15
+# Optional fixed view (cafeteria Pi): Environment=VIEW=meal
+
+[Install]
+WantedBy=graphical-session.target

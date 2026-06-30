@@ -7,6 +7,7 @@ import { ScrollToTop } from "@/components/scroll-to-top"
 import { BackToTop } from "@/components/back-to-top"
 import { PageTourRoot } from "@/components/dev/page-tour-root"
 import { Toaster } from "@/components/ui/toaster"
+import { UserActivityPing } from "@/components/user-activity-ping"
 
 import { siteDescription, siteTitle } from "@/lib/site-metadata"
 
@@ -85,6 +86,7 @@ export default function RootLayout({
         </a>
         <ClerkProvider>
           <ScrollToTop />
+          <UserActivityPing />
           {children}
           <BackToTop />
           <PageTourRoot />

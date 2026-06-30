@@ -31,7 +31,7 @@ export default function WeatherApiTestPage() {
   return (
     <MainContent className="min-h-screen bg-background p-8">
       <div className="max-w-4xl mx-auto space-y-6">
-        <h1 className="text-3xl font-bold">Weather API Test</h1>
+        <h1 className="text-section-title text-balance">Weather API Test</h1>
         
         <Card>
           <CardHeader>
@@ -53,8 +53,8 @@ export default function WeatherApiTestPage() {
               {status !== null && (
                 <span className={`px-3 py-1 rounded text-sm font-medium ${
                   status === 200 
-                    ? "bg-green-100 text-green-800" 
-                    : "bg-red-100 text-red-800"
+                    ? "bg-surface-highlight text-success" 
+                    : "bg-destructive/10 text-destructive"
                 }`}>
                   Status: {status}
                 </span>

@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Send, Megaphone, Trash2, Eye, EyeOff, RefreshCw, Bell } from "lucide-react"
+import { AdminConfirmDialog } from "@/components/admin/admin-confirm-dialog"
 
 interface Announcement {
   id: number
@@ -43,6 +44,8 @@ export function MessagingForm({ initialAnnouncements }: MessagingFormProps) {
   const [sendPushNotification, setSendPushNotification] = useState(false)
   const [showOnLiveUpdates, setShowOnLiveUpdates] = useState(true)
   const [showOnSchedule, setShowOnSchedule] = useState(false)
+  const [deletePending, setDeletePending] = useState<Announcement | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -145,24 +148,27 @@ export function MessagingForm({ initialAnnouncements }: MessagingFormProps) {
     }
   }
 
-  const deleteAnnouncement = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this announcement?")) return
-    
+  const performDeleteAnnouncement = async () => {
+    if (!deletePending) return
+    setDeleting(true)
     try {
-      const res = await fetch(`/api/admin/announcements/${id}`, {
+      const res = await fetch(`/api/admin/announcements/${deletePending.id}`, {
         method: "DELETE",
       })
-      
+
       if (!res.ok) {
         const data = await res.json()
         setMessage(data.error || "Failed to delete announcement")
         return
       }
-      
+
       await refreshAnnouncements()
       setMessage("")
+      setDeletePending(null)
     } catch {
       setMessage("Error deleting announcement")
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -176,6 +182,7 @@ export function MessagingForm({ initialAnnouncements }: MessagingFormProps) {
   }
 
   return (
+    <>
     <div className="grid gap-6 lg:grid-cols-2">
       {/* Create New Announcement */}
       <Card>
@@ -284,7 +291,7 @@ export function MessagingForm({ initialAnnouncements }: MessagingFormProps) {
             </div>
 
             {message && (
-              <p className={`text-sm ${message.includes("success") ? "text-green-600" : "text-red-600"}`}>
+              <p className={`text-sm ${message.includes("success") ? "text-success" : "text-destructive"}`}>
                 {message}
               </p>
             )}
@@ -325,8 +332,8 @@ export function MessagingForm({ initialAnnouncements }: MessagingFormProps) {
                   className={`p-4 rounded-lg border ${
                     !ann.is_active ? "opacity-50 bg-muted/50" : ""
                   } ${
-                    ann.priority === "urgent" ? "border-red-500/50 bg-red-500/5" :
-                    ann.priority === "high" ? "border-orange-500/50 bg-orange-500/5" :
+                    ann.priority === "urgent" ? "border-destructive/35 bg-destructive/5" :
+                    ann.priority === "high" ? "border-warning/35 bg-warning/5" :
                     ""
                   }`}
                 >
@@ -336,24 +343,24 @@ export function MessagingForm({ initialAnnouncements }: MessagingFormProps) {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className={`h-8 w-8 ${ann.is_active ? "text-green-600 hover:text-green-700" : "text-muted-foreground"}`}
+                        className={ann.is_active ? "text-success hover:text-success/90" : "text-muted-foreground"}
                         onClick={() => toggleActive(ann.id, ann.is_active)}
-                        title={ann.is_active ? "Click to hide from /LU and /schedule" : "Click to show on /LU and /schedule"}
+                        aria-label={ann.is_active ? "Hide announcement from live updates and schedule" : "Show announcement on live updates and schedule"}
                       >
                         {ann.is_active ? (
-                          <Eye className="h-4 w-4" />
+                          <Eye className="h-4 w-4" aria-hidden="true" />
                         ) : (
-                          <EyeOff className="h-4 w-4" />
+                          <EyeOff className="h-4 w-4" aria-hidden="true" />
                         )}
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 text-red-500 hover:text-red-600"
-                        onClick={() => deleteAnnouncement(ann.id)}
-                        title="Delete announcement"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => setDeletePending(ann)}
+                        aria-label={`Delete announcement: ${ann.title}`}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-4 w-4" aria-hidden="true" />
                       </Button>
                     </div>
                   </div>
@@ -371,7 +378,7 @@ export function MessagingForm({ initialAnnouncements }: MessagingFormProps) {
                       <Badge variant="outline">/schedule</Badge>
                     )}
                     {ann.sent_to_groupme && (
-                      <Badge variant="outline" className="bg-green-500/10 text-green-700 border-green-500/50">
+                    <Badge variant="outline" className="border-success/30 bg-surface-highlight text-success">
                         GroupMe
                       </Badge>
                     )}
@@ -388,5 +395,22 @@ export function MessagingForm({ initialAnnouncements }: MessagingFormProps) {
         </CardContent>
       </Card>
     </div>
+
+    <AdminConfirmDialog
+      open={deletePending !== null}
+      onOpenChange={(open) => {
+        if (!open && !deleting) setDeletePending(null)
+      }}
+      title="Delete announcement?"
+      description={
+        deletePending
+          ? `Delete "${deletePending.title}"? It will be removed from live updates and the schedule.`
+          : ""
+      }
+      confirmLabel="Delete announcement"
+      loading={deleting}
+      onConfirm={performDeleteAnnouncement}
+    />
+    </>
   )
 }

@@ -55,7 +55,7 @@ export function useRegistrationOpenCountdown() {
 export function RegistrationTimeBlock({ value, label, padDays = false }: { value: number; label: string; padDays?: boolean }) {
   return (
     <div className="flex flex-col items-center">
-      <div className="flex h-[4.5rem] w-full max-w-[4.5rem] items-center justify-center rounded-lg border border-primary/20 bg-card ring-1 ring-primary/5 sm:h-24 sm:max-w-[6rem] md:h-28 md:max-w-[7rem]">
+      <div className="flex h-[4.5rem] w-full max-w-[4.5rem] items-center justify-center countdown-digit-cell sm:h-24 sm:max-w-[6rem] md:h-28 md:max-w-[7rem]">
         <span className="registration-countdown-num tabular-nums">
           {formatCountdownValue(value, padDays)}
         </span>
@@ -93,18 +93,24 @@ export function RegistrationCountdownGrid({
 export function RegistrationNotifySection() {
   const [email, setEmail] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [submitMessage, setSubmitMessage] = useState("")
+  const [submitFeedback, setSubmitFeedback] = useState<{
+    type: "success" | "error" | "validation"
+    message: string
+  } | null>(null)
 
   const handleEmailSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
     if (!email || !email.includes("@")) {
-      setSubmitMessage("Please enter a valid email address")
+      setSubmitFeedback({
+        type: "validation",
+        message: "Enter an email address with an @ symbol, like name@example.com.",
+      })
       return
     }
 
     setIsSubmitting(true)
-    setSubmitMessage("")
+    setSubmitFeedback(null)
 
     try {
       const response = await fetch("/api/notifications/email", {
@@ -113,13 +119,31 @@ export function RegistrationNotifySection() {
         body: JSON.stringify({ email, notification_type: "registration_opening" }),
       })
 
-      if (!response.ok) throw new Error("Failed to submit email")
+      if (!response.ok) {
+        let message = "Something went wrong. Please try again."
+        try {
+          const body = (await response.json()) as { error?: string }
+          if (typeof body.error === "string" && body.error.trim()) {
+            message = body.error
+          }
+        } catch {
+          // Non-JSON error body — keep generic message
+        }
+        setSubmitFeedback({ type: "error", message })
+        return
+      }
 
-      setSubmitMessage("Thank you — we'll notify you when registration opens.")
+      setSubmitFeedback({
+        type: "success",
+        message: "Thank you — we'll notify you when registration opens.",
+      })
       setEmail("")
-      setTimeout(() => setSubmitMessage(""), 4000)
+      setTimeout(() => setSubmitFeedback(null), 4000)
     } catch {
-      setSubmitMessage("Something went wrong. Please try again.")
+      setSubmitFeedback({
+        type: "error",
+        message: "We couldn't reach the server. Check your connection and try again.",
+      })
     } finally {
       setIsSubmitting(false)
     }
@@ -140,14 +164,25 @@ export function RegistrationNotifySection() {
       </p>
 
       <form onSubmit={handleEmailSubmit} className="mx-auto flex max-w-md flex-col gap-3 sm:flex-row">
+        <label htmlFor="notify-email" className="sr-only">
+          Email address for registration opening notification
+        </label>
         <Input
+          id="notify-email"
           type="email"
-          placeholder="Enter your email"
+          placeholder="you@example.com"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => {
+            setEmail(e.target.value)
+            if (submitFeedback?.type === "validation") {
+              setSubmitFeedback(null)
+            }
+          }}
           disabled={isSubmitting}
           className="h-11 flex-1 text-base"
           autoComplete="email"
+          aria-invalid={submitFeedback?.type === "validation" ? true : undefined}
+          aria-describedby={submitFeedback ? "notify-feedback" : undefined}
         />
         <Button
           type="submit"
@@ -159,13 +194,21 @@ export function RegistrationNotifySection() {
         </Button>
       </form>
 
-      {submitMessage && (
+      {submitFeedback && (
         <p
-          role="status"
-          aria-live="polite"
-          className={`text-sm ${submitMessage.startsWith("Thank you") ? "text-success" : "text-warning"}`}
+          id="notify-feedback"
+          key={submitFeedback.message}
+          role={submitFeedback.type === "success" ? "status" : "alert"}
+          aria-live={submitFeedback.type === "success" ? "polite" : "assertive"}
+          className={`motion-status-enter text-sm ${
+            submitFeedback.type === "success"
+              ? "text-success"
+              : submitFeedback.type === "validation"
+                ? "text-warning"
+                : "text-destructive"
+          }`}
         >
-          {submitMessage}
+          {submitFeedback.message}
         </p>
       )}
     </div>
@@ -177,10 +220,12 @@ export function RegistrationOpenCta() {
     <div className="rounded-xl border border-primary/20 bg-surface-lake p-6 text-center md:p-8">
       <p className="mb-4 text-lead text-on-surface">Registration is open for Rendezvous 2027.</p>
       <p className="mb-6 text-sm text-on-surface/80">
-        Secure your spot for May 3–7 at Lake Williamson Christian Center.
+        Email Stephen to begin registration for May 3–7 at Lake Williamson Christian Center.
       </p>
       <Button size="lg" className="h-11 gap-2" asChild>
-        <Link href="mailto:Stephen@Bradd.us">Contact us to register</Link>
+        <Link href="mailto:Stephen@Bradd.us?subject=Rendezvous%202027%20Registration">
+          Email Stephen to register
+        </Link>
       </Button>
     </div>
   )

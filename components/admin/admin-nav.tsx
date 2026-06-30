@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { UserButton } from "@clerk/nextjs"
+import { UserMenuButton } from "@/components/user-menu-button"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -10,7 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { LayoutDashboard, Users, Settings, FileText, MapPin, MessageSquare, Utensils, Eye, ClipboardCheck, User, Home, Shield, DollarSign, ScanLine, UserCheck, QrCode, Megaphone, Star, Calculator, ChevronDown } from "lucide-react"
+import { LayoutDashboard, Users, Settings, FileText, MapPin, MessageSquare, Utensils, Eye, ClipboardCheck, User, Home, Shield, DollarSign, ScanLine, UserCheck, QrCode, Megaphone, Star, Calculator, ChevronDown, Monitor } from "lucide-react"
 import type { AdminRole } from "@/lib/admin-permissions"
 import { getAdminPermissions } from "@/lib/admin-permissions"
 
@@ -91,6 +91,13 @@ export function AdminNav({ currentPage, admin }: AdminNavProps) {
           icon: Megaphone,
           page: "announcements",
           show: (role) => getAdminPermissions(role).canEdit,
+        },
+        {
+          href: "/admin/displays",
+          label: "Displays",
+          icon: Monitor,
+          page: "displays",
+          show: (role) => getAdminPermissions(role).canViewRegistrations,
         },
         {
           href: "/admin/messaging",
@@ -278,19 +285,15 @@ export function AdminNav({ currentPage, admin }: AdminNavProps) {
               </Badge>
             </div>
           </div>
-          <UserButton 
+          <UserMenuButton
+            size="md"
             afterSignOutUrl="/admin/login"
-            appearance={{
-              elements: {
-                avatarBox: "h-11 w-11"
-              }
-            }}
-          >
-            <UserButton.MenuItems>
-              <UserButton.Link label="My Account" href="/account" labelIcon={<User className="h-4 w-4" />} />
-              <UserButton.Link label="Back to Site" href="/" labelIcon={<Home className="h-4 w-4" />} />
-            </UserButton.MenuItems>
-          </UserButton>
+            showAdminLink={false}
+            links={[
+              { label: "My account", href: "/account", icon: User },
+              { label: "Back to site", href: "/", icon: Home },
+            ]}
+          />
         </div>
       </div>
       

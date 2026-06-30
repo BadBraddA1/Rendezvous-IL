@@ -6,7 +6,7 @@ export function SiteFooter() {
       <div className="site-container">
         <div className="mx-auto max-w-4xl">
           <div className="mb-8 text-center">
-            <p className="font-display mb-2 text-xl font-bold">Stephen &amp; Ranae Bradd</p>
+            <p className="font-display text-subheading mb-2">Stephen &amp; Ranae Bradd</p>
             <p className="text-sm text-muted-foreground">8754 Sunset Rd</p>
             <p className="text-sm text-muted-foreground">Clinton, IL 61727</p>
             <p className="text-sm text-muted-foreground">

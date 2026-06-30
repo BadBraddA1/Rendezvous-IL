@@ -37,7 +37,7 @@ export default async function AdminLoginPage({
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
               <AlertCircle className="h-6 w-6 text-destructive" />
             </div>
-            <CardTitle className="text-2xl font-bold">Access Denied</CardTitle>
+            <CardTitle className="text-subheading">Access Denied</CardTitle>
             <CardDescription>
               Your account does not have admin privileges.
             </CardDescription>
@@ -68,7 +68,7 @@ export default async function AdminLoginPage({
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
             <Shield className="h-6 w-6 text-primary" />
           </div>
-          <CardTitle className="text-2xl font-bold">Admin Access</CardTitle>
+          <CardTitle className="text-subheading">Admin Access</CardTitle>
           <CardDescription>
             Sign in with your admin account to access the dashboard.
           </CardDescription>

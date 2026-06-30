@@ -1,9 +1,24 @@
+import Clerk
 import SwiftUI
 
 struct AccountView: View {
     @Environment(AppSession.self) private var session
 
     var body: some View {
+        Group {
+            if session.isSignedIn {
+                signedInContent
+            } else {
+                signedOutContent
+            }
+        }
+        .navigationTitle("Account")
+        .task {
+            await session.refreshAuth()
+        }
+    }
+
+    private var signedOutContent: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 Image(systemName: "person.3.fill")
@@ -13,11 +28,31 @@ struct AccountView: View {
                 Text("Family account")
                     .font(.title.weight(.semibold))
 
-                Text("Registration for Rendezvous 2027 opens ")
-                + Text("January 1, 2027").fontWeight(.semibold)
-                + Text(". After you register on the website, you can manage your family profile, lodging, and meal preferences from your account.")
+                Text("Sign in with the same account you use on rendezvousil.com to manage your family profile, directory photo, and registration.")
                     .font(.body)
                     .foregroundStyle(.secondary)
+
+                AuthView()
+                    .frame(minHeight: 360)
+
+                Link(destination: AppConfig.url(for: "/sign-in/forgot-password")) {
+                    Label("Forgot password?", systemImage: "key")
+                        .font(.subheadline)
+                }
+
+                contactBlock
+            }
+            .padding()
+        }
+    }
+
+    private var signedInContent: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                if let name = session.adminName ?? Clerk.shared.user?.fullName {
+                    Text("Signed in as \(name)")
+                        .font(.headline)
+                }
 
                 VStack(alignment: .leading, spacing: 12) {
                     infoRow(icon: "calendar", title: "Event dates", value: AppConfig.eventDates)
@@ -27,16 +62,28 @@ struct AccountView: View {
                 .padding()
                 .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
 
-                Text("Account sign-in uses the same secure login as rendezvousil.com. Native sign-in is planned for a future update.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-
                 Link(destination: AppConfig.url(for: "/account")) {
-                    Label("Manage account on website", systemImage: "safari")
+                    Label("Family dashboard on web", systemImage: "safari")
                         .frame(maxWidth: .infinity)
                         .padding()
                         .background(BrandColors.lake, in: RoundedRectangle(cornerRadius: 12))
                         .foregroundStyle(.white)
+                }
+
+                Link(destination: AppConfig.url(for: "/account/settings")) {
+                    Label("Change password on web", systemImage: "key")
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
+                        .foregroundStyle(BrandColors.lake)
+                }
+
+                Link(destination: AppConfig.url(for: "/sign-in/forgot-password")) {
+                    Label("Reset password (email code)", systemImage: "envelope")
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
+                        .foregroundStyle(BrandColors.lake)
                 }
 
                 NavigationLink {
@@ -59,20 +106,18 @@ struct AccountView: View {
                         .foregroundStyle(BrandColors.lake)
                 }
 
-                Link(destination: AppConfig.url(for: "/registration")) {
-                    Label("Registration info", systemImage: "doc.text")
+                Button(role: .destructive) {
+                    Task { await session.signOut() }
+                } label: {
+                    Label("Sign out", systemImage: "rectangle.portrait.and.arrow.right")
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
-                        .foregroundStyle(BrandColors.lake)
                 }
 
                 contactBlock
             }
             .padding()
         }
-        .navigationTitle("Account")
-        .task { await session.refreshAuth() }
     }
 
     private func infoRow(icon: String, title: String, value: String) -> some View {

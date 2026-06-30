@@ -32,26 +32,26 @@ export function QuickActions() {
         <CardTitle>Quick Actions</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-          <Link href="/admin/registrations">
-            <Button className="w-full gap-2 bg-transparent" variant="outline">
+        <div className="admin-toolbar">
+          <Link href="/admin/registrations" className="admin-toolbar-primary">
+            <Button className="w-full gap-2" variant="outline">
               <Users className="h-4 w-4" />
               Manage Registrations
             </Button>
           </Link>
 
-          <Button className="w-full gap-2 bg-transparent" variant="outline" onClick={handleExportBadges}>
+          <Button className="admin-toolbar-action gap-2" variant="outline" onClick={handleExportBadges}>
             <FileText className="h-4 w-4" />
             Download Name Badges
           </Button>
 
-          <Button className="w-full gap-2 bg-transparent" variant="outline" onClick={handleExportAll}>
+          <Button className="admin-toolbar-action gap-2" variant="outline" onClick={handleExportAll}>
             <Download className="h-4 w-4" />
             Export All Data
           </Button>
 
-          <Link href="/admin/registrations">
-            <Button className="w-full gap-2 bg-transparent" variant="outline">
+          <Link href="/admin/registrations" className="admin-toolbar-primary">
+            <Button className="w-full gap-2" variant="outline">
               <Mail className="h-4 w-4" />
               Send Bulk Email
             </Button>

@@ -1,6 +1,7 @@
 "use client"
 
 import type React from "react"
+import dynamic from "next/dynamic"
 import { Users, Map, X, Printer } from "lucide-react"
 import Link from "next/link"
 import { SiteHeader } from "@/components/site-header"
@@ -10,9 +11,21 @@ import { useFocusTrap } from "@/lib/use-focus-trap"
 import { Button } from "@/components/ui/button"
 import { VolunteerSchedule } from "@/components/volunteer-schedule"
 import { InlineWeather } from "@/components/weather-forecast"
-import { ScheduleMap } from "@/components/schedule-map"
 import { LocationLink } from "@/components/location-link"
 import { MealMenu } from "@/components/meal-menu"
+import { ScheduleDataProvider } from "@/components/schedule/schedule-data-context"
+
+const ScheduleMap = dynamic(
+  () => import("@/components/schedule-map").then((mod) => mod.ScheduleMap),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+        Loading map…
+      </div>
+    ),
+  },
+)
 
 const scheduleDays = [
   { id: "monday", label: "Monday", letter: "M" },
@@ -23,7 +36,7 @@ const scheduleDays = [
 ] as const
 
 const sectionClass =
-  "scroll-mt-[calc(5.5rem+env(safe-area-inset-top,0px)+1rem)] rounded-xl border border-primary/15 bg-card p-4 md:p-6"
+  "schedule-day-section site-scroll-mt rounded-xl border border-primary/15 bg-card p-4 md:p-6"
 const eventClass =
   "min-w-0 rounded-lg border border-border/60 bg-surface-tint/50 p-3 break-words md:p-4"
 
@@ -58,12 +71,13 @@ export default function SchedulePage() {
   useFocusTrap(showMap, mapDialogRef, closeMap)
 
   return (
+    <ScheduleDataProvider>
     <div className="min-h-screen bg-background">
       <SiteHeader />
 
       <main
         id="main-content"
-        className="site-container pb-16 pt-[calc(5.5rem+env(safe-area-inset-top,0px)+1.25rem)] md:pb-20 md:pt-[calc(5.5rem+env(safe-area-inset-top,0px))]"
+        className="site-container site-below-header-loose site-page-intro pb-16 md:pb-20"
       >
         <header className="mb-6 text-center md:mb-12">
           <h1 className="text-page-title mb-3 text-balance md:mb-4">Rendezvous 2027 schedule</h1>
@@ -91,7 +105,7 @@ export default function SchedulePage() {
 
         {showMap && (
           <div
-            className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-foreground/60 p-3 md:p-6"
+            className="z-layer-modal-backdrop fixed inset-0 flex flex-col items-center justify-center bg-foreground/60 p-3 md:p-6"
             role="presentation"
             onClick={closeMap}
           >
@@ -100,7 +114,7 @@ export default function SchedulePage() {
               role="dialog"
               aria-modal="true"
               aria-labelledby="venue-map-title"
-              className="relative flex w-full max-w-4xl flex-col overflow-hidden rounded-xl border border-primary/15 bg-background shadow-xl"
+              className="relative z-layer-modal flex w-full max-w-4xl flex-col overflow-hidden rounded-xl border border-primary/15 bg-background shadow-md"
               style={{ height: "min(85dvh, 600px)" }}
               onClick={(e) => e.stopPropagation()}
             >
@@ -126,7 +140,7 @@ export default function SchedulePage() {
         )}
 
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
-          <aside className="shrink-0 lg:sticky lg:top-[calc(5.5rem+env(safe-area-inset-top,0px))] lg:w-64">
+          <aside className="site-sticky-top shrink-0 lg:sticky lg:w-64">
             <nav
               aria-label="Jump to day"
               className="schedule-day-nav grid grid-cols-2 justify-items-stretch gap-2 rounded-xl border border-primary/15 bg-card p-3 sm:grid-cols-5 lg:flex lg:flex-col lg:gap-2 lg:p-4"
@@ -140,7 +154,7 @@ export default function SchedulePage() {
                     onClick={(e) => handleDayClick(e, day.id)}
                     aria-current={isActive ? "location" : undefined}
                     className={`focus-ring flex min-h-11 flex-col items-center gap-2 rounded-lg p-3 transition-colors hover:bg-surface-highlight active:bg-surface-highlight lg:flex-row lg:gap-3 ${
-                      isActive ? "bg-surface-highlight ring-2 ring-primary/40" : ""
+                      isActive ? "bg-surface-highlight ring-1 ring-primary/25" : ""
                     }`}
                   >
                     <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground lg:h-10 lg:w-10">
@@ -163,11 +177,11 @@ export default function SchedulePage() {
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-base font-bold text-secondary-foreground md:h-12 md:w-12 md:text-lg">
                   M
                 </div>
-                <h2 className="font-display text-xl font-bold md:text-2xl">May 3 (Monday)</h2>
+                <h2 className="text-day-title">May 3 (Monday)</h2>
               </div>
               <dl className="space-y-4 md:space-y-6">
                 <div className={eventClass}>
-                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">1:00 – 5:15 PM</dt>
+                  <dt className="mb-2 text-sm font-medium text-primary md:text-base">1:00 – 5:15 PM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Check-in at <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>Activity Center (AC)</LocationLink> [upstairs outside Room 207] [mini-fridge available in AC Room 205]
                     <br />
@@ -175,13 +189,13 @@ export default function SchedulePage() {
                   </dd>
                 </div>
                 <div className={eventClass}>
-                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">4:00 – 5:00 PM</dt>
+                  <dt className="mb-2 text-sm font-medium text-primary md:text-base">4:00 – 5:00 PM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Ice Breaker in <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>AC Room 205/206</LocationLink>
                   </dd>
                 </div>
                 <div className={eventClass}>
-                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">5:30 PM</dt>
+                  <dt className="mb-2 text-sm font-medium text-primary md:text-base">5:30 PM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Dinner at the <LocationLink locationId="lakeside-dining" onShowMap={showMapWithLocation}>Lakeside Dining Room</LocationLink> (please gather outside for a prayer prior to each designated meal
                     time)
@@ -189,14 +203,14 @@ export default function SchedulePage() {
                   </dd>
                 </div>
                 <div className={eventClass}>
-                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">7:00 PM</dt>
+                  <dt className="mb-2 text-sm font-medium text-primary md:text-base">7:00 PM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Evening assembly, welcome, family introductions, & announcements in <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>AC Room 207</LocationLink>
                     <VolunteerSchedule date="2027-05-03" timeSlot="Evening Devotion" />
                   </dd>
                 </div>
                 <div className={eventClass}>
-                  <dt className="mb-3 text-sm font-semibold text-primary md:text-base">
+                  <dt className="mb-3 text-sm font-medium text-primary md:text-base">
                     Evening activities or free time at the <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>Activity Center</LocationLink>:
                   </dt>
                   <dd className="ml-4 space-y-2 text-sm leading-relaxed text-muted-foreground md:space-y-3 md:text-base">
@@ -225,25 +239,25 @@ export default function SchedulePage() {
                 <div className="flex h-10 w-10 items-center justify-center rounded-full text-base font-bold text-primary-foreground md:h-12 md:w-12 md:text-lg bg-primary">
                   T
                 </div>
-                <h2 className="font-display text-xl font-bold md:text-2xl">May 4 (Tuesday)</h2>
+                <h2 className="text-day-title">May 4 (Tuesday)</h2>
               </div>
               <dl className="space-y-4 md:space-y-6">
                 <div className={eventClass}>
-                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">7:30 AM</dt>
+                  <dt className="mb-2 text-sm font-medium text-primary md:text-base">7:30 AM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Breakfast at the <LocationLink locationId="lakeside-dining" onShowMap={showMapWithLocation}>Lakeside Dining Room</LocationLink>
                     <MealMenu date="2027-05-04" mealType="breakfast" />
                   </dd>
                 </div>
                 <div className={eventClass}>
-                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">9:00 AM</dt>
+                  <dt className="mb-2 text-sm font-medium text-primary md:text-base">9:00 AM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Morning assembly & announcements in <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>AC Room 207</LocationLink>
                     <VolunteerSchedule date="2027-05-04" timeSlot="Morning Devotion" />
                   </dd>
                 </div>
                 <div className={eventClass}>
-                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">10:00 AM</dt>
+                  <dt className="mb-2 text-sm font-medium text-primary md:text-base">10:00 AM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Young Adult session at the <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>Activity Center</LocationLink> (non-parent graduates; meet in Ping Pong Room)
                     <br />
@@ -251,7 +265,7 @@ export default function SchedulePage() {
                   </dd>
                 </div>
                 <div className={eventClass}>
-                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">10:00 AM – 11:30 AM</dt>
+                  <dt className="mb-2 text-sm font-medium text-primary md:text-base">10:00 AM – 11:30 AM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     <span className="inline-flex items-center gap-1">
                       Miniature Painting at the <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>Activity Center</LocationLink>
@@ -260,14 +274,14 @@ export default function SchedulePage() {
                   </dd>
                 </div>
                 <div className={eventClass}>
-                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">12:00 PM</dt>
+                  <dt className="mb-2 text-sm font-medium text-primary md:text-base">12:00 PM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Lunch at the <LocationLink locationId="lakeside-dining" onShowMap={showMapWithLocation}>Lakeside Dining Room</LocationLink>
                     <MealMenu date="2027-05-04" mealType="lunch" />
                   </dd>
                 </div>
                 <div className={eventClass}>
-                  <dt className="mb-3 text-sm font-semibold text-primary md:text-base flex items-center flex-wrap gap-2">
+                  <dt className="mb-3 text-sm font-medium text-primary md:text-base flex items-center flex-wrap gap-2">
                     Outside afternoon activities (weather permitting) or free time:
                     <InlineWeather date="2027-05-04" hour={14} />
                   </dt>
@@ -285,21 +299,21 @@ export default function SchedulePage() {
                   </dd>
                 </div>
                 <div className={eventClass}>
-                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">5:30 PM</dt>
+                  <dt className="mb-2 text-sm font-medium text-primary md:text-base">5:30 PM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Dinner at the <LocationLink locationId="lakeside-dining" onShowMap={showMapWithLocation}>Lakeside Dining Room</LocationLink>
                     <MealMenu date="2027-05-04" mealType="dinner" />
                   </dd>
                 </div>
                 <div className={eventClass}>
-                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">7:00 PM</dt>
+                  <dt className="mb-2 text-sm font-medium text-primary md:text-base">7:00 PM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Evening assembly & announcements in <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>AC Room 207</LocationLink>
                     <VolunteerSchedule date="2027-05-04" timeSlot="Evening Devotion" />
                   </dd>
                 </div>
                 <div className={eventClass}>
-                  <dt className="mb-3 text-sm font-semibold text-primary md:text-base">
+                  <dt className="mb-3 text-sm font-medium text-primary md:text-base">
                     Evening activities or free time at the <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>Activity Center</LocationLink>:
                   </dt>
                   <dd className="ml-4 space-y-2 text-sm leading-relaxed text-muted-foreground md:space-y-3 md:text-base">
@@ -324,38 +338,38 @@ export default function SchedulePage() {
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-foreground text-base font-bold text-background md:h-12 md:w-12 md:text-lg">
                   W
                 </div>
-                <h2 className="font-display text-xl font-bold md:text-2xl">May 5 (Wednesday)</h2>
+                <h2 className="text-day-title">May 5 (Wednesday)</h2>
               </div>
               <dl className="space-y-4 md:space-y-6">
                 <div className={eventClass}>
-                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">7:30 AM</dt>
+                  <dt className="mb-2 text-sm font-medium text-primary md:text-base">7:30 AM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Breakfast at the <LocationLink locationId="lakeside-dining" onShowMap={showMapWithLocation}>Lakeside Dining Room</LocationLink>
                     <MealMenu date="2027-05-05" mealType="breakfast" />
                   </dd>
                 </div>
                 <div className={eventClass}>
-                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">9:00 AM</dt>
+                  <dt className="mb-2 text-sm font-medium text-primary md:text-base">9:00 AM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Morning assembly, group picture, & announcements in <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>AC Room 207</LocationLink>
                     <VolunteerSchedule date="2027-05-05" timeSlot="Morning Devotion" />
                   </dd>
                 </div>
                 <div className={eventClass}>
-                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">10:00 AM</dt>
+                  <dt className="mb-2 text-sm font-medium text-primary md:text-base">10:00 AM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Dad&apos;s session in <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>AC Room 207</LocationLink> (free time for everyone else; black-light activities & nine square)
                   </dd>
                 </div>
                 <div className={eventClass}>
-                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">12:00 PM</dt>
+                  <dt className="mb-2 text-sm font-medium text-primary md:text-base">12:00 PM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Lunch at the <LocationLink locationId="lakeside-dining" onShowMap={showMapWithLocation}>Lakeside Dining Room</LocationLink>
                     <MealMenu date="2027-05-05" mealType="lunch" />
                   </dd>
                 </div>
                 <div className={eventClass}>
-                  <dt className="mb-3 text-sm font-semibold text-primary md:text-base flex items-center flex-wrap gap-2">
+                  <dt className="mb-3 text-sm font-medium text-primary md:text-base flex items-center flex-wrap gap-2">
                     Outside afternoon activities (weather permitting) or free time:
                     <InlineWeather date="2027-05-05" hour={14} />
                   </dt>
@@ -378,21 +392,21 @@ export default function SchedulePage() {
                   </dd>
                 </div>
                 <div className={eventClass}>
-                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">5:30 PM</dt>
+                  <dt className="mb-2 text-sm font-medium text-primary md:text-base">5:30 PM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Dinner at the <LocationLink locationId="lakeside-dining" onShowMap={showMapWithLocation}>Lakeside Dining Room</LocationLink>
                     <MealMenu date="2027-05-05" mealType="dinner" />
                   </dd>
                 </div>
                 <div className={eventClass}>
-                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">7:00 PM</dt>
+                  <dt className="mb-2 text-sm font-medium text-primary md:text-base">7:00 PM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Evening assembly & announcements in <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>Room 207 at the Activity Center</LocationLink>
                     <VolunteerSchedule date="2027-05-05" timeSlot="Evening Devotion" />
                   </dd>
                 </div>
                 <div className={eventClass}>
-                  <dt className="mb-3 text-sm font-semibold text-primary md:text-base">
+                  <dt className="mb-3 text-sm font-medium text-primary md:text-base">
                     Evening activities or free time at the <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>Activity Center</LocationLink>:
                   </dt>
                   <dd className="ml-4 space-y-2 text-sm leading-relaxed text-muted-foreground md:space-y-3 md:text-base">
@@ -417,25 +431,25 @@ export default function SchedulePage() {
                 <div className="flex h-10 w-10 items-center justify-center rounded-full text-base font-bold text-primary-foreground md:h-12 md:w-12 md:text-lg bg-primary">
                   Th
                 </div>
-                <h2 className="font-display text-xl font-bold md:text-2xl">May 6 (Thursday)</h2>
+                <h2 className="text-day-title">May 6 (Thursday)</h2>
               </div>
               <dl className="space-y-4 md:space-y-6">
                 <div className={eventClass}>
-                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">7:30 AM</dt>
+                  <dt className="mb-2 text-sm font-medium text-primary md:text-base">7:30 AM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Breakfast at the <LocationLink locationId="lakeside-dining" onShowMap={showMapWithLocation}>Lakeside Dining Room</LocationLink>
                     <MealMenu date="2027-05-06" mealType="breakfast" />
                   </dd>
                 </div>
                 <div className={eventClass}>
-                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">9:00 AM</dt>
+                  <dt className="mb-2 text-sm font-medium text-primary md:text-base">9:00 AM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Morning assembly & announcements in <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>AC Room 207</LocationLink>
                     <VolunteerSchedule date="2027-05-06" timeSlot="Morning Devotion" />
                   </dd>
                 </div>
                 <div className={eventClass}>
-                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">10:00 AM</dt>
+                  <dt className="mb-2 text-sm font-medium text-primary md:text-base">10:00 AM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Bible bowl (everyone is encouraged to participate:{" "}
                     <a href="/biblebowl" className="focus-ring inline-flex items-center gap-1 rounded-sm text-primary hover:underline">
@@ -446,20 +460,20 @@ export default function SchedulePage() {
                   </dd>
                 </div>
                 <div className={eventClass}>
-                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">10:20 AM</dt>
+                  <dt className="mb-2 text-sm font-medium text-primary md:text-base">10:20 AM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Ping Pong tournament at the <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>Activity Center</LocationLink>
                   </dd>
                 </div>
                 <div className={eventClass}>
-                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">12:00 PM</dt>
+                  <dt className="mb-2 text-sm font-medium text-primary md:text-base">12:00 PM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Lunch at the <LocationLink locationId="lakeside-dining" onShowMap={showMapWithLocation}>Lakeside Dining Room</LocationLink>
                     <MealMenu date="2027-05-06" mealType="lunch" />
                   </dd>
                 </div>
                 <div className={eventClass}>
-                  <dt className="mb-3 text-sm font-semibold text-primary md:text-base flex items-center flex-wrap gap-2">
+                  <dt className="mb-3 text-sm font-medium text-primary md:text-base flex items-center flex-wrap gap-2">
                     Outside afternoon activities (weather permitting) or free time:
                     <InlineWeather date="2027-05-06" hour={14} />
                   </dt>
@@ -482,7 +496,7 @@ export default function SchedulePage() {
                   </dd>
                 </div>
                 <div className={eventClass}>
-                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base flex items-center flex-wrap gap-2">
+                  <dt className="mb-2 text-sm font-medium text-primary md:text-base flex items-center flex-wrap gap-2">
                     5:30 PM
                     <InlineWeather date="2027-05-06" hour={17} />
                   </dt>
@@ -492,7 +506,7 @@ export default function SchedulePage() {
                   </dd>
                 </div>
                 <div className={eventClass}>
-                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base flex items-center flex-wrap gap-2">
+                  <dt className="mb-2 text-sm font-medium text-primary md:text-base flex items-center flex-wrap gap-2">
                     6:30 PM
                     <InlineWeather date="2027-05-06" hour={18} />
                   </dt>
@@ -501,7 +515,7 @@ export default function SchedulePage() {
                   </dd>
                 </div>
                 <div className={eventClass}>
-                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base flex items-center flex-wrap gap-2">
+                  <dt className="mb-2 text-sm font-medium text-primary md:text-base flex items-center flex-wrap gap-2">
                     7:00 PM
                     <InlineWeather date="2027-05-06" hour={19} />
                   </dt>
@@ -511,7 +525,7 @@ export default function SchedulePage() {
                   </dd>
                 </div>
                 <div className={eventClass}>
-                  <dt className="mb-3 text-sm font-semibold text-primary md:text-base flex items-center flex-wrap gap-2">
+                  <dt className="mb-3 text-sm font-medium text-primary md:text-base flex items-center flex-wrap gap-2">
                     Evening activities or free time at the <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>Activity Center</LocationLink>:
                     <InlineWeather date="2027-05-06" hour={20} />
                   </dt>
@@ -540,31 +554,31 @@ export default function SchedulePage() {
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-base font-bold text-secondary-foreground md:h-12 md:w-12 md:text-lg">
                   F
                 </div>
-                <h2 className="font-display text-xl font-bold md:text-2xl">May 7 (Friday)</h2>
+                <h2 className="text-day-title">May 7 (Friday)</h2>
               </div>
               <dl className="space-y-4 md:space-y-6">
                 <div className={eventClass}>
-                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">7:30 AM</dt>
+                  <dt className="mb-2 text-sm font-medium text-primary md:text-base">7:30 AM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Breakfast at the <LocationLink locationId="lakeside-dining" onShowMap={showMapWithLocation}>Lakeside Dining Room</LocationLink>
                     <MealMenu date="2027-05-07" mealType="breakfast" />
                   </dd>
                 </div>
                 <div className={eventClass}>
-                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">9:00 AM</dt>
+                  <dt className="mb-2 text-sm font-medium text-primary md:text-base">9:00 AM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Morning assembly, Bible bowl awards, & brainstorming for next year in <LocationLink locationId="activities-center" onShowMap={showMapWithLocation}>AC Room 207</LocationLink>
                     <VolunteerSchedule date="2027-05-07" timeSlot="Morning Devotion" />
                   </dd>
                 </div>
                 <div className={eventClass}>
-                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">10:30 AM</dt>
+                  <dt className="mb-2 text-sm font-medium text-primary md:text-base">10:30 AM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Pack up & clean up lodging areas (return motel keys to our meeting room by 11:30 AM)
                   </dd>
                 </div>
                 <div className={eventClass}>
-                  <dt className="mb-2 text-sm font-semibold text-primary md:text-base">12:00 PM</dt>
+                  <dt className="mb-2 text-sm font-medium text-primary md:text-base">12:00 PM</dt>
                   <dd className="text-sm leading-relaxed text-muted-foreground md:text-base">
                     Lunch at the Lakeside Dining Room & then depart for home
                     <MealMenu date="2027-05-07" mealType="lunch" />
@@ -581,5 +595,6 @@ export default function SchedulePage() {
       {/* Footer */}
       <SiteFooter />
     </div>
+    </ScheduleDataProvider>
   )
 }

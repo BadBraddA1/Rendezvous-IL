@@ -21,9 +21,24 @@ struct MoreView: View {
                     }
                 }
 
+                if session.canViewDashboard {
+                    Section("Admin") {
+                        NavigationLink { AdminDashboardView() } label: {
+                            Label("Admin dashboard", systemImage: "chart.bar.doc.horizontal.fill")
+                        }
+                        if session.canManageUsers {
+                            NavigationLink { AdminUsersView() } label: {
+                                Label("User management", systemImage: "person.2.badge.gearshape")
+                            }
+                        }
+                    }
+                }
+
                 Section("Account") {
-                    NavigationLink { CheckInView() } label: {
-                        Label("Staff check-in", systemImage: "person.badge.key")
+                    if session.canCheckIn {
+                        NavigationLink { CheckInView() } label: {
+                            Label("Staff check-in", systemImage: "person.badge.key")
+                        }
                     }
                     NavigationLink { DirectoryView() } label: {
                         Label("Family directory", systemImage: "person.3.fill")

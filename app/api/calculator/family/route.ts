@@ -1,82 +1,52 @@
 import { NextResponse } from "next/server"
-import { sql } from "@/lib/db"
-import { getCurrentFamily, getFamilyMembers, getFamilyRegistrations } from "@/lib/family-auth"
+import { auth, currentUser } from "@clerk/nextjs/server"
+import { buildCalculatorFamilySeed } from "@/lib/calculator-family-seed"
+import { resolveFamilyForUser, getFamilyMembers } from "@/lib/family-auth"
 
-export async function GET() {
+export const dynamic = "force-dynamic"
+
+/** Signed-in family — prior registration seed for public calculator pre-fill. */
+export async function GET(request: Request) {
   try {
-    const family = await getCurrentFamily()
-    
-    if (!family) {
+    const { userId } = await auth({ acceptsToken: "session_token" })
+    if (!userId) {
       return NextResponse.json({ authenticated: false })
     }
 
-    // Get family members
-    const members = await getFamilyMembers(family.id)
+    const user = await currentUser()
+    const email = user?.emailAddresses[0]?.emailAddress
 
-    // Get past registrations to check if returning family
-    const registrations = await getFamilyRegistrations(family.email || "")
-    
-    // Check if they registered last year (2026)
-    const hasLastYearRegistration = registrations.some(r => {
-      const regYear = new Date(r.created_at).getFullYear()
-      return regYear === 2026 || r.lodging_type // Check if they have any past registration
-    })
+    const family = await resolveFamilyForUser(userId, email)
+    if (!family) {
+      return NextResponse.json({
+        authenticated: true,
+        linked: false,
+      })
+    }
 
-    // Get most recent registration for lodging preference
-    const lastRegistration = registrations[0] || null
+    const { searchParams } = new URL(request.url)
+    const targetYear = Number(searchParams.get("year") ?? "2027")
 
-    // Get express registration preferences for 2027 if they exist
-    const expressPrefs = await sql`
-      SELECT * FROM express_registration_2027 
-      WHERE family_id = ${family.id}
-      LIMIT 1
-    `
-
-    // Calculate ages for each member as of the event date (assuming July 2027)
-    const eventDate = new Date("2027-07-01")
-    const membersWithAges = members.map(member => {
-      let age = 0
-      if (member.date_of_birth) {
-        const dob = new Date(member.date_of_birth)
-        age = eventDate.getFullYear() - dob.getFullYear()
-        const monthDiff = eventDate.getMonth() - dob.getMonth()
-        if (monthDiff < 0 || (monthDiff === 0 && eventDate.getDate() < dob.getDate())) {
-          age--
-        }
-      }
-      
-      // Determine age group
-      let ageGroup: "adult" | "youth" | "child" | "infant" = "adult"
-      if (age < 6) ageGroup = "infant"
-      else if (age < 12) ageGroup = "child"
-      else if (age < 18) ageGroup = "youth"
-
-      return {
-        id: member.id,
-        firstName: member.first_name,
-        lastName: member.last_name,
-        dateOfBirth: member.date_of_birth,
-        age,
-        ageGroup,
-        isBaptized: member.is_baptized,
-        gender: member.gender,
-      }
-    })
+    const profileMembers = await getFamilyMembers(family.id)
+    const seed = family.email
+      ? await buildCalculatorFamilySeed({
+          familyEmail: family.email,
+          familyId: family.id,
+          profileMembers,
+          targetYear,
+        })
+      : null
 
     return NextResponse.json({
       authenticated: true,
-      isReturningFamily: hasLastYearRegistration,
+      linked: true,
       family: {
         id: family.id,
         lastName: family.family_last_name,
         email: family.email,
       },
-      members: membersWithAges,
-      lastRegistration: lastRegistration ? {
-        lodgingType: lastRegistration.lodging_type,
-        year: new Date(lastRegistration.created_at).getFullYear(),
-      } : null,
-      expressPreferences: expressPrefs.length > 0 ? expressPrefs[0] : null,
+      profileMemberCount: profileMembers.length,
+      priorRegistration: seed,
     })
   } catch (error) {
     console.error("Error fetching family calculator data:", error)

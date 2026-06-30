@@ -13,9 +13,12 @@ export default function AccountLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="min-h-screen bg-background">
       <SiteHeader />
-      <main id="main-content" className="flex-1 pt-20 md:pt-24">
+      <main
+        id="main-content"
+        className="site-container site-below-header-loose site-page-intro pb-16 md:pb-20"
+      >
         {children}
       </main>
       <SiteFooter />

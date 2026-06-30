@@ -97,10 +97,13 @@
   --space-section: clamp(3.5rem, 2.5rem + 4vw, 5rem);
   --space-section-lg: clamp(4.5rem, 3.5rem + 5vw, 6.5rem);
 
-  /* Fixed SiteHeader — bar height only; safe-area added in offset utilities */
+  /* Fixed SiteHeader — bar height + safe-area + content buffer */
   --site-header-height: 4rem;
+  --site-header-buffer: 20px;
   --site-header-gap: 2rem;
-  --site-header-offset: calc(var(--site-header-height) + env(safe-area-inset-top, 0px));
+  --site-header-offset: calc(
+    var(--site-header-height) + env(safe-area-inset-top, 0px) + var(--site-header-buffer)
+  );
 }
 
 @media (min-width: 768px) {
@@ -201,10 +204,10 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
-/**
- * In-flow spacer paired with fixed SiteHeader (see components/site-header.tsx).
- * Lives outside @layer so it always applies — padding utilities alone can lose to Tailwind layers.
- */
+  /**
+   * In-flow spacer paired with fixed SiteHeader (see components/site-header.tsx).
+   * `--site-header-offset` includes `--site-header-buffer` (20px) so content never sits under the bar.
+   */
 .site-header-spacer {
   height: var(--site-header-offset);
   flex-shrink: 0;

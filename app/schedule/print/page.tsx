@@ -6,7 +6,7 @@ export default function PrintableSchedulePage() {
   return (
     <MainContent className="min-h-screen bg-background text-foreground">
       {/* Print button - hidden when printing */}
-      <div className="fixed top-4 right-4 z-50 print:hidden">
+      <div className="fixed top-4 right-4 z-layer-floating print:hidden">
         <a
           href="/api/schedule/pdf"
           download="rendezvous-2027-schedule.pdf"
@@ -18,7 +18,7 @@ export default function PrintableSchedulePage() {
       </div>
 
       {/* Back link - hidden when printing */}
-      <div className="fixed top-4 left-4 z-50 print:hidden">
+      <div className="fixed top-4 left-4 z-layer-floating print:hidden">
         <a
           href="/schedule"
           className="focus-ring flex min-h-11 items-center gap-2 rounded-lg bg-muted px-4 py-2 text-muted-foreground shadow-lg transition-colors hover:bg-muted/80"
@@ -30,7 +30,7 @@ export default function PrintableSchedulePage() {
       {/* Printable content */}
       <div className="mx-auto max-w-4xl p-8 print:max-w-none print:p-4">
         <header className="mb-8 border-b-2 border-foreground pb-4 text-center print:mb-6">
-          <h1 className="text-3xl font-bold print:text-2xl">Rendezvous 2027 Schedule</h1>
+          <h1 className="text-section-title text-balance print:text-xl">Rendezvous 2027 Schedule</h1>
           <p className="mt-1 text-lg text-muted-foreground print:text-base">May 3-7, 2027</p>
           <p className="text-sm text-muted-foreground print:text-sm">
             Lake Williamson Christian Center, Carlinville, IL
@@ -45,7 +45,7 @@ export default function PrintableSchedulePage() {
                   {day.day.charAt(0)}
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold print:text-lg">
+                  <h2 className="text-day-title print:text-lg">
                     {day.date} ({day.day})
                   </h2>
                 </div>

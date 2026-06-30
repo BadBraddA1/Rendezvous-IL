@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Mail, CheckCircle, Loader2 } from "lucide-react"
 
 export function EmailSignupForm() {
@@ -12,11 +13,16 @@ export function EmailSignupForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    if (!email) return
-    
+
+    if (!email.includes("@")) {
+      setStatus("error")
+      setMessage("Enter an email address with an @ symbol, like name@example.com.")
+      return
+    }
+
     setStatus("loading")
-    
+    setMessage("")
+
     try {
       const response = await fetch("/api/email-notification", {
         method: "POST",
@@ -25,20 +31,23 @@ export function EmailSignupForm() {
         },
         body: JSON.stringify({ email }),
       })
-      
+
       const data = await response.json()
-      
+
       if (response.ok) {
         setStatus("success")
-        setMessage(data.message || "You're on the list!")
+        setMessage(data.message || "You're on the list.")
         setEmail("")
       } else {
         setStatus("error")
-        setMessage(data.error || "Something went wrong. Please try again.")
+        setMessage(
+          data.error ||
+            "We couldn't add your email right now. Try again, or join our Facebook group for updates.",
+        )
       }
     } catch {
       setStatus("error")
-      setMessage("Something went wrong. Please try again.")
+      setMessage("We couldn't reach the server. Check your connection and try again.")
     }
   }
 
@@ -46,7 +55,7 @@ export function EmailSignupForm() {
     return (
       <div className="rounded-lg bg-primary/10 p-6 text-center">
         <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/20">
-          <CheckCircle className="h-6 w-6 text-primary" />
+          <CheckCircle className="h-6 w-6 text-primary" aria-hidden="true" />
         </div>
         <p className="font-medium text-primary">{message}</p>
         <p className="mt-2 text-sm text-muted-foreground">
@@ -58,36 +67,53 @@ export function EmailSignupForm() {
 
   return (
     <div className="rounded-lg bg-muted/50 p-6">
-      <div className="flex items-center justify-center gap-2 mb-3">
-        <Mail className="h-5 w-5 text-muted-foreground" />
-        <span className="font-medium">Get Notified</span>
+      <div className="mb-3 flex items-center justify-center gap-2">
+        <Mail className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
+        <span className="font-medium">Get notified</span>
       </div>
-      <p className="text-muted-foreground mb-4 text-center">
-        Want to know when registration opens for Rendezvous 2027? Enter your email and we&apos;ll let you know!
+      <p className="mb-4 text-center text-muted-foreground">
+        Registration opens January 1, 2027. Leave your email and we&apos;ll remind you.
       </p>
-      <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3">
-        <Input
-          type="email"
-          placeholder="Enter your email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          disabled={status === "loading"}
-          className="flex-1"
-        />
-        <Button type="submit" disabled={status === "loading"}>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-3 sm:flex-row">
+        <div className="flex-1 space-y-1.5">
+          <Label htmlFor="signup-email" className="sr-only">
+            Email address
+          </Label>
+          <Input
+            id="signup-email"
+            type="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value)
+              if (status === "error") {
+                setStatus("idle")
+                setMessage("")
+              }
+            }}
+            required
+            disabled={status === "loading"}
+            aria-invalid={status === "error" ? true : undefined}
+            aria-describedby={status === "error" ? "signup-error" : undefined}
+            className="flex-1"
+            autoComplete="email"
+          />
+        </div>
+        <Button type="submit" disabled={status === "loading"} className="min-h-11">
           {status === "loading" ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Signing up...
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+              Saving…
             </>
           ) : (
-            "Notify Me"
+            "Notify me"
           )}
         </Button>
       </form>
       {status === "error" && (
-        <p className="mt-3 text-sm text-destructive text-center">{message}</p>
+        <p id="signup-error" role="alert" className="mt-3 text-center text-sm text-destructive">
+          {message}
+        </p>
       )}
     </div>
   )

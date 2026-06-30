@@ -43,7 +43,7 @@ function MobileNav({
           <Menu className="h-6 w-6" />
         </Button>
       </SheetTrigger>
-      <SheetContent side="right" className="w-full border-border bg-background sm:w-[400px]">
+      <SheetContent side="right" className="w-full overflow-y-auto border-border bg-background sm:w-[400px]">
         <div className="mb-8 flex items-center justify-center">
           <Image src="/rendezvous-logo.png" alt="Rendezvous" width={140} height={47} className="h-10 w-auto" />
         </div>
@@ -122,13 +122,14 @@ export function SiteHeader({ isHomepage = false }: SiteHeaderProps) {
   }, [isHomepage])
 
   return (
+    <>
     <header
       className={cn(
-        "site-chrome-top fixed top-0 right-0 left-0 z-50 border-b transition-colors duration-300",
+        "site-chrome-top z-layer-chrome fixed top-0 right-0 left-0 border-b transition-colors duration-300",
         isHomepage && atTop ? "border-transparent bg-background/90" : "border-primary/15 bg-card",
       )}
     >
-      <nav className="site-container flex h-16 items-center justify-between md:h-[4.5rem]">
+      <nav className="site-container flex h-[var(--site-header-height)] items-center justify-between">
         <Link href="/" className="flex items-center transition-opacity hover:opacity-80">
           <Image
             src="/rendezvous-logo.png"
@@ -168,5 +169,7 @@ export function SiteHeader({ isHomepage = false }: SiteHeaderProps) {
         <MobileNav open={open} onOpenChange={setOpen} />
       </nav>
     </header>
+    <div className="site-header-spacer" aria-hidden="true" />
+    </>
   )
 }

@@ -152,8 +152,13 @@ export function MerchandiseStep({ data, updateData }: Props) {
                     />
                   </div>
                 </div>
-                <Button variant="ghost" size="icon" onClick={() => removeTshirtOrder(order.id)}>
-                  <Trash2 className="h-4 w-4" />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => removeTshirtOrder(order.id)}
+                  aria-label="Remove t-shirt order"
+                >
+                  <Trash2 className="h-4 w-4" aria-hidden="true" />
                 </Button>
               </div>
             ))}
@@ -211,7 +216,7 @@ export function MerchandiseStep({ data, updateData }: Props) {
               />
             </div>
             {data.scholarshipDonation > 0 && (
-              <p className="mt-2 text-sm text-green-600 font-medium">
+              <p className="mt-2 text-sm font-medium text-success">
                 Thank you! Your ${data.scholarshipDonation.toFixed(2)} donation will be added to your total.
               </p>
             )}
@@ -242,9 +247,9 @@ export function MerchandiseStep({ data, updateData }: Props) {
 
       {/* Cost Summary */}
       {!data.scholarshipRequested ? (
-        <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-background">
+        <Card className="border-primary/20 bg-surface-highlight">
           <CardHeader>
-            <CardTitle>Merchandise & Add-Ons Summary</CardTitle>
+            <CardTitle className="font-display text-subheading">Merchandise & Add-Ons Summary</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             <div className="flex justify-between text-sm">
@@ -258,21 +263,21 @@ export function MerchandiseStep({ data, updateData }: Props) {
             {data.scholarshipDonation > 0 && (
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Scholarship Donation</span>
-                <span className="font-medium text-green-600">+${data.scholarshipDonation.toFixed(2)}</span>
+                <span className="font-medium text-success">+${data.scholarshipDonation.toFixed(2)}</span>
               </div>
             )}
             <div className="flex items-baseline justify-between border-t pt-2">
               <span className="font-semibold">Merchandise Total:</span>
-              <span className="text-2xl font-bold text-primary">
+              <span className="text-amount text-primary">
                 ${(data.tshirtTotal + data.climbingTowerTotal + data.scholarshipDonation).toFixed(2)}
               </span>
             </div>
           </CardContent>
         </Card>
       ) : (
-        <Alert className="border-blue-200 bg-blue-50">
-          <AlertCircle className="h-4 w-4 text-blue-600" />
-          <AlertDescription className="text-blue-800">
+        <Alert className="callout-info border">
+          <AlertCircle className="h-4 w-4 text-info" />
+          <AlertDescription className="text-on-surface">
             You've requested financial assistance. Stephen will review your registration and contact you via email to
             discuss your needs and available help.
           </AlertDescription>

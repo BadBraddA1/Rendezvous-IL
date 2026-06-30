@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { checkAdminAuth } from "@/lib/admin-auth"
 import { sql } from "@/lib/db"
 import { resend } from "@/lib/resend"
+import { generateAdminBulkEmail } from "@/lib/email-templates"
 
 export async function POST(req: NextRequest) {
   const admin = await checkAdminAuth()
@@ -33,20 +34,7 @@ export async function POST(req: NextRequest) {
         from: "Rendezvous Admin <noreply@braddcorp.com>",
         to: reg.email,
         subject: subject,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #f97316;">Rendezvous 2027</h2>
-            <p>Hello ${reg.family_last_name} Family,</p>
-            <div style="margin: 20px 0; line-height: 1.6;">
-              ${message.split("\n").join("<br>")}
-            </div>
-            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
-            <p style="color: #6b7280; font-size: 14px;">
-              This email was sent from the Rendezvous Admin Team.<br>
-              If you have questions, please reply to this email.
-            </p>
-          </div>
-        `,
+        html: generateAdminBulkEmail(reg.family_last_name, message),
       }),
     )
 

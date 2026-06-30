@@ -3,6 +3,9 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
 import { MapPin } from "lucide-react"
+import { EMAIL_BRAND } from "@/lib/email-templates"
+
+const DEFAULT_MARKER = EMAIL_BRAND.primary
 
 interface Marker {
   position: [number, number]
@@ -78,14 +81,14 @@ export function Map({
                     getMarkerSize(marker.size),
                     "drop-shadow-md transition-transform hover:scale-125"
                   )}
-                  style={{ color: marker.color || "#3B82F6" }}
-                  fill={marker.color || "#3B82F6"}
+                  style={{ color: marker.color || DEFAULT_MARKER }}
+                  fill={marker.color || DEFAULT_MARKER}
                 />
                 
                 {/* Tooltip on hover/click */}
                 {selectedMarker === index && (
                   <div 
-                    className="absolute left-1/2 top-full mt-2 -translate-x-1/2 z-50 min-w-[150px] max-w-[250px] rounded-lg border bg-popover p-2 text-xs text-popover-foreground shadow-lg"
+                    className="absolute left-1/2 top-full z-layer-floating mt-2 -translate-x-1/2 min-w-[150px] max-w-[250px] rounded-lg border bg-popover p-2 text-xs text-popover-foreground shadow-lg"
                     dangerouslySetInnerHTML={{ __html: marker.label }}
                   />
                 )}

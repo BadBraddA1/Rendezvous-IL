@@ -12,8 +12,9 @@ export default function PrivacyPage() {
       <SiteHeader />
       <main
         id="main-content"
-        className="site-container section-sm max-w-3xl pb-16 pt-[calc(5.5rem+env(safe-area-inset-top,0px))] md:pb-20"
+        className="site-container site-below-header-loose site-page-intro pb-16 md:pb-20"
       >
+        <div className="mx-auto max-w-3xl">
         <h1 className="text-page-title mb-2">Privacy policy</h1>
         <p className="mb-10 text-sm text-muted-foreground">Last updated: January 2027</p>
 
@@ -104,6 +105,7 @@ export default function PrivacyPage() {
               </a>
             </div>
           </section>
+        </div>
         </div>
       </main>
       <SiteFooter />

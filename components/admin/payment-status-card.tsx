@@ -1,9 +1,13 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DollarSign, TrendingUp, AlertCircle } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
+import {
+  AdminPanelSkeleton,
+  AdminRetryButton,
+} from "@/components/admin/admin-panel-states"
 
 interface PaymentStats {
   totalExpected: number
@@ -18,7 +22,10 @@ export function PaymentStatusCard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
+  const loadStats = useCallback(() => {
+    setLoading(true)
+    setError(null)
+
     fetch("/api/admin/stats/payments")
       .then((res) => {
         if (!res.ok) throw new Error("Failed to fetch payment stats")
@@ -26,23 +33,28 @@ export function PaymentStatusCard() {
       })
       .then((data) => {
         setStats(data)
-        setLoading(false)
       })
       .catch((err) => {
         console.error("[v0] Error fetching payment stats:", err)
-        setError("Unable to load payment data")
+        setError("Unable to load payment data. Check your connection and try again.")
+      })
+      .finally(() => {
         setLoading(false)
       })
   }, [])
+
+  useEffect(() => {
+    loadStats()
+  }, [loadStats])
 
   if (loading) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm font-medium">Payment Status</CardTitle>
+          <CardTitle className="text-sm font-medium">Payment status</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">Loading...</div>
+          <AdminPanelSkeleton label="Loading payment status" />
         </CardContent>
       </Card>
     )
@@ -50,12 +62,13 @@ export function PaymentStatusCard() {
 
   if (error) {
     return (
-      <Card className="border-red-200 bg-red-50">
+      <Card className="callout-destructive">
         <CardHeader>
-          <CardTitle className="text-sm font-medium text-red-900">Payment Status Unavailable</CardTitle>
+          <CardTitle className="text-sm font-medium text-destructive">Payment status unavailable</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-red-700">{error}</p>
+          <p className="text-sm">{error}</p>
+          <AdminRetryButton onRetry={loadStats} />
         </CardContent>
       </Card>
     )
@@ -69,14 +82,14 @@ export function PaymentStatusCard() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-sm font-medium">
-          <DollarSign className="h-4 w-4" />
-          Payment Status
+          <DollarSign className="h-4 w-4" aria-hidden="true" />
+          Payment status
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-2xl font-bold">${stats.totalReceived.toFixed(2)}</span>
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-amount">${stats.totalReceived.toFixed(2)}</span>
             <span className="text-sm text-muted-foreground">of ${stats.totalExpected.toFixed(2)}</span>
           </div>
           <Progress value={paymentPercentage} className="h-2" />
@@ -86,23 +99,23 @@ export function PaymentStatusCard() {
         <div className="space-y-2 text-sm">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <TrendingUp className="h-3 w-3 text-green-500" />
-              <span className="text-muted-foreground">Full Payment</span>
+              <TrendingUp className="h-3 w-3 text-muted-foreground" aria-hidden="true" />
+              <span className="text-muted-foreground">Full payment</span>
             </div>
             <span className="font-medium">{stats.fullPaymentsPaid} families</span>
           </div>
 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <TrendingUp className="h-3 w-3 text-orange-500" />
-              <span className="text-muted-foreground">Reg Fee Only</span>
+              <TrendingUp className="h-3 w-3 text-muted-foreground" aria-hidden="true" />
+              <span className="text-muted-foreground">Reg fee only</span>
             </div>
             <span className="font-medium">{stats.registrationFeesPaid} families</span>
           </div>
 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <AlertCircle className="h-3 w-3 text-red-500" />
+              <AlertCircle className="h-3 w-3 text-muted-foreground" aria-hidden="true" />
               <span className="text-muted-foreground">Unpaid</span>
             </div>
             <span className="font-medium">{stats.unpaidCount} families</span>

@@ -192,9 +192,9 @@ export default function GeocodeAdminPage() {
       case "running":
         return <RefreshCw className="h-4 w-4 animate-spin text-primary" />
       case "success":
-        return <CheckCircle className="h-4 w-4 text-green-500" />
+        return <CheckCircle className="h-4 w-4 text-success" />
       case "error":
-        return <XCircle className="h-4 w-4 text-red-500" />
+        return <XCircle className="h-4 w-4 text-destructive" />
       default:
         return <Clock className="h-4 w-4 text-muted-foreground" />
     }
@@ -209,24 +209,26 @@ export default function GeocodeAdminPage() {
 
       <main id="main-content" className="flex-1">
         {/* Header */}
-        <section className="bg-secondary py-12">
-          <div className="container">
-            <div className="flex items-center gap-3 mb-4">
-              <MapPin className="h-8 w-8 text-primary" />
-              <h1 className="text-3xl font-bold text-secondary-foreground">
-                Geocode Family Addresses
-              </h1>
+        <section className="site-below-header-loose site-page-intro bg-secondary pb-12">
+          <div className="container px-4 sm:px-6">
+            <div className="flex items-start gap-3 sm:items-center">
+              <MapPin className="mt-1 h-8 w-8 shrink-0 text-primary sm:mt-0" aria-hidden="true" />
+              <div className="min-w-0">
+                <h1 className="text-page-title text-secondary-foreground">
+                  Geocode Family Addresses
+                </h1>
+                <p className="mt-3 max-w-2xl text-secondary-foreground/80">
+                  Fix family pin locations by re-geocoding their addresses. Run individually or all at once with rate limiting (1.5 second delay between requests).
+                </p>
+              </div>
             </div>
-            <p className="text-secondary-foreground/80 max-w-2xl">
-              Fix family pin locations by re-geocoding their addresses. Run individually or all at once with rate limiting (1.5 second delay between requests).
-            </p>
           </div>
         </section>
 
         <section className="container py-8">
           <div className="grid gap-6 lg:grid-cols-3">
             {/* Controls */}
-            <Card className="lg:col-span-3 bg-gradient-to-br from-card to-muted/30 border-border/50">
+            <Card className="lg:col-span-3 bg-surface-highlight border-border/50">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Play className="h-5 w-5 text-primary" />
@@ -265,11 +267,11 @@ export default function GeocodeAdminPage() {
                   </Button>
 
                   <div className="flex gap-2 ml-auto">
-                    <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/30">
+                    <Badge variant="outline" className="border-success/30 bg-surface-highlight text-success">
                       <CheckCircle className="h-3 w-3 mr-1" />
                       {successCount} Success
                     </Badge>
-                    <Badge variant="outline" className="bg-red-500/10 text-red-600 border-red-500/30">
+                    <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/30">
                       <XCircle className="h-3 w-3 mr-1" />
                       {errorCount} Errors
                     </Badge>
@@ -280,7 +282,7 @@ export default function GeocodeAdminPage() {
 
             {/* Families List */}
             <div className="lg:col-span-2">
-              <Card className="bg-gradient-to-br from-card to-muted/30 border-border/50">
+              <Card className="bg-surface-highlight border-border/50">
                 <CardHeader>
                   <CardTitle>Families ({ALL_REGISTRATIONS.length})</CardTitle>
                   <CardDescription>Click a family to geocode their address individually</CardDescription>
@@ -298,13 +300,13 @@ export default function GeocodeAdminPage() {
                             isCurrentlyRunning 
                               ? "border-primary bg-primary/5" 
                               : result?.status === "success"
-                              ? "border-green-500/30 bg-green-500/5"
+                              ? "border-success/30 bg-surface-highlight"
                               : result?.status === "error"
-                              ? "border-red-500/30 bg-red-500/5"
+                              ? "border-destructive/30 bg-destructive/5"
                               : "border-border bg-card hover:bg-muted/50"
                           }`}
                         >
-                          <div className="flex items-start justify-between gap-4">
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
                                 {getStatusIcon(result?.status)}
@@ -314,14 +316,14 @@ export default function GeocodeAdminPage() {
                               <p className="text-sm text-muted-foreground mt-1 truncate">
                                 {reg.fullAddress}
                               </p>
-                              <div className="flex gap-4 mt-2 text-xs">
+                              <div className="mt-2 flex flex-col gap-1 text-xs sm:flex-row sm:gap-4">
                                 <span className="text-muted-foreground">
                                   Current: {reg.lat.toFixed(4)}, {reg.lng.toFixed(4)}
                                 </span>
                                 {result?.newLat && result?.newLng && (
                                   <span className={
                                     result.newLat !== reg.lat || result.newLng !== reg.lng
-                                      ? "text-green-600 font-medium"
+                                      ? "text-success font-medium"
                                       : "text-muted-foreground"
                                   }>
                                     New: {result.newLat.toFixed(4)}, {result.newLng.toFixed(4)}
@@ -332,16 +334,16 @@ export default function GeocodeAdminPage() {
                               {result?.accuracyType && (
                                 <p className={`text-xs mt-1 ${
                                   result.accuracyType === "rooftop" || result.accuracyType === "point" 
-                                    ? "text-green-600" 
+                                    ? "text-success" 
                                     : result.accuracyType === "range_interpolation" || result.accuracyType === "nearest_rooftop_match"
-                                    ? "text-amber-600"
-                                    : "text-red-500"
+                                    ? "text-warning"
+                                    : "text-destructive"
                                 }`}>
                                   Accuracy: {result.accuracyType.replace(/_/g, " ")}
                                 </p>
                               )}
                               {result?.error && (
-                                <p className="text-xs text-red-500 mt-1">{result.error}</p>
+                                <p className="text-xs text-destructive mt-1">{result.error}</p>
                               )}
                               {/* Manual coordinate input */}
                               {editingId === reg.id && (
@@ -349,43 +351,47 @@ export default function GeocodeAdminPage() {
                                   <p className="text-xs font-medium text-primary mb-2">
                                     Enter coordinates from Google Maps:
                                   </p>
-                                  <div className="flex gap-2 items-center">
+                                  <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
                                     <div className="flex-1">
-                                      <label className="text-xs text-muted-foreground">Latitude</label>
+                                      <label htmlFor={`manual-lat-${reg.id}`} className="text-xs text-muted-foreground">
+                                        Latitude
+                                      </label>
                                       <Input
+                                        id={`manual-lat-${reg.id}`}
                                         type="text"
                                         placeholder="e.g. 38.4178"
                                         value={manualLat}
                                         onChange={(e) => setManualLat(e.target.value)}
-                                        className="h-8 text-sm"
                                       />
                                     </div>
                                     <div className="flex-1">
-                                      <label className="text-xs text-muted-foreground">Longitude</label>
+                                      <label htmlFor={`manual-lng-${reg.id}`} className="text-xs text-muted-foreground">
+                                        Longitude
+                                      </label>
                                       <Input
+                                        id={`manual-lng-${reg.id}`}
                                         type="text"
                                         placeholder="e.g. -90.4012"
                                         value={manualLng}
                                         onChange={(e) => setManualLng(e.target.value)}
-                                        className="h-8 text-sm"
                                       />
                                     </div>
-                                    <div className="flex gap-1 pt-4">
+                                    <div className="flex gap-2 sm:pb-0.5">
                                       <Button
-                                        size="sm"
+                                        size="icon"
                                         variant="default"
                                         onClick={() => saveManualCoords(reg.id)}
-                                        className="h-8 w-8 p-0"
+                                        aria-label="Save coordinates"
                                       >
-                                        <Check className="h-4 w-4" />
+                                        <Check className="h-4 w-4" aria-hidden="true" />
                                       </Button>
                                       <Button
-                                        size="sm"
+                                        size="icon"
                                         variant="outline"
                                         onClick={cancelManualEdit}
-                                        className="h-8 w-8 p-0"
+                                        aria-label="Cancel editing coordinates"
                                       >
-                                        <X className="h-4 w-4" />
+                                        <X className="h-4 w-4" aria-hidden="true" />
                                       </Button>
                                     </div>
                                   </div>
@@ -395,28 +401,30 @@ export default function GeocodeAdminPage() {
                                 </div>
                               )}
                             </div>
-                            <div className="flex gap-1 flex-shrink-0">
+                            <div className="flex shrink-0 gap-2 self-end sm:self-auto">
                               <Button
-                                size="sm"
+                                size="icon"
                                 variant="outline"
                                 onClick={() => runSingleGeocode(reg)}
                                 disabled={isRunningAll || result?.status === "running" || editingId === reg.id}
+                                aria-label={`Auto-geocode ${reg.lastName} family`}
                                 title="Auto-geocode"
                               >
                                 {result?.status === "running" ? (
-                                  <RefreshCw className="h-4 w-4 animate-spin" />
+                                  <RefreshCw className="h-4 w-4 animate-spin" aria-hidden="true" />
                                 ) : (
-                                  <MapPin className="h-4 w-4" />
+                                  <MapPin className="h-4 w-4" aria-hidden="true" />
                                 )}
                               </Button>
                               <Button
-                                size="sm"
+                                size="icon"
                                 variant="outline"
                                 onClick={() => startManualEdit(reg)}
                                 disabled={isRunningAll || editingId === reg.id}
+                                aria-label={`Manual coordinates for ${reg.lastName} family`}
                                 title="Manual entry"
                               >
-                                <Pencil className="h-4 w-4" />
+                                <Pencil className="h-4 w-4" aria-hidden="true" />
                               </Button>
                             </div>
                           </div>
@@ -430,13 +438,13 @@ export default function GeocodeAdminPage() {
 
             {/* Output Code */}
             <div className="lg:col-span-1">
-              <Card className="bg-gradient-to-br from-card to-muted/30 border-border/50 sticky top-4">
+              <Card className="bg-surface-highlight border-border/50 sticky top-4">
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
                     Output Code
                     {outputCode && (
-                      <Button size="sm" variant="ghost" onClick={copyToClipboard}>
-                        <Copy className="h-4 w-4" />
+                      <Button size="icon" variant="ghost" onClick={copyToClipboard} aria-label="Copy output code">
+                        <Copy className="h-4 w-4" aria-hidden="true" />
                       </Button>
                     )}
                   </CardTitle>

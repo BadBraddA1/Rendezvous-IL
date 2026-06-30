@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { checkAdminAuth } from "@/lib/admin-auth"
 import { sql } from "@/lib/db"
 import { Resend } from "resend"
+import { generateMessagingBroadcastEmail } from "@/lib/email-templates"
 
 function getResend() {
   const apiKey = process.env.RESEND_API_KEY
@@ -78,20 +79,7 @@ export async function POST(request: Request) {
           to: batch.map((r: { email: string }) => r.email),
           subject,
           text: message,
-          html: `
-            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-              <div style="text-align: center; padding: 20px; background: #1e3a1f; color: white;">
-                <h1 style="margin: 0;">Rendezvous IL</h1>
-              </div>
-              <div style="padding: 20px; background: #f9f9f9;">
-                ${message.split('\n').map((line: string) => `<p style="margin: 0 0 10px 0;">${line || '&nbsp;'}</p>`).join('')}
-              </div>
-              <div style="text-align: center; padding: 15px; background: #eee; font-size: 12px; color: #666;">
-                <p>Rendezvous IL - Lake Williamson Christian Center</p>
-                <p>You received this email because you're registered for Rendezvous IL.</p>
-              </div>
-            </div>
-          `,
+          html: generateMessagingBroadcastEmail(message),
         })
         sentCount += batch.length
       } catch (emailError) {

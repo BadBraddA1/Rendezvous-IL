@@ -212,7 +212,7 @@ system_settings (
 4. **Payment integration** - Track and process payments
 5. **Bulk operations** - Update multiple registrations at once
 6. **Family detail view** - Click to see complete registration details
-7. **Admin user management** - CRUD operations for admin accounts
+7. **Admin user management** — `/admin/users`: create/delete Clerk users, roles, ban/unban, password reset, last-seen + platform tracking (`user_app_activity`, `POST /api/auth/activity`, Clerk `session.created` webhook)
 
 ### Scalability Considerations
 - Add pagination for large datasets (100+ registrations)

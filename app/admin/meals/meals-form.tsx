@@ -8,6 +8,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Trash2, Plus, Utensils } from "lucide-react"
+import { AdminConfirmDialog } from "@/components/admin/admin-confirm-dialog"
+import { useToast } from "@/hooks/use-toast"
 
 interface Meal {
   id: number
@@ -35,6 +37,9 @@ export function MealsForm({ initialMeals }: { initialMeals: Meal[] }) {
     title: ""
   })
   const [saving, setSaving] = useState(false)
+  const [deletePending, setDeletePending] = useState<Meal | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const { toast } = useToast()
 
   const handleAddMeal = async () => {
     if (!newMeal.date || !newMeal.main_dish) return
@@ -74,16 +79,20 @@ export function MealsForm({ initialMeals }: { initialMeals: Meal[] }) {
     setSaving(false)
   }
 
-  const handleDeleteMeal = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this meal?")) return
-    
+  const performDeleteMeal = async () => {
+    if (!deletePending) return
+    setDeleting(true)
     try {
-      const res = await fetch(`/api/meals/${id}`, { method: "DELETE" })
-      if (res.ok) {
-        setMeals(meals.filter(m => m.id !== id))
-      }
+      const res = await fetch(`/api/meals/${deletePending.id}`, { method: "DELETE" })
+      if (!res.ok) throw new Error("Failed to delete meal")
+      setMeals(meals.filter((m) => m.id !== deletePending.id))
+      toast({ title: "Meal deleted", description: `${deletePending.main_dish} was removed from the schedule.` })
+      setDeletePending(null)
     } catch (error) {
       console.error("Failed to delete meal:", error)
+      toast({ title: "Error", description: "Could not delete this meal.", variant: "destructive" })
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -110,6 +119,7 @@ export function MealsForm({ initialMeals }: { initialMeals: Meal[] }) {
   }, {} as Record<string, Meal[]>)
 
   return (
+    <>
     <div className="space-y-6">
       {/* Add New Meal Button */}
       {!isAdding && (
@@ -250,10 +260,11 @@ export function MealsForm({ initialMeals }: { initialMeals: Meal[] }) {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => handleDeleteMeal(meal.id)}
-                      className="text-destructive hover:text-destructive"
+                      onClick={() => setDeletePending(meal)}
+                      className="touch-target text-destructive hover:text-destructive"
+                      aria-label={`Delete meal: ${meal.main_dish}`}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-4 w-4" aria-hidden="true" />
                     </Button>
                   </div>
                 </div>
@@ -269,5 +280,22 @@ export function MealsForm({ initialMeals }: { initialMeals: Meal[] }) {
         </div>
       )}
     </div>
+
+    <AdminConfirmDialog
+      open={deletePending !== null}
+      onOpenChange={(open) => {
+        if (!open && !deleting) setDeletePending(null)
+      }}
+      title="Delete meal?"
+      description={
+        deletePending
+          ? `Remove ${deletePending.main_dish} from the meal schedule? This cannot be undone.`
+          : ""
+      }
+      confirmLabel="Delete meal"
+      loading={deleting}
+      onConfirm={performDeleteMeal}
+    />
+    </>
   )
 }

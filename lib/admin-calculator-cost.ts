@@ -3,7 +3,7 @@ import {
   computeRegularMealDeductions,
   countSelectedMeals,
 } from "@/lib/calculator-meals"
-import type { MemberAttendance } from "@/lib/calculator-schedule"
+import { detectPreset, packageTypeFromPreset, type MemberAttendance } from "@/lib/calculator-schedule"
 import { createRateGetter, driveInEntryDays, type RateRow } from "@/lib/rate-lookup"
 
 export type { MemberAttendance }
@@ -25,15 +25,9 @@ export function getAgeGroup(age: number): AgeGroup {
   return "infant"
 }
 
-/** Package type for one person's nights + meals (not family-wide). */
+/** Package type for one person's nights + meals — exact preset match, not counts alone. */
 export function detectMemberPackageType(att: MemberAttendance): PackageType {
-  const nightCount = att.nights.length
-  const mealCount = countSelectedMeals(att.meals)
-
-  if (nightCount === 3 && mealCount === 9) return "special_3_9"
-  if (nightCount === 2 && mealCount === 6) return "special_2_6"
-  if (nightCount === 1 && mealCount === 3) return "special_1_3"
-  return "regular"
+  return packageTypeFromPreset(detectPreset(att))
 }
 
 export interface MemberCostLine {

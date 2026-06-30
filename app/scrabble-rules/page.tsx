@@ -11,7 +11,7 @@ export default function ScrabbleRulesPage() {
 
       <main
         id="main-content"
-        className="site-container section-sm pb-16 pt-[calc(5.5rem+env(safe-area-inset-top,0px))] md:pb-20"
+        className="site-container site-below-header-loose site-page-intro pb-16 md:pb-20"
       >
         <div className="mx-auto max-w-4xl">
           <header className="mb-8 text-center md:mb-10">

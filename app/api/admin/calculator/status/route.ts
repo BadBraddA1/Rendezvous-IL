@@ -1,38 +1,16 @@
+import { revalidatePath } from "next/cache"
 import { NextResponse } from "next/server"
-import { auth, currentUser } from "@clerk/nextjs/server"
-import { sql } from "@/lib/db"
+import { getCurrentAdmin, getAdminPermissions } from "@/lib/clerk-auth"
+import {
+  isPublicCalculatorEnabled,
+  setPublicCalculatorEnabled,
+} from "@/lib/calculator-settings"
 
-// Force dynamic to prevent build-time database connection
 export const dynamic = "force-dynamic"
 
-type AdminRole = "admin" | "editor" | "viewer" | "checkin"
-
-async function getAdminInfo() {
-  const { userId } = await auth()
-  if (!userId) return null
-
-  const user = await currentUser()
-  if (!user) return null
-
-  const publicMetadata = user.publicMetadata as { role?: string } | undefined
-  const role = publicMetadata?.role as AdminRole | undefined
-
-  if (!role || !(role === "admin" || role === "editor" || role === "viewer" || role === "checkin")) {
-    return null
-  }
-
-  return { role: role as AdminRole }
-}
-
-// GET - Fetch current calculator status
 export async function GET() {
   try {
-    const result = await sql`
-      SELECT value FROM app_settings WHERE key = 'public_calculator_enabled'
-    `
-    
-    const enabled = result[0]?.value === "true"
-    
+    const enabled = await isPublicCalculatorEnabled()
     return NextResponse.json({ enabled })
   } catch (error) {
     console.error("Error fetching calculator status:", error)
@@ -40,22 +18,20 @@ export async function GET() {
   }
 }
 
-// POST - Toggle calculator status (admin only)
 export async function POST(request: Request) {
   try {
-    const admin = await getAdminInfo()
-    
-    if (!admin || admin.role !== "admin") {
+    const admin = await getCurrentAdmin()
+    if (!admin || !getAdminPermissions(admin.role).canEdit) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
     }
 
-    const { enabled } = await request.json()
-    
-    await sql`
-      INSERT INTO app_settings (key, value, updated_at)
-      VALUES ('public_calculator_enabled', ${enabled ? "true" : "false"}, CURRENT_TIMESTAMP)
-      ON CONFLICT (key) DO UPDATE SET value = ${enabled ? "true" : "false"}, updated_at = CURRENT_TIMESTAMP
-    `
+    const body = (await request.json()) as { enabled?: boolean }
+    if (typeof body.enabled !== "boolean") {
+      return NextResponse.json({ error: "enabled must be a boolean" }, { status: 400 })
+    }
+
+    const enabled = await setPublicCalculatorEnabled(body.enabled)
+    revalidatePath("/calculator")
 
     return NextResponse.json({ success: true, enabled })
   } catch (error) {

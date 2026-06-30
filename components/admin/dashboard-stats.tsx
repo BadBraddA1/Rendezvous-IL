@@ -1,8 +1,12 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Users, DollarSign, Building2 } from "lucide-react"
+import {
+  AdminPanelSkeleton,
+  AdminRetryButton,
+} from "@/components/admin/admin-panel-states"
+import { AdminStatStrip, AdminStatItem } from "@/components/admin/admin-stat-strip"
 
 interface Stats {
   totalRegistrations: number
@@ -15,12 +19,22 @@ interface Stats {
   }
 }
 
+const STAT_PLACEHOLDERS = [
+  "Total families",
+  "Total attendees",
+  "Total revenue",
+  "Lodging",
+] as const
+
 export function DashboardStats() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
+  const loadStats = useCallback(() => {
+    setLoading(true)
+    setError(null)
+
     fetch("/api/admin/stats")
       .then((res) => {
         if (!res.ok) throw new Error("Failed to fetch stats")
@@ -28,40 +42,42 @@ export function DashboardStats() {
       })
       .then((data) => {
         setStats(data)
-        setLoading(false)
       })
       .catch((err) => {
         console.error("[v0] Error fetching stats:", err)
-        setError("Unable to load statistics")
+        setError("Unable to load statistics. Check your connection and try again.")
+      })
+      .finally(() => {
         setLoading(false)
       })
   }, [])
 
+  useEffect(() => {
+    loadStats()
+  }, [loadStats])
+
   if (loading) {
     return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {[...Array(4)].map((_, i) => (
-          <Card key={i}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Loading...</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">--</div>
-            </CardContent>
-          </Card>
+      <AdminStatStrip>
+        {STAT_PLACEHOLDERS.map((title) => (
+          <div key={title} className="admin-stat-item">
+            <span className="admin-stat-label">{title}</span>
+            <AdminPanelSkeleton label={`Loading ${title.toLowerCase()}`} />
+          </div>
         ))}
-      </div>
+      </AdminStatStrip>
     )
   }
 
   if (error) {
     return (
-      <Card className="border-red-200 bg-red-50">
+      <Card className="callout-destructive">
         <CardHeader>
-          <CardTitle className="text-sm font-medium text-red-900">Statistics Unavailable</CardTitle>
+          <CardTitle className="text-sm font-medium text-destructive">Statistics unavailable</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-red-700">{error}</p>
+          <p className="text-sm">{error}</p>
+          <AdminRetryButton onRetry={loadStats} />
         </CardContent>
       </Card>
     )
@@ -70,62 +86,27 @@ export function DashboardStats() {
   if (!stats) return null
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Families</CardTitle>
-          <Users className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{stats.totalRegistrations}</div>
-          <p className="text-xs text-muted-foreground">Registered families</p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Attendees</CardTitle>
-          <Users className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{stats.totalAttendees}</div>
-          <p className="text-xs text-muted-foreground">Individual attendees</p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-          <DollarSign className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">${stats.totalRevenue.toFixed(2)}</div>
-          <p className="text-xs text-muted-foreground">Registration + extras</p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Lodging</CardTitle>
-          <Building2 className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-1 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Motel:</span>
-              <span className="font-medium">{stats.lodgingBreakdown.motel}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">RV:</span>
-              <span className="font-medium">{stats.lodgingBreakdown.rv}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Tent:</span>
-              <span className="font-medium">{stats.lodgingBreakdown.tent}</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+    <AdminStatStrip>
+      <AdminStatItem
+        label="Total families"
+        value={stats.totalRegistrations}
+        hint="Registered families"
+      />
+      <AdminStatItem
+        label="Total attendees"
+        value={stats.totalAttendees}
+        hint="Individual attendees"
+      />
+      <AdminStatItem
+        label="Total revenue"
+        value={`$${stats.totalRevenue.toFixed(2)}`}
+        hint="Registration + extras"
+      />
+      <AdminStatItem
+        label="Lodging"
+        value={`${stats.lodgingBreakdown.motel} motel · ${stats.lodgingBreakdown.rv} RV · ${stats.lodgingBreakdown.tent} tent`}
+        valueClassName="text-base font-medium"
+      />
+    </AdminStatStrip>
   )
 }

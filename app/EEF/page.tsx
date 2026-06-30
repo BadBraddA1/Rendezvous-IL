@@ -254,14 +254,15 @@ export default function EndOfEventFeedbackPage() {
     return (
       <div className="min-h-screen bg-background">
         <SiteHeader />
-        <main id="main-content" className="container mx-auto px-4 py-12 md:py-20">
-          <Card className="mx-auto max-w-2xl border-2 border-primary/20">
+        <main id="main-content" className="site-container site-below-header-loose site-page-intro pb-16 md:pb-20">
+          <div className="mx-auto max-w-3xl">
+            <Card className="border-2 border-primary/20">
             <CardContent className="flex flex-col items-center justify-center py-16 text-center">
               <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
                 <CheckCircle2 className="h-10 w-10 text-primary" />
               </div>
-              <h2 className="mb-3 text-3xl font-bold tracking-tight">Thank You!</h2>
-              <p className="mb-6 max-w-md text-lg text-muted-foreground">
+              <h2 className="text-section-title mb-3">Thank You!</h2>
+              <p className="mb-6 max-w-md text-lead text-muted-foreground">
                 Your feedback is invaluable in helping us make Rendezvous even better for future years. We appreciate
                 you taking the time to share your thoughts.
               </p>
@@ -270,6 +271,7 @@ export default function EndOfEventFeedbackPage() {
               </p>
             </CardContent>
           </Card>
+          </div>
         </main>
         <SiteFooter />
       </div>
@@ -280,19 +282,20 @@ export default function EndOfEventFeedbackPage() {
     <div className="min-h-screen bg-background">
       <SiteHeader />
 
-      <main id="main-content" className="container mx-auto px-4 py-8 md:py-12">
+      <main id="main-content" className="site-container site-below-header-loose site-page-intro pb-16 md:pb-20">
+        <div className="mx-auto max-w-3xl">
         <div className="mb-8 text-center">
-          <h1 className="mb-3 text-balance text-3xl font-bold tracking-tight md:text-4xl">
+          <h1 className="text-page-title mb-3 text-balance">
             Rendezvous 2027 Feedback
           </h1>
-          <p className="text-balance text-muted-foreground">
+          <p className="text-balance text-lead text-muted-foreground">
             Help us make future Rendezvous events even better!
           </p>
         </div>
 
         {/* Progress Steps */}
-        <div className="mb-8 overflow-x-auto">
-          <div className="mx-auto flex min-w-max max-w-4xl justify-center gap-1 px-4 md:gap-2">
+        <div className="mb-8 scroll-touch-x pb-1">
+          <div className="mx-auto flex min-w-max max-w-4xl justify-center gap-1 md:gap-2">
             {STEPS.map((step, index) => {
               const Icon = step.icon
               const isActive = index === currentStep
@@ -301,19 +304,22 @@ export default function EndOfEventFeedbackPage() {
               return (
                 <button
                   key={step.id}
+                  type="button"
+                  aria-label={`Go to ${step.title}`}
+                  aria-current={isActive ? "step" : undefined}
                   onClick={() => {
                     setCurrentStep(index)
                     window.scrollTo({ top: 0, behavior: "smooth" })
                   }}
-                  className={`flex flex-col items-center gap-1 rounded-lg p-2 transition-all md:flex-row md:gap-2 md:px-3 md:py-2 ${
+                  className={`touch-target flex min-w-[4.25rem] flex-col items-center gap-1 rounded-lg p-2 transition-colors md:min-w-0 md:flex-row md:gap-2 md:px-3 md:py-2 ${
                     isActive
                       ? "bg-primary text-primary-foreground"
                       : isCompleted
                         ? "bg-primary/10 text-primary"
-                        : "text-muted-foreground hover:bg-muted"
+                        : "text-muted-foreground hover:bg-muted active:bg-muted"
                   }`}
                 >
-                  <Icon className="h-4 w-4 md:h-5 md:w-5" />
+                  <Icon className="h-4 w-4 md:h-5 md:w-5" aria-hidden="true" />
                   <span className="text-xs font-medium md:text-sm">{step.title}</span>
                 </button>
               )
@@ -330,7 +336,7 @@ export default function EndOfEventFeedbackPage() {
                   <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
                     <MessageSquareHeart className="h-8 w-8 text-primary" />
                   </div>
-                  <h2 className="mb-2 text-2xl font-bold">Welcome to the Feedback Form</h2>
+                  <h2 className="text-section-title mb-2">Welcome to the Feedback Form</h2>
                   <p className="text-muted-foreground">
                     We would love to hear about your Rendezvous 2027 experience. Your honest feedback helps us plan
                     better events in the future.
@@ -387,7 +393,7 @@ export default function EndOfEventFeedbackPage() {
             {currentStep === 1 && (
               <div className="space-y-6">
                 <div>
-                  <h2 className="mb-1 text-2xl font-bold">Overall Experience</h2>
+                  <h2 className="text-section-title mb-1">Overall Experience</h2>
                   <p className="text-muted-foreground">Tell us about your overall Rendezvous experience</p>
                 </div>
 
@@ -454,7 +460,7 @@ export default function EndOfEventFeedbackPage() {
             {currentStep === 2 && (
               <div className="space-y-6">
                 <div>
-                  <h2 className="mb-1 text-2xl font-bold">Lodging</h2>
+                  <h2 className="text-section-title mb-1">Lodging</h2>
                   <p className="text-muted-foreground">Tell us about your accommodations</p>
                 </div>
 
@@ -501,7 +507,7 @@ export default function EndOfEventFeedbackPage() {
             {currentStep === 3 && (
               <div className="space-y-6">
                 <div>
-                  <h2 className="mb-1 text-2xl font-bold">Meals & Dining</h2>
+                  <h2 className="text-section-title mb-1">Meals & Dining</h2>
                   <p className="text-muted-foreground">Tell us about the food and dining experience</p>
                 </div>
 
@@ -577,7 +583,7 @@ export default function EndOfEventFeedbackPage() {
             {currentStep === 4 && (
               <div className="space-y-6">
                 <div>
-                  <h2 className="mb-1 text-2xl font-bold">Schedule & Activities</h2>
+                  <h2 className="text-section-title mb-1">Schedule & Activities</h2>
                   <p className="text-muted-foreground">Tell us about the activities and schedule</p>
                 </div>
 
@@ -629,7 +635,7 @@ export default function EndOfEventFeedbackPage() {
             {currentStep === 5 && (
               <div className="space-y-6">
                 <div>
-                  <h2 className="mb-1 text-2xl font-bold">Fellowship & Community</h2>
+                  <h2 className="text-section-title mb-1">Fellowship & Community</h2>
                   <p className="text-muted-foreground">Tell us about the community experience</p>
                 </div>
 
@@ -688,7 +694,7 @@ export default function EndOfEventFeedbackPage() {
             {currentStep === 6 && (
               <div className="space-y-6">
                 <div>
-                  <h2 className="mb-1 text-2xl font-bold">Worship & Spiritual</h2>
+                  <h2 className="text-section-title mb-1">Worship & Spiritual</h2>
                   <p className="text-muted-foreground">Tell us about the worship and spiritual aspects</p>
                 </div>
 
@@ -767,7 +773,7 @@ export default function EndOfEventFeedbackPage() {
             {currentStep === 7 && (
               <div className="space-y-6">
                 <div>
-                  <h2 className="mb-1 text-2xl font-bold">Suggestions & Final Thoughts</h2>
+                  <h2 className="text-section-title mb-1">Suggestions & Final Thoughts</h2>
                   <p className="text-muted-foreground">Share your ideas for making Rendezvous even better</p>
                 </div>
 
@@ -855,38 +861,42 @@ export default function EndOfEventFeedbackPage() {
               </div>
             )}
 
-            {/* Navigation Buttons */}
-            <div className="mt-8 flex items-center justify-between border-t pt-6">
-              <Button
-                variant="outline"
-                onClick={prevStep}
-                disabled={currentStep === 0}
-                className="gap-2"
-              >
-                <ChevronLeft className="h-4 w-4" />
-                Back
-              </Button>
-
-              {currentStep === STEPS.length - 1 ? (
-                <Button onClick={handleSubmit} disabled={isSubmitting} className="gap-2">
-                  {isSubmitting ? "Submitting..." : "Submit Feedback"}
-                  {!isSubmitting && <CheckCircle2 className="h-4 w-4" />}
-                </Button>
-              ) : (
-                <Button onClick={nextStep} className="gap-2">
-                  Next
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-
             {submitError && (
-              <div className="mt-4 rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-center text-sm text-destructive">
+              <div className="mt-4 rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-center text-sm text-destructive" role="alert">
                 {submitError}
               </div>
             )}
           </CardContent>
         </Card>
+
+        <div className="form-sticky-actions sm:mt-8 sm:border-t sm:pt-6">
+          <Button
+            variant="outline"
+            onClick={prevStep}
+            disabled={currentStep === 0}
+            className="min-h-11 min-w-[7rem] flex-1 gap-2 sm:flex-none"
+          >
+            <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+            Back
+          </Button>
+
+          {currentStep === STEPS.length - 1 ? (
+            <Button
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+              className="min-h-11 min-w-[7rem] flex-1 gap-2 sm:flex-none"
+            >
+              {isSubmitting ? "Submitting..." : "Submit Feedback"}
+              {!isSubmitting && <CheckCircle2 className="h-4 w-4" aria-hidden="true" />}
+            </Button>
+          ) : (
+            <Button onClick={nextStep} className="min-h-11 min-w-[7rem] flex-1 gap-2 sm:flex-none">
+              Next
+              <ChevronRight className="h-4 w-4" aria-hidden="true" />
+            </Button>
+          )}
+        </div>
+        </div>
       </main>
 
       <SiteFooter />

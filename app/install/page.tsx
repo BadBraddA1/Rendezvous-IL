@@ -16,9 +16,9 @@ function StepNumber({ num }: { num: number }) {
 
 function IOSInstructions() {
   return (
-    <Card className="border-border/50 bg-card shadow-lg">
+    <Card className="border-border/50 bg-card">
       <CardHeader className="border-b border-border/50 bg-surface-tint">
-        <CardTitle className="flex items-center gap-3 text-xl md:text-2xl">
+        <CardTitle className="flex items-center gap-3 text-subheading">
           <Apple className="h-7 w-7" />
           iPhone / iPad (Safari)
         </CardTitle>
@@ -79,11 +79,11 @@ function IOSInstructions() {
             </div>
           </li>
           <li className="flex gap-4">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-green-500 text-white">
-              <CheckCircle2 className="h-5 w-5" />
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-success text-primary-foreground">
+              <CheckCircle2 className="h-5 w-5" aria-hidden="true" />
             </div>
             <div>
-              <p className="font-medium text-green-600">Done!</p>
+              <p className="font-medium text-success">Done!</p>
               <p className="text-sm text-muted-foreground">
                 The Rendezvous schedule will now appear on your home screen like an app. Tap it anytime for quick access!
               </p>
@@ -97,9 +97,9 @@ function IOSInstructions() {
 
 function AndroidInstructions() {
   return (
-    <Card className="border-border/50 bg-card shadow-lg">
+    <Card className="border-border/50 bg-card">
       <CardHeader className="border-b border-border/50 bg-surface-tint">
-        <CardTitle className="flex items-center gap-3 text-xl md:text-2xl">
+        <CardTitle className="flex items-center gap-3 text-subheading">
           <Smartphone className="h-7 w-7" />
           Android (Chrome)
         </CardTitle>
@@ -160,11 +160,11 @@ function AndroidInstructions() {
             </div>
           </li>
           <li className="flex gap-4">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-green-500 text-white">
-              <CheckCircle2 className="h-5 w-5" />
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-success text-primary-foreground">
+              <CheckCircle2 className="h-5 w-5" aria-hidden="true" />
             </div>
             <div>
-              <p className="font-medium text-green-600">Done!</p>
+              <p className="font-medium text-success">Done!</p>
               <p className="text-sm text-muted-foreground">
                 The Rendezvous schedule will now appear on your home screen. Tap it anytime for instant access!
               </p>
@@ -181,11 +181,11 @@ export default function InstallPage() {
     <div className="min-h-screen bg-background">
       <SiteHeader />
 
-      <MainContent>
-        <section className="border-b bg-secondary pt-24 pb-16 md:pt-28 md:pb-20">
+      <MainContent className="site-below-header-loose">
+        <section className="site-page-intro border-b bg-secondary pb-16 md:pb-20">
           <div className="container mx-auto px-6">
             <div className="mx-auto max-w-4xl text-center">
-              <h1 className="mb-4 text-balance text-4xl font-bold tracking-tight text-secondary-foreground md:text-5xl lg:text-6xl">
+              <h1 className="text-page-title mb-4 text-balance text-secondary-foreground">
                 Add to Home Screen
               </h1>
               <p className="text-balance text-lg text-secondary-foreground/70">
@@ -207,7 +207,7 @@ export default function InstallPage() {
         <section className="border-t bg-muted/30 py-12 md:py-16">
           <div className="container mx-auto px-6">
             <div className="mx-auto max-w-3xl">
-              <h2 className="mb-4 text-center text-2xl font-bold text-foreground md:text-3xl">
+              <h2 className="text-section-title mb-4 text-balance text-center">
                 Why Add to Home Screen?
               </h2>
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">

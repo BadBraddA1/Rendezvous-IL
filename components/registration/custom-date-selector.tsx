@@ -199,7 +199,7 @@ export function CustomDateSelector({ value, onChange, isOver18, onOver18Change, 
                             : "ghost"
                       }
                       size="sm"
-                      className={cn("h-9 p-0", !day && "invisible")}
+                      className={cn("min-h-11 h-11 p-0", !day && "invisible")}
                       disabled={!day}
                       onClick={() => day && handleDaySelect(day)}
                     >

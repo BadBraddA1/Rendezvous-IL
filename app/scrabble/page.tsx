@@ -10,7 +10,7 @@ export default function ScrabblePage() {
 
       <main
         id="main-content"
-        className="site-container section-sm pb-16 pt-[calc(5.5rem+env(safe-area-inset-top,0px))] md:pb-20"
+        className="site-container site-below-header-loose site-page-intro pb-16 md:pb-20"
       >
         <div className="mx-auto max-w-4xl">
           <header className="mb-8 text-center md:mb-10">
@@ -52,7 +52,7 @@ export default function ScrabblePage() {
             </div>
 
             <section className="mb-8">
-              <h2 className="font-display mb-4 text-2xl font-bold text-foreground">2-letter words</h2>
+              <h2 className="text-section-title mb-4 text-foreground">2-letter words</h2>
               <div className="grid grid-cols-5 gap-2 text-sm md:grid-cols-10">
                 {[
                   "AA",
@@ -169,7 +169,7 @@ export default function ScrabblePage() {
             </section>
 
             <section className="mb-8">
-              <h2 className="mb-4 text-2xl font-bold text-foreground">Short J Words</h2>
+              <h2 className="text-section-title mb-4 text-foreground">Short J Words</h2>
               <div className="space-y-2 text-sm">
                 <p className="font-mono leading-relaxed">
                   JO AJI HAJ JAB JAG JAM JAR JAW JAY JEE JET JEU JEW JIB JIG JIN JOB JOE JOG JOT JOW JOY JUG JUN JUS JUT
@@ -187,7 +187,7 @@ export default function ScrabblePage() {
             </section>
 
             <section className="mb-8">
-              <h2 className="mb-4 text-2xl font-bold text-foreground">Short Q Words</h2>
+              <h2 className="text-section-title mb-4 text-foreground">Short Q Words</h2>
               <div className="space-y-2 text-sm">
                 <p className="font-mono leading-relaxed">
                   QI QAT QIS QUA SUQ AQUA CINQ QADI QAID QATS QOPH QUAD QUAG QUAI QUAY QUEY QUID QUIN QUIP QUIT QUIZ
@@ -197,7 +197,7 @@ export default function ScrabblePage() {
             </section>
 
             <section className="mb-8">
-              <h2 className="mb-4 text-2xl font-bold text-foreground">Short X Words</h2>
+              <h2 className="text-section-title mb-4 text-foreground">Short X Words</h2>
               <div className="space-y-2 text-sm">
                 <p className="font-mono leading-relaxed">
                   AX EX OX XI XU AXE BOX COX DEX FAX FIX FOX GOX HEX KEX LAX LEX LOX LUX MAX MIX MUX NIX OXO OXY PAX PIX
@@ -213,7 +213,7 @@ export default function ScrabblePage() {
             </section>
 
             <section className="mb-8">
-              <h2 className="mb-4 text-2xl font-bold text-foreground">Short Z Words</h2>
+              <h2 className="text-section-title mb-4 text-foreground">Short Z Words</h2>
               <div className="space-y-2 text-sm">
                 <p className="font-mono leading-relaxed">
                   ZA ADZ AZO BIZ COZ CUZ FEZ FIZ LEZ REZ SEZ TIZ WIZ WUZ YEZ ZAG ZAP ZAS ZAX ZED ZEE ZEK ZEP ZIG ZIN ZIP
@@ -230,7 +230,7 @@ export default function ScrabblePage() {
             </section>
 
             <section className="mb-8">
-              <h2 className="mb-4 text-2xl font-bold text-foreground">Vowel Dumps & I Dumps</h2>
+              <h2 className="text-section-title mb-4 text-foreground">Vowel Dumps & I Dumps</h2>
               <div className="space-y-4 text-sm">
                 <div>
                   <h3 className="mb-2 font-semibold">Vowel Dumps</h3>
@@ -256,7 +256,7 @@ export default function ScrabblePage() {
             </section>
 
             <section className="mb-8">
-              <h2 className="mb-4 text-2xl font-bold text-foreground">U Dumps</h2>
+              <h2 className="text-section-title mb-4 text-foreground">U Dumps</h2>
               <div className="space-y-2 text-sm">
                 <p className="font-mono leading-relaxed">
                   ULU ULUS BUBU FUGU GURU JUJU JUKU KUDU KURU LUAU MUMU PUDU PUPU SULU TUTU UNAU URUS YUZU MUUMUU
@@ -265,7 +265,7 @@ export default function ScrabblePage() {
             </section>
 
             <section className="mb-8">
-              <h2 className="mb-4 text-2xl font-bold text-foreground">Bingos</h2>
+              <h2 className="text-section-title mb-4 text-foreground">Bingos</h2>
               <div className="mb-4 text-sm text-muted-foreground">
                 <p>
                   A "bingo" is a play using all 7 of your tiles, netting a 50-point bonus. Among experts the winner, on

@@ -14,14 +14,14 @@ export default async function FeedbackPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="admin-shell">
       <AdminNav currentPage="feedback" admin={admin} />
-      <main id="main-content" className="flex-1 bg-background p-6">
-        <div className="container mx-auto space-y-6">
-          <div>
-            <h2 className="text-3xl font-bold tracking-tight">Event Feedback</h2>
-            <p className="text-muted-foreground">Reviews and suggestions from past attendees</p>
-          </div>
+      <main id="main-content" className="admin-main">
+        <div className="admin-container">
+          <header className="admin-page-header">
+            <h1 className="text-section-title text-balance">Event Feedback</h1>
+            <p className="text-lead text-muted-foreground">Reviews and suggestions from past attendees</p>
+          </header>
           <FeedbackDashboard />
         </div>
       </main>

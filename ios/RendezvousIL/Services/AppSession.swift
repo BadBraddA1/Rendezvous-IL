@@ -6,7 +6,9 @@ import Clerk
 final class AppSession {
     var isSignedIn = false
     var isAdmin = false
+    var canViewDashboard = false
     var canCheckIn = false
+    var canManageUsers = false
     var adminRole: String?
     var adminName: String?
     var isLoading = false
@@ -14,8 +16,11 @@ final class AppSession {
     var clerkSetupError: String?
 
     private(set) var apiClient: APIClient?
+    private var activityPingTask: Task<Void, Never>?
 
-  var publicClient: APIClient { apiClient ?? APIClient.shared }
+    private static let activityPingIntervalSeconds: UInt64 = 300
+
+    var publicClient: APIClient { apiClient ?? APIClient.shared }
 
     func bootstrapAuthIfNeeded() async {
         guard AppConfig.hasValidClerkKey else {
@@ -51,12 +56,21 @@ final class AppSession {
         isSignedIn = true
         authError = nil
         await refreshAdminStatus()
+        await recordActivityIfSignedIn()
+        startActivityPingLoop()
+    }
+
+    func recordActivityIfSignedIn() async {
+        guard let client = apiClient else { return }
+        try? await client.recordUserActivity()
     }
 
     func refreshAdminStatus() async {
         guard let client = apiClient else {
             isAdmin = false
+            canViewDashboard = false
             canCheckIn = false
+            canManageUsers = false
             adminRole = nil
             adminName = nil
             return
@@ -68,16 +82,22 @@ final class AppSession {
                 isAdmin = true
                 adminRole = admin.role
                 adminName = admin.fullName.isEmpty ? admin.email : admin.fullName
+                canViewDashboard = response.permissions?.canViewDashboard ?? true
                 canCheckIn = response.permissions?.canCheckIn ?? (admin.role == "admin" || admin.role == "editor" || admin.role == "checkin")
+                canManageUsers = response.permissions?.canManageUsers ?? (admin.role == "admin")
             } else {
                 isAdmin = false
+                canViewDashboard = false
                 canCheckIn = false
+                canManageUsers = false
                 adminRole = nil
                 adminName = nil
             }
         } catch {
             isAdmin = false
+            canViewDashboard = false
             canCheckIn = false
+            canManageUsers = false
             adminRole = nil
             adminName = nil
         }
@@ -88,11 +108,28 @@ final class AppSession {
         clearSession()
     }
 
+    private func startActivityPingLoop() {
+        activityPingTask?.cancel()
+        guard isSignedIn, apiClient != nil else { return }
+
+        activityPingTask = Task {
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: Self.activityPingIntervalSeconds * 1_000_000_000)
+                guard !Task.isCancelled else { return }
+                await recordActivityIfSignedIn()
+            }
+        }
+    }
+
     private func clearSession() {
+        activityPingTask?.cancel()
+        activityPingTask = nil
         apiClient = nil
         isSignedIn = false
         isAdmin = false
+        canViewDashboard = false
         canCheckIn = false
+        canManageUsers = false
         adminRole = nil
         adminName = nil
     }

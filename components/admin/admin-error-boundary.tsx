@@ -31,18 +31,18 @@ export class AdminErrorBoundary extends React.Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        <Card className="m-4">
+        <Card className="callout-destructive m-4">
           <CardHeader className="text-center">
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-destructive/10">
-              <AlertTriangle className="h-7 w-7 text-destructive" />
+              <AlertTriangle className="h-7 w-7 text-destructive" aria-hidden="true" />
             </div>
-            <CardTitle>Something went wrong</CardTitle>
+            <CardTitle className="text-destructive">This admin panel crashed</CardTitle>
             <CardDescription>
-              An error occurred while loading this component.
+              Something went wrong while loading this section. Reload the page to continue.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col items-center gap-4">
-            <p className="text-sm text-muted-foreground text-center max-w-md">
+            <p className="max-w-md text-center text-sm text-muted-foreground">
               {this.state.error?.message || "Unknown error"}
             </p>
             <Button
@@ -52,8 +52,8 @@ export class AdminErrorBoundary extends React.Component<Props, State> {
               }}
               className="gap-2"
             >
-              <RefreshCw className="h-4 w-4" />
-              Reload Page
+              <RefreshCw className="h-4 w-4" aria-hidden="true" />
+              Reload page
             </Button>
           </CardContent>
         </Card>

@@ -57,6 +57,66 @@ actor APIClient {
         try await get("/api/admin/me")
     }
 
+    func recordUserActivity() async throws -> UserActivityResponse {
+        struct Body: Encodable {
+            let platform: String
+            let appVersion: String
+        }
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+        let body = Body(platform: "ios", appVersion: version)
+        return try await post("/api/auth/activity", body: body, as: UserActivityResponse.self)
+    }
+
+    func getAdminUsers() async throws -> AdminUsersListResponse {
+        try await get("/api/admin/users")
+    }
+
+    func createAdminUser(
+        email: String,
+        firstName: String,
+        lastName: String,
+        role: String?,
+        password: String?
+    ) async throws -> AdminUserMutationResponse {
+        try await post(
+            "/api/admin/users",
+            body: AdminUserCreateBody(
+                email: email,
+                firstName: firstName.isEmpty ? nil : firstName,
+                lastName: lastName.isEmpty ? nil : lastName,
+                role: role,
+                password: password
+            )
+        )
+    }
+
+    func updateAdminUserRole(_ body: AdminUserRolePatchBody) async throws -> AdminUserMutationResponse {
+        try await patch("/api/admin/users", body: body)
+    }
+
+    func updateAdminUserBan(_ body: AdminUserBanPatchBody) async throws -> AdminUserMutationResponse {
+        try await patch("/api/admin/users", body: body)
+    }
+
+    func deleteAdminUser(id: String) async throws -> SimpleSuccessResponse {
+        try await delete("/api/admin/users/\(id)")
+    }
+
+    func resetAdminUserPassword(
+        userId: String,
+        mode: String,
+        password: String?
+    ) async throws -> AdminResetPasswordResponse {
+        try await post(
+            "/api/admin/users/\(userId)/reset-password",
+            body: AdminResetPasswordBody(mode: mode, password: password)
+        )
+    }
+
+    func getAdminDashboard() async throws -> AdminDashboardResponse {
+        try await get("/api/admin/mobile/dashboard")
+    }
+
     func lookupCheckIn(code: String) async throws -> CheckInLookupResponse {
         let encoded = code.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? code
         return try await get("/api/admin/registrations/qr/\(encoded)")
@@ -216,6 +276,11 @@ struct AdminMeResponse: Decodable {
     let permissions: AdminPermissionsPayload?
 }
 
+struct UserActivityResponse: Decodable {
+    let success: Bool
+    let platform: String?
+}
+
 struct AdminUserPayload: Decodable {
     let id: String
     let email: String
@@ -229,6 +294,42 @@ struct AdminPermissionsPayload: Decodable {
     let canCheckIn: Bool
     let canEdit: Bool
     let canManageUsers: Bool
+}
+
+struct AdminDashboardSummaryPayload: Decodable {
+    let eventYear: Int
+    let registrationGoal: Int
+    let registrations: Int
+    let registeredAttendees: Int
+    let checkedIn: Int
+    let totalFamilies: Int
+    let totalMembers: Int
+    let expressRegistrations: Int
+    let pendingChanges: Int
+    let activeAnnouncements: Int
+    let feedbackCount: Int
+    let avgRating: Double
+    let returningFamilies: Int
+    let newFamilies: Int
+    let totalRevenue: Double
+    let depositsPaid: Double
+    let fullyPaid: Int
+    let balanceDue: Double
+    let lodgingBreakdown: AdminLodgingBreakdownPayload
+}
+
+struct AdminLodgingBreakdownPayload: Decodable {
+    let motel: Int
+    let rv: Int
+    let tent: Int
+    let drivein: Int
+}
+
+struct AdminDashboardResponse: Decodable {
+    let admin: AdminUserPayload
+    let summary: AdminDashboardSummaryPayload
+    let registrationProgress: Double
+    let updatedAt: String
 }
 
 struct CheckInRegistrationSummary: Decodable, Identifiable {

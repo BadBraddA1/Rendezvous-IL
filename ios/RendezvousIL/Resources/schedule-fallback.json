@@ -1,0 +1,890 @@
+{
+  "year": 2027,
+  "dateRange": "May 3–7, 2027",
+  "location": "Lake Williamson Christian Center, Carlinville, IL",
+  "draftNotice": "Based on the 2026 schedule — may change slightly for 2027",
+  "days": [
+    {
+      "day": "Monday",
+      "date": "May 3",
+      "color": "secondary",
+      "events": [
+        {
+          "time": "1:00 – 5:15 PM",
+          "title": "Check-in",
+          "location": "Activity Center (AC) [upstairs outside Room 207]",
+          "note": "Mini-fridge available in AC Room 205. Use this time for setting up RVs & tents, settling into motel rooms, and for visiting."
+        },
+        {
+          "time": "4:00 – 5:00 PM",
+          "title": "Ice Breaker",
+          "location": "AC Room 205/206"
+        },
+        {
+          "time": "5:30 PM",
+          "title": "Dinner",
+          "location": "Lakeside Dining Room",
+          "note": "Please gather outside for a prayer prior to each designated meal time"
+        },
+        {
+          "time": "7:00 PM",
+          "title": "Evening assembly, welcome, family introductions, & announcements",
+          "location": "AC Room 207"
+        },
+        {
+          "time": "8:00 PM",
+          "title": "Black-light Dodgeball, Bombardment, & Steal the Bacon",
+          "location": "Activity Center",
+          "note": "Recommended: small children (under 10) wear light colored clothing"
+        },
+        {
+          "time": "9:00 PM",
+          "title": "Nine Square & Knockout",
+          "location": "Activity Center"
+        }
+      ]
+    },
+    {
+      "day": "Tuesday",
+      "date": "May 4",
+      "color": "primary",
+      "events": [
+        {
+          "time": "7:30 AM",
+          "title": "Breakfast",
+          "location": "Lakeside Dining Room"
+        },
+        {
+          "time": "9:00 AM",
+          "title": "Morning assembly & announcements",
+          "location": "AC Room 207"
+        },
+        {
+          "time": "10:00 AM",
+          "title": "Young Adult session",
+          "location": "AC Ping Pong Room",
+          "note": "Non-parent graduates"
+        },
+        {
+          "time": "10:00 AM",
+          "title": "Mom's session",
+          "location": "AC Room 207",
+          "note": "Free time for everyone else; black-light activities & nine square"
+        },
+        {
+          "time": "10:00 – 11:30 AM",
+          "title": "Miniature Painting",
+          "location": "Activity Center",
+          "note": "Pre-registration required"
+        },
+        {
+          "time": "12:00 PM",
+          "title": "Lunch",
+          "location": "Lakeside Dining Room"
+        },
+        {
+          "time": "1:30 PM",
+          "title": "Archery, Obstacle course, & rope games",
+          "location": "Outdoor",
+          "note": "Tug of War / Kajabe Cancan / Hoosker Doosker"
+        },
+        {
+          "time": "3:30 PM",
+          "title": "Kids' movie",
+          "location": "AC Room 207"
+        },
+        {
+          "time": "3:30 PM",
+          "title": "Human Foosball",
+          "location": "Human Foosball Court"
+        },
+        {
+          "time": "5:30 PM",
+          "title": "Dinner",
+          "location": "Lakeside Dining Room"
+        },
+        {
+          "time": "7:00 PM",
+          "title": "Evening assembly & announcements",
+          "location": "AC Room 207"
+        },
+        {
+          "time": "8:00 PM",
+          "title": "Main gym time & table games",
+          "location": "Activity Center"
+        },
+        {
+          "time": "8:00 – 10:00 PM",
+          "title": "Indoor pool time for females",
+          "location": "Pool",
+          "note": "Female lifeguard – bring your own towel"
+        }
+      ]
+    },
+    {
+      "day": "Wednesday",
+      "date": "May 5",
+      "color": "foreground",
+      "events": [
+        {
+          "time": "7:30 AM",
+          "title": "Breakfast",
+          "location": "Lakeside Dining Room"
+        },
+        {
+          "time": "9:00 AM",
+          "title": "Morning assembly, group picture, & announcements",
+          "location": "AC Room 207"
+        },
+        {
+          "time": "10:00 AM",
+          "title": "Dad's session",
+          "location": "AC Room 207",
+          "note": "Free time for everyone else; black-light activities & nine square"
+        },
+        {
+          "time": "12:00 PM",
+          "title": "Lunch",
+          "location": "Lakeside Dining Room"
+        },
+        {
+          "time": "1:30 PM",
+          "title": "Kickball",
+          "location": "Rec Field"
+        },
+        {
+          "time": "2:30 PM",
+          "title": "Gaga Ball Tournament",
+          "location": "Outdoor"
+        },
+        {
+          "time": "2:30 PM",
+          "title": "Scrabble Tournament",
+          "location": "AC Room 205/206"
+        },
+        {
+          "time": "3:30 PM",
+          "title": "Kids' movie & craft (Painting rocks)",
+          "location": "AC Room 207"
+        },
+        {
+          "time": "3:30 PM",
+          "title": "Disc golf",
+          "location": "Begins behind Activity Center"
+        },
+        {
+          "time": "5:30 PM",
+          "title": "Dinner",
+          "location": "Lakeside Dining Room"
+        },
+        {
+          "time": "7:00 PM",
+          "title": "Evening assembly & announcements",
+          "location": "Room 207 at the Activity Center"
+        },
+        {
+          "time": "8:00 PM",
+          "title": "Main gym time & table games",
+          "location": "Activity Center"
+        },
+        {
+          "time": "8:00 – 10:00 PM",
+          "title": "Indoor pool time for males",
+          "location": "Pool",
+          "note": "Male lifeguard – bring your own towel"
+        }
+      ]
+    },
+    {
+      "day": "Thursday",
+      "date": "May 6",
+      "color": "primary",
+      "events": [
+        {
+          "time": "7:30 AM",
+          "title": "Breakfast",
+          "location": "Lakeside Dining Room"
+        },
+        {
+          "time": "9:00 AM",
+          "title": "Morning assembly & announcements",
+          "location": "AC Room 207"
+        },
+        {
+          "time": "10:00 AM",
+          "title": "Bible bowl",
+          "location": "AC Room 207",
+          "note": "Everyone is encouraged to participate"
+        },
+        {
+          "time": "10:20 AM",
+          "title": "Ping Pong tournament",
+          "location": "Activity Center"
+        },
+        {
+          "time": "12:00 PM",
+          "title": "Lunch",
+          "location": "Lakeside Dining Room"
+        },
+        {
+          "time": "1:30 – 3:30 PM",
+          "title": "Paddle boats & canoes",
+          "location": "Beachfront"
+        },
+        {
+          "time": "3:00 – 5:00 PM",
+          "title": "Miniature Painting",
+          "location": "Activity Center",
+          "note": "Pre-registration required"
+        },
+        {
+          "time": "3:30 PM",
+          "title": "Kids' movie",
+          "location": "AC Room 207"
+        },
+        {
+          "time": "3:30 PM",
+          "title": "Billiards & air hockey tournaments",
+          "location": "Activity Center",
+          "note": "Finish up any other tourneys if needed"
+        },
+        {
+          "time": "5:30 PM",
+          "title": "Cookout by the lake",
+          "location": "Lakeside",
+          "note": "Weather permitting"
+        },
+        {
+          "time": "6:30 PM",
+          "title": "Hayrides",
+          "location": "Starting by the lake"
+        },
+        {
+          "time": "7:00 PM",
+          "title": "Evening assembly & announcements",
+          "location": "Bonfire",
+          "note": "No song books or projector"
+        },
+        {
+          "time": "8:00 PM",
+          "title": "Glow-in-the-Dark Capture the Flag",
+          "location": "Rec Field",
+          "note": "2 simultaneous games"
+        },
+        {
+          "time": "9:00 PM",
+          "title": "Adult/Teen Volleyball",
+          "location": "Activity Center"
+        },
+        {
+          "time": "10:00 PM",
+          "title": "Racquetball Court Singing",
+          "location": "Activity Center"
+        }
+      ]
+    },
+    {
+      "day": "Friday",
+      "date": "May 7",
+      "color": "secondary",
+      "events": [
+        {
+          "time": "7:30 AM",
+          "title": "Breakfast",
+          "location": "Lakeside Dining Room"
+        },
+        {
+          "time": "9:00 AM",
+          "title": "Morning assembly, Bible bowl awards, & brainstorming for next year",
+          "location": "AC Room 207"
+        },
+        {
+          "time": "10:30 AM",
+          "title": "Pack up & clean up lodging areas",
+          "note": "Return motel keys to meeting room by 11:30 AM"
+        },
+        {
+          "time": "12:00 PM",
+          "title": "Lunch & depart for home",
+          "location": "Lakeside Dining Room"
+        }
+      ]
+    }
+  ],
+  "dayDates": {
+    "Monday": "2027-05-03",
+    "Tuesday": "2027-05-04",
+    "Wednesday": "2027-05-05",
+    "Thursday": "2027-05-06",
+    "Friday": "2027-05-07"
+  },
+  "luItems": [
+    {
+      "date": "2027-05-03",
+      "day": "Monday",
+      "time": "1:00 – 5:15 PM",
+      "startHour": 13,
+      "startMinute": 0,
+      "endHour": 17,
+      "endMinute": 15,
+      "title": "Check-in",
+      "location": "Activity Center (AC) [upstairs outside Room 207]",
+      "isMeal": false
+    },
+    {
+      "date": "2027-05-03",
+      "day": "Monday",
+      "time": "4:00 – 5:00 PM",
+      "startHour": 16,
+      "startMinute": 0,
+      "endHour": 17,
+      "endMinute": 0,
+      "title": "Ice Breaker",
+      "location": "AC Room 205/206",
+      "isMeal": false
+    },
+    {
+      "date": "2027-05-03",
+      "day": "Monday",
+      "time": "5:30 PM",
+      "startHour": 17,
+      "startMinute": 30,
+      "title": "Dinner",
+      "location": "Lakeside Dining Room",
+      "isMeal": true
+    },
+    {
+      "date": "2027-05-03",
+      "day": "Monday",
+      "time": "7:00 PM",
+      "startHour": 19,
+      "startMinute": 0,
+      "title": "Evening assembly, welcome, family introductions, & announcements",
+      "location": "AC Room 207",
+      "isMeal": false
+    },
+    {
+      "date": "2027-05-03",
+      "day": "Monday",
+      "time": "8:00 PM",
+      "startHour": 20,
+      "startMinute": 0,
+      "title": "Black-light Dodgeball, Bombardment, & Steal the Bacon",
+      "location": "Activity Center",
+      "isMeal": false
+    },
+    {
+      "date": "2027-05-03",
+      "day": "Monday",
+      "time": "9:00 PM",
+      "startHour": 21,
+      "startMinute": 0,
+      "title": "Nine Square & Knockout",
+      "location": "Activity Center",
+      "isMeal": false
+    },
+    {
+      "date": "2027-05-03",
+      "day": "Monday",
+      "time": "10:00 PM",
+      "startHour": 22,
+      "startMinute": 0,
+      "endHour": 23,
+      "endMinute": 59,
+      "title": "Good Night!",
+      "location": "See you tomorrow!"
+    },
+    {
+      "date": "2027-05-04",
+      "day": "Tuesday",
+      "time": "7:30 AM",
+      "startHour": 7,
+      "startMinute": 30,
+      "title": "Breakfast",
+      "location": "Lakeside Dining Room",
+      "isMeal": true
+    },
+    {
+      "date": "2027-05-04",
+      "day": "Tuesday",
+      "time": "9:00 AM",
+      "startHour": 9,
+      "startMinute": 0,
+      "title": "Morning assembly & announcements",
+      "location": "AC Room 207",
+      "isMeal": false
+    },
+    {
+      "date": "2027-05-04",
+      "day": "Tuesday",
+      "time": "10:00 AM",
+      "startHour": 10,
+      "startMinute": 0,
+      "title": "Young Adult session",
+      "location": "AC Ping Pong Room",
+      "isMeal": false
+    },
+    {
+      "date": "2027-05-04",
+      "day": "Tuesday",
+      "time": "10:00 AM",
+      "startHour": 10,
+      "startMinute": 0,
+      "title": "Mom's session",
+      "location": "AC Room 207",
+      "isMeal": false
+    },
+    {
+      "date": "2027-05-04",
+      "day": "Tuesday",
+      "time": "10:00 – 11:30 AM",
+      "startHour": 10,
+      "startMinute": 0,
+      "endHour": 11,
+      "endMinute": 30,
+      "title": "Miniature Painting",
+      "location": "Activity Center",
+      "isMeal": false
+    },
+    {
+      "date": "2027-05-04",
+      "day": "Tuesday",
+      "time": "12:00 PM",
+      "startHour": 12,
+      "startMinute": 0,
+      "title": "Lunch",
+      "location": "Lakeside Dining Room",
+      "isMeal": true
+    },
+    {
+      "date": "2027-05-04",
+      "day": "Tuesday",
+      "time": "1:30 PM",
+      "startHour": 13,
+      "startMinute": 30,
+      "title": "Archery, Obstacle course, & rope games",
+      "location": "Outdoor",
+      "isMeal": false
+    },
+    {
+      "date": "2027-05-04",
+      "day": "Tuesday",
+      "time": "3:30 PM",
+      "startHour": 15,
+      "startMinute": 30,
+      "title": "Kids' movie",
+      "location": "AC Room 207",
+      "isMeal": false
+    },
+    {
+      "date": "2027-05-04",
+      "day": "Tuesday",
+      "time": "3:30 PM",
+      "startHour": 15,
+      "startMinute": 30,
+      "title": "Human Foosball",
+      "location": "Human Foosball Court",
+      "isMeal": false
+    },
+    {
+      "date": "2027-05-04",
+      "day": "Tuesday",
+      "time": "5:30 PM",
+      "startHour": 17,
+      "startMinute": 30,
+      "title": "Dinner",
+      "location": "Lakeside Dining Room",
+      "isMeal": true
+    },
+    {
+      "date": "2027-05-04",
+      "day": "Tuesday",
+      "time": "7:00 PM",
+      "startHour": 19,
+      "startMinute": 0,
+      "title": "Evening assembly & announcements",
+      "location": "AC Room 207",
+      "isMeal": false
+    },
+    {
+      "date": "2027-05-04",
+      "day": "Tuesday",
+      "time": "8:00 PM",
+      "startHour": 20,
+      "startMinute": 0,
+      "title": "Main gym time & table games",
+      "location": "Activity Center",
+      "isMeal": false
+    },
+    {
+      "date": "2027-05-04",
+      "day": "Tuesday",
+      "time": "8:00 – 10:00 PM",
+      "startHour": 20,
+      "startMinute": 0,
+      "endHour": 22,
+      "endMinute": 0,
+      "title": "Indoor pool time for females",
+      "location": "Pool",
+      "isMeal": false
+    },
+    {
+      "date": "2027-05-04",
+      "day": "Tuesday",
+      "time": "10:15 PM",
+      "startHour": 22,
+      "startMinute": 15,
+      "endHour": 23,
+      "endMinute": 59,
+      "title": "Good Night!",
+      "location": "See you tomorrow!"
+    },
+    {
+      "date": "2027-05-05",
+      "day": "Wednesday",
+      "time": "7:30 AM",
+      "startHour": 7,
+      "startMinute": 30,
+      "title": "Breakfast",
+      "location": "Lakeside Dining Room",
+      "isMeal": true
+    },
+    {
+      "date": "2027-05-05",
+      "day": "Wednesday",
+      "time": "9:00 AM",
+      "startHour": 9,
+      "startMinute": 0,
+      "title": "Morning assembly, group picture, & announcements",
+      "location": "AC Room 207",
+      "isMeal": false
+    },
+    {
+      "date": "2027-05-05",
+      "day": "Wednesday",
+      "time": "10:00 AM",
+      "startHour": 10,
+      "startMinute": 0,
+      "title": "Dad's session",
+      "location": "AC Room 207",
+      "isMeal": false
+    },
+    {
+      "date": "2027-05-05",
+      "day": "Wednesday",
+      "time": "12:00 PM",
+      "startHour": 12,
+      "startMinute": 0,
+      "title": "Lunch",
+      "location": "Lakeside Dining Room",
+      "isMeal": true
+    },
+    {
+      "date": "2027-05-05",
+      "day": "Wednesday",
+      "time": "1:30 PM",
+      "startHour": 13,
+      "startMinute": 30,
+      "title": "Kickball",
+      "location": "Rec Field",
+      "isMeal": false
+    },
+    {
+      "date": "2027-05-05",
+      "day": "Wednesday",
+      "time": "2:30 PM",
+      "startHour": 14,
+      "startMinute": 30,
+      "title": "Gaga Ball Tournament",
+      "location": "Outdoor",
+      "isMeal": false
+    },
+    {
+      "date": "2027-05-05",
+      "day": "Wednesday",
+      "time": "2:30 PM",
+      "startHour": 14,
+      "startMinute": 30,
+      "title": "Scrabble Tournament",
+      "location": "AC Room 205/206",
+      "isMeal": false
+    },
+    {
+      "date": "2027-05-05",
+      "day": "Wednesday",
+      "time": "3:30 PM",
+      "startHour": 15,
+      "startMinute": 30,
+      "title": "Kids' movie & craft (Painting rocks)",
+      "location": "AC Room 207",
+      "isMeal": false
+    },
+    {
+      "date": "2027-05-05",
+      "day": "Wednesday",
+      "time": "3:30 PM",
+      "startHour": 15,
+      "startMinute": 30,
+      "title": "Disc golf",
+      "location": "Begins behind Activity Center",
+      "isMeal": false
+    },
+    {
+      "date": "2027-05-05",
+      "day": "Wednesday",
+      "time": "5:30 PM",
+      "startHour": 17,
+      "startMinute": 30,
+      "title": "Dinner",
+      "location": "Lakeside Dining Room",
+      "isMeal": true
+    },
+    {
+      "date": "2027-05-05",
+      "day": "Wednesday",
+      "time": "7:00 PM",
+      "startHour": 19,
+      "startMinute": 0,
+      "title": "Evening assembly & announcements",
+      "location": "Room 207 at the Activity Center",
+      "isMeal": false
+    },
+    {
+      "date": "2027-05-05",
+      "day": "Wednesday",
+      "time": "8:00 PM",
+      "startHour": 20,
+      "startMinute": 0,
+      "title": "Main gym time & table games",
+      "location": "Activity Center",
+      "isMeal": false
+    },
+    {
+      "date": "2027-05-05",
+      "day": "Wednesday",
+      "time": "8:00 – 10:00 PM",
+      "startHour": 20,
+      "startMinute": 0,
+      "endHour": 22,
+      "endMinute": 0,
+      "title": "Indoor pool time for males",
+      "location": "Pool",
+      "isMeal": false
+    },
+    {
+      "date": "2027-05-05",
+      "day": "Wednesday",
+      "time": "10:15 PM",
+      "startHour": 22,
+      "startMinute": 15,
+      "endHour": 23,
+      "endMinute": 59,
+      "title": "Good Night!",
+      "location": "See you tomorrow!"
+    },
+    {
+      "date": "2027-05-06",
+      "day": "Thursday",
+      "time": "7:30 AM",
+      "startHour": 7,
+      "startMinute": 30,
+      "title": "Breakfast",
+      "location": "Lakeside Dining Room",
+      "isMeal": true
+    },
+    {
+      "date": "2027-05-06",
+      "day": "Thursday",
+      "time": "9:00 AM",
+      "startHour": 9,
+      "startMinute": 0,
+      "title": "Morning assembly & announcements",
+      "location": "AC Room 207",
+      "isMeal": false
+    },
+    {
+      "date": "2027-05-06",
+      "day": "Thursday",
+      "time": "10:00 AM",
+      "startHour": 10,
+      "startMinute": 0,
+      "title": "Bible bowl",
+      "location": "AC Room 207",
+      "isMeal": false
+    },
+    {
+      "date": "2027-05-06",
+      "day": "Thursday",
+      "time": "10:20 AM",
+      "startHour": 10,
+      "startMinute": 20,
+      "title": "Ping Pong tournament",
+      "location": "Activity Center",
+      "isMeal": false
+    },
+    {
+      "date": "2027-05-06",
+      "day": "Thursday",
+      "time": "12:00 PM",
+      "startHour": 12,
+      "startMinute": 0,
+      "title": "Lunch",
+      "location": "Lakeside Dining Room",
+      "isMeal": true
+    },
+    {
+      "date": "2027-05-06",
+      "day": "Thursday",
+      "time": "1:30 – 3:30 PM",
+      "startHour": 13,
+      "startMinute": 30,
+      "endHour": 15,
+      "endMinute": 30,
+      "title": "Paddle boats & canoes",
+      "location": "Beachfront",
+      "isMeal": false
+    },
+    {
+      "date": "2027-05-06",
+      "day": "Thursday",
+      "time": "3:00 – 5:00 PM",
+      "startHour": 15,
+      "startMinute": 0,
+      "endHour": 17,
+      "endMinute": 0,
+      "title": "Miniature Painting",
+      "location": "Activity Center",
+      "isMeal": false
+    },
+    {
+      "date": "2027-05-06",
+      "day": "Thursday",
+      "time": "3:30 PM",
+      "startHour": 15,
+      "startMinute": 30,
+      "title": "Kids' movie",
+      "location": "AC Room 207",
+      "isMeal": false
+    },
+    {
+      "date": "2027-05-06",
+      "day": "Thursday",
+      "time": "3:30 PM",
+      "startHour": 15,
+      "startMinute": 30,
+      "title": "Billiards & air hockey tournaments",
+      "location": "Activity Center",
+      "isMeal": false
+    },
+    {
+      "date": "2027-05-06",
+      "day": "Thursday",
+      "time": "5:30 PM",
+      "startHour": 17,
+      "startMinute": 30,
+      "title": "Cookout by the lake",
+      "location": "Lakeside",
+      "isMeal": true
+    },
+    {
+      "date": "2027-05-06",
+      "day": "Thursday",
+      "time": "6:30 PM",
+      "startHour": 18,
+      "startMinute": 30,
+      "title": "Hayrides",
+      "location": "Starting by the lake",
+      "isMeal": false
+    },
+    {
+      "date": "2027-05-06",
+      "day": "Thursday",
+      "time": "7:00 PM",
+      "startHour": 19,
+      "startMinute": 0,
+      "title": "Evening assembly & announcements",
+      "location": "Bonfire",
+      "isMeal": false
+    },
+    {
+      "date": "2027-05-06",
+      "day": "Thursday",
+      "time": "8:00 PM",
+      "startHour": 20,
+      "startMinute": 0,
+      "title": "Glow-in-the-Dark Capture the Flag",
+      "location": "Rec Field",
+      "isMeal": false
+    },
+    {
+      "date": "2027-05-06",
+      "day": "Thursday",
+      "time": "9:00 PM",
+      "startHour": 21,
+      "startMinute": 0,
+      "title": "Adult/Teen Volleyball",
+      "location": "Activity Center",
+      "isMeal": false
+    },
+    {
+      "date": "2027-05-06",
+      "day": "Thursday",
+      "time": "10:00 PM",
+      "startHour": 22,
+      "startMinute": 0,
+      "title": "Racquetball Court Singing",
+      "location": "Activity Center",
+      "isMeal": false
+    },
+    {
+      "date": "2027-05-06",
+      "day": "Thursday",
+      "time": "11:00 PM",
+      "startHour": 23,
+      "startMinute": 0,
+      "endHour": 23,
+      "endMinute": 59,
+      "title": "Good Night!",
+      "location": "See you tomorrow!"
+    },
+    {
+      "date": "2027-05-07",
+      "day": "Friday",
+      "time": "7:30 AM",
+      "startHour": 7,
+      "startMinute": 30,
+      "title": "Breakfast",
+      "location": "Lakeside Dining Room",
+      "isMeal": true
+    },
+    {
+      "date": "2027-05-07",
+      "day": "Friday",
+      "time": "9:00 AM",
+      "startHour": 9,
+      "startMinute": 0,
+      "title": "Morning assembly, Bible bowl awards, & brainstorming for next year",
+      "location": "AC Room 207",
+      "isMeal": false
+    },
+    {
+      "date": "2027-05-07",
+      "day": "Friday",
+      "time": "10:30 AM",
+      "startHour": 10,
+      "startMinute": 30,
+      "title": "Pack up & clean up lodging areas",
+      "isMeal": false
+    },
+    {
+      "date": "2027-05-07",
+      "day": "Friday",
+      "time": "12:00 PM",
+      "startHour": 12,
+      "startMinute": 0,
+      "title": "Lunch & depart for home",
+      "location": "Lakeside Dining Room",
+      "isMeal": true
+    }
+  ]
+}

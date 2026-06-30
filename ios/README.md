@@ -11,17 +11,20 @@ Native SwiftUI companion for [rendezvousil.com](https://rendezvousil.com).
 | **Notifications** | Local event reminders + **APNs** for organizer broadcasts |
 | **Live Activity** | Lock Screen / Dynamic Island now & next during retreat week |
 | **Staff check-in** | Check-In role on web (`/admin/checkin`) and in-app (More → Staff check-in) with Clerk sign-in |
+| **Admin dashboard** | Clerk admin roles see More → **Admin dashboard** — native stats hub backed by `GET /api/admin/mobile/dashboard` |
 
 ## Requirements
 
 - Xcode 16+ (iOS 17)
 - Physical device for **remote APNs** testing (simulator supports local reminders + Live Activity preview)
 - [XcodeGen](https://github.com/yonaskolb/XcodeGen)
+- **Clerk key** for staff sign-in (admin dashboard + check-in)
 
 ## Setup
 
 ```bash
 cd ios
+cp Config.xcconfig.example Config.xcconfig   # paste NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY from repo .env.local
 xcodegen generate
 open RendezvousIL.xcodeproj
 ```
@@ -30,6 +33,26 @@ open RendezvousIL.xcodeproj
 2. **Capabilities** — entitlements include Push Notifications + App Group `group.com.rendezvousil.app`.
 3. **App icon** — `AppIcon.appiconset` includes `AppIcon-1024.png` (from `public/rendezvous-favicon.jpg`). To refresh after a favicon change: `bash ios/scripts/sync-app-icon.sh`.
 4. Run on device (⌘R).
+
+## Admin access (Clerk)
+
+Assign a role in **Clerk → Users → Public metadata**:
+
+```json
+{ "role": "admin" }
+```
+
+Roles: `admin`, `editor`, `viewer`, `checkin`. Any admin role unlocks **More → Admin dashboard** in the app. Full **admins** also get **More → User management** (native CRUD matching `/admin/users` on web). Check-in staff also get **Staff check-in**.
+
+Native endpoints (Bearer session token from Clerk iOS SDK):
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /api/admin/me` | Role + permissions probe |
+| `GET /api/admin/mobile/dashboard` | Dashboard stats for the native hub |
+| `POST /api/auth/activity` | Last-seen ping (`platform: ios`, optional `appVersion`) — on sign-in, app foreground, every 5 min |
+| `GET/POST/PATCH/DELETE /api/admin/users` | Admin user CRUD (Bearer token; full admin) |
+| `POST /api/admin/users/:id/reset-password` | Set password or copy sign-in link |
 
 ## Notifications & widgets (user)
 

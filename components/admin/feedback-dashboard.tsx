@@ -3,7 +3,8 @@
 import { useEffect, useState, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, MessageSquare, Star, ThumbsUp } from "lucide-react"
+import { Loader2, MessageSquare, Star } from "lucide-react"
+import { AdminStatStrip, AdminStatItem } from "@/components/admin/admin-stat-strip"
 
 type Feedback = {
   id: number
@@ -95,47 +96,22 @@ export function FeedbackDashboard() {
   }
 
   return (
-    <>
+    <div className="space-y-6">
       {stats && (
-        <div className="grid gap-4 md:grid-cols-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-muted-foreground">Total Responses</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">{stats.total}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-muted-foreground">Avg Experience</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold flex items-center gap-1">
+        <AdminStatStrip>
+          <AdminStatItem label="Total responses" value={stats.total} />
+          <AdminStatItem
+            label="Avg experience"
+            value={
+              <span className="inline-flex items-center gap-1">
                 {stats.avgOverall}
-                <Star className="h-5 w-5 text-amber-500" />
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-muted-foreground">Will Return</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">{stats.willReturn}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-muted-foreground flex items-center gap-1">
-                <ThumbsUp className="h-3 w-3" />Would Recommend
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">{stats.recommend}</p>
-            </CardContent>
-          </Card>
-        </div>
+                <Star className="h-4 w-4 text-warning" aria-hidden="true" />
+              </span>
+            }
+          />
+          <AdminStatItem label="Will return" value={stats.willReturn} />
+          <AdminStatItem label="Would recommend" value={stats.recommend} />
+        </AdminStatStrip>
       )}
 
       <div className="space-y-4">
@@ -170,14 +146,14 @@ export function FeedbackDashboard() {
           </Card>
         ))}
       </div>
-    </>
+    </div>
   )
 }
 
 function Detail({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="text-xs font-medium text-muted-foreground">{label}</p>
       <p className="font-medium capitalize">{value}</p>
     </div>
   )
@@ -185,9 +161,9 @@ function Detail({ label, value }: { label: string; value: string }) {
 
 function Quote({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg bg-muted p-3">
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className="mt-1 italic">{value}</p>
+    <div className="rounded-lg border border-border/60 bg-surface-tint/50 p-3">
+      <p className="text-xs font-medium text-muted-foreground">{label}</p>
+      <p className="mt-1 break-words italic">{value}</p>
     </div>
   )
 }

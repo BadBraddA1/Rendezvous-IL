@@ -2,6 +2,8 @@
 // Coordinates are percentages (0-100) relative to the map image dimensions
 // Only includes locations from the Rendezvous 2027 schedule
 
+import { LU_PIN_COLORS, resolveLuPinColor, type LuPinColor } from "@/lib/live-updates-colors"
+
 export interface MapLocation {
   id: string
   name: string
@@ -231,22 +233,16 @@ export const scheduleEvents: ScheduleEvent[] = [
   { id: "fri-3", time: "10:30 AM", title: "Check out & depart", locationId: "activities-center", day: "friday", date: "May 8" },
 ]
 
-export const pinColors: Record<string, string> = {
-  red: "bg-red-500",
-  orange: "bg-orange-500",
-  yellow: "bg-yellow-500",
-  green: "bg-green-500",
-  blue: "bg-blue-500",
-  purple: "bg-purple-500",
-  pink: "bg-pink-500",
-}
+export const pinColors: Record<LuPinColor, string> = Object.fromEntries(
+  (Object.keys(LU_PIN_COLORS) as LuPinColor[]).map((key) => [key, LU_PIN_COLORS[key].hex]),
+) as Record<LuPinColor, string>
 
-export const categoryColors: Record<MapLocation["category"], string> = {
-  lodging: "bg-blue-500",
-  dining: "bg-orange-500",
-  activities: "bg-green-500",
-  recreation: "bg-purple-500",
-  meeting: "bg-red-500",
+export const categoryColors: Record<MapLocation["category"], LuPinColor> = {
+  lodging: resolveLuPinColor(undefined, "lodging"),
+  dining: resolveLuPinColor(undefined, "dining"),
+  activities: resolveLuPinColor(undefined, "activities"),
+  recreation: resolveLuPinColor(undefined, "recreation"),
+  meeting: resolveLuPinColor(undefined, "meeting"),
 }
 
 export const categoryLabels: Record<MapLocation["category"], string> = {

@@ -39,14 +39,16 @@ const categoryPinClass: Record<MapLocation["category"], string> = {
   dining: "text-brand-coral-ink",
   meeting: "text-destructive",
   lodging: "text-primary",
-  activity: "text-accent",
+  activities: "text-accent",
+  recreation: "text-info",
 }
 
 const categoryBadgeClass: Record<MapLocation["category"], string> = {
   dining: "bg-surface-warm text-brand-coral-ink",
   meeting: "bg-destructive/10 text-destructive",
   lodging: "bg-surface-highlight text-primary",
-  activity: "bg-surface-lake text-accent",
+  activities: "bg-surface-lake text-accent",
+  recreation: "bg-surface-tint text-info",
 }
 
 export function ScheduleMap({ highlightedLocationId, onClose }: ScheduleMapProps) {
@@ -256,12 +258,13 @@ export function ScheduleMap({ highlightedLocationId, onClose }: ScheduleMapProps
 
   const getPinColor = (location: MapLocation) => {
     if (location.color) {
-      return colorToClass[location.color] || categoryPinClass.activity
+      return colorToClass[location.color] || categoryPinClass.activities
     }
-    return categoryPinClass[location.category] ?? categoryPinClass.activity
+    return categoryPinClass[location.category] ?? categoryPinClass.activities
   }
 
-  const badgeClass = (cat: MapLocation["category"]) => categoryBadgeClass[cat] ?? categoryBadgeClass.activity
+  const badgeClass = (cat: MapLocation["category"]) =>
+    categoryBadgeClass[cat] ?? categoryBadgeClass.activities
 
   // Generate SVG path string from path points
   const getPathD = (points: { x: number; y: number }[]) => {
@@ -402,7 +405,7 @@ export function ScheduleMap({ highlightedLocationId, onClose }: ScheduleMapProps
       {/* Popup — rendered outside scaled layer so it's never clipped/scaled */}
       {popup && (
         <div
-          className="absolute z-40 bg-background rounded-xl shadow-xl border border-border/50 p-3"
+          className="absolute z-layer-floating bg-background rounded-xl shadow-xl border border-border/50 p-3"
           style={getPopupStyle(popup.x, popup.y)}
         >
           <button
@@ -437,8 +440,12 @@ export function ScheduleMap({ highlightedLocationId, onClose }: ScheduleMapProps
           <span>Dining</span>
         </div>
         <div className="flex items-center gap-1">
-          <MapPin className={`h-3 w-3 ${categoryPinClass.activity}`} fill="white" aria-hidden="true" />
-          <span>Activity</span>
+          <MapPin className={`h-3 w-3 ${categoryPinClass.activities}`} fill="white" aria-hidden="true" />
+          <span>Activities</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <MapPin className={`h-3 w-3 ${categoryPinClass.recreation}`} fill="white" aria-hidden="true" />
+          <span>Recreation</span>
         </div>
         <div className="flex items-center gap-1">
           <MapPin className={`h-3 w-3 ${categoryPinClass.lodging}`} fill="white" aria-hidden="true" />

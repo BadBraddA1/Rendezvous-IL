@@ -33,14 +33,16 @@ export function RegistrationPopup() {
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-surface-lake">
             <Calendar className="h-8 w-8 text-primary" />
           </div>
-          <DialogTitle className="text-center text-2xl font-bold">Rendezvous 2027 is Coming!</DialogTitle>
+          <DialogTitle className="text-section-title text-center text-balance">Rendezvous 2027 is Coming!</DialogTitle>
           <DialogDescription className="text-center text-base">
             Registration opens January 1, 2027 for Rendezvous 2027 at Lake Williamson Christian Center.
             <br />
-            <span className="mt-2 block font-semibold text-foreground">May 3-7, 2027 | Theme: 1 Samuel</span>
+            <span className="mt-2 block font-semibold text-foreground">
+              May 3-7, 2027 · Theme: <span className="text-brand-coral-ink">1 Samuel</span>
+            </span>
           </DialogDescription>
         </DialogHeader>
 

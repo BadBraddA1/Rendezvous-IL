@@ -11,6 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { mapLocations as defaultLocations, type MapLocation } from "@/lib/venue-map-data"
+import { LU_MAP, MAP_PIN_OPTIONS, mapPinHex, resolveLuPinColor, LU_PIN_COLORS } from "@/lib/live-updates-colors"
+import { SiteHeader } from "@/components/site-header"
 import { MainContent } from "@/components/main-content"
 
 type EditorMode = "select" | "add" | "path"
@@ -28,16 +30,6 @@ interface MapPath {
   color: string
   label?: string
 }
-
-const PIN_COLORS = [
-  { value: "red", label: "Red", class: "text-red-500", bg: "bg-red-500", hex: "#ef4444" },
-  { value: "orange", label: "Orange", class: "text-orange-500", bg: "bg-orange-500", hex: "#f97316" },
-  { value: "yellow", label: "Yellow", class: "text-yellow-500", bg: "bg-yellow-500", hex: "#eab308" },
-  { value: "green", label: "Green", class: "text-green-500", bg: "bg-green-500", hex: "#22c55e" },
-  { value: "blue", label: "Blue", class: "text-blue-500", bg: "bg-blue-500", hex: "#3b82f6" },
-  { value: "purple", label: "Purple", class: "text-purple-500", bg: "bg-purple-500", hex: "#a855f7" },
-  { value: "pink", label: "Pink", class: "text-pink-500", bg: "bg-pink-500", hex: "#ec4899" },
-]
 
 const CATEGORIES: MapLocation["category"][] = ["lodging", "dining", "activities", "recreation", "meeting"]
 
@@ -64,23 +56,10 @@ export default function MapEditorPage() {
   } | null>(null)
 
   function getCategoryColor(cat: MapLocation["category"]): string {
-    switch (cat) {
-      case "dining": return "orange"
-      case "meeting": return "red"
-      case "lodging": return "blue"
-      case "activities": return "green"
-      case "recreation": return "purple"
-      default: return "blue"
-    }
+    return resolveLuPinColor(undefined, cat)
   }
 
-  const getColorClass = (color: string) => {
-    return PIN_COLORS.find(c => c.value === color)?.class || "text-blue-500"
-  }
-
-  const getColorHex = (color: string) => {
-    return PIN_COLORS.find(c => c.value === color)?.hex || "#3b82f6"
-  }
+  const getColorHex = (color: string, category?: MapLocation["category"]) => mapPinHex(color, category)
 
   const selectedLocation = locations.find(l => l.id === selectedPin)
 
@@ -296,11 +275,14 @@ export default function MapEditorPage() {
   }
 
   return (
-    <MainContent className="flex h-screen bg-background">
+    <div className="flex min-h-[100dvh] flex-col bg-background">
+      <SiteHeader />
+
+      <MainContent belowHeader className="flex min-h-0 flex-1 flex-col lg:flex-row">
       {/* Sidebar */}
-      <div className="w-80 border-r bg-card flex flex-col">
+      <div className="flex w-full max-h-[45dvh] shrink-0 flex-col border-b bg-card lg:max-h-none lg:w-80 lg:border-b-0 lg:border-r">
         <div className="p-4 border-b">
-          <h1 className="text-xl font-bold">Map Editor</h1>
+          <h1 className="text-widget-heading">Map Editor</h1>
           <p className="text-sm text-muted-foreground">Edit pins, colors, and paths</p>
         </div>
 
@@ -315,18 +297,16 @@ export default function MapEditorPage() {
             <div className="flex gap-2">
               <Button
                 variant={mode === "select" ? "default" : "outline"}
-                size="sm"
                 onClick={() => { setMode("select"); cancelPath() }}
-                className="flex-1"
+                className="min-h-11 flex-1"
               >
                 <Move className="h-4 w-4 mr-1" />
                 Select
               </Button>
               <Button
                 variant={mode === "add" ? "default" : "outline"}
-                size="sm"
                 onClick={() => { setMode("add"); cancelPath() }}
-                className="flex-1"
+                className="min-h-11 flex-1"
               >
                 <Plus className="h-4 w-4 mr-1" />
                 Add Pin
@@ -347,8 +327,13 @@ export default function MapEditorPage() {
                 <CardHeader className="p-4 pb-2">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-base">Edit Pin</CardTitle>
-                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setSelectedPin(null)}>
-                      <X className="h-4 w-4" />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setSelectedPin(null)}
+                      aria-label="Close pin editor"
+                    >
+                      <X className="h-4 w-4" aria-hidden="true" />
                     </Button>
                   </div>
                 </CardHeader>
@@ -358,7 +343,6 @@ export default function MapEditorPage() {
                     <Input
                       value={editForm.name}
                       onChange={(e) => setEditForm(prev => prev ? { ...prev, name: e.target.value } : null)}
-                      className="h-8 text-sm"
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -376,7 +360,7 @@ export default function MapEditorPage() {
                         value={editForm.category}
                         onValueChange={(val) => setEditForm(prev => prev ? { ...prev, category: val as MapLocation["category"] } : null)}
                       >
-                        <SelectTrigger className="h-8 text-sm">
+                        <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -392,14 +376,17 @@ export default function MapEditorPage() {
                         value={editForm.color}
                         onValueChange={(val) => setEditForm(prev => prev ? { ...prev, color: val } : null)}
                       >
-                        <SelectTrigger className="h-8 text-sm">
+                        <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {PIN_COLORS.map(color => (
+                          {MAP_PIN_OPTIONS.map((color) => (
                             <SelectItem key={color.value} value={color.value}>
                               <div className="flex items-center gap-2">
-                                <div className={`w-3 h-3 rounded-full ${color.bg}`} />
+                                <div
+                                  className="h-3 w-3 rounded-full"
+                                  style={{ backgroundColor: color.hex }}
+                                />
                                 {color.label}
                               </div>
                             </SelectItem>
@@ -412,12 +399,12 @@ export default function MapEditorPage() {
                     Position: {selectedLocation?.x.toFixed(1)}%, {selectedLocation?.y.toFixed(1)}%
                   </div>
                   <div className="flex gap-2">
-                    <Button size="sm" onClick={updateLocation} className="flex-1">
+                    <Button onClick={updateLocation} className="min-h-11 flex-1">
                       <Save className="h-3 w-3 mr-1" />
                       Save
                     </Button>
-                    <Button size="sm" variant="destructive" onClick={deleteLocation}>
-                      <Trash2 className="h-3 w-3" />
+                    <Button size="icon" variant="destructive" onClick={deleteLocation} aria-label="Delete pin">
+                      <Trash2 className="h-4 w-4" aria-hidden="true" />
                     </Button>
                   </div>
                 </CardContent>
@@ -432,11 +419,14 @@ export default function MapEditorPage() {
                   <button
                     key={loc.id}
                     onClick={() => setSelectedPin(loc.id)}
-                    className={`w-full text-left p-2 rounded-md text-sm flex items-center gap-2 transition-colors ${
+                    className={`min-h-11 w-full text-left p-3 rounded-md text-sm flex items-center gap-2 transition-colors ${
                       selectedPin === loc.id ? "bg-primary/10 border border-primary/30" : "hover:bg-muted"
                     }`}
                   >
-                    <MapPin className={`h-4 w-4 ${getColorClass(loc.color || getCategoryColor(loc.category))}`} />
+                    <MapPin
+                      className="h-4 w-4"
+                      style={{ color: getColorHex(loc.color || getCategoryColor(loc.category), loc.category) }}
+                    />
                     <span className="truncate flex-1">{loc.name}</span>
                     <Badge variant="secondary" className="text-[10px] h-5">{loc.category}</Badge>
                   </button>
@@ -450,19 +440,19 @@ export default function MapEditorPage() {
             <div className="flex gap-2">
               <Button
                 variant={mode === "path" ? "default" : "outline"}
-                size="sm"
                 onClick={() => { setMode("path"); setSelectedPin(null) }}
-                className="flex-1"
+                className="min-h-11 flex-1"
               >
                 <ArrowRight className="h-4 w-4 mr-1" />
                 Draw Path
               </Button>
               <Button
                 variant="outline"
-                size="sm"
+                size="icon"
                 onClick={() => setShowPaths(!showPaths)}
+                aria-label={showPaths ? "Hide paths on map" : "Show paths on map"}
               >
-                {showPaths ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                {showPaths ? <Eye className="h-4 w-4" aria-hidden="true" /> : <EyeOff className="h-4 w-4" aria-hidden="true" />}
               </Button>
             </div>
 
@@ -483,10 +473,10 @@ export default function MapEditorPage() {
                         </p>
                       </div>
                       <div className="flex gap-2 justify-center">
-                        <Button size="sm" variant="outline" onClick={undoLastPoint} disabled={currentPath.length <= 1}>
+                        <Button variant="outline" className="min-h-11" onClick={undoLastPoint} disabled={currentPath.length <= 1}>
                           Undo Point
                         </Button>
-                        <Button size="sm" variant="outline" onClick={cancelPath}>
+                        <Button variant="outline" className="min-h-11" onClick={cancelPath}>
                           Cancel
                         </Button>
                       </div>
@@ -533,10 +523,13 @@ export default function MapEditorPage() {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              {PIN_COLORS.map(color => (
+                              {MAP_PIN_OPTIONS.map((color) => (
                                 <SelectItem key={color.value} value={color.value}>
                                   <div className="flex items-center gap-2">
-                                    <div className={`w-2 h-2 rounded-full ${color.bg}`} />
+                                    <div
+                                      className="h-2 w-2 rounded-full"
+                                      style={{ backgroundColor: color.hex }}
+                                    />
                                     {color.label}
                                   </div>
                                 </SelectItem>
@@ -550,8 +543,13 @@ export default function MapEditorPage() {
                             onClick={(e) => e.stopPropagation()}
                             className="h-7 text-xs flex-1"
                           />
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); deletePath(path.id) }}>
-                            <Trash2 className="h-3 w-3" />
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => { e.stopPropagation(); deletePath(path.id) }}
+                            aria-label="Delete path"
+                          >
+                            <Trash2 className="h-3 w-3" aria-hidden="true" />
                           </Button>
                         </div>
                       </Card>
@@ -566,12 +564,12 @@ export default function MapEditorPage() {
         {/* Actions */}
         <div className="p-4 border-t space-y-2">
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={exportData} className="flex-1">
+            <Button variant="outline" className="min-h-11 flex-1" onClick={exportData}>
               <Download className="h-4 w-4 mr-1" />
               Export
             </Button>
             <label className="flex-1">
-              <Button variant="outline" size="sm" className="w-full" asChild>
+              <Button variant="outline" className="min-h-11 w-full" asChild>
                 <span>
                   <Upload className="h-4 w-4 mr-1" />
                   Import
@@ -580,7 +578,7 @@ export default function MapEditorPage() {
               <input type="file" accept=".json" onChange={importData} className="hidden" />
             </label>
           </div>
-          <Button variant="outline" size="sm" onClick={resetToDefault} className="w-full">
+          <Button variant="outline" className="min-h-11 w-full" onClick={resetToDefault}>
             <RotateCcw className="h-4 w-4 mr-1" />
             Reset to Default
           </Button>
@@ -590,8 +588,8 @@ export default function MapEditorPage() {
             <div className="mt-4 space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">Export Code</span>
-                <Button variant="ghost" size="sm" onClick={() => setShowExportCode(false)}>
-                  <X className="h-4 w-4" />
+                <Button variant="ghost" size="icon" onClick={() => setShowExportCode(false)} aria-label="Close export code">
+                  <X className="h-4 w-4" aria-hidden="true" />
                 </Button>
               </div>
               <textarea
@@ -600,8 +598,7 @@ export default function MapEditorPage() {
                 className="w-full h-48 p-2 text-xs font-mono bg-muted border rounded resize-none"
               />
               <Button 
-                size="sm" 
-                className="w-full"
+                className="min-h-11 w-full"
                 onClick={() => {
                   navigator.clipboard.writeText(exportCode)
                 }}
@@ -615,7 +612,7 @@ export default function MapEditorPage() {
       </div>
 
       {/* Map Area */}
-      <div className="flex-1 p-6 overflow-auto bg-muted/30">
+      <div className="min-h-0 flex-1 overflow-auto bg-muted/30 p-4 lg:p-6">
         <div
           ref={mapRef}
           className={`relative w-full max-w-5xl mx-auto ${mode === "add" || (mode === "path" && isDrawingPath) ? "cursor-crosshair" : "cursor-default"}`}
@@ -683,7 +680,7 @@ export default function MapEditorPage() {
               <g>
                 <path
                   d={getPathD(currentPath)}
-                  stroke="#3b82f6"
+                  stroke={LU_MAP.routeDefault}
                   strokeWidth="3"
                   strokeDasharray="4,4"
                   fill="none"
@@ -695,7 +692,7 @@ export default function MapEditorPage() {
                     cx={`${point.x}%`}
                     cy={`${point.y}%`}
                     r={point.isWaypoint ? "5" : "7"}
-                    fill={point.isWaypoint ? "#3b82f6" : "#22c55e"}
+                    fill={point.isWaypoint ? LU_MAP.prevFill : LU_PIN_COLORS.green.hex}
                     stroke="white"
                     strokeWidth="2"
                   />
@@ -708,7 +705,7 @@ export default function MapEditorPage() {
           {locations.map(loc => {
             const isSelected = selectedPin === loc.id
             const isPathPoint = mode === "path" && currentPath.some(p => p.pinId === loc.id)
-            const colorClass = getColorClass(loc.color || getCategoryColor(loc.category))
+            const pinColor = getColorHex(loc.color || getCategoryColor(loc.category), loc.category)
             
             return (
               <div
@@ -721,8 +718,9 @@ export default function MapEditorPage() {
                 onMouseDown={(e) => handlePinDrag(e, loc.id)}
               >
                 <MapPin
-                  className={`h-8 w-8 drop-shadow-lg ${colorClass} ${isPathPoint ? "animate-pulse" : ""}`}
-                  fill={isSelected || isPathPoint ? "currentColor" : "white"}
+                  className={`h-8 w-8 drop-shadow-lg ${isPathPoint ? "animate-pulse" : ""}`}
+                  style={{ color: pinColor }}
+                  fill={isSelected || isPathPoint ? pinColor : "white"}
                 />
                 {(isSelected || mode === "select") && (
                   <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 whitespace-nowrap bg-background/95 rounded px-2 py-0.5 text-xs font-medium shadow border">
@@ -746,6 +744,7 @@ export default function MapEditorPage() {
           )}
         </div>
       </div>
-    </MainContent>
+      </MainContent>
+    </div>
   )
 }

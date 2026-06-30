@@ -36,7 +36,7 @@ export default async function MessagingPage() {
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
               <Lock className="h-7 w-7 text-primary" />
             </div>
-            <CardTitle className="text-2xl">Sign In Required</CardTitle>
+            <CardTitle className="text-subheading">Sign In Required</CardTitle>
             <CardDescription>
               You need to sign in to access the messaging page.
             </CardDescription>
@@ -64,7 +64,7 @@ export default async function MessagingPage() {
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-destructive/10">
               <ShieldX className="h-7 w-7 text-destructive" />
             </div>
-            <CardTitle className="text-2xl">Access Denied</CardTitle>
+            <CardTitle className="text-subheading">Access Denied</CardTitle>
             <CardDescription>
               You need admin or editor permissions to access the messaging page.
             </CardDescription>
@@ -101,12 +101,12 @@ export default async function MessagingPage() {
   }
 
   return (
-    <MainContent className="min-h-screen bg-background p-6">
-      <div className="container mx-auto space-y-6">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Messaging & Announcements</h2>
-          <p className="text-muted-foreground">Send messages to GroupMe and display announcements on /LU and /schedule</p>
-        </div>
+    <MainContent belowHeader="loose" className="min-h-[100dvh] bg-background">
+      <div className="site-container space-y-6 py-6 md:py-8">
+        <header className="admin-page-header">
+          <h1 className="text-section-title text-balance">Messaging & Announcements</h1>
+          <p className="text-lead text-muted-foreground">Send messages to GroupMe and display announcements on /LU and /schedule</p>
+        </header>
 
         <MessagingForm initialAnnouncements={announcements} />
       </div>

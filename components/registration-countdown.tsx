@@ -10,6 +10,17 @@ interface TimeLeft {
   seconds: number
 }
 
+function ClosingDigitCell({ value, label }: { value: string; label: string }) {
+  return (
+    <Card className="countdown-digit-cell border-0 shadow-none">
+      <CardContent className="p-4 sm:p-6 text-center">
+        <div className="registration-countdown-num mb-2">{value}</div>
+        <div className="registration-countdown-label text-xs text-muted-foreground sm:text-sm">{label}</div>
+      </CardContent>
+    </Card>
+  )
+}
+
 export function RegistrationCountdown() {
   const [timeLeft, setTimeLeft] = useState<TimeLeft>({ days: 0, hours: 0, minutes: 0, seconds: 0 })
   const [mounted, setMounted] = useState(false)
@@ -18,7 +29,6 @@ export function RegistrationCountdown() {
     setMounted(true)
 
     const calculateTimeLeft = (): TimeLeft => {
-      // April 15, 2027 at 11:59 PM Central Time = April 16, 2027 at 4:59 AM UTC
       const targetDate = new Date(Date.UTC(2027, 3, 16, 4, 59, 0)).getTime()
       const now = Date.now()
       const difference = targetDate - now
@@ -44,53 +54,36 @@ export function RegistrationCountdown() {
     return () => clearInterval(timer)
   }, [])
 
-  if (!mounted) {
-    return (
-      <div className="w-full">
-        <div className="mb-4 text-center">
-          <h3 className="text-2xl font-bold text-ring">Registration Closes In</h3>
-        </div>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-          {["Days", "Hours", "Minutes", "Seconds"].map((label) => (
-            <Card key={label} className="border-secondary-foreground/20 bg-primary text-background">
-              <CardContent className="p-4 sm:p-6 text-center">
-                <div className="text-3xl sm:text-4xl font-bold text-secondary-foreground mb-2">--</div>
-                <div className="text-xs sm:text-sm text-secondary-foreground/70">{label}</div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-        <div className="mt-4 text-center">
-          <p className="text-ring">April 15, 2027 at 11:59 PM Central Time</p>
-        </div>
-      </div>
-    )
-  }
+  const digits = mounted
+    ? [
+        { label: "Days", value: timeLeft.days },
+        { label: "Hours", value: timeLeft.hours },
+        { label: "Minutes", value: timeLeft.minutes },
+        { label: "Seconds", value: timeLeft.seconds },
+      ]
+    : [
+        { label: "Days", value: "--" },
+        { label: "Hours", value: "--" },
+        { label: "Minutes", value: "--" },
+        { label: "Seconds", value: "--" },
+      ]
 
   return (
-    <div className="w-full">
+    <div className="w-full rounded-xl border border-warning/25 bg-surface-warm p-4 sm:p-6">
       <div className="mb-4 text-center">
-        <h3 className="text-2xl font-bold text-ring">Registration Closes In</h3>
+        <h3 className="text-section-title text-balance text-warning">Registration Closes In</h3>
       </div>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-        {[
-          { label: "Days", value: timeLeft.days },
-          { label: "Hours", value: timeLeft.hours },
-          { label: "Minutes", value: timeLeft.minutes },
-          { label: "Seconds", value: timeLeft.seconds },
-        ].map((item) => (
-          <Card key={item.label} className="border-secondary-foreground/20 bg-primary text-background">
-            <CardContent className="p-4 sm:p-6 text-center">
-              <div className="text-3xl sm:text-4xl font-bold text-secondary-foreground mb-2">
-                {String(item.value).padStart(2, "0")}
-              </div>
-              <div className="text-xs sm:text-sm text-secondary-foreground/70">{item.label}</div>
-            </CardContent>
-          </Card>
+        {digits.map((item) => (
+          <ClosingDigitCell
+            key={item.label}
+            value={typeof item.value === "number" ? String(item.value).padStart(2, "0") : item.value}
+            label={item.label}
+          />
         ))}
       </div>
       <div className="mt-4 text-center">
-        <p className="text-ring">April 15, 2027 at 11:59 PM Central Time</p>
+        <p className="text-sm text-muted-foreground">April 15, 2027 at 11:59 PM Central Time</p>
       </div>
     </div>
   )

@@ -62,8 +62,8 @@ export function MessagingClient() {
     return (
       <Card>
         <CardContent className="flex flex-col items-center justify-center py-16">
-          <div className="h-16 w-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mb-4">
-            <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
+          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-surface-highlight">
+            <CheckCircle className="h-8 w-8 text-success" aria-hidden="true" />
           </div>
           <h3 className="text-lg font-semibold mb-2">Email Sent Successfully</h3>
           <p className="text-muted-foreground text-center">

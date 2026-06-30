@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, type CSSProperties } from "react"
+import { useEffect, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -9,46 +9,37 @@ import { ArrowRight } from "lucide-react"
 const taglines = [
   "Fellowship. Faith. Family.",
   "Where Homeschool Families Connect",
-  "5 Days of Unforgettable Memories",
-  "Grow Together in Faith",
   "Building Lifelong Friendships",
 ]
 
 export function HeroSection() {
   const [currentTagline, setCurrentTagline] = useState(0)
   const [taglineVisible, setTaglineVisible] = useState(true)
-  const [motionReady, setMotionReady] = useState(false)
 
   useEffect(() => {
-    setMotionReady(true)
-
     const interval = setInterval(() => {
       setTaglineVisible(false)
       setTimeout(() => {
         setCurrentTagline((prev) => (prev + 1) % taglines.length)
         setTaglineVisible(true)
       }, 280)
-    }, 5000)
+    }, 8000)
 
     return () => clearInterval(interval)
   }, [])
 
   return (
     <section
-      className={`hero-lake-bg hero-viewport relative flex flex-col items-center justify-center pt-[calc(4.5rem+env(safe-area-inset-top,0px))] md:pt-24 ${motionReady ? "hero-motion-ready" : ""}`}
+      className="hero-lake-bg hero-viewport relative flex min-h-[calc(100dvh-var(--site-header-offset))] flex-col items-center justify-start site-below-header-loose"
     >
-      <div className="site-container relative z-10 text-center">
-        <div className="hero-stagger mb-6" style={{ "--i": 0 } as CSSProperties}>
-          <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-card px-6 py-2.5 text-sm font-medium text-foreground ring-1 ring-primary/10">
-            <span className="relative flex h-2 w-2">
-              <span className="hero-live-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
-            </span>
+      <div className="site-container site-page-intro relative z-10 flex min-h-0 flex-1 flex-col items-center justify-start py-8 text-center md:py-12">
+        <div className="mb-6">
+          <span className="inline-flex items-center rounded-full border border-primary/20 bg-card px-6 py-2.5 text-sm font-medium text-foreground">
             May 3–7, 2027
           </span>
         </div>
 
-        <div className="hero-stagger mb-6" style={{ "--i": 1 } as CSSProperties}>
+        <div className="mb-6">
           <Image
             src="/rendezvous-logo.png"
             alt="Rendezvous - Christian Homeschool Family Retreat"
@@ -59,51 +50,33 @@ export function HeroSection() {
           />
         </div>
 
-        <h1
-          className="hero-stagger hero-year hero-year--flow font-display mb-2 text-balance font-bold leading-none tracking-[-0.03em]"
-          style={{ "--i": 2 } as CSSProperties}
-        >
-          {["2", "0", "2", "7"].map((digit, index) => (
-            <span key={digit + index} className="hero-year__digit" style={{ "--digit-i": index } as CSSProperties}>
-              {digit}
-            </span>
-          ))}
+        <h1 className="hero-year font-display mb-2 text-balance text-primary">
+          <span className="sr-only">Rendezvous </span>2027
         </h1>
 
-        <div className="hero-stagger mb-6" style={{ "--i": 3 } as CSSProperties}>
+        <div className="mb-6">
           <p className="text-lead font-medium text-brand-coral-ink">Theme: 1 Samuel</p>
-          <p className="mt-1 text-sm text-muted-foreground">Next Bible Bowl study</p>
+          <p className="mt-1 text-sm text-muted-foreground">2027 Bible Bowl study book</p>
         </div>
 
-        <div
-          className="hero-stagger mb-6 flex h-16 items-center justify-center"
-          style={{ "--i": 4 } as CSSProperties}
-          aria-live="polite"
-          aria-atomic="true"
-        >
+        <div className="mb-6 flex h-16 items-center justify-center" aria-live="polite" aria-atomic="true">
           <p
-            className={`mx-auto max-w-xs px-2 text-base font-normal text-muted-foreground transition-opacity duration-300 ease-out sm:max-w-md sm:px-0 sm:text-lead md:max-w-lg md:text-xl ${
-              taglineVisible ? "opacity-100" : "opacity-0"
+            className={`hero-tagline measure mx-auto max-w-md px-2 text-lead text-muted-foreground ${
+              taglineVisible ? "hero-tagline--visible" : ""
             }`}
           >
             {taglines[currentTagline]}
           </p>
         </div>
 
-        <p
-          className="hero-stagger mb-10 text-base text-muted-foreground md:text-lg"
-          style={{ "--i": 5 } as CSSProperties}
-        >
+        <p className="mb-10 text-base text-muted-foreground md:text-lg">
           <span className="text-balance">Lake Williamson Christian Center, Carlinville, IL</span>
         </p>
 
-        <div
-          className="hero-stagger flex flex-col items-center justify-center gap-4 sm:flex-row"
-          style={{ "--i": 6 } as CSSProperties}
-        >
+        <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
           <Button
             size="lg"
-            className="h-14 w-full px-10 text-base font-medium transition-colors duration-200 ease-out sm:w-auto"
+            className="h-14 w-full px-10 text-base font-medium sm:w-auto"
             asChild
           >
             <Link href="/about">
@@ -114,7 +87,7 @@ export function HeroSection() {
           <Button
             size="lg"
             variant="outline"
-            className="h-14 w-full border border-primary/25 px-10 text-base font-medium text-primary transition-colors duration-200 ease-out hover:bg-surface-highlight sm:w-auto"
+            className="h-14 w-full border border-primary/25 px-10 text-base font-medium text-primary hover:bg-surface-highlight sm:w-auto"
             asChild
           >
             <Link href="/schedule">View schedule</Link>

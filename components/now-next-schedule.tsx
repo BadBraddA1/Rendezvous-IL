@@ -244,8 +244,13 @@ export function NowNextSchedule() {
     }
 
     updateSchedule()
-    const interval = setInterval(updateSchedule, 1000)
 
+    const sync = () => {
+      updateSchedule()
+    }
+
+    // Schedule slots are minute-granularity; 30s keeps "now/next" fresh without 1Hz work.
+    const interval = setInterval(sync, 30_000)
     return () => clearInterval(interval)
   }, [])
 
@@ -254,7 +259,7 @@ export function NowNextSchedule() {
     return (
       <div className="w-full space-y-6">
         <div className="text-center">
-          <h3 className="text-2xl font-bold text-ring">Loading Schedule...</h3>
+          <h3 className="text-widget-heading text-primary">Loading Schedule...</h3>
         </div>
       </div>
     )
@@ -271,25 +276,15 @@ export function NowNextSchedule() {
         <WeatherForecast />
 
         {/* Next Up Events */}
-        <Card className="border-accent/30 bg-gradient-to-br from-accent/5 to-transparent overflow-hidden">
+        <Card className="border-accent/20 bg-surface-warm overflow-hidden">
           <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="rounded-full bg-accent p-2">
-                  <ChevronRight className="h-4 w-4 text-accent-foreground" />
-                </div>
-                <div>
-                  <CardTitle className="text-lg font-bold">Next Up</CardTitle>
-                  <CardDescription>What&apos;s happening at Rendezvous</CardDescription>
-                </div>
+            <div className="flex items-center gap-2">
+              <div className="rounded-full bg-accent/90 p-2">
+                <ChevronRight className="h-4 w-4 text-accent-foreground" />
               </div>
-              {/* Live updating indicator */}
-              <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-primary/10">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-                </span>
-                <span className="text-xs font-medium text-primary">Live</span>
+              <div>
+                <CardTitle className="font-display text-subheading">Next Up</CardTitle>
+                <CardDescription>What&apos;s happening at Rendezvous</CardDescription>
               </div>
             </div>
           </CardHeader>
@@ -298,11 +293,11 @@ export function NowNextSchedule() {
               {previewEvents.map((event, index) => (
                 <div 
                   key={index} 
-                  className="flex items-start gap-3 p-3 rounded-lg bg-background/50 border border-border/30"
+                  className="flex items-start gap-3 rounded-lg border border-primary/12 bg-surface-tint/50 p-3"
                 >
                   <div className="flex flex-col items-center shrink-0 min-w-[60px]">
                     <span className="text-xs font-medium text-muted-foreground">{event.day}</span>
-                    <span className="text-sm font-bold text-primary">{event.time.split(' - ')[0]}</span>
+                    <span className="text-sm font-semibold tabular-nums text-primary">{event.time.split(' - ')[0]}</span>
                   </div>
                   <div className="flex-1 min-w-0">
                     <h4 className="font-semibold text-foreground">{event.title}</h4>
@@ -319,9 +314,8 @@ export function NowNextSchedule() {
             <div className="mt-4 flex justify-center">
               <Button
                 variant="outline"
-                size="sm"
                 onClick={() => scrollToNow(null, previewEvents[0])}
-                className="flex items-center gap-2"
+                className="flex min-h-11 items-center gap-2"
               >
                 <ArrowDown className="h-4 w-4" />
                 Jump to Schedule
@@ -338,7 +332,7 @@ export function NowNextSchedule() {
     return (
       <Card className="border-secondary/50">
         <CardHeader>
-          <CardTitle className="text-lg text-center">Rendezvous 2027 Has Concluded</CardTitle>
+          <CardTitle className="text-subheading text-center">Rendezvous 2027 Has Concluded</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground text-center">
@@ -353,12 +347,11 @@ export function NowNextSchedule() {
   return (
     <div className="w-full space-y-4">
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-4">
-        <h3 className="text-2xl font-bold text-ring">Live Schedule</h3>
+        <h3 className="text-widget-heading text-primary">Live Schedule</h3>
         <Button
           variant="outline"
-          size="sm"
           onClick={() => scrollToNow(nowItem, nextItem)}
-          className="flex items-center gap-2"
+          className="flex min-h-11 items-center gap-2"
         >
           <ArrowDown className="h-4 w-4" />
           Jump to Now
@@ -367,23 +360,17 @@ export function NowNextSchedule() {
       <div className="grid gap-4 md:grid-cols-2">
         {/* Now Playing */}
         {nowItem ? (
-          <Card className="border-primary/50 bg-gradient-to-br from-primary/10 to-transparent">
+          <Card className="border-primary/25 bg-surface-lake">
             <CardHeader className="pb-3">
               <div className="flex items-center gap-2">
-                <div className="relative">
-                  <div className="rounded-full bg-primary p-2">
-                    <Clock className="h-4 w-4 text-primary-foreground" />
-                  </div>
-                  <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
-                  </span>
+                <div className="rounded-full bg-primary/90 p-2">
+                  <Clock className="h-4 w-4 text-primary-foreground" />
                 </div>
-                <CardTitle className="text-sm font-semibold text-muted-foreground">HAPPENING NOW</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground">Happening now</CardTitle>
               </div>
             </CardHeader>
             <CardContent className="space-y-2">
-              <h3 className="text-xl font-bold text-foreground">{nowItem.title}</h3>
+              <h3 className="font-display text-subheading text-foreground">{nowItem.title}</h3>
               <CardDescription className="text-base font-medium">{nowItem.time}</CardDescription>
               {nowItem.location && (
                 <p className="text-sm text-muted-foreground">Location: {nowItem.location}</p>
@@ -391,13 +378,13 @@ export function NowNextSchedule() {
             </CardContent>
           </Card>
         ) : (
-          <Card className="border-muted/50 bg-gradient-to-br from-muted/10 to-transparent">
+          <Card className="border-muted/50 bg-surface-highlight">
             <CardHeader className="pb-3">
               <div className="flex items-center gap-2">
                 <div className="rounded-full bg-muted p-2">
                   <Clock className="h-4 w-4 text-muted-foreground" />
                 </div>
-                <CardTitle className="text-sm font-semibold text-muted-foreground">HAPPENING NOW</CardTitle>
+                <CardTitle className="text-sm font-semibold text-muted-foreground">Happening now</CardTitle>
               </div>
             </CardHeader>
             <CardContent>
@@ -409,17 +396,17 @@ export function NowNextSchedule() {
 
         {/* Up Next */}
         {nextItem && (
-          <Card className="border-accent/50 bg-gradient-to-br from-accent/10 to-transparent">
+          <Card className="border-accent/25 bg-surface-warm">
             <CardHeader className="pb-3">
               <div className="flex items-center gap-2">
-                <div className="rounded-full bg-accent p-2">
+                <div className="rounded-full bg-accent/90 p-2">
                   <ChevronRight className="h-4 w-4 text-accent-foreground" />
                 </div>
-                <CardTitle className="text-sm font-semibold text-muted-foreground">UP NEXT</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground">Up next</CardTitle>
               </div>
             </CardHeader>
             <CardContent className="space-y-2">
-              <h3 className="text-xl font-bold text-foreground">{nextItem.title}</h3>
+              <h3 className="font-display text-subheading text-foreground">{nextItem.title}</h3>
               <CardDescription className="text-base font-medium">{nextItem.time}</CardDescription>
               {nextItem.location && (
                 <p className="text-sm text-muted-foreground">Location: {nextItem.location}</p>

@@ -28,8 +28,8 @@ import { Switch } from "@/components/ui/switch"
 import useSWR, { mutate } from "swr"
 import { payingAttendeeLabel, motelOccupancyFromPayingCount } from "@/lib/motel-occupancy"
 import { formatMoney, formatSiteFeeLine } from "@/lib/rate-display"
-import { packageTypeLabel } from "@/lib/rate-lookup"
-import { computeAdminCalculatorCost, getAgeGroup } from "@/lib/admin-calculator-cost"
+import { buildCalculatorEstimate } from "@/lib/calculator-estimate"
+import { getAgeGroup } from "@/lib/admin-calculator-cost"
 import {
   fullWeekAttendance,
   LODGING_NIGHTS,
@@ -105,24 +105,33 @@ export function AdminCalculatorClient() {
   } = useCalculatorRates<RatesData>(year)
 
   // Public calculator status
-  const { data: statusData, isLoading: statusLoading } = useSWR<{ enabled: boolean }>(
-    "/api/admin/calculator/status",
-    fetcher
-  )
+  const {
+    data: statusData,
+    isLoading: statusLoading,
+    mutate: mutateStatus,
+  } = useSWR<{ enabled: boolean }>("/api/admin/calculator/status", fetcher)
   const [isTogglingStatus, setIsTogglingStatus] = useState(false)
 
-  const togglePublicCalculator = async () => {
+  const togglePublicCalculator = async (enabled: boolean) => {
     setIsTogglingStatus(true)
     try {
-      const newStatus = !statusData?.enabled
-      await fetch("/api/admin/calculator/status", {
+      await mutateStatus({ enabled }, { revalidate: false })
+      const response = await fetch("/api/admin/calculator/status", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ enabled: newStatus }),
+        body: JSON.stringify({ enabled }),
       })
-      mutate("/api/admin/calculator/status")
+      const data = (await response.json()) as { enabled?: boolean; error?: string }
+      if (!response.ok) {
+        throw new Error(typeof data.error === "string" ? data.error : "Failed to update calculator status")
+      }
+      const savedEnabled = data.enabled ?? enabled
+      await mutateStatus({ enabled: savedEnabled }, { revalidate: false })
+      await mutate("/api/calculator/status", { enabled: savedEnabled }, { revalidate: false })
     } catch (error) {
+      await mutateStatus()
       console.error("Failed to toggle calculator status:", error)
+      alert(error instanceof Error ? error.message : "Failed to update public calculator status")
     } finally {
       setIsTogglingStatus(false)
     }
@@ -163,7 +172,7 @@ export function AdminCalculatorClient() {
     })
   }
 
-  const calculation = computeAdminCalculatorCost({
+  const calculation = buildCalculatorEstimate({
     members,
     attendance,
     lodgingType,
@@ -278,6 +287,13 @@ export function AdminCalculatorClient() {
           <p className="text-lead text-muted-foreground">
             Test all pricing scenarios for {year}
           </p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Families can load last year&apos;s registration on the public{" "}
+            <a href="/calculator" className="font-medium text-primary underline-offset-4 hover:underline">
+              /calculator
+            </a>{" "}
+            page when signed in — not in this admin tool.
+          </p>
         </div>
         <div className="admin-toolbar">
           <div className="flex items-center gap-3 rounded-lg border bg-card px-4 py-2 admin-toolbar-action">
@@ -342,7 +358,18 @@ export function AdminCalculatorClient() {
             <>
               <Globe className="h-5 w-5" />
               <span className="font-medium">Public calculator is live</span>
-              <span className="text-sm opacity-75">- Families can estimate their costs at /calculator</span>
+              <span className="text-sm opacity-75">
+                — Families can estimate at{" "}
+                <a
+                  href="/calculator"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline underline-offset-2"
+                >
+                  /calculator
+                </a>
+                . Last year&apos;s registration loads there when signed in (not in this admin tool).
+              </span>
             </>
           ) : (
             <>
@@ -635,7 +662,7 @@ export function AdminCalculatorClient() {
                   <Users className="h-4 w-4" />
                   By person
                 </h4>
-                {calculation.members.map(({ member, ageGroup, packageType, baseCost, deductions, additions, total }) => {
+                {calculation.members.map(({ member, ageGroup, baseCost, deductions, additions, total, scheduleLabel, pricingNote }) => {
                   const att = attendance[member.id]
                   const nightCount = att?.nights.length ?? 0
                   const mealCount = att ? countSelectedMeals(att.meals) : 0
@@ -650,13 +677,12 @@ export function AdminCalculatorClient() {
                     {ageGroup !== "infant" && (
                       <div className="text-xs text-muted-foreground space-y-0.5 mt-1">
                         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                            {scheduleLabel}
+                          </Badge>
                           <span>{nightCount} night{nightCount === 1 ? "" : "s"} · {mealCount} meal{mealCount === 1 ? "" : "s"}</span>
-                          {packageType !== "regular" && (
-                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                              {packageTypeLabel(packageType)}
-                            </Badge>
-                          )}
                         </div>
+                        <p>{pricingNote}</p>
                         <div className="flex flex-wrap justify-between gap-x-4 gap-y-1">
                           <span>Lodging ({ageGroup})</span>
                           <span className="tabular-nums shrink-0">${formatMoney(baseCost)}/person</span>
@@ -720,10 +746,10 @@ export function AdminCalculatorClient() {
                   </div>
                 )}
                 {/* Special Package Applied Notification */}
-                {calculation.members.some((m) => m.packageType !== "regular") && (
+                {calculation.members.some((m) => m.schedulePreset !== "custom" && m.schedulePreset !== "full") && (
                   <div className="flex items-center gap-2 rounded-md border border-success/30 bg-surface-highlight p-2">
                     <span className="text-sm font-medium text-success">
-                      Partial-week packages (3/9, 2/6, 1/3) available from the schedule dropdown.
+                      Partial-week package detected from your nights and meals — no need to pick a package manually.
                     </span>
                   </div>
                 )}
@@ -740,7 +766,7 @@ export function AdminCalculatorClient() {
                 <div className="flex gap-2 text-xs text-muted-foreground">
                   <Info className="h-4 w-4 flex-shrink-0 mt-0.5" />
                   <p>
-                    Pick a package preset or tap night buttons — meals stay in sync automatically.
+                    Pick lodging nights and meals — the calculator detects full week, 3/9, 2/6, or 1/3 packages automatically.
                     Turn off &quot;Same schedule for whole family&quot; to price each person separately.
                     RV/tent site fee uses the lodging night buttons above.
                   </p>

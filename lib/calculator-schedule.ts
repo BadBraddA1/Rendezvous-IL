@@ -143,6 +143,54 @@ export function detectPreset(att: MemberAttendance): PackagePreset {
   return "custom"
 }
 
+export type PricingPackageType = "regular" | "special_3_9" | "special_2_6" | "special_1_3"
+
+/** Map a detected preset to the rate category used for pricing. */
+export function packageTypeFromPreset(preset: PackagePreset): PricingPackageType {
+  switch (preset) {
+    case "special_3_9":
+      return "special_3_9"
+    case "special_2_6":
+      return "special_2_6"
+    case "special_1_3":
+      return "special_1_3"
+    default:
+      return "regular"
+  }
+}
+
+export function presetDisplayLabel(preset: PackagePreset, att: MemberAttendance): string {
+  if (preset === "custom") {
+    return `Custom · ${att.nights.length} nights · ${countMeals(att.meals)} meals`
+  }
+  return PACKAGE_PRESETS.find((option) => option.id === preset)?.label ?? "Custom"
+}
+
+export function presetPricingNote(preset: PackagePreset): string {
+  switch (preset) {
+    case "full":
+      return "Full week 4/12 package pricing"
+    case "special_3_9":
+    case "special_2_6":
+    case "special_1_3":
+      return "Matches a standard partial-week package"
+    default:
+      return "Full-week rate minus meals you are not taking"
+  }
+}
+
+export function resolveMemberSchedule(att: MemberAttendance) {
+  const preset = detectPreset(att)
+  const meta = PACKAGE_PRESETS.find((option) => option.id === preset)
+  return {
+    preset,
+    packageType: packageTypeFromPreset(preset),
+    label: presetDisplayLabel(preset, att),
+    description: preset === "custom" ? presetPricingNote(preset) : (meta?.description ?? ""),
+    pricingNote: presetPricingNote(preset),
+  }
+}
+
 /** Toggle a lodging night and keep meals in sync (standard pattern per night). */
 export function toggleLodgingNight(
   att: MemberAttendance,
@@ -186,4 +234,15 @@ export function toggleMeal(
 
 export function countMeals(meals: Record<string, string[]>): number {
   return Object.values(meals).reduce((sum, list) => sum + list.length, 0)
+}
+
+/** Infer Mon–Thu lodging nights from selected meals (registration import). */
+export function inferLodgingNightsFromMeals(meals: Record<string, string[]>): string[] {
+  const nights: string[] = []
+  for (const night of LODGING_NIGHTS) {
+    if (meals[night]?.includes("dinner")) {
+      nights.push(night)
+    }
+  }
+  return nights
 }

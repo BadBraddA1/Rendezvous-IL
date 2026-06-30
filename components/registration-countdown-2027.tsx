@@ -43,7 +43,7 @@ export function RegistrationCountdown2027() {
               <span className="text-sm font-medium">Registration is open</span>
             </div>
             <h2 className="text-section-title mb-4">Register for Rendezvous 2027</h2>
-            <p className="mb-8 text-lg text-muted-foreground">Secure your spot for Rendezvous 2027 today.</p>
+            <p className="mb-8 text-lg text-on-surface/85">Secure your spot for Rendezvous 2027 today.</p>
             <Button size="lg" className="h-14 w-full px-8 text-base font-semibold sm:w-auto" asChild>
               <Link href="/registration">Register now</Link>
             </Button>

@@ -2,77 +2,10 @@ import type { ReactNode } from "react"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { CalculatorClient } from "./calculator-client"
-import { sql } from "@/lib/db"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Calculator, Clock } from "lucide-react"
+import { fetchCalculatorRates } from "@/lib/calculator-rates-db"
+import { isPublicCalculatorEnabled } from "@/lib/calculator-settings"
 
-async function isCalculatorEnabled() {
-  try {
-    const result = await sql`
-      SELECT value FROM app_settings WHERE key = 'public_calculator_enabled'
-    `
-    return result[0]?.value === "true"
-  } catch (error) {
-    console.error("Error checking calculator status:", error)
-    return false
-  }
-}
-
-async function getActiveRates() {
-  try {
-    const charts = await sql`
-      SELECT * FROM rate_charts WHERE is_active = true LIMIT 1
-    `
-
-    if (charts.length === 0) {
-      const charts2027 = await sql`
-        SELECT * FROM rate_charts WHERE year = 2027 LIMIT 1
-      `
-      if (charts2027.length === 0) return null
-
-      const rateChart = charts2027[0]
-      const rates = await sql`
-        SELECT * FROM rates 
-        WHERE rate_chart_id = ${rateChart.id}
-        ORDER BY category, sort_order
-      `
-
-      const groupedRates: Record<string, typeof rates> = {}
-      for (const rate of rates) {
-        if (!groupedRates[rate.category]) {
-          groupedRates[rate.category] = []
-        }
-        groupedRates[rate.category].push(rate)
-      }
-
-      return { year: rateChart.year, rates: groupedRates }
-    }
-
-    const rateChart = charts[0]
-
-    const rates = await sql`
-      SELECT * FROM rates 
-      WHERE rate_chart_id = ${rateChart.id}
-      ORDER BY category, sort_order
-    `
-
-    const groupedRates: Record<string, typeof rates> = {}
-    for (const rate of rates) {
-      if (!groupedRates[rate.category]) {
-        groupedRates[rate.category] = []
-      }
-      groupedRates[rate.category].push(rate)
-    }
-
-    return {
-      year: rateChart.year,
-      rates: groupedRates,
-    }
-  } catch (error) {
-    console.error("Error fetching rates:", error)
-    return null
-  }
-}
+export const dynamic = "force-dynamic"
 
 function CalculatorShell({ children }: { children: ReactNode }) {
   return (
@@ -80,7 +13,7 @@ function CalculatorShell({ children }: { children: ReactNode }) {
       <SiteHeader />
       <main
         id="main-content"
-        className="site-container section-sm pb-16 pt-[calc(5.5rem+env(safe-area-inset-top,0px))] md:pb-20"
+        className="site-container site-below-header-loose site-page-intro pb-16 md:pb-20"
       >
         {children}
       </main>
@@ -90,39 +23,14 @@ function CalculatorShell({ children }: { children: ReactNode }) {
 }
 
 export default async function CalculatorPage() {
-  const [ratesData, isEnabled] = await Promise.all([getActiveRates(), isCalculatorEnabled()])
-
-  if (!isEnabled) {
-    return (
-      <CalculatorShell>
-        <div className="mx-auto max-w-md">
-          <Card className="border-primary/15 text-center">
-            <CardHeader>
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-surface-highlight">
-                <Calculator className="h-8 w-8 text-primary" aria-hidden="true" />
-              </div>
-              <CardTitle className="font-display text-2xl">Rate calculator</CardTitle>
-              <CardDescription className="text-base">Coming soon</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-center gap-2 text-muted-foreground">
-                <Clock className="h-5 w-5 shrink-0" aria-hidden="true" />
-                <span>We&apos;re preparing the 2027 rates</span>
-              </div>
-              <p className="text-sm leading-relaxed text-muted-foreground">
-                The rate calculator will be available soon. Check back later to estimate your family&apos;s
-                registration costs for Rendezvous 2027.
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      </CalculatorShell>
-    )
-  }
+  const [ratesData, isEnabled] = await Promise.all([
+    fetchCalculatorRates(2027),
+    isPublicCalculatorEnabled(),
+  ])
 
   return (
     <CalculatorShell>
-      <CalculatorClient ratesData={ratesData} />
+      <CalculatorClient ratesData={ratesData} initialEnabled={isEnabled} />
     </CalculatorShell>
   )
 }

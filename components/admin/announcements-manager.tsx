@@ -11,6 +11,8 @@ import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 import { Megaphone, Send, Trash2, Loader2 } from "lucide-react"
+import { AdminConfirmDialog } from "./admin-confirm-dialog"
+import { AdminListSkeleton, AdminRetryButton } from "./admin-panel-states"
 
 type Announcement = {
   id: number
@@ -30,6 +32,7 @@ type Announcement = {
 export function AnnouncementsManager({ canEdit }: { canEdit: boolean }) {
   const [items, setItems] = useState<Announcement[]>([])
   const [loading, setLoading] = useState(true)
+  const [fetchError, setFetchError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [title, setTitle] = useState("")
   const [message, setMessage] = useState("")
@@ -37,19 +40,23 @@ export function AnnouncementsManager({ canEdit }: { canEdit: boolean }) {
   const [showOnLiveUpdates, setShowOnLiveUpdates] = useState(true)
   const [showOnSchedule, setShowOnSchedule] = useState(false)
   const [sendToGroupMe, setSendToGroupMe] = useState(false)
+  const [deletePending, setDeletePending] = useState<Announcement | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const { toast } = useToast()
 
   const fetchData = useCallback(async () => {
     setLoading(true)
+    setFetchError(null)
     try {
       const res = await fetch("/api/admin/announcements")
+      if (!res.ok) throw new Error(`Could not load announcements (${res.status})`)
       const data = await res.json()
-      // The existing API returns { announcements: [...] }
       const list = Array.isArray(data) ? data : data?.announcements || []
       setItems(list)
     } catch (error) {
       console.error("[v0] Failed to fetch announcements:", error)
       setItems([])
+      setFetchError(error instanceof Error ? error.message : "Could not load announcements")
     } finally {
       setLoading(false)
     }
@@ -101,18 +108,24 @@ export function AnnouncementsManager({ canEdit }: { canEdit: boolean }) {
     }
   }
 
-  const handleDelete = async (id: number) => {
-    if (!confirm("Delete this announcement?")) return
+  const performDelete = async () => {
+    if (!deletePending) return
+    setDeleting(true)
     try {
-      const res = await fetch(`/api/admin/announcements/${id}`, { method: "DELETE" })
+      const res = await fetch(`/api/admin/announcements/${deletePending.id}`, { method: "DELETE" })
       if (!res.ok) throw new Error("Failed")
+      toast({ title: "Announcement deleted", description: `"${deletePending.title}" was removed.` })
+      setDeletePending(null)
       void fetchData()
     } catch {
-      toast({ title: "Error", description: "Could not delete", variant: "destructive" })
+      toast({ title: "Error", description: "Could not delete announcement.", variant: "destructive" })
+    } finally {
+      setDeleting(false)
     }
   }
 
   return (
+    <>
     <div className="grid gap-6 lg:grid-cols-2">
       {/* CREATE */}
       {canEdit && (
@@ -176,33 +189,48 @@ export function AnnouncementsManager({ canEdit }: { canEdit: boolean }) {
           <CardTitle>Recent Announcements</CardTitle>
         </CardHeader>
         <CardContent>
-          {loading ? (
-            <p className="text-sm text-muted-foreground">Loading...</p>
+          {fetchError && !loading ? (
+            <div className="callout-destructive rounded-lg border p-4">
+              <p className="text-sm">{fetchError}</p>
+              <AdminRetryButton onRetry={() => void fetchData()} label="Reload announcements" />
+            </div>
+          ) : loading ? (
+            <AdminListSkeleton rows={4} label="Loading announcements" />
           ) : items.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No announcements yet</p>
+            <p className="text-sm text-muted-foreground">No announcements yet. Post one to show it on live updates or the schedule.</p>
           ) : (
             <div className="space-y-3">
               {items.map((a) => (
                 <div key={a.id} className="rounded-lg border p-3">
-                  <div className="flex items-start justify-between gap-2">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <h4 className="truncate font-semibold">{a.title}</h4>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h4 className="break-words font-semibold">{a.title}</h4>
                         {a.priority === "urgent" && <Badge variant="destructive" className="text-xs">Urgent</Badge>}
                         {a.priority === "high" && <Badge variant="secondary" className="text-xs">High</Badge>}
                         {!a.is_active && <Badge variant="outline" className="text-xs">Inactive</Badge>}
                         {a.sent_to_groupme && <Badge variant="default" className="text-xs">GroupMe</Badge>}
                       </div>
-                      <p className="mt-1 text-sm">{a.message}</p>
+                      <p className="mt-1 break-words text-sm">{a.message}</p>
                       <p className="mt-1 text-xs text-muted-foreground">
                         {new Date(a.created_at).toLocaleString()}
                       </p>
                     </div>
                     {canEdit && (
-                      <div className="flex flex-col items-end gap-1">
-                        <Switch checked={a.is_active} onCheckedChange={() => toggleActive(a)} />
-                        <Button onClick={() => handleDelete(a.id)} size="sm" variant="ghost" className="text-destructive">
-                          <Trash2 className="h-4 w-4" />
+                      <div className="flex shrink-0 items-center gap-2 self-start sm:flex-col sm:items-end">
+                        <Switch
+                          checked={a.is_active}
+                          onCheckedChange={() => toggleActive(a)}
+                          aria-label={a.is_active ? `Hide ${a.title} from live surfaces` : `Show ${a.title} on live surfaces`}
+                        />
+                        <Button
+                          onClick={() => setDeletePending(a)}
+                          size="icon"
+                          variant="ghost"
+                          className="touch-target text-destructive hover:text-destructive"
+                          aria-label={`Delete announcement: ${a.title}`}
+                        >
+                          <Trash2 className="h-4 w-4" aria-hidden="true" />
                         </Button>
                       </div>
                     )}
@@ -214,5 +242,22 @@ export function AnnouncementsManager({ canEdit }: { canEdit: boolean }) {
         </CardContent>
       </Card>
     </div>
+
+    <AdminConfirmDialog
+      open={deletePending !== null}
+      onOpenChange={(open) => {
+        if (!open && !deleting) setDeletePending(null)
+      }}
+      title="Delete announcement?"
+      description={
+        deletePending
+          ? `Delete "${deletePending.title}"? It will be removed from live updates and the schedule.`
+          : ""
+      }
+      confirmLabel="Delete announcement"
+      loading={deleting}
+      onConfirm={performDelete}
+    />
+    </>
   )
 }

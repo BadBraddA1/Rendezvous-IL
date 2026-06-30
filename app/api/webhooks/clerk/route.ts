@@ -2,6 +2,7 @@ import { Webhook } from "svix"
 import { headers } from "next/headers"
 import type { WebhookEvent } from "@clerk/nextjs/server"
 import { sql } from "@/lib/db"
+import { deleteUserActivity } from "@/lib/user-activity"
 
 export async function POST(req: Request) {
   // Get the webhook secret from environment
@@ -166,6 +167,7 @@ export async function POST(req: Request) {
           SET clerk_user_id = NULL, updated_at = NOW()
           WHERE clerk_user_id = ${id}
         `
+        await deleteUserActivity(id)
         console.log(`[Clerk Webhook] Unlinked deleted user ${id} from family`)
       } catch (error) {
         console.error("[Clerk Webhook] Error unlinking deleted user:", error)

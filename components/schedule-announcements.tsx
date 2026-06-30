@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react"
 import { Megaphone } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { fetchJsonCached } from "@/lib/fetch-json-cache"
 
 interface Announcement {
   id: number
@@ -11,6 +13,29 @@ interface Announcement {
   created_at: string
 }
 
+const priorityStyles = {
+  urgent: {
+    callout: "callout-destructive",
+    icon: "text-destructive",
+    title: "text-destructive",
+  },
+  high: {
+    callout: "callout-warning",
+    icon: "text-warning",
+    title: "text-warning",
+  },
+  low: {
+    callout: "callout-info",
+    icon: "text-info",
+    title: "text-info",
+  },
+  normal: {
+    callout: "callout-warning",
+    icon: "text-warning",
+    title: "text-on-surface",
+  },
+} as const
+
 export function ScheduleAnnouncements() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
   const [loading, setLoading] = useState(true)
@@ -18,8 +43,10 @@ export function ScheduleAnnouncements() {
   useEffect(() => {
     async function fetchAnnouncements() {
       try {
-        const response = await fetch("/api/announcements/schedule")
-        const data = await response.json()
+        const data = await fetchJsonCached<{ announcements?: Announcement[] }>(
+          "/api/announcements/schedule",
+          30_000,
+        )
         setAnnouncements(data.announcements || [])
       } catch (error) {
         console.error("Failed to fetch announcements:", error)
@@ -29,7 +56,6 @@ export function ScheduleAnnouncements() {
     }
 
     fetchAnnouncements()
-    // Refresh every 30 seconds
     const interval = setInterval(fetchAnnouncements, 30000)
     return () => clearInterval(interval)
   }, [])
@@ -40,42 +66,21 @@ export function ScheduleAnnouncements() {
 
   return (
     <div className="space-y-3">
-      {announcements.map((announcement) => (
-        <div
-          key={announcement.id}
-          className={`rounded-xl border p-4 ${
-            announcement.priority === "urgent"
-              ? "border-red-500/50 bg-red-500/10"
-              : announcement.priority === "high"
-              ? "border-orange-500/50 bg-orange-500/10"
-              : "border-amber-500/50 bg-amber-500/10"
-          }`}
-        >
-          <div className="flex items-start gap-3">
-            <Megaphone className={`h-5 w-5 mt-0.5 shrink-0 ${
-              announcement.priority === "urgent"
-                ? "text-red-500"
-                : announcement.priority === "high"
-                ? "text-orange-500"
-                : "text-amber-500"
-            }`} />
-            <div className="flex-1 min-w-0">
-              <h3 className={`font-semibold text-sm md:text-base ${
-                announcement.priority === "urgent"
-                  ? "text-red-500"
-                  : announcement.priority === "high"
-                  ? "text-orange-500"
-                  : "text-amber-600"
-              }`}>
-                {announcement.title}
-              </h3>
-              <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">
-                {announcement.message}
-              </p>
+      {announcements.map((announcement) => {
+        const styles = priorityStyles[announcement.priority] ?? priorityStyles.normal
+
+        return (
+          <div key={announcement.id} className={cn("rounded-xl p-4", styles.callout)}>
+            <div className="flex items-start gap-3">
+              <Megaphone className={cn("mt-0.5 h-5 w-5 shrink-0", styles.icon)} aria-hidden="true" />
+              <div className="min-w-0 flex-1">
+                <h3 className={cn("text-sm font-semibold md:text-base", styles.title)}>{announcement.title}</h3>
+                <p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">{announcement.message}</p>
+              </div>
             </div>
           </div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }

@@ -1,0 +1,16 @@
+# Copy to local.properties (gitignored). Android Studio usually creates sdk.dir automatically.
+
+sdk.dir=/path/to/Android/sdk
+
+# Clerk publishable key (same as NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY in web .env.local)
+CLERK_PUBLISHABLE_KEY=pk_test_...
+
+# Optional — override API base URL (default: https://rendezvousil.com)
+# BASE_URL=https://rendezvousil.com
+# BASE_URL=http://10.0.2.2:3000
+
+# Optional — Firebase manual init when google-services.json is not present (Phase 3b)
+# FIREBASE_PROJECT_ID=your-project-id
+# FIREBASE_APP_ID=1:123456789:android:abcdef
+# FIREBASE_API_KEY=AIza...
+# FIREBASE_GCM_SENDER_ID=123456789

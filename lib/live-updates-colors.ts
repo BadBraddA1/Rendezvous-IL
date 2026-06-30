@@ -70,6 +70,14 @@ export const LU_PIN_COLORS: Record<LuPinColor, LuPinStyle> = {
   },
 }
 
+/** Map pin rendering on the venue photo (light markers on varied imagery). */
+export const LU_MAP = {
+  routeDefault: LU_PIN_COLORS.orange.hex,
+  prevFill: LU_PIN_COLORS.purple.hex,
+  prevStroke: LU_PIN_COLORS.blue.hex,
+  labelOnPin: "#f8fcfb",
+} as const
+
 export function resolveLuPinColor(
   color: string | undefined,
   category?: string,
@@ -83,6 +91,27 @@ export function resolveLuPinColor(
 
 export function luPinStyle(color: string | undefined, category?: string): LuPinStyle {
   return LU_PIN_COLORS[resolveLuPinColor(color, category)]
+}
+
+/** Map editor / venue pin swatches — on-brand lake-teal family, not Tailwind rainbow. */
+export const MAP_PIN_LABELS: Record<LuPinColor, string> = {
+  red: "Coral",
+  orange: "Sand",
+  yellow: "Gold",
+  green: "Forest",
+  blue: "Lake",
+  purple: "Slate",
+  pink: "Rose",
+}
+
+export const MAP_PIN_OPTIONS = (Object.keys(LU_PIN_COLORS) as LuPinColor[]).map((value) => ({
+  value,
+  label: MAP_PIN_LABELS[value],
+  hex: LU_PIN_COLORS[value].hex,
+}))
+
+export function mapPinHex(color: string | undefined, category?: string): string {
+  return LU_PIN_COLORS[resolveLuPinColor(color, category)].hex
 }
 
 /** Event icon semantic buckets (replaces rainbow Tailwind on the display board). */

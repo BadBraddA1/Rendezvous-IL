@@ -1,6 +1,8 @@
 "use client"
 
 import { useState, useMemo, useCallback } from "react"
+import useSWR from "swr"
+import { useUser } from "@clerk/nextjs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -17,6 +19,9 @@ import {
   ArrowLeft,
   AlertCircle,
   Calendar,
+  History,
+  Loader2,
+  Clock,
   type LucideIcon,
 } from "lucide-react"
 import Link from "next/link"
@@ -31,6 +36,8 @@ import {
   formatSiteFeeLine,
   formatUnitLine,
 } from "@/lib/rate-display"
+import { FamilyEstimatePanel } from "@/components/calculator/family-estimate"
+import type { CalculatorFamilySeed } from "@/lib/calculator-family-seed"
 
 interface Rate {
   id: number
@@ -48,6 +55,16 @@ interface RatesData {
 
 interface CalculatorClientProps {
   ratesData: RatesData | null
+  initialEnabled: boolean
+}
+
+const statusFetcher = async (url: string): Promise<{ enabled: boolean }> => {
+  const res = await fetch(url, { cache: "no-store" })
+  const data = await res.json()
+  if (!res.ok) {
+    throw new Error(typeof data.error === "string" ? data.error : "Failed to load calculator status")
+  }
+  return data
 }
 
 const lodgingOptions = [
@@ -59,7 +76,51 @@ const lodgingOptions = [
 
 type LodgingType = (typeof lodgingOptions)[number]["value"]
 
-export function CalculatorClient({ ratesData }: CalculatorClientProps) {
+type FamilyApiResponse = {
+  authenticated: boolean
+  linked?: boolean
+  priorRegistration?: CalculatorFamilySeed | null
+  family?: { lastName: string }
+}
+
+const familyFetcher = async (url: string): Promise<FamilyApiResponse> => {
+  const res = await fetch(url, { cache: "no-store" })
+  const data = await res.json()
+  if (!res.ok) {
+    throw new Error(typeof data.error === "string" ? data.error : "Failed to load family data")
+  }
+  return data
+}
+
+export function CalculatorClient({ ratesData, initialEnabled }: CalculatorClientProps) {
+  const { isSignedIn, isLoaded: authLoaded } = useUser()
+  const [familySeed, setFamilySeed] = useState<CalculatorFamilySeed | null>(null)
+
+  const {
+    data: statusData,
+    error: statusError,
+    isLoading: statusLoading,
+  } = useSWR<{ enabled: boolean }>("/api/calculator/status", statusFetcher, {
+    fallbackData: { enabled: initialEnabled },
+    revalidateOnFocus: true,
+    revalidateOnMount: true,
+  })
+
+  const isEnabled = statusError
+    ? initialEnabled
+    : (statusData?.enabled ?? initialEnabled)
+
+  const familyApiUrl =
+    authLoaded && isSignedIn && ratesData?.year
+      ? `/api/calculator/family?year=${ratesData.year}`
+      : null
+
+  const { data: familyData, isLoading: familyLoading } = useSWR<FamilyApiResponse>(
+    familyApiUrl,
+    familyFetcher,
+    { revalidateOnFocus: false },
+  )
+
   const [adults, setAdults] = useState(2)
   const [youth, setYouth] = useState(0)
   const [children, setChildren] = useState(0)
@@ -182,6 +243,40 @@ export function CalculatorClient({ ratesData }: CalculatorClientProps) {
     }
   }, [adults, youth, children, lodgingType, occupancyType, numNights, ratesData, getRate])
 
+  if (statusLoading && !isEnabled) {
+    return (
+      <div className="mx-auto flex max-w-md justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" aria-label="Loading calculator" />
+      </div>
+    )
+  }
+
+  if (!isEnabled) {
+    return (
+      <div className="mx-auto max-w-md">
+        <Card className="border-primary/15 text-center">
+          <CardHeader className="border-b border-primary/10 bg-surface-tint">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-surface-highlight">
+              <Calculator className="h-8 w-8 text-primary" aria-hidden="true" />
+            </div>
+            <CardTitle className="text-section-title">Rate calculator</CardTitle>
+            <CardDescription className="text-base">Coming soon</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-center gap-2 text-muted-foreground">
+              <Clock className="h-5 w-5 shrink-0" aria-hidden="true" />
+              <span>We&apos;re preparing the 2027 rates</span>
+            </div>
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              The rate calculator will be available soon. Check back later to estimate your family&apos;s
+              registration costs for Rendezvous 2027.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   if (!ratesData) {
     return (
       <div className="mx-auto max-w-2xl">
@@ -217,6 +312,57 @@ export function CalculatorClient({ ratesData }: CalculatorClientProps) {
         <p className="text-lead text-muted-foreground">Estimate your total cost for Rendezvous</p>
       </header>
 
+      {authLoaded && isSignedIn && !familySeed && isEnabled && (
+        <Card className="mb-6 border-primary/20 bg-primary/5">
+          <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <History className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+              <div>
+                <p className="font-medium">Signed in — use last year&apos;s plan</p>
+                <p className="text-sm text-muted-foreground">
+                  {familyLoading
+                    ? "Looking for your prior registration…"
+                    : familyData?.priorRegistration
+                      ? `Load your Rendezvous ${familyData.priorRegistration.sourceYear} registration to see a ${ratesData.year} estimate and compare totals.`
+                      : familyData?.linked === false
+                        ? "Link your account on the account page to match your registration history."
+                        : "We couldn't find a prior registration for your family email yet. Use the simple calculator below, or register for updates."}
+                </p>
+              </div>
+            </div>
+            {familyData?.priorRegistration && (
+              <Button
+                type="button"
+                className="shrink-0"
+                disabled={familyLoading}
+                onClick={() => setFamilySeed(familyData.priorRegistration ?? null)}
+              >
+                {familyLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Loading…
+                  </>
+                ) : (
+                  `Load ${familyData.priorRegistration.sourceYear} registration`
+                )}
+              </Button>
+            )}
+            {familyData?.linked === false && (
+              <Button asChild variant="outline" className="shrink-0">
+                <Link href="/account">Go to account</Link>
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {familySeed ? (
+        <FamilyEstimatePanel
+          seed={familySeed}
+          ratesData={ratesData}
+          onReset={() => setFamilySeed(null)}
+        />
+      ) : (
       <div className="grid gap-6 lg:grid-cols-3 lg:items-start">
         <div className="space-y-6 lg:col-span-2">
           <Card className="border-primary/15">
@@ -395,6 +541,7 @@ export function CalculatorClient({ ratesData }: CalculatorClientProps) {
           </Card>
         </div>
       </div>
+      )}
     </div>
   )
 }

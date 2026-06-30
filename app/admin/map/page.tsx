@@ -6,6 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Loader2, MapPin } from "lucide-react"
 import Script from "next/script"
 import { MainContent } from "@/components/main-content"
+import { EMAIL_BRAND } from "@/lib/email-templates"
+import { AdminRetryButton } from "@/components/admin/admin-panel-states"
 
 type MapData = {
   center: {
@@ -66,12 +68,17 @@ export default function AdminMapPage() {
 
   if (error || !mapData) {
     return (
-      <MainContent className="flex min-h-screen items-center justify-center">
-        <Card className="w-full max-w-md">
+      <MainContent className="flex min-h-screen items-center justify-center p-6">
+        <Card className="w-full max-w-md callout-destructive">
           <CardHeader>
-            <CardTitle>Error Loading Map</CardTitle>
-            <CardDescription>{error || "Failed to load map data"}</CardDescription>
+            <CardTitle className="text-destructive">Registration map unavailable</CardTitle>
+            <CardDescription>
+              {error || "We couldn't load family locations. Check your connection and try again."}
+            </CardDescription>
           </CardHeader>
+          <CardContent>
+            <AdminRetryButton onRetry={loadMapData} label="Reload map" />
+          </CardContent>
         </Card>
       </MainContent>
     )
@@ -82,13 +89,13 @@ export default function AdminMapPage() {
       position: [mapData.center.lat, mapData.center.lng] as [number, number],
       label: `<strong>${mapData.center.name}</strong><br/>${mapData.center.address}`,
       size: "lg" as const,
-      color: "#DC2626",
+      color: EMAIL_BRAND.coral,
     },
     ...mapData.registrations.map((reg) => ({
       position: [reg.lat, reg.lng] as [number, number],
       label: `<strong>${reg.lastName} Family</strong><br/>${reg.address}`,
       size: "md" as const,
-      color: "#3B82F6",
+      color: EMAIL_BRAND.primary,
     })),
   ]
 
@@ -100,43 +107,45 @@ export default function AdminMapPage() {
         strategy="afterInteractive"
       />
 
-      <MainContent className="container mx-auto space-y-6 p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Registration Map</h1>
-            <p className="text-muted-foreground">
-              Showing {mapData.registrations.length} registered families across the United States
-            </p>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <MapPin className="h-5 w-5 text-red-600" />
-              <span className="text-sm">Lake Williamson</span>
+      <main id="main-content" className="admin-main">
+        <div className="admin-container">
+          <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="admin-page-header">
+              <h1 className="text-section-title text-balance">Registration Map</h1>
+              <p className="text-lead text-muted-foreground">
+                Showing {mapData.registrations.length} registered families across the United States
+              </p>
             </div>
-            <div className="flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-blue-600" />
-              <span className="text-sm">Registered Families</span>
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex items-center gap-2">
+                <MapPin className="h-5 w-5 text-destructive" />
+                <span className="text-sm">Lake Williamson</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-info" />
+                <span className="text-sm">Registered Families</span>
+              </div>
             </div>
-          </div>
-        </div>
+          </header>
 
         <Card className="overflow-hidden">
           <CardContent className="p-0">
             {!mapsLoaded ? (
-              <div className="flex h-[calc(100vh-250px)] min-h-[600px] items-center justify-center">
+              <div className="flex h-[calc(100dvh-250px)] min-h-[min(600px,80dvh)] items-center justify-center">
                 <div className="flex flex-col items-center gap-4">
                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                   <p className="text-muted-foreground">Loading map...</p>
                 </div>
               </div>
             ) : (
-              <div className="h-[calc(100vh-250px)] min-h-[600px]">
+              <div className="h-[calc(100dvh-250px)] min-h-[min(600px,80dvh)]">
                 <Map center={[mapData.center.lat, mapData.center.lng]} zoom={5} markers={markers} />
               </div>
             )}
           </CardContent>
         </Card>
-      </MainContent>
+        </div>
+      </main>
     </>
   )
 }

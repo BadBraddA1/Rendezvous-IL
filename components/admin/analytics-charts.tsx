@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   BarChart,
@@ -15,46 +15,64 @@ import {
   Cell,
   Legend,
 } from "recharts"
+import { CHART_COLORS } from "@/lib/email-templates"
+import {
+  AdminChartSkeleton,
+  AdminRetryButton,
+} from "@/components/admin/admin-panel-states"
+
+type AnalyticsData = {
+  registrationsByDate: Array<{ date: string; count: number }>
+  lodgingDistribution: Array<{ name: string; value: number }>
+}
 
 export function AnalyticsCharts() {
-  const [data, setData] = useState<any>(null)
+  const [data, setData] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
+  const loadAnalytics = useCallback(() => {
+    setLoading(true)
+    setError(null)
+
     fetch("/api/admin/analytics")
       .then((res) => {
         if (!res.ok) throw new Error("Failed to fetch analytics")
         return res.json()
       })
-      .then((data) => {
-        setData(data)
-        setLoading(false)
+      .then((nextData) => {
+        setData(nextData)
       })
       .catch((err) => {
         console.error("[v0] Error fetching analytics:", err)
-        setError("Unable to load analytics")
+        setError("Unable to load analytics. Check your connection and try again.")
+      })
+      .finally(() => {
         setLoading(false)
       })
   }, [])
+
+  useEffect(() => {
+    loadAnalytics()
+  }, [loadAnalytics])
 
   if (loading) {
     return (
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Registrations Over Time</CardTitle>
+            <CardTitle>Registrations over time</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">Loading...</p>
+            <AdminChartSkeleton label="Loading registrations chart" />
           </CardContent>
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Lodging Distribution</CardTitle>
+            <CardTitle>Lodging distribution</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">Loading...</p>
+            <AdminChartSkeleton label="Loading lodging chart" />
           </CardContent>
         </Card>
       </div>
@@ -63,24 +81,27 @@ export function AnalyticsCharts() {
 
   if (error) {
     return (
-      <Card className="border-red-200 bg-red-50">
+      <Card className="callout-destructive">
         <CardHeader>
-          <CardTitle className="text-red-900">Analytics Unavailable</CardTitle>
-          <CardDescription className="text-red-700">{error}</CardDescription>
+          <CardTitle className="text-destructive">Analytics unavailable</CardTitle>
+          <CardDescription>{error}</CardDescription>
         </CardHeader>
+        <CardContent>
+          <AdminRetryButton onRetry={loadAnalytics} />
+        </CardContent>
       </Card>
     )
   }
 
   if (!data) return null
 
-  const COLORS = ["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))"]
+  const COLORS = [...CHART_COLORS]
 
   return (
     <div className="grid gap-4 md:grid-cols-2">
       <Card>
         <CardHeader>
-          <CardTitle>Registrations Over Time</CardTitle>
+          <CardTitle>Registrations over time</CardTitle>
           <CardDescription>Daily registration counts</CardDescription>
         </CardHeader>
         <CardContent>
@@ -90,7 +111,7 @@ export function AnalyticsCharts() {
               <XAxis dataKey="date" />
               <YAxis />
               <Tooltip />
-              <Bar dataKey="count" fill="hsl(var(--primary))" />
+              <Bar dataKey="count" fill={CHART_COLORS[0]} />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
@@ -98,7 +119,7 @@ export function AnalyticsCharts() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Lodging Distribution</CardTitle>
+          <CardTitle>Lodging distribution</CardTitle>
           <CardDescription>Breakdown by lodging type</CardDescription>
         </CardHeader>
         <CardContent>
@@ -111,11 +132,11 @@ export function AnalyticsCharts() {
                 labelLine={false}
                 label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                 outerRadius={80}
-                fill="#8884d8"
+                fill={CHART_COLORS[0]}
                 dataKey="value"
               >
-                {data.lodgingDistribution.map((entry: any, index: number) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                {data.lodgingDistribution.map((entry, index) => (
+                  <Cell key={`cell-${entry.name}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
               <Tooltip />

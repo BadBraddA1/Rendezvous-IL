@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Cloud, CloudRain, Sun, CloudSun, Snowflake, CloudLightning, Wind, Droplets, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react'
+import { useScheduleData, type ScheduleWeatherData } from '@/components/schedule/schedule-data-context'
+import { fetchJsonCached } from '@/lib/fetch-json-cache'
 
 interface HourlyForecast {
   dt: number
@@ -77,9 +79,7 @@ export function WeatherForecast() {
   const fetchWeather = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/weather')
-      if (!response.ok) throw new Error('Failed to fetch weather')
-      const data = await response.json()
+      const data = await fetchJsonCached<WeatherData & { error?: string }>('/api/weather')
       if (data.error) throw new Error(data.error)
       setWeather(data)
       setLastUpdated(new Date())
@@ -122,7 +122,7 @@ export function WeatherForecast() {
       <Card className="border-destructive/30 bg-destructive/5">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-semibold flex items-center gap-2">
-            <Cloud className="h-4 w-4" />
+            <Cloud className="h-4 w-4 text-primary" aria-hidden="true" />
             Weather
           </CardTitle>
         </CardHeader>
@@ -157,7 +157,7 @@ export function WeatherForecast() {
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             {getWeatherIcon(current.weather[0].id, current.weather[0].icon)}
-            <span className="text-3xl font-bold">{Math.round(current.temp)}°F</span>
+            <span className="text-amount tabular-nums font-semibold text-primary">{Math.round(current.temp)}°F</span>
           </div>
           <div className="text-sm text-muted-foreground space-y-0.5">
             <p className="capitalize">{current.weather[0].description}</p>
@@ -201,12 +201,12 @@ export function WeatherForecast() {
           </div>
           <div className={`grid gap-2 ${expanded ? 'grid-cols-4 sm:grid-cols-6 md:grid-cols-12' : 'grid-cols-5'}`}>
             {hourly.map((hour) => (
-              <div key={hour.dt} className="rounded-lg border border-border/40 bg-card/80 p-2 text-center">
+              <div key={hour.dt} className="countdown-digit-cell rounded-lg p-2 text-center">
                 <p className="text-xs font-medium text-muted-foreground">{formatTime(hour.dt)}</p>
                 <div className="flex justify-center my-1">
                   {getWeatherIcon(hour.weather[0].id, hour.weather[0].icon)}
                 </div>
-                <p className="text-sm font-semibold">{Math.round(hour.temp)}°</p>
+                <p className="text-sm font-semibold text-primary tabular-nums">{Math.round(hour.temp)}°</p>
                 {hour.pop > 0.1 && (
                   <p className="flex items-center justify-center gap-0.5 text-xs text-primary">
                     <Droplets className="h-2.5 w-2.5" />
@@ -311,7 +311,7 @@ export function RainAlertBanner() {
           
           {/* Alert title */}
           <div>
-            <h2 className="text-2xl font-bold text-foreground">{alertMessage}</h2>
+            <h2 className="text-section-title text-balance">{alertMessage}</h2>
             <p className="text-lg text-primary font-semibold">{maxPop}% chance around {rainTime}</p>
           </div>
           
@@ -340,30 +340,19 @@ export function RainAlertBanner() {
 // Component to show inline weather for a specific date and time
 // date format: "2027-05-07" (YYYY-MM-DD)
 // hour: 14 for 2 PM, 17 for 5 PM, etc.
-export function InlineWeather({ date, hour }: { date: string; hour: number }) {
-  const [weather, setWeather] = useState<WeatherData | null>(null)
-
-  useEffect(() => {
-    fetch('/api/weather')
-      .then(res => res.json())
-      .then(data => {
-        if (!data.error) setWeather(data)
-      })
-      .catch(() => {})
-  }, [])
-
-  if (!weather) return null
-
-  // Parse the target date and hour in Central Time
-  // Create date in local timezone first, then adjust
+function resolveInlineForecast(
+  weather: ScheduleWeatherData | WeatherData,
+  date: string,
+  hour: number,
+) {
   const [year, month, day] = date.split('-').map(Number)
-  
-  // Create target date - use Chicago timezone for consistency
+  void year
+  void month
+  void day
+
   const targetDate = new Date(`${date}T${String(hour).padStart(2, '0')}:00:00-05:00`)
   const targetTimestamp = Math.floor(targetDate.getTime() / 1000)
 
-  // Find the forecast closest to the target date+time
-  // The 2.5 API gives 3-hour intervals, so find the closest one
   let closestForecast = weather.hourly[0]
   let smallestDiff = Math.abs(weather.hourly[0].dt - targetTimestamp)
 
@@ -375,13 +364,43 @@ export function InlineWeather({ date, hour }: { date: string; hour: number }) {
     }
   }
 
-  // Only show if forecast is within 2 hours of target time (data is available)
-  // The 2.5 API gives 3-hour intervals, so 2 hours ensures we catch valid data
-  // If target is too far in the future (beyond 5-day forecast), hide the badge
   const twoHoursInSeconds = 2 * 60 * 60
   if (smallestDiff > twoHoursInSeconds) {
     return null
   }
+
+  return closestForecast
+}
+
+export function InlineWeather({ date, hour }: { date: string; hour: number }) {
+  const scheduleData = useScheduleData()
+  const [weather, setWeather] = useState<ScheduleWeatherData | WeatherData | null>(
+    () => scheduleData?.weather ?? null,
+  )
+
+  useEffect(() => {
+    if (scheduleData?.weather) {
+      setWeather(scheduleData.weather)
+      return
+    }
+
+    let cancelled = false
+    void fetchJsonCached<WeatherData & { error?: string }>('/api/weather')
+      .then((data) => {
+        if (cancelled || data.error) return
+        setWeather(data)
+      })
+      .catch(() => {})
+
+    return () => {
+      cancelled = true
+    }
+  }, [scheduleData])
+
+  if (!weather?.hourly?.length) return null
+
+  const closestForecast = resolveInlineForecast(weather, date, hour)
+  if (!closestForecast) return null
 
   return (
     <span className="ml-2 inline-flex items-center gap-1 rounded-full border border-primary/20 bg-surface-highlight px-2 py-0.5 text-xs">
@@ -389,7 +408,7 @@ export function InlineWeather({ date, hour }: { date: string; hour: number }) {
       <span className="font-medium">{Math.round(closestForecast.temp)}°F</span>
       {closestForecast.pop > 0.2 && (
         <span className="flex items-center gap-0.5 text-primary">
-          <Droplets className="h-2.5 w-2.5" />
+          <Droplets className="h-2.5 w-2.5" aria-hidden="true" />
           {Math.round(closestForecast.pop * 100)}%
         </span>
       )}

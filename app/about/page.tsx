@@ -53,7 +53,7 @@ export default function AboutPage() {
       <SiteHeader />
 
       <main id="main-content">
-        <section className="border-b border-primary/15 bg-surface-lake pt-[calc(5.5rem+env(safe-area-inset-top,0px))] pb-12 md:pb-16 md:pt-28">
+        <section className="site-below-header-loose site-page-intro border-b border-primary/15 bg-surface-lake pb-12 md:pb-16">
           <div className="site-container">
             <div className="mx-auto max-w-3xl text-center">
               <p className="about-hero-greeting">Greetings, brethren</p>
@@ -104,7 +104,7 @@ export default function AboutPage() {
                 </div>
               </div>
 
-              <figure className="overflow-hidden rounded-xl border border-primary/15 bg-card shadow-sm lg:sticky lg:top-[calc(5.5rem+env(safe-area-inset-top,0px)+1rem)]">
+              <figure className="site-sticky-top overflow-hidden rounded-xl border border-primary/15 bg-card shadow-sm lg:sticky lg:self-start">
                 <img
                   src="/images/preview-202025-11-25-2022.png"
                   alt="Map showing distances between Rendezvous (Carlinville, IL), Roundup (Madill, OK), and Roundhouse (Flat Rock, NC)"
@@ -230,7 +230,7 @@ export default function AboutPage() {
                   }`}
                 >
                   <div className="flex items-baseline justify-between gap-3">
-                    <p className="font-display text-lg font-bold">{row.year}</p>
+                    <p className="font-display text-amount text-primary">{row.year}</p>
                     <p className="text-sm font-medium text-primary">{row.attendees} attendees</p>
                   </div>
                   <p className="mt-1 text-sm text-muted-foreground">Theme: {row.theme}</p>
@@ -238,7 +238,7 @@ export default function AboutPage() {
               ))}
             </div>
 
-            <div className="hidden overflow-x-auto rounded-xl border border-primary/15 md:block">
+            <div className="hidden overflow-x-auto scroll-touch-x rounded-xl border border-primary/15 md:block">
               <table className="w-full min-w-[28rem]">
                 <thead>
                   <tr className="border-b bg-secondary text-secondary-foreground">

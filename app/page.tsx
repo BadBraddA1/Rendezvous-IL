@@ -13,7 +13,6 @@ import {
   ExternalLink,
   Wifi,
   Trophy,
-  ArrowRight,
   type LucideIcon,
 } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
@@ -76,7 +75,7 @@ function ExpectPanel({
     <article
       className={`flex flex-col gap-3 rounded-xl border p-5 sm:p-6 ${
         featured
-          ? "border-primary/30 bg-surface-highlight ring-1 ring-primary/10"
+          ? "border-primary/25 bg-surface-highlight"
           : "border-border/70 bg-card"
       } ${className}`}
     >
@@ -108,9 +107,6 @@ export default function HomePage() {
             <div className="mx-auto max-w-5xl">
               <header className="mb-8 text-center sm:mb-12">
                 <h2 className="text-section-title mb-4 text-balance">Experience Rendezvous</h2>
-                <p className="measure-prose mx-auto text-lead text-muted-foreground">
-                  See what makes our Christian homeschool family retreat so special
-                </p>
               </header>
               <div className="overflow-hidden rounded-xl border border-border bg-card">
                 <MuxVideoPlayer
@@ -138,25 +134,6 @@ export default function HomePage() {
                 </div>
               ))}
             </dl>
-          </div>
-        </section>
-
-        <section className="section-lg">
-          <div className="site-container max-w-3xl">
-            <div className="text-center">
-              <p className="mb-3 text-sm text-muted-foreground">Christian homeschool family retreat</p>
-              <h2 className="text-section-title mb-5 text-balance sm:mb-6">Join us for fellowship and fun</h2>
-              <p className="measure-prose mx-auto mb-8 text-lead text-muted-foreground">
-                Rendezvous is a 5-day, 4-night retreat filled with fellowship, worship, recreation, and encouragement
-                for Christian families who educate their children at home.
-              </p>
-              <Button size="lg" className="h-14 w-full px-8 text-base sm:w-auto" asChild>
-                <Link href="/about">
-                  Learn more about Rendezvous
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Link>
-              </Button>
-            </div>
           </div>
         </section>
 
@@ -224,8 +201,7 @@ export default function HomePage() {
           <div className="site-container">
             <div className="mx-auto max-w-3xl">
               <header className="mb-8 text-center sm:mb-10">
-                <h2 className="text-section-title mb-4 text-balance">Planning for 2027</h2>
-                <p className="text-lead text-muted-foreground">What we&apos;re preparing for the next Rendezvous</p>
+                <h2 className="text-section-title text-balance">Planning for 2027</h2>
               </header>
               <div className="planning-2027-hero">
                 <p className="text-sm font-medium text-muted-foreground">Retreat dates</p>
@@ -246,10 +222,7 @@ export default function HomePage() {
 
         <section className="section-lg border-t border-primary/15 bg-surface-lake">
           <div className="site-container text-center">
-            <h2 className="text-section-title mb-4 text-balance">See you at Rendezvous 2027</h2>
-            <p className="measure-prose mx-auto mb-8 text-balance text-lead text-on-surface">
-              Get ready for fellowship, faith, and fun with homeschool families from across the country.
-            </p>
+            <h2 className="text-section-title mb-6 text-balance text-on-surface">See you at Rendezvous 2027</h2>
             <div className="flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center sm:gap-4">
               <Button size="lg" className="h-14 px-8 text-base" asChild>
                 <Link href="/schedule">View schedule</Link>

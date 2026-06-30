@@ -150,7 +150,7 @@ function VideoCard({
 }) {
   return (
     <article className="group">
-      <div className="overflow-hidden rounded-xl border border-primary/15 bg-card">
+      <div className="overflow-hidden rounded-xl border border-primary/15 bg-card transition-colors group-hover:border-primary/25 group-hover:bg-surface-tint/40">
         <MuxVideoPlayer
           playbackId={video.id}
           title={video.title}
@@ -176,10 +176,10 @@ export default function FAQPage() {
       <SiteHeader />
 
       <main id="main-content">
-        <section className="section-lg pt-[calc(5.5rem+env(safe-area-inset-top,0px))]">
+        <section className="section-lg site-below-header">
           <div className="site-container">
             <div className="grid gap-10 lg:grid-cols-[minmax(0,17.5rem)_1fr] lg:gap-16 xl:gap-20">
-              <header className="lg:sticky lg:top-[calc(5.5rem+env(safe-area-inset-top,0px))] lg:self-start">
+              <header className="site-sticky-top lg:sticky lg:self-start">
                 <h1 className="text-page-title text-balance">Frequently asked questions</h1>
                 <p className="mt-4 text-lead text-muted-foreground text-pretty">
                   Everything you need to know about Rendezvous 2027

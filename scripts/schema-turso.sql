@@ -526,4 +526,36 @@ CREATE TABLE IF NOT EXISTS ios_activity_push_tokens (
   updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS android_device_tokens (
+  token TEXT PRIMARY KEY NOT NULL,
+  bundle_id TEXT NOT NULL DEFAULT 'com.rendezvousil.app',
+  is_active INTEGER DEFAULT 1,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS user_app_activity (
+  clerk_user_id TEXT PRIMARY KEY NOT NULL,
+  email TEXT,
+  last_seen_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  last_platform TEXT NOT NULL DEFAULT 'web',
+  last_app_version TEXT,
+  visit_count INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS live_updates_displays (
+  device_id TEXT PRIMARY KEY NOT NULL,
+  hostname TEXT,
+  ip TEXT,
+  last_view TEXT,
+  kiosk_url TEXT,
+  build_version TEXT,
+  user_agent TEXT,
+  first_seen_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  last_seen_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
 PRAGMA foreign_keys = ON;

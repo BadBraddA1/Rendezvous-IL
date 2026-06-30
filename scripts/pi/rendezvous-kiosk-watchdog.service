@@ -1,0 +1,8 @@
+[Unit]
+Description=Rendezvous IL kiosk health watchdog
+Documentation=https://rendezvousil.com/live-updates
+
+[Service]
+Type=oneshot
+EnvironmentFile=-%h/.config/rendezvous-kiosk/env
+ExecStart=INSTALL_DIR/kiosk-watchdog.sh

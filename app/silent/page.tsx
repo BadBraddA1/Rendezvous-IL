@@ -58,12 +58,12 @@ export default function SilentPhonePage() {
   }
 
   return (
-    <div className="brand-dark-shell flex min-h-screen flex-col">
-      <header className="flex items-center justify-between border-b border-primary/20 p-4">
-        <Link href="/" className="focus-ring rounded-sm text-[oklch(0.72_0.03_178)] hover:text-[oklch(0.96_0.01_178)]">
+    <div className="brand-dark-shell flex min-h-dvh flex-col">
+      <header className="flex items-center justify-between border-b border-primary/20 px-4 pb-4 pt-[max(1rem,env(safe-area-inset-top))]">
+        <Link href="/" className="brand-dark-link focus-ring rounded-sm">
           &larr; Back
         </Link>
-        <h1 className="text-lg font-semibold">Silent Mode</h1>
+        <p className="text-sm font-medium brand-dark-text-muted">Silent mode</p>
         <div className="w-16" aria-hidden="true" />
       </header>
 
@@ -77,8 +77,8 @@ export default function SilentPhonePage() {
             </div>
 
             <div className="space-y-2">
-              <h2 className="text-3xl font-bold">Silence your phone</h2>
-              <p className="mx-auto max-w-md text-[oklch(0.72_0.03_178)]">
+              <h1 className="text-section-title text-balance">Silence your phone</h1>
+              <p className="text-lead mx-auto max-w-md brand-dark-text-muted">
                 Activate silent mode for 30 minutes during sessions or assemblies. A timer will remind
                 you when it&apos;s safe to unmute.
               </p>
@@ -89,13 +89,15 @@ export default function SilentPhonePage() {
               Start silent mode
             </Button>
 
-            <p className="flex items-center justify-center gap-2 text-sm text-[oklch(0.62_0.03_178)]">
+            <p className="flex items-center justify-center gap-2 text-sm brand-dark-text-subtle">
               <Clock className="h-4 w-4" aria-hidden="true" />
               30 minutes
             </p>
           </div>
         ) : (
           <div className="space-y-8 text-center">
+            <h1 className="sr-only">Silent mode timer</h1>
+
             <div className="relative">
               <svg className="h-64 w-64 -rotate-90 transform" aria-hidden="true">
                 <circle
@@ -105,7 +107,7 @@ export default function SilentPhonePage() {
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="8"
-                  className="text-[oklch(0.2_0.03_195)]"
+                  className="brand-dark-track"
                 />
                 <circle
                   cx="128"
@@ -117,26 +119,26 @@ export default function SilentPhonePage() {
                   strokeLinecap="round"
                   strokeDasharray={2 * Math.PI * 120}
                   strokeDashoffset={2 * Math.PI * 120 * (1 - progress / 100)}
-                  className="text-destructive transition-all duration-1000"
+                  className="text-destructive transition-all duration-1000 motion-reduce:transition-none"
                 />
               </svg>
 
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <VolumeX
-                  className={`mb-2 h-16 w-16 ${isPaused ? "text-[oklch(0.75_0.12_85)]" : "text-destructive"}`}
+                  className={`mb-2 h-16 w-16 ${isPaused ? "brand-dark-paused" : "text-destructive"}`}
                   aria-hidden="true"
                 />
-                <span className="font-mono text-5xl font-bold tabular-nums">{formatTime(timeRemaining)}</span>
-                <span className="mt-2 text-[oklch(0.72_0.03_178)]">{isPaused ? "Paused" : "Silent mode"}</span>
+                <span className="text-timer-mono">{formatTime(timeRemaining)}</span>
+                <span className="mt-2 brand-dark-text-muted">{isPaused ? "Paused" : "Silent mode"}</span>
               </div>
             </div>
 
             <div className="space-y-2">
-              <h2 className="flex items-center justify-center gap-3 text-2xl font-bold">
-                <BellOff className={isPaused ? "text-[oklch(0.75_0.12_85)]" : "text-destructive"} aria-hidden="true" />
+              <h2 className="text-subheading flex items-center justify-center gap-3">
+                <BellOff className={isPaused ? "brand-dark-paused" : "text-destructive"} aria-hidden="true" />
                 {isPaused ? "Timer paused" : "Phone should be silent"}
               </h2>
-              <p className="text-[oklch(0.72_0.03_178)]">
+              <p className="brand-dark-text-muted">
                 {isPaused ? "Resume the timer when ready." : "Please keep your phone on silent or vibrate."}
               </p>
             </div>
@@ -173,8 +175,8 @@ export default function SilentPhonePage() {
             </div>
 
             <div className="brand-dark-surface mx-auto max-w-md rounded-xl p-4">
-              <p className="text-sm text-[oklch(0.78_0.02_178)]">
-                <span className="font-semibold text-[oklch(0.96_0.01_178)]">Reminder:</span> When the timer
+              <p className="text-sm brand-dark-text-body">
+                <span className="font-semibold brand-dark-text-strong">Reminder:</span> When the timer
                 ends, you can unmute your phone. Please be respectful during sessions and assemblies.
               </p>
             </div>
@@ -182,7 +184,7 @@ export default function SilentPhonePage() {
         )}
       </main>
 
-      <footer className="border-t border-primary/20 p-4 text-center text-sm text-[oklch(0.62_0.03_178)]">
+      <footer className="border-t border-primary/20 px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] text-center text-sm brand-dark-text-subtle">
         Rendezvous 2027
       </footer>
     </div>

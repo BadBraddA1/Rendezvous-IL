@@ -14,14 +14,14 @@ export default async function AnnouncementsPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="admin-shell">
       <AdminNav currentPage="announcements" admin={admin} />
-      <main id="main-content" className="flex-1 bg-background p-6">
-        <div className="container mx-auto space-y-6">
-          <div>
-            <h2 className="text-3xl font-bold tracking-tight">Announcements</h2>
-            <p className="text-muted-foreground">Manage live event announcements and GroupMe broadcasts</p>
-          </div>
+      <main id="main-content" className="admin-main">
+        <div className="admin-container">
+          <header className="admin-page-header">
+            <h1 className="text-section-title text-balance">Announcements</h1>
+            <p className="text-lead text-muted-foreground">Manage live event announcements and GroupMe broadcasts</p>
+          </header>
           <AnnouncementsManager canEdit={admin.role !== "viewer"} />
         </div>
       </main>

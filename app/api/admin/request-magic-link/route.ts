@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { sql } from "@/lib/db"
 import { resend } from "@/lib/resend"
+import { generateMagicLinkEmail } from "@/lib/email-templates"
 
 const ALLOWED_ADMINS = ["adin@braddcorp.com", "stephen@bradd.us"]
 
@@ -44,23 +45,7 @@ export async function POST(req: NextRequest) {
       from: "noreply@braddcorp.com",
       to: normalizedEmail,
       subject: "Rendezvous Admin Access Link",
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #333;">Admin Access Link</h2>
-          <p>Click the button below to access the Rendezvous admin dashboard:</p>
-          <div style="margin: 30px 0;">
-            <a href="${magicLink}" style="background-color: #0070f3; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; word-break: keep-all; white-space: nowrap;">
-              Access Admin Dashboard
-            </a>
-          </div>
-          <p style="color: #666; font-size: 14px; margin-top: 20px;">Or copy and paste this link:</p>
-          <p style="background: #f5f5f5; padding: 10px; border-radius: 5px; word-break: break-all; font-size: 12px;">${magicLink}</p>
-          <p style="color: #666; font-size: 14px;">This link will expire in 7 days.</p>
-          <p style="color: #666; font-size: 14px;">If you didn't request this link, please ignore this email.</p>
-          <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-          <p style="color: #999; font-size: 12px;">Rendezvous Admin System</p>
-        </div>
-      `,
+      html: generateMagicLinkEmail(magicLink),
     })
 
     return NextResponse.json({ success: true, message: "Magic link sent to your email" })

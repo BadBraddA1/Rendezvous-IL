@@ -1,16 +1,31 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { formatDistanceToNow } from "date-fns"
+import {
+  AdminListSkeleton,
+  AdminRetryButton,
+} from "@/components/admin/admin-panel-states"
+
+type RecentRegistration = {
+  id: number
+  family_last_name: string
+  email: string
+  lodging_type: string
+  created_at: string
+}
 
 export function RecentRegistrations() {
-  const [registrations, setRegistrations] = useState<any[]>([])
+  const [registrations, setRegistrations] = useState<RecentRegistration[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
+  const loadRegistrations = useCallback(() => {
+    setLoading(true)
+    setError(null)
+
     fetch("/api/admin/registrations/recent")
       .then((res) => {
         if (!res.ok) throw new Error("Failed to fetch recent registrations")
@@ -18,24 +33,29 @@ export function RecentRegistrations() {
       })
       .then((data) => {
         setRegistrations(data)
-        setLoading(false)
       })
       .catch((err) => {
         console.error("[v0] Error fetching recent registrations:", err)
-        setError("Unable to load recent registrations")
+        setError("Unable to load recent registrations. Check your connection and try again.")
+      })
+      .finally(() => {
         setLoading(false)
       })
   }, [])
+
+  useEffect(() => {
+    loadRegistrations()
+  }, [loadRegistrations])
 
   if (loading) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Recent Registrations</CardTitle>
+          <CardTitle>Recent registrations</CardTitle>
           <CardDescription>Latest family registrations</CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">Loading...</p>
+          <AdminListSkeleton label="Loading recent registrations" />
         </CardContent>
       </Card>
     )
@@ -43,11 +63,14 @@ export function RecentRegistrations() {
 
   if (error) {
     return (
-      <Card className="border-red-200 bg-red-50">
+      <Card className="callout-destructive">
         <CardHeader>
-          <CardTitle className="text-red-900">Recent Registrations</CardTitle>
-          <CardDescription className="text-red-700">{error}</CardDescription>
+          <CardTitle className="text-destructive">Recent registrations</CardTitle>
+          <CardDescription>{error}</CardDescription>
         </CardHeader>
+        <CardContent>
+          <AdminRetryButton onRetry={loadRegistrations} />
+        </CardContent>
       </Card>
     )
   }
@@ -56,11 +79,13 @@ export function RecentRegistrations() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Recent Registrations</CardTitle>
+          <CardTitle>Recent registrations</CardTitle>
           <CardDescription>Latest family registrations</CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">No registrations yet</p>
+          <p className="text-sm text-muted-foreground">
+            No registrations yet. New families will appear here as they sign up.
+          </p>
         </CardContent>
       </Card>
     )
@@ -69,18 +94,21 @@ export function RecentRegistrations() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Recent Registrations</CardTitle>
+        <CardTitle>Recent registrations</CardTitle>
         <CardDescription>Latest family registrations</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
           {registrations.map((reg) => (
-            <div key={reg.id} className="flex items-center justify-between border-b pb-4 last:border-0">
-              <div>
-                <p className="font-medium">{reg.family_last_name} Family</p>
-                <p className="text-sm text-muted-foreground">{reg.email}</p>
+            <div
+              key={reg.id}
+              className="flex items-start justify-between gap-4 border-b pb-4 last:border-0"
+            >
+              <div className="min-w-0">
+                <p className="break-words font-medium">{reg.family_last_name} family</p>
+                <p className="break-all text-sm text-muted-foreground">{reg.email}</p>
               </div>
-              <div className="text-right">
+              <div className="shrink-0 text-right">
                 <Badge variant="secondary">{reg.lodging_type}</Badge>
                 <p className="mt-1 text-xs text-muted-foreground">
                   {formatDistanceToNow(new Date(reg.created_at), { addSuffix: true })}

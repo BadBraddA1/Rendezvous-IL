@@ -366,22 +366,24 @@ export default async function AccountPage() {
         {/* Account Info */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-widget-heading">Account Information</CardTitle>
+            <CardTitle className="text-widget-heading">Account</CardTitle>
             <CardDescription>
-              Your Clerk account details
+              Sign-in name, email, and password
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-4">
-              <div className="flex-1 space-y-1">
-                <p className="font-medium">
-                  {user.firstName} {user.lastName}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {userEmail}
-                </p>
-              </div>
+          <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1">
+              <p className="font-medium">
+                {user.firstName} {user.lastName}
+              </p>
+              <p className="text-sm text-muted-foreground">{userEmail}</p>
             </div>
+            <Button variant="outline" asChild className="bg-transparent">
+              <Link href="/account/settings">
+                Account settings
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
           </CardContent>
         </Card>
     </div>

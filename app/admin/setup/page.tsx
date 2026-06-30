@@ -66,10 +66,10 @@ export default function AdminSetupPage() {
   }
 
   return (
-    <MainContent className="min-h-screen bg-background flex items-center justify-center p-4">
+    <MainContent className="admin-gate-screen">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Admin Setup</CardTitle>
+          <CardTitle className="text-subheading">Admin Setup</CardTitle>
           <CardDescription>Create your first admin user to access the Rendezvous admin dashboard</CardDescription>
         </CardHeader>
         <CardContent>

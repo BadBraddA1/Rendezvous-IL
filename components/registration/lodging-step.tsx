@@ -88,7 +88,7 @@ export function LodgingStep({ data, updateData }: Props) {
             {/* Motel Option 1 */}
             <label
               htmlFor="motel-2queen-bunk"
-              className={`flex cursor-pointer items-start gap-4 rounded-lg border-2 p-4 transition-colors hover:bg-muted/50 ${
+              className={`flex cursor-pointer items-start gap-4 rounded-lg border-2 p-4 transition-colors hover:bg-muted/50 active:bg-muted/50 ${
                 data.lodgingType === "motel-2queen-bunk" ? "border-primary bg-primary/5" : "border-border"
               }`}
             >
@@ -107,7 +107,7 @@ export function LodgingStep({ data, updateData }: Props) {
             {/* Motel Option 2 */}
             <label
               htmlFor="motel-1queen-2bunk"
-              className={`flex cursor-pointer items-start gap-4 rounded-lg border-2 p-4 transition-colors hover:bg-muted/50 ${
+              className={`flex cursor-pointer items-start gap-4 rounded-lg border-2 p-4 transition-colors hover:bg-muted/50 active:bg-muted/50 ${
                 data.lodgingType === "motel-1queen-2bunk" ? "border-primary bg-primary/5" : "border-border"
               }`}
             >
@@ -126,7 +126,7 @@ export function LodgingStep({ data, updateData }: Props) {
             {/* RV Option */}
             <label
               htmlFor="rv"
-              className={`flex cursor-pointer items-start gap-4 rounded-lg border-2 p-4 transition-colors hover:bg-muted/50 ${
+              className={`flex cursor-pointer items-start gap-4 rounded-lg border-2 p-4 transition-colors hover:bg-muted/50 active:bg-muted/50 ${
                 data.lodgingType === "rv" ? "border-primary bg-primary/5" : "border-border"
               }`}
             >
@@ -143,7 +143,7 @@ export function LodgingStep({ data, updateData }: Props) {
             {/* Tent Option */}
             <label
               htmlFor="tent"
-              className={`flex cursor-pointer items-start gap-4 rounded-lg border-2 p-4 transition-colors hover:bg-muted/50 ${
+              className={`flex cursor-pointer items-start gap-4 rounded-lg border-2 p-4 transition-colors hover:bg-muted/50 active:bg-muted/50 ${
                 data.lodgingType === "tent" ? "border-primary bg-primary/5" : "border-border"
               }`}
             >
@@ -161,9 +161,9 @@ export function LodgingStep({ data, updateData }: Props) {
       </div>
 
       {/* Cost Breakdown */}
-      <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-background">
+      <Card className="border-primary/20 bg-surface-highlight">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="font-display flex items-center gap-2 text-subheading">
             <Calculator className="h-5 w-5" />
             Lodging Cost Breakdown
           </CardTitle>
@@ -193,7 +193,7 @@ export function LodgingStep({ data, updateData }: Props) {
 
           <div className="flex items-baseline justify-between border-t border-border/50 pt-4">
             <span className="text-lg font-semibold">Lodging Total:</span>
-            <span className="text-3xl font-bold text-primary">${total.toFixed(2)}</span>
+            <span className="text-amount text-primary">${total.toFixed(2)}</span>
           </div>
         </CardContent>
       </Card>
