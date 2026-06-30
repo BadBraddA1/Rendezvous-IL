@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useCallback } from "react"
+import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -31,9 +31,8 @@ import {
 import { Switch } from "@/components/ui/switch"
 import useSWR, { mutate } from "swr"
 import {
-  isPayingAttendeeAge,
-  motelOccupancyFromPayingCount,
   payingAttendeeLabel,
+  motelOccupancyFromPayingCount,
 } from "@/lib/motel-occupancy"
 import {
   formatMoney,
@@ -41,10 +40,17 @@ import {
   formatUnitLine,
 } from "@/lib/rate-display"
 import {
-  createRateGetter,
   driveInEntryDays,
   packageTypeLabel,
 } from "@/lib/rate-lookup"
+import {
+  computeAdminCalculatorCost,
+  detectPackageType,
+  getAgeGroup,
+} from "@/lib/admin-calculator-cost"
+import {
+  useCalculatorRates,
+} from "@/lib/calculator-rates-swr"
 import { AdminRetryButton } from "@/components/admin/admin-panel-states"
 
 interface Rate {
@@ -65,7 +71,6 @@ interface RatesData {
 interface FamilyMember {
   id: string
   name: string
-  ageGroup: "adult" | "youth" | "child" | "infant"
   age: number
 }
 
@@ -76,12 +81,34 @@ interface MemberAttendance {
 }
 
 const fetcher = async (url: string) => {
-  const res = await fetch(url)
+  const res = await fetch(url, { cache: "no-store" })
   const data = await res.json()
   if (!res.ok) {
     throw new Error(typeof data.error === "string" ? data.error : "Failed to load calculator data")
   }
   return data
+}
+
+const DEFAULT_MEALS: MemberAttendance["meals"] = {
+  mon: ["dinner"],
+  tue: ["breakfast", "lunch", "dinner"],
+  wed: ["breakfast", "lunch", "dinner"],
+  thu: ["breakfast", "lunch", "dinner"],
+  fri: ["breakfast", "lunch"],
+}
+
+function defaultAttendance(): MemberAttendance {
+  return {
+    attending: true,
+    nights: [...NIGHTS],
+    meals: {
+      mon: [...DEFAULT_MEALS.mon],
+      tue: [...DEFAULT_MEALS.tue],
+      wed: [...DEFAULT_MEALS.wed],
+      thu: [...DEFAULT_MEALS.thu],
+      fri: [...DEFAULT_MEALS.fri],
+    },
+  }
 }
 
 const NIGHTS = ["mon", "tue", "wed", "thu"] as const
@@ -112,19 +139,28 @@ const MEAL_LABELS: Record<string, string> = {
   dinner: "Dinner",
 }
 
-function getAgeGroup(age: number): "adult" | "youth" | "child" | "infant" {
-  if (age >= 18) return "adult"
-  if (age >= 12) return "youth"
-  if (age >= 6) return "child"
-  return "infant"
+function ageGroupLabel(ageGroup: ReturnType<typeof getAgeGroup>): string {
+  switch (ageGroup) {
+    case "adult":
+      return "Adult (18+)"
+    case "youth":
+      return "Youth (12-17)"
+    case "child":
+      return "Child (6-11)"
+    default:
+      return "Infant (0-5)"
+  }
 }
 
 export function AdminCalculatorClient() {
   const [year, setYear] = useState("2027")
-  const { data: ratesData, error: ratesError, isLoading, mutate: reloadRates } = useSWR<RatesData>(
-    `/api/admin/calculator?year=${year}`,
-    fetcher
-  )
+  const {
+    data: ratesData,
+    error: ratesError,
+    isLoading,
+    isValidating,
+    mutate: reloadRates,
+  } = useCalculatorRates<RatesData>(year)
 
   // Public calculator status
   const { data: statusData, isLoading: statusLoading } = useSWR<{ enabled: boolean }>(
@@ -154,285 +190,139 @@ export function AdminCalculatorClient() {
   const [lodgingType, setLodgingType] = useState<"motel" | "rv" | "tent" | "drivein">("motel")
   const [numNights, setNumNights] = useState(4)
 
-  // Auto-detect package type based on attendance
-  const detectPackageType = useCallback((memberAttendance: Record<string, MemberAttendance>): "regular" | "special_3_9" | "special_2_6" | "special_1_3" => {
-    // Get the first attending member's attendance to determine package
-    const firstAttendance = Object.values(memberAttendance).find(a => a.attending)
-    if (!firstAttendance) return "regular"
-
-    const nightCount = firstAttendance.nights.length
-    const mealCount = Object.values(firstAttendance.meals).reduce((sum, meals) => sum + meals.length, 0)
-
-    // Check for special packages (exact matches)
-    if (nightCount === 3 && mealCount === 9) return "special_3_9"
-    if (nightCount === 2 && mealCount === 6) return "special_2_6"
-    if (nightCount === 1 && mealCount === 3) return "special_1_3"
-
-    return "regular"
-  }, [])
-
   // Family members for testing
   const [members, setMembers] = useState<FamilyMember[]>([
-    { id: "1", name: "Adult 1", ageGroup: "adult", age: 35 },
-    { id: "2", name: "Adult 2", ageGroup: "adult", age: 33 },
+    { id: "1", name: "Adult 1", age: 35 },
+    { id: "2", name: "Adult 2", age: 33 },
   ])
 
   // Attendance tracking per member
   const [attendance, setAttendance] = useState<Record<string, MemberAttendance>>({
-    "1": { attending: true, nights: [...NIGHTS], meals: { mon: ["dinner"], tue: ["breakfast", "lunch", "dinner"], wed: ["breakfast", "lunch", "dinner"], thu: ["breakfast", "lunch", "dinner"], fri: ["breakfast", "lunch"] } },
-    "2": { attending: true, nights: [...NIGHTS], meals: { mon: ["dinner"], tue: ["breakfast", "lunch", "dinner"], wed: ["breakfast", "lunch", "dinner"], thu: ["breakfast", "lunch", "dinner"], fri: ["breakfast", "lunch"] } },
+    "1": defaultAttendance(),
+    "2": defaultAttendance(),
   })
 
-  // Helper to get rate amount by category and name pattern
-  const getRate = useCallback(
-    (category: string, namePattern: string) =>
-      createRateGetter(ratesData?.rates)(category, namePattern),
-    [ratesData],
-  )
+  const packageType = detectPackageType(attendance)
+
+  const calculation = computeAdminCalculatorCost({
+    members,
+    attendance,
+    lodgingType,
+    numNights,
+    rates: ratesData?.rates,
+  })
+
+  const ageGroupSummary = {
+    adult: { count: 0, unit: 0, lineTotal: 0 },
+    youth: { count: 0, unit: 0, lineTotal: 0 },
+    child: { count: 0, unit: 0, lineTotal: 0 },
+    infant: { count: 0, unit: 0, lineTotal: 0 },
+  } as Record<
+    ReturnType<typeof getAgeGroup>,
+    { count: number; unit: number; lineTotal: number }
+  >
+
+  for (const { ageGroup, baseCost } of calculation.members) {
+    ageGroupSummary[ageGroup].count += 1
+    if (ageGroup === "infant") continue
+    ageGroupSummary[ageGroup].unit = baseCost
+    ageGroupSummary[ageGroup].lineTotal += baseCost
+  }
 
   // Add a new member
   const addMember = () => {
-    const newId = (Math.max(0, ...members.map(m => parseInt(m.id))) + 1).toString()
-    const newMember: FamilyMember = {
-      id: newId,
-      name: `Person ${newId}`,
-      ageGroup: "adult",
-      age: 30,
-    }
-    setMembers([...members, newMember])
-    setAttendance({
-      ...attendance,
-      [newId]: {
-        attending: true,
-        nights: [...NIGHTS],
-        meals: { mon: ["dinner"], tue: ["breakfast", "lunch", "dinner"], wed: ["breakfast", "lunch", "dinner"], thu: ["breakfast", "lunch", "dinner"], fri: ["breakfast", "lunch"] },
-      },
-    })
+    const newId = String(Math.max(0, ...members.map((m) => parseInt(m.id, 10))) + 1)
+    setMembers((prev) => [
+      ...prev,
+      { id: newId, name: `Person ${newId}`, age: 30 },
+    ])
+    setAttendance((prev) => ({
+      ...prev,
+      [newId]: defaultAttendance(),
+    }))
   }
 
   // Remove a member
   const removeMember = (id: string) => {
-    if (members.length <= 1) return
-    setMembers(members.filter(m => m.id !== id))
-    const newAttendance = { ...attendance }
-    delete newAttendance[id]
-    setAttendance(newAttendance)
+    setMembers((prev) => {
+      if (prev.length <= 1) return prev
+      return prev.filter((m) => m.id !== id)
+    })
+    setAttendance((prev) => {
+      const next = { ...prev }
+      delete next[id]
+      return next
+    })
   }
 
   // Update member
   const updateMember = (id: string, updates: Partial<FamilyMember>) => {
-    setMembers(members.map(m => {
-      if (m.id !== id) return m
-      const updated = { ...m, ...updates }
-      // Auto-update age group when age changes
-      if (updates.age !== undefined) {
-        updated.ageGroup = getAgeGroup(updates.age)
-      }
-      return updated
-    }))
+    setMembers((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, ...updates } : m)),
+    )
   }
 
   // Toggle night attendance
   const toggleNight = (memberId: string, night: string) => {
-    const memberAtt = attendance[memberId]
-    if (!memberAtt) return
+    setAttendance((prev) => {
+      const memberAtt = prev[memberId]
+      if (!memberAtt) return prev
 
-    const nights = memberAtt.nights.includes(night)
-      ? memberAtt.nights.filter(n => n !== night)
-      : [...memberAtt.nights, night]
-    
-    // Update meals based on nights
-    const meals = { ...memberAtt.meals }
-    if (!nights.includes(night)) {
-      // Remove meals for that night and the next morning
-      delete meals[night]
-      const nextDay = NIGHTS[NIGHTS.indexOf(night as typeof NIGHTS[number]) + 1]
-      if (nextDay && meals[nextDay]) {
-        meals[nextDay] = meals[nextDay].filter(m => m !== "breakfast")
+      const nights = memberAtt.nights.includes(night)
+        ? memberAtt.nights.filter((n) => n !== night)
+        : [...memberAtt.nights, night]
+
+      const meals = { ...memberAtt.meals }
+      if (!nights.includes(night)) {
+        delete meals[night]
+        const nextDay = NIGHTS[NIGHTS.indexOf(night as (typeof NIGHTS)[number]) + 1]
+        if (nextDay && meals[nextDay]) {
+          meals[nextDay] = meals[nextDay].filter((m) => m !== "breakfast")
+        }
+      } else {
+        const mealKey = night as keyof typeof MEALS
+        meals[night] = mealKey in MEALS ? [...MEALS[mealKey]] : []
       }
-    } else {
-      // Add default meals (spread to create mutable array)
-      const mealKey = night as keyof typeof MEALS
-      meals[night] = mealKey in MEALS ? [...MEALS[mealKey]] : []
-    }
 
-    setAttendance({
-      ...attendance,
-      [memberId]: { ...memberAtt, nights, meals },
+      return {
+        ...prev,
+        [memberId]: { ...memberAtt, nights, meals },
+      }
     })
   }
 
   // Toggle meal
   const toggleMeal = (memberId: string, day: string, meal: string) => {
-    const memberAtt = attendance[memberId]
-    if (!memberAtt) return
+    setAttendance((prev) => {
+      const memberAtt = prev[memberId]
+      if (!memberAtt) return prev
 
-    const dayMeals = memberAtt.meals[day] || []
-    const newDayMeals = dayMeals.includes(meal)
-      ? dayMeals.filter(m => m !== meal)
-      : [...dayMeals, meal]
-
-    setAttendance({
-      ...attendance,
-      [memberId]: {
-        ...memberAtt,
-        meals: { ...memberAtt.meals, [day]: newDayMeals },
-      },
-    })
-  }
-
-  // Calculate package type based on attendance
-  const packageType = useMemo(() => {
-    return detectPackageType(attendance)
-  }, [attendance, detectPackageType])
-
-  // Calculate costs
-  const calculation = useMemo(() => {
-    if (!ratesData?.rates) {
-      return { members: [], lodging: 0, siteFee: 0, siteNightRate: 0, deductions: 0, additions: 0, total: 0, packageApplied: null }
-    }
-
-    const attendingMembers = members.filter(m => attendance[m.id]?.attending)
-    
-    const payingAttendees = attendingMembers.filter(m => isPayingAttendeeAge(m.age)).length
-    const occupancyType = motelOccupancyFromPayingCount(payingAttendees)
-    
-    const memberCosts = attendingMembers.map(member => {
-      const att = attendance[member.id]
-      let baseCost = 0
-      let deductions = 0
-      let additions = 0
-      const isInfant = member.ageGroup === "infant" || !isPayingAttendeeAge(member.age)
-
-      // Determine which rate category to use
-      const rateCategory = packageType === "regular" ? lodgingType : packageType
-
-      if (!isInfant) {
-        // Get base lodging rate (all amounts are per person)
-        if (lodgingType === "motel") {
-          if (member.ageGroup === "adult") {
-            baseCost = getRate(rateCategory, `motel_${occupancyType}_adult`)
-          } else {
-            baseCost = getRate(rateCategory, `motel_${member.ageGroup}`)
-          }
-        } else if (lodgingType === "rv") {
-          baseCost = getRate(rateCategory, `rv_${member.ageGroup}`)
-        } else if (lodgingType === "tent") {
-          baseCost = getRate(rateCategory, `tent_${member.ageGroup}`)
-        } else if (lodgingType === "drivein") {
-          const entryDays = driveInEntryDays(att.meals)
-          baseCost = getRate("drivein", `drivein_${member.ageGroup}`) * entryDays
-        }
-
-        // For regular package, calculate deductions for missed meals (special packages have fixed prices)
-        if (packageType === "regular" && lodgingType !== "drivein") {
-          // Monday dinner deduction
-          if (!att.nights.includes("mon") || !att.meals.mon?.includes("dinner")) {
-            deductions += Math.abs(getRate("deduction", `monday_dinner_${member.ageGroup}`))
-          }
-          // Friday breakfast deduction
-          if (!att.meals.fri?.includes("breakfast")) {
-            deductions += Math.abs(getRate("deduction", `friday_breakfast_${member.ageGroup}`))
-          }
-          // Friday lunch deduction
-          if (!att.meals.fri?.includes("lunch")) {
-            deductions += Math.abs(getRate("deduction", `friday_lunch_${member.ageGroup}`))
-          }
-        }
-
-        // Drive-in meal additions (per meal, per person)
-        if (lodgingType === "drivein") {
-          Object.entries(att.meals).forEach(([, meals]) => {
-            meals.forEach(meal => {
-              additions += getRate("meal_addition", `${meal}_${member.ageGroup}`)
-            })
-          })
-        }
-      }
+      const dayMeals = memberAtt.meals[day] || []
+      const newDayMeals = dayMeals.includes(meal)
+        ? dayMeals.filter((m) => m !== meal)
+        : [...dayMeals, meal]
 
       return {
-        member,
-        baseCost,
-        deductions,
-        additions,
-        total: baseCost - deductions + additions,
+        ...prev,
+        [memberId]: {
+          ...memberAtt,
+          meals: { ...memberAtt.meals, [day]: newDayMeals },
+        },
       }
     })
-
-    // Site fees (for RV and Tent)
-    let siteFee = 0
-    let siteNightRate = 0
-    if (lodgingType === "rv") {
-      siteNightRate = getRate("rv", "rv_site_night")
-      siteFee = siteNightRate * numNights
-    } else if (lodgingType === "tent") {
-      siteNightRate = getRate("tent", "tent_site_night")
-      siteFee = siteNightRate * numNights
-    }
-
-    const totalLodging = memberCosts.reduce((sum, m) => sum + m.baseCost, 0)
-    const totalDeductions = memberCosts.reduce((sum, m) => sum + m.deductions, 0)
-    const totalAdditions = memberCosts.reduce((sum, m) => sum + m.additions, 0)
-    const grandTotal = totalLodging - totalDeductions + totalAdditions + siteFee
-
-    return {
-      members: memberCosts,
-      lodging: totalLodging,
-      siteFee,
-      siteNightRate,
-      deductions: totalDeductions,
-      additions: totalAdditions,
-      total: grandTotal,
-      packageApplied: packageType !== "regular" ? packageType : null,
-    }
-  }, [members, attendance, lodgingType, numNights, ratesData, getRate, packageType])
-
-  const ageGroupSummary = useMemo(() => {
-    type Row = { count: number; unit: number; lineTotal: number }
-    const summary: Record<"adult" | "youth" | "child" | "infant", Row> = {
-      adult: { count: 0, unit: 0, lineTotal: 0 },
-      youth: { count: 0, unit: 0, lineTotal: 0 },
-      child: { count: 0, unit: 0, lineTotal: 0 },
-      infant: { count: 0, unit: 0, lineTotal: 0 },
-    }
-
-    for (const { member, baseCost } of calculation.members) {
-      const group = summary[member.ageGroup]
-      group.count += 1
-      if (member.ageGroup === "infant") continue
-      group.unit = baseCost
-      group.lineTotal += baseCost
-    }
-
-    return summary
-  }, [calculation.members])
-
-  const payingAttendeeCount = useMemo(
-    () =>
-      members.filter(
-        (member) => isPayingAttendeeAge(member.age) && attendance[member.id]?.attending,
-      ).length,
-    [members, attendance],
-  )
-
-  const motelAdultUnit = useMemo(() => {
-    if (!ratesData?.rates || lodgingType !== "motel") return 0
-    const rateCategory = packageType === "regular" ? lodgingType : packageType
-    const occupancy = motelOccupancyFromPayingCount(payingAttendeeCount)
-    return getRate(rateCategory, `motel_${occupancy}_adult`)
-  }, [ratesData, lodgingType, packageType, payingAttendeeCount, getRate])
+  }
 
   // Reset to defaults
   const resetCalculator = () => {
     setLodgingType("motel")
     setNumNights(4)
     setMembers([
-      { id: "1", name: "Adult 1", ageGroup: "adult", age: 35 },
-      { id: "2", name: "Adult 2", ageGroup: "adult", age: 33 },
+      { id: "1", name: "Adult 1", age: 35 },
+      { id: "2", name: "Adult 2", age: 33 },
     ])
     setAttendance({
-      "1": { attending: true, nights: [...NIGHTS], meals: { mon: ["dinner"], tue: ["breakfast", "lunch", "dinner"], wed: ["breakfast", "lunch", "dinner"], thu: ["breakfast", "lunch", "dinner"], fri: ["breakfast", "lunch"] } },
-      "2": { attending: true, nights: [...NIGHTS], meals: { mon: ["dinner"], tue: ["breakfast", "lunch", "dinner"], wed: ["breakfast", "lunch", "dinner"], thu: ["breakfast", "lunch", "dinner"], fri: ["breakfast", "lunch"] } },
+      "1": defaultAttendance(),
+      "2": defaultAttendance(),
     })
   }
 
@@ -508,6 +398,19 @@ export function AdminCalculatorClient() {
               <SelectItem value="2026">2026</SelectItem>
             </SelectContent>
           </Select>
+          <Button
+            variant="outline"
+            className="admin-toolbar-action gap-2"
+            onClick={() => reloadRates()}
+            disabled={isValidating}
+          >
+            {isValidating ? (
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+            ) : (
+              <RefreshCw className="h-4 w-4" aria-hidden="true" />
+            )}
+            Refresh rates
+          </Button>
           <Button
             variant="outline"
             size="icon"
@@ -596,20 +499,22 @@ export function AdminCalculatorClient() {
                   <div className="flex flex-wrap items-center gap-3 p-3 rounded-lg bg-muted/50">
                     <div className="min-w-0 flex-1">
                       {(() => {
-                        const occupancyType = motelOccupancyFromPayingCount(payingAttendeeCount)
+                        const occupancyType = motelOccupancyFromPayingCount(
+                          calculation.payingAttendeeCount,
+                        )
                         return (
                           <>
                             <span className="font-medium capitalize">{occupancyType}</span>
                             <span className="text-muted-foreground ml-1">
-                              ({payingAttendeeLabel(payingAttendeeCount)})
+                              ({payingAttendeeLabel(calculation.payingAttendeeCount)})
                             </span>
                           </>
                         )
                       })()}
                     </div>
-                    {motelAdultUnit > 0 && (
+                    {calculation.motelAdultUnit > 0 && (
                       <div className="text-right tabular-nums">
-                        <span className="font-semibold">${formatMoney(motelAdultUnit)}</span>
+                        <span className="font-semibold">${formatMoney(calculation.motelAdultUnit)}</span>
                         <span className="text-sm text-muted-foreground">/person (adult)</span>
                       </div>
                     )}
@@ -698,9 +603,7 @@ export function AdminCalculatorClient() {
                           />
                         </div>
                         <Badge variant="secondary" className="w-fit">
-                          {member.ageGroup === "adult" ? "Adult (18+)" :
-                           member.ageGroup === "youth" ? "Youth (12-17)" :
-                           member.ageGroup === "child" ? "Child (6-11)" : "Infant (0-5)"}
+                          {ageGroupLabel(getAgeGroup(member.age))}
                         </Badge>
                       </div>
                       <div className="flex items-center justify-between gap-2 sm:justify-end">
@@ -709,10 +612,13 @@ export function AdminCalculatorClient() {
                             id={`attending-${member.id}`}
                             checked={attendance[member.id]?.attending}
                             onCheckedChange={(checked) => {
-                              setAttendance({
-                                ...attendance,
-                                [member.id]: { ...attendance[member.id], attending: checked === true },
-                              })
+                              setAttendance((prev) => ({
+                                ...prev,
+                                [member.id]: {
+                                  ...(prev[member.id] ?? defaultAttendance()),
+                                  attending: checked === true,
+                                },
+                              }))
                             }}
                           />
                           <Label htmlFor={`attending-${member.id}`} className="text-sm">
@@ -870,18 +776,18 @@ export function AdminCalculatorClient() {
                   <Users className="h-4 w-4" />
                   By person
                 </h4>
-                {calculation.members.map(({ member, baseCost, deductions, additions, total }) => (
+                {calculation.members.map(({ member, ageGroup, baseCost, deductions, additions, total }) => (
                   <div key={member.id} className="text-sm border-b pb-2 last:border-0">
                     <div className="flex flex-wrap justify-between gap-x-4 gap-y-1 font-medium">
                       <span className="min-w-0">{member.name}</span>
                       <span className="tabular-nums shrink-0">
-                        {member.ageGroup === "infant" ? "Free" : `$${formatMoney(total)}`}
+                        {ageGroup === "infant" ? "Free" : `$${formatMoney(total)}`}
                       </span>
                     </div>
-                    {member.ageGroup !== "infant" && (
+                    {ageGroup !== "infant" && (
                       <div className="text-xs text-muted-foreground space-y-0.5 mt-1">
                         <div className="flex flex-wrap justify-between gap-x-4 gap-y-1">
-                          <span>Lodging ({member.ageGroup})</span>
+                          <span>Lodging ({ageGroup})</span>
                           <span className="tabular-nums shrink-0">${formatMoney(baseCost)}/person</span>
                         </div>
                         {deductions > 0 && (
@@ -914,9 +820,9 @@ export function AdminCalculatorClient() {
               )}
 
               {/* Summary */}
-              <div className="pt-4 border-t-2 space-y-2">
+              <div className="space-y-2 border-t-2 border-primary/20 pt-4" aria-live="polite" aria-atomic="true">
                 <div className="flex flex-wrap justify-between gap-x-4 gap-y-1 text-sm">
-                  <span>Lodging subtotal ({payingAttendeeCount} paying)</span>
+                  <span>Lodging subtotal ({calculation.payingAttendeeCount} paying)</span>
                   <span className="tabular-nums shrink-0">${formatMoney(calculation.lodging)}</span>
                 </div>
                 {calculation.deductions > 0 && (

@@ -36,6 +36,7 @@ import {
   Clock
 } from "lucide-react"
 import { calculatorCategoryLabel, ratePricingHint } from "@/lib/rate-display"
+import { invalidateCalculatorRates } from "@/lib/calculator-rates-swr"
 
 interface Rate {
   id: number
@@ -131,6 +132,8 @@ export function RatesClient() {
         delete updated[rateId]
         return updated
       })
+
+      await invalidateCalculatorRates()
     } catch (error) {
       console.error("Error saving rate:", error)
     } finally {
