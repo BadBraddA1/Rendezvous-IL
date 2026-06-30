@@ -62,6 +62,12 @@ interface MemberAttendance {
 const fetcher = (url: string) => fetch(url).then(res => res.json())
 
 const NIGHTS = ["mon", "tue", "wed", "thu"] as const
+/** RV and tent site fees are priced per night for the event (Mon–Thu). */
+const MAX_LODGING_NIGHTS = NIGHTS.length
+
+function clampLodgingNights(value: number): number {
+  return Math.min(MAX_LODGING_NIGHTS, Math.max(1, value))
+}
 const MEALS = {
   mon: ["dinner"],
   tue: ["breakfast", "lunch", "dinner"],
@@ -381,11 +387,11 @@ export function AdminCalculatorClient() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
+          <h1 className="text-section-title flex items-center gap-2">
             <Calculator className="h-6 w-6" />
             Rate Calculator
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-lead text-muted-foreground">
             Test all pricing scenarios for {year}
           </p>
         </div>
@@ -394,7 +400,7 @@ export function AdminCalculatorClient() {
           <div className="flex items-center gap-3 px-4 py-2 rounded-lg border bg-card">
             <div className="flex items-center gap-2">
               {statusData?.enabled ? (
-                <Globe className="h-4 w-4 text-green-600" />
+                <Globe className="h-4 w-4 text-success" />
               ) : (
                 <GlobeLock className="h-4 w-4 text-muted-foreground" />
               )}
@@ -417,18 +423,18 @@ export function AdminCalculatorClient() {
               <SelectItem value="2026">2026</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" size="icon" onClick={resetCalculator}>
-            <RefreshCw className="h-4 w-4" />
+          <Button variant="outline" size="icon" onClick={resetCalculator} aria-label="Reset calculator">
+            <RefreshCw className="h-4 w-4" aria-hidden="true" />
           </Button>
         </div>
       </div>
 
       {/* Status Banner */}
       {!statusLoading && (
-        <div className={`p-3 rounded-lg border flex items-center gap-3 ${
-          statusData?.enabled 
-            ? "bg-green-50 border-green-200 text-green-800" 
-            : "bg-amber-50 border-amber-200 text-amber-800"
+        <div className={`flex items-center gap-3 rounded-lg border p-3 ${
+          statusData?.enabled
+            ? "callout-success"
+            : "callout-warning"
         }`}>
           {statusData?.enabled ? (
             <>
@@ -521,24 +527,35 @@ export function AdminCalculatorClient() {
                     <Button
                       variant="outline"
                       size="icon"
-                      onClick={() => setNumNights(Math.max(1, numNights - 1))}
+                      onClick={() => setNumNights(clampLodgingNights(numNights - 1))}
+                      disabled={numNights <= 1}
+                      aria-label="Decrease number of nights"
                     >
-                      <Minus className="h-4 w-4" />
+                      <Minus className="h-4 w-4" aria-hidden="true" />
                     </Button>
                     <Input
                       type="number"
+                      min={1}
+                      max={MAX_LODGING_NIGHTS}
                       value={numNights}
-                      onChange={(e) => setNumNights(Math.max(1, parseInt(e.target.value) || 1))}
+                      onChange={(e) =>
+                        setNumNights(clampLodgingNights(parseInt(e.target.value, 10) || 1))
+                      }
                       className="w-20 text-center"
                     />
                     <Button
                       variant="outline"
                       size="icon"
-                      onClick={() => setNumNights(numNights + 1)}
+                      onClick={() => setNumNights(clampLodgingNights(numNights + 1))}
+                      disabled={numNights >= MAX_LODGING_NIGHTS}
+                      aria-label="Increase number of nights"
                     >
-                      <Plus className="h-4 w-4" />
+                      <Plus className="h-4 w-4" aria-hidden="true" />
                     </Button>
                   </div>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Maximum {MAX_LODGING_NIGHTS} nights (Monday through Thursday).
+                  </p>
                 </div>
               )}
             </CardContent>
@@ -552,7 +569,7 @@ export function AdminCalculatorClient() {
                   <Users className="h-5 w-5" />
                   Family Members
                 </CardTitle>
-                <Button size="sm" onClick={addMember}>
+                <Button size="sm" className="min-h-11" onClick={addMember}>
                   <Plus className="h-4 w-4 mr-1" />
                   Add Person
                 </Button>
@@ -606,8 +623,9 @@ export function AdminCalculatorClient() {
                             variant="ghost"
                             size="icon"
                             onClick={() => removeMember(member.id)}
+                            aria-label={`Remove ${member.name || "family member"}`}
                           >
-                            <Minus className="h-4 w-4" />
+                            <Minus className="h-4 w-4" aria-hidden="true" />
                           </Button>
                         )}
                       </div>
@@ -703,7 +721,7 @@ export function AdminCalculatorClient() {
 
         {/* Results Panel */}
         <div>
-          <Card className="sticky top-24 border-primary/20 bg-gradient-to-br from-primary/5 to-background">
+          <Card className="sticky top-24 border-primary/20 bg-surface-highlight">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <DollarSign className="h-5 w-5" />
@@ -732,13 +750,13 @@ export function AdminCalculatorClient() {
                         <span>${baseCost.toFixed(2)}</span>
                       </div>
                       {deductions > 0 && (
-                        <div className="flex justify-between text-green-600">
+                        <div className="flex justify-between text-success">
                           <span>Deductions</span>
                           <span>-${deductions.toFixed(2)}</span>
                         </div>
                       )}
                       {additions > 0 && (
-                        <div className="flex justify-between text-orange-600">
+                        <div className="flex justify-between text-warning">
                           <span>Meal Additions</span>
                           <span>+${additions.toFixed(2)}</span>
                         </div>
@@ -766,13 +784,13 @@ export function AdminCalculatorClient() {
                   <span>${calculation.lodging.toFixed(2)}</span>
                 </div>
                 {calculation.deductions > 0 && (
-                  <div className="flex justify-between text-sm text-green-600">
+                  <div className="flex justify-between text-sm text-success">
                     <span>Total Deductions</span>
                     <span>-${calculation.deductions.toFixed(2)}</span>
                   </div>
                 )}
                 {calculation.additions > 0 && (
-                  <div className="flex justify-between text-sm text-orange-600">
+                  <div className="flex justify-between text-sm text-warning">
                     <span>Total Additions</span>
                     <span>+${calculation.additions.toFixed(2)}</span>
                   </div>
@@ -785,9 +803,9 @@ export function AdminCalculatorClient() {
                 )}
                 {/* Special Package Applied Notification */}
                 {calculation.packageApplied && (
-                  <div className="flex items-center gap-2 p-2 rounded-md bg-green-50 border border-green-200">
-                    <Sparkles className="h-4 w-4 text-green-600" />
-                    <span className="text-sm font-medium text-green-800">
+                  <div className="flex items-center gap-2 p-2 rounded-md bg-surface-highlight border border-success/30">
+                    <Sparkles className="h-4 w-4 text-success" />
+                    <span className="text-sm font-medium text-success">
                       {calculation.packageApplied === "special_3_9" && "3/9 Package Applied"}
                       {calculation.packageApplied === "special_2_6" && "2/6 Package Applied"}
                       {calculation.packageApplied === "special_1_3" && "1/3 Package Applied"}
@@ -795,8 +813,8 @@ export function AdminCalculatorClient() {
                   </div>
                 )}
                 <div className="flex justify-between items-center pt-2 border-t">
-                  <span className="text-lg font-bold">Total</span>
-                  <span className="text-2xl font-bold text-primary">
+                  <span className="text-subheading">Total</span>
+                  <span className="text-amount text-primary">
                     ${calculation.total.toFixed(2)}
                   </span>
                 </div>
