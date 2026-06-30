@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useCallback } from "react"
+import { useState, useMemo, useCallback, useEffect } from "react"
 import useSWR from "swr"
 import { useUser } from "@clerk/nextjs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -22,6 +22,8 @@ import {
   History,
   Loader2,
   Clock,
+  LogIn,
+  UserPlus,
   type LucideIcon,
 } from "lucide-react"
 import Link from "next/link"
@@ -120,6 +122,20 @@ export function CalculatorClient({ ratesData, initialEnabled }: CalculatorClient
     familyFetcher,
     { revalidateOnFocus: false },
   )
+
+  useEffect(() => {
+    if (familyData?.priorRegistration) {
+      setFamilySeed(familyData.priorRegistration)
+    }
+  }, [familyData?.priorRegistration])
+
+  const calculatorRedirect = "/calculator"
+  const pendingFamilyAutoLoad =
+    authLoaded &&
+    isSignedIn &&
+    isEnabled &&
+    !familySeed &&
+    (familyLoading || Boolean(familyData?.priorRegistration))
 
   const [adults, setAdults] = useState(2)
   const [youth, setYouth] = useState(0)
@@ -312,51 +328,67 @@ export function CalculatorClient({ ratesData, initialEnabled }: CalculatorClient
         <p className="text-lead text-muted-foreground">Estimate your total cost for Rendezvous</p>
       </header>
 
-      {authLoaded && isSignedIn && !familySeed && isEnabled && (
+      {authLoaded && !isSignedIn && isEnabled && (
+        <Card className="mb-6 border-primary/20 bg-primary/5">
+          <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <UserPlus className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+              <div>
+                <p className="font-medium">Returning family? Sign in for a personalized estimate</p>
+                <p className="text-sm text-muted-foreground">
+                  Create a free account or sign in with the email you used last year — we&apos;ll
+                  pre-fill your family, lodging, nights, and meals from your prior registration and
+                  show how {ratesData.year} compares.
+                </p>
+              </div>
+            </div>
+            <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+              <Button asChild>
+                <Link href={`/sign-in?redirect_url=${encodeURIComponent(calculatorRedirect)}`}>
+                  <LogIn className="mr-2 h-4 w-4" aria-hidden="true" />
+                  Sign in
+                </Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link href={`/sign-up?redirect_url=${encodeURIComponent(calculatorRedirect)}`}>
+                  Create account
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {authLoaded && isSignedIn && !familySeed && isEnabled && familyData?.linked === false && (
         <Card className="mb-6 border-primary/20 bg-primary/5">
           <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-start gap-3">
               <History className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
               <div>
-                <p className="font-medium">Signed in — use last year&apos;s plan</p>
+                <p className="font-medium">Link your account to your registration</p>
                 <p className="text-sm text-muted-foreground">
-                  {familyLoading
-                    ? "Looking for your prior registration…"
-                    : familyData?.priorRegistration
-                      ? `Load your Rendezvous ${familyData.priorRegistration.sourceYear} registration to see a ${ratesData.year} estimate and compare totals.`
-                      : familyData?.linked === false
-                        ? "Link your account on the account page to match your registration history."
-                        : "We couldn't find a prior registration for your family email yet. Use the simple calculator below, or register for updates."}
+                  We couldn&apos;t match your sign-in email to a family record yet. Open your account
+                  page to link your profile, then come back for an auto-filled estimate.
                 </p>
               </div>
             </div>
-            {familyData?.priorRegistration && (
-              <Button
-                type="button"
-                className="shrink-0"
-                disabled={familyLoading}
-                onClick={() => setFamilySeed(familyData.priorRegistration ?? null)}
-              >
-                {familyLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Loading…
-                  </>
-                ) : (
-                  `Load ${familyData.priorRegistration.sourceYear} registration`
-                )}
-              </Button>
-            )}
-            {familyData?.linked === false && (
-              <Button asChild variant="outline" className="shrink-0">
-                <Link href="/account">Go to account</Link>
-              </Button>
-            )}
+            <Button asChild variant="outline" className="shrink-0">
+              <Link href="/account">Go to account</Link>
+            </Button>
           </CardContent>
         </Card>
       )}
 
-      {familySeed ? (
+      {pendingFamilyAutoLoad ? (
+        <Card className="mb-6 border-primary/20 bg-primary/5">
+          <CardContent className="flex items-center justify-center gap-3 p-8">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" aria-hidden="true" />
+            <p className="text-sm text-muted-foreground">
+              Looking up your family&apos;s prior registration…
+            </p>
+          </CardContent>
+        </Card>
+      ) : familySeed ? (
         <FamilyEstimatePanel
           seed={familySeed}
           ratesData={ratesData}
