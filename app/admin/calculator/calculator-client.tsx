@@ -37,17 +37,15 @@ import {
 import {
   formatMoney,
   formatSiteFeeLine,
-  formatUnitLine,
 } from "@/lib/rate-display"
 import {
-  driveInEntryDays,
   packageTypeLabel,
 } from "@/lib/rate-lookup"
 import {
   computeAdminCalculatorCost,
-  detectPackageType,
   getAgeGroup,
 } from "@/lib/admin-calculator-cost"
+import { countSelectedMeals } from "@/lib/calculator-meals"
 import {
   useCalculatorRates,
 } from "@/lib/calculator-rates-swr"
@@ -202,8 +200,6 @@ export function AdminCalculatorClient() {
     "2": defaultAttendance(),
   })
 
-  const packageType = detectPackageType(attendance)
-
   const calculation = computeAdminCalculatorCost({
     members,
     attendance,
@@ -222,11 +218,10 @@ export function AdminCalculatorClient() {
     { count: number; unit: number; lineTotal: number }
   >
 
-  for (const { ageGroup, baseCost } of calculation.members) {
+  for (const { ageGroup, total } of calculation.members) {
     ageGroupSummary[ageGroup].count += 1
     if (ageGroup === "infant") continue
-    ageGroupSummary[ageGroup].unit = baseCost
-    ageGroupSummary[ageGroup].lineTotal += baseCost
+    ageGroupSummary[ageGroup].lineTotal += total
   }
 
   // Add a new member
@@ -639,7 +634,7 @@ export function AdminCalculatorClient() {
                     </div>
 
                     {/* Attendance Details */}
-                    {attendance[member.id]?.attending && packageType === "regular" && lodgingType !== "drivein" && (
+                    {attendance[member.id]?.attending && lodgingType !== "drivein" && (
                       <Tabs defaultValue="nights" className="w-full">
                         <TabsList className="grid w-full grid-cols-2">
                           <TabsTrigger value="nights">
@@ -735,7 +730,7 @@ export function AdminCalculatorClient() {
                 Cost Breakdown
               </CardTitle>
               <CardDescription>
-                {year} · {packageTypeLabel(packageType)}
+                {year} · Per-person pricing (nights &amp; meals update each person&apos;s rate)
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -745,19 +740,25 @@ export function AdminCalculatorClient() {
                 <dl className="space-y-1 text-sm">
                   {ageGroupSummary.adult.count > 0 && (
                     <div className="flex flex-wrap justify-between gap-x-4 gap-y-1">
-                      <dt className="min-w-0">{formatUnitLine(ageGroupSummary.adult.count, ageGroupSummary.adult.unit, "per person")}</dt>
+                      <dt className="min-w-0">
+                        {ageGroupSummary.adult.count} adult{ageGroupSummary.adult.count === 1 ? "" : "s"}
+                      </dt>
                       <dd className="tabular-nums shrink-0">${formatMoney(ageGroupSummary.adult.lineTotal)}</dd>
                     </div>
                   )}
                   {ageGroupSummary.youth.count > 0 && (
                     <div className="flex flex-wrap justify-between gap-x-4 gap-y-1">
-                      <dt className="min-w-0">{formatUnitLine(ageGroupSummary.youth.count, ageGroupSummary.youth.unit, "per person")}</dt>
+                      <dt className="min-w-0">
+                        {ageGroupSummary.youth.count} youth
+                      </dt>
                       <dd className="tabular-nums shrink-0">${formatMoney(ageGroupSummary.youth.lineTotal)}</dd>
                     </div>
                   )}
                   {ageGroupSummary.child.count > 0 && (
                     <div className="flex flex-wrap justify-between gap-x-4 gap-y-1">
-                      <dt className="min-w-0">{formatUnitLine(ageGroupSummary.child.count, ageGroupSummary.child.unit, "per person")}</dt>
+                      <dt className="min-w-0">
+                        {ageGroupSummary.child.count} child{ageGroupSummary.child.count === 1 ? "ren" : ""}
+                      </dt>
                       <dd className="tabular-nums shrink-0">${formatMoney(ageGroupSummary.child.lineTotal)}</dd>
                     </div>
                   )}
@@ -776,7 +777,11 @@ export function AdminCalculatorClient() {
                   <Users className="h-4 w-4" />
                   By person
                 </h4>
-                {calculation.members.map(({ member, ageGroup, baseCost, deductions, additions, total }) => (
+                {calculation.members.map(({ member, ageGroup, packageType, baseCost, deductions, additions, total }) => {
+                  const att = attendance[member.id]
+                  const nightCount = att?.nights.length ?? 0
+                  const mealCount = att ? countSelectedMeals(att.meals) : 0
+                  return (
                   <div key={member.id} className="text-sm border-b pb-2 last:border-0">
                     <div className="flex flex-wrap justify-between gap-x-4 gap-y-1 font-medium">
                       <span className="min-w-0">{member.name}</span>
@@ -786,6 +791,14 @@ export function AdminCalculatorClient() {
                     </div>
                     {ageGroup !== "infant" && (
                       <div className="text-xs text-muted-foreground space-y-0.5 mt-1">
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                          <span>{nightCount} night{nightCount === 1 ? "" : "s"} · {mealCount} meal{mealCount === 1 ? "" : "s"}</span>
+                          {packageType !== "regular" && (
+                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                              {packageTypeLabel(packageType)}
+                            </Badge>
+                          )}
+                        </div>
                         <div className="flex flex-wrap justify-between gap-x-4 gap-y-1">
                           <span>Lodging ({ageGroup})</span>
                           <span className="tabular-nums shrink-0">${formatMoney(baseCost)}/person</span>
@@ -802,10 +815,15 @@ export function AdminCalculatorClient() {
                             <span className="tabular-nums shrink-0">+${formatMoney(additions)}</span>
                           </div>
                         )}
+                        <div className="flex flex-wrap justify-between gap-x-4 gap-y-1 font-medium text-foreground/80">
+                          <span>Net for {member.name.split(" ")[0]}</span>
+                          <span className="tabular-nums shrink-0">${formatMoney(total)}/person</span>
+                        </div>
                       </div>
                     )}
                   </div>
-                ))}
+                  )
+                })}
               </div>
 
               {/* Site fee */}
@@ -844,13 +862,11 @@ export function AdminCalculatorClient() {
                   </div>
                 )}
                 {/* Special Package Applied Notification */}
-                {calculation.packageApplied && (
+                {calculation.members.some((m) => m.packageType !== "regular") && (
                   <div className="flex items-center gap-2 p-2 rounded-md bg-surface-highlight border border-success/30">
                     <Sparkles className="h-4 w-4 text-success" />
                     <span className="text-sm font-medium text-success">
-                      {calculation.packageApplied === "special_3_9" && "3/9 Package Applied"}
-                      {calculation.packageApplied === "special_2_6" && "2/6 Package Applied"}
-                      {calculation.packageApplied === "special_1_3" && "1/3 Package Applied"}
+                      Partial-week package rates apply per person when nights/meals match 3/9, 2/6, or 1/3.
                     </span>
                   </div>
                 )}
@@ -867,8 +883,9 @@ export function AdminCalculatorClient() {
                 <div className="flex gap-2 text-xs text-muted-foreground">
                   <Info className="h-4 w-4 flex-shrink-0 mt-0.5" />
                   <p>
-                    This calculator uses the {year} rate chart. Deductions apply for missed
-                    Monday dinner, Friday breakfast, or Friday lunch. Drive-in guests pay per meal.
+                    Each person is priced separately. Unchecking nights removes meals and lowers that
+                    person&apos;s rate via meal deductions, or switches them to a 3/9, 2/6, or 1/3 package
+                    when nights and meals match exactly. Drive-in guests pay per meal.
                   </p>
                 </div>
               </div>

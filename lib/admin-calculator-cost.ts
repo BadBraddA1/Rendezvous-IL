@@ -1,4 +1,8 @@
 import { isPayingAttendeeAge, motelOccupancyFromPayingCount } from "@/lib/motel-occupancy"
+import {
+  computeRegularMealDeductions,
+  countSelectedMeals,
+} from "@/lib/calculator-meals"
 import { createRateGetter, driveInEntryDays, type RateRow } from "@/lib/rate-lookup"
 
 export type LodgingType = "motel" | "rv" | "tent" | "drivein"
@@ -24,17 +28,10 @@ export function getAgeGroup(age: number): AgeGroup {
   return "infant"
 }
 
-export function detectPackageType(
-  memberAttendance: Record<string, MemberAttendance>,
-): PackageType {
-  const firstAttendance = Object.values(memberAttendance).find((a) => a.attending)
-  if (!firstAttendance) return "regular"
-
-  const nightCount = firstAttendance.nights.length
-  const mealCount = Object.values(firstAttendance.meals).reduce(
-    (sum, meals) => sum + meals.length,
-    0,
-  )
+/** Package type for one person's nights + meals (not family-wide). */
+export function detectMemberPackageType(att: MemberAttendance): PackageType {
+  const nightCount = att.nights.length
+  const mealCount = countSelectedMeals(att.meals)
 
   if (nightCount === 3 && mealCount === 9) return "special_3_9"
   if (nightCount === 2 && mealCount === 6) return "special_2_6"
@@ -45,6 +42,7 @@ export function detectPackageType(
 export interface MemberCostLine {
   member: CalculatorMember
   ageGroup: AgeGroup
+  packageType: PackageType
   baseCost: number
   deductions: number
   additions: number
@@ -52,7 +50,6 @@ export interface MemberCostLine {
 }
 
 export interface AdminCalculatorCost {
-  packageType: PackageType
   members: MemberCostLine[]
   lodging: number
   siteFee: number
@@ -60,7 +57,6 @@ export interface AdminCalculatorCost {
   deductions: number
   additions: number
   total: number
-  packageApplied: PackageType | null
   payingAttendeeCount: number
   motelAdultUnit: number
 }
@@ -73,7 +69,6 @@ export function computeAdminCalculatorCost(input: {
   rates: Record<string, RateRow[]> | undefined
 }): AdminCalculatorCost {
   const empty: AdminCalculatorCost = {
-    packageType: "regular",
     members: [],
     lodging: 0,
     siteFee: 0,
@@ -81,7 +76,6 @@ export function computeAdminCalculatorCost(input: {
     deductions: 0,
     additions: 0,
     total: 0,
-    packageApplied: null,
     payingAttendeeCount: 0,
     motelAdultUnit: 0,
   }
@@ -89,22 +83,22 @@ export function computeAdminCalculatorCost(input: {
   if (!input.rates) return empty
 
   const getRate = createRateGetter(input.rates)
-  const packageType = detectPackageType(input.attendance)
   const attendingMembers = input.members.filter((member) => input.attendance[member.id]?.attending)
   const payingAttendeeCount = attendingMembers.filter((member) =>
     isPayingAttendeeAge(member.age),
   ).length
   const occupancyType = motelOccupancyFromPayingCount(payingAttendeeCount)
-  const rateCategory = packageType === "regular" ? input.lodgingType : packageType
 
   const motelAdultUnit =
     input.lodgingType === "motel"
-      ? getRate(rateCategory, `motel_${occupancyType}_adult`)
+      ? getRate(input.lodgingType, `motel_${occupancyType}_adult`)
       : 0
 
   const memberCosts: MemberCostLine[] = attendingMembers.map((member) => {
     const att = input.attendance[member.id]
     const ageGroup = getAgeGroup(member.age)
+    const packageType = detectMemberPackageType(att)
+    const rateCategory = packageType === "regular" ? input.lodgingType : packageType
     let baseCost = 0
     let deductions = 0
     let additions = 0
@@ -126,16 +120,9 @@ export function computeAdminCalculatorCost(input: {
         baseCost = getRate("drivein", `drivein_${ageGroup}`) * entryDays
       }
 
+      // Regular 4/12: deduct every standard meal this person is not taking
       if (packageType === "regular" && input.lodgingType !== "drivein") {
-        if (!att.nights.includes("mon") || !att.meals.mon?.includes("dinner")) {
-          deductions += Math.abs(getRate("deduction", `monday_dinner_${ageGroup}`))
-        }
-        if (!att.meals.fri?.includes("breakfast")) {
-          deductions += Math.abs(getRate("deduction", `friday_breakfast_${ageGroup}`))
-        }
-        if (!att.meals.fri?.includes("lunch")) {
-          deductions += Math.abs(getRate("deduction", `friday_lunch_${ageGroup}`))
-        }
+        deductions = computeRegularMealDeductions(att.meals, ageGroup, getRate)
       }
 
       if (input.lodgingType === "drivein") {
@@ -150,6 +137,7 @@ export function computeAdminCalculatorCost(input: {
     return {
       member,
       ageGroup,
+      packageType,
       baseCost,
       deductions,
       additions,
@@ -172,7 +160,6 @@ export function computeAdminCalculatorCost(input: {
   const additions = memberCosts.reduce((sum, line) => sum + line.additions, 0)
 
   return {
-    packageType,
     members: memberCosts,
     lodging,
     siteFee,
@@ -180,7 +167,6 @@ export function computeAdminCalculatorCost(input: {
     deductions,
     additions,
     total: lodging - deductions + additions + siteFee,
-    packageApplied: packageType !== "regular" ? packageType : null,
     payingAttendeeCount,
     motelAdultUnit,
   }
