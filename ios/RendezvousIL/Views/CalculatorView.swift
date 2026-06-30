@@ -35,11 +35,29 @@ struct CalculatorView: View {
 
             Section("Estimated total") {
                 if let breakdown = calculation {
-                    LabeledContent("Adults", value: formatMoney(breakdown.adults))
-                    LabeledContent("Youth", value: formatMoney(breakdown.youth))
-                    LabeledContent("Children", value: formatMoney(breakdown.children))
+                    if adults > 0 {
+                        LabeledContent(
+                            unitLine(count: adults, unit: breakdown.adultUnit),
+                            value: formatMoney(breakdown.adults)
+                        )
+                    }
+                    if youth > 0 {
+                        LabeledContent(
+                            unitLine(count: youth, unit: breakdown.youthUnit),
+                            value: formatMoney(breakdown.youth)
+                        )
+                    }
+                    if children > 0 {
+                        LabeledContent(
+                            unitLine(count: children, unit: breakdown.childUnit),
+                            value: formatMoney(breakdown.children)
+                        )
+                    }
                     if breakdown.siteFee > 0 {
-                        LabeledContent("Site fee", value: formatMoney(breakdown.siteFee))
+                        LabeledContent(
+                            siteFeeLine(nights: nights, nightlyRate: breakdown.siteNightRate),
+                            value: formatMoney(breakdown.siteFee)
+                        )
                     }
                     if let fee = repository.rates?.registrationFee, fee > 0 {
                         LabeledContent("Registration", value: formatMoney(fee))
@@ -80,6 +98,15 @@ struct CalculatorView: View {
     private func formatMoney(_ value: Double) -> String {
         String(format: "$%.2f", value)
     }
+
+    private func unitLine(count: Int, unit: Double) -> String {
+        "\(count) × \(formatMoney(unit)) per person"
+    }
+
+    private func siteFeeLine(nights: Int, nightlyRate: Double) -> String {
+        let nightLabel = nights == 1 ? "night" : "nights"
+        return "\(formatMoney(nightlyRate))/night × \(nights) \(nightLabel) (per site)"
+    }
 }
 
 enum LodgingType: String, CaseIterable, Identifiable {
@@ -101,7 +128,11 @@ struct CostBreakdown {
     let adults: Double
     let youth: Double
     let children: Double
+    let adultUnit: Double
+    let youthUnit: Double
+    let childUnit: Double
     let siteFee: Double
+    let siteNightRate: Double
     let total: Double
 }
 
@@ -133,44 +164,64 @@ enum CostCalculator {
         var adultCost = 0.0
         var youthCost = 0.0
         var childCost = 0.0
+        var adultUnit = 0.0
+        var youthUnit = 0.0
+        var childUnit = 0.0
         var siteFee = 0.0
+        var siteNightRate = 0.0
 
         switch lodging {
         case .motel:
-            adultCost = Double(adults) * amount(category: "motel", nameContains: "motel_\(occupancy)_adult")
-            youthCost = Double(youth) * amount(category: "motel", nameContains: "motel_youth")
-            childCost = Double(children) * amount(category: "motel", nameContains: "motel_child")
+            adultUnit = amount(category: "motel", nameContains: "motel_\(occupancy)_adult")
+            youthUnit = amount(category: "motel", nameContains: "motel_youth")
+            childUnit = amount(category: "motel", nameContains: "motel_child")
+            adultCost = Double(adults) * adultUnit
+            youthCost = Double(youth) * youthUnit
+            childCost = Double(children) * childUnit
         case .rv:
-            adultCost = Double(adults) * amount(category: "rv", nameContains: "rv_adult")
-            youthCost = Double(youth) * amount(category: "rv", nameContains: "rv_youth")
-            childCost = Double(children) * amount(category: "rv", nameContains: "rv_child")
-            siteFee = amount(category: "rv", nameContains: "rv_site")
+            adultUnit = amount(category: "rv", nameContains: "rv_adult")
+            youthUnit = amount(category: "rv", nameContains: "rv_youth")
+            childUnit = amount(category: "rv", nameContains: "rv_child")
+            adultCost = Double(adults) * adultUnit
+            youthCost = Double(youth) * youthUnit
+            childCost = Double(children) * childUnit
         case .tent:
-            adultCost = Double(adults) * amount(category: "tent", nameContains: "tent_adult")
-            youthCost = Double(youth) * amount(category: "tent", nameContains: "tent_youth")
-            childCost = Double(children) * amount(category: "tent", nameContains: "tent_child")
-            siteFee = amount(category: "tent", nameContains: "tent_site")
+            adultUnit = amount(category: "tent", nameContains: "tent_adult")
+            youthUnit = amount(category: "tent", nameContains: "tent_youth")
+            childUnit = amount(category: "tent", nameContains: "tent_child")
+            adultCost = Double(adults) * adultUnit
+            youthCost = Double(youth) * youthUnit
+            childCost = Double(children) * childUnit
         case .drivein:
             let days = 5.0
-            adultCost = Double(adults) * amount(category: "drivein", nameContains: "drivein_adult") * days
-            youthCost = Double(youth) * amount(category: "drivein", nameContains: "drivein_youth") * days
-            childCost = Double(children) * amount(category: "drivein", nameContains: "drivein_child") * days
-            adultCost += Double(adults) * driveInMeals(age: "adult", rates: rates)
-            youthCost += Double(youth) * driveInMeals(age: "youth", rates: rates)
-            childCost += Double(children) * driveInMeals(age: "child", rates: rates)
+            let adultEntry = amount(category: "drivein", nameContains: "drivein_adult") * days
+            let youthEntry = amount(category: "drivein", nameContains: "drivein_youth") * days
+            let childEntry = amount(category: "drivein", nameContains: "drivein_child") * days
+            adultUnit = adultEntry + driveInMeals(age: "adult", rates: rates)
+            youthUnit = youthEntry + driveInMeals(age: "youth", rates: rates)
+            childUnit = childEntry + driveInMeals(age: "child", rates: rates)
+            adultCost = Double(adults) * adultUnit
+            youthCost = Double(youth) * youthUnit
+            childCost = Double(children) * childUnit
         }
 
         if lodging == .rv {
-            siteFee = amount(category: "rv", nameContains: "rv_site_night") * Double(nights)
+            siteNightRate = amount(category: "rv", nameContains: "rv_site_night")
+            siteFee = siteNightRate * Double(nights)
         } else if lodging == .tent {
-            siteFee = amount(category: "tent", nameContains: "tent_site_night") * Double(nights)
+            siteNightRate = amount(category: "tent", nameContains: "tent_site_night")
+            siteFee = siteNightRate * Double(nights)
         }
 
         return CostBreakdown(
             adults: adultCost,
             youth: youthCost,
             children: childCost,
+            adultUnit: adultUnit,
+            youthUnit: youthUnit,
+            childUnit: childUnit,
             siteFee: siteFee,
+            siteNightRate: siteNightRate,
             total: adultCost + youthCost + childCost + siteFee
         )
     }

@@ -35,6 +35,10 @@ import {
   motelOccupancyFromPayingCount,
   payingAttendeeLabel,
 } from "@/lib/motel-occupancy"
+import {
+  formatMoney,
+  formatSiteFeeLine,
+} from "@/lib/rate-display"
 
 interface Rate {
   id: number
@@ -271,7 +275,7 @@ export function AdminCalculatorClient() {
   // Calculate costs
   const calculation = useMemo(() => {
     if (!ratesData?.rates) {
-      return { members: [], lodging: 0, siteFee: 0, deductions: 0, additions: 0, total: 0, packageApplied: null }
+      return { members: [], lodging: 0, siteFee: 0, siteNightRate: 0, deductions: 0, additions: 0, total: 0, packageApplied: null }
     }
 
     const attendingMembers = members.filter(m => attendance[m.id]?.attending)
@@ -339,10 +343,13 @@ export function AdminCalculatorClient() {
 
     // Site fees (for RV and Tent)
     let siteFee = 0
+    let siteNightRate = 0
     if (lodgingType === "rv") {
-      siteFee = getRate("rv", "rv_site_night") * numNights
+      siteNightRate = getRate("rv", "rv_site_night")
+      siteFee = siteNightRate * numNights
     } else if (lodgingType === "tent") {
-      siteFee = getRate("tent", "tent_site_night") * numNights
+      siteNightRate = getRate("tent", "tent_site_night")
+      siteFee = siteNightRate * numNights
     }
 
     const totalLodging = memberCosts.reduce((sum, m) => sum + m.baseCost, 0)
@@ -354,6 +361,7 @@ export function AdminCalculatorClient() {
       members: memberCosts,
       lodging: totalLodging,
       siteFee,
+      siteNightRate,
       deductions: totalDeductions,
       additions: totalAdditions,
       total: grandTotal,
@@ -751,23 +759,23 @@ export function AdminCalculatorClient() {
                   <div key={member.id} className="text-sm border-b pb-2 last:border-0">
                     <div className="flex justify-between font-medium">
                       <span>{member.name}</span>
-                      <span>${total.toFixed(2)}</span>
+                      <span>${formatMoney(total)}</span>
                     </div>
                     <div className="text-xs text-muted-foreground space-y-0.5 mt-1">
                       <div className="flex justify-between">
-                        <span>Base ({member.ageGroup})</span>
-                        <span>${baseCost.toFixed(2)}</span>
+                        <span>Lodging ({member.ageGroup})</span>
+                        <span>${formatMoney(baseCost)}/person</span>
                       </div>
                       {deductions > 0 && (
                         <div className="flex justify-between text-success">
-                          <span>Deductions</span>
-                          <span>-${deductions.toFixed(2)}</span>
+                          <span>Meal deductions</span>
+                          <span>-${formatMoney(deductions)}</span>
                         </div>
                       )}
                       {additions > 0 && (
                         <div className="flex justify-between text-warning">
-                          <span>Meal Additions</span>
-                          <span>+${additions.toFixed(2)}</span>
+                          <span>Meal additions</span>
+                          <span>+${formatMoney(additions)}</span>
                         </div>
                       )}
                     </div>
@@ -780,8 +788,8 @@ export function AdminCalculatorClient() {
                 <div className="space-y-2">
                   <h4 className="font-semibold text-sm">Site Fee</h4>
                   <div className="flex justify-between text-sm">
-                    <span>{lodgingType === "rv" ? "RV" : "Tent"} Site ({numNights} nights)</span>
-                    <span>${calculation.siteFee.toFixed(2)}</span>
+                    <span>{formatSiteFeeLine(numNights, calculation.siteNightRate)}</span>
+                    <span>${formatMoney(calculation.siteFee)}</span>
                   </div>
                 </div>
               )}
@@ -789,25 +797,25 @@ export function AdminCalculatorClient() {
               {/* Summary */}
               <div className="pt-4 border-t-2 space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span>Lodging Subtotal</span>
-                  <span>${calculation.lodging.toFixed(2)}</span>
+                  <span>Lodging subtotal ({calculation.members.length} people)</span>
+                  <span>${formatMoney(calculation.lodging)}</span>
                 </div>
                 {calculation.deductions > 0 && (
                   <div className="flex justify-between text-sm text-success">
-                    <span>Total Deductions</span>
-                    <span>-${calculation.deductions.toFixed(2)}</span>
+                    <span>Total deductions</span>
+                    <span>-${formatMoney(calculation.deductions)}</span>
                   </div>
                 )}
                 {calculation.additions > 0 && (
                   <div className="flex justify-between text-sm text-warning">
-                    <span>Total Additions</span>
-                    <span>+${calculation.additions.toFixed(2)}</span>
+                    <span>Total additions</span>
+                    <span>+${formatMoney(calculation.additions)}</span>
                   </div>
                 )}
                 {calculation.siteFee > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span>Site Fee</span>
-                    <span>${calculation.siteFee.toFixed(2)}</span>
+                    <span>Site fee</span>
+                    <span>${formatMoney(calculation.siteFee)}</span>
                   </div>
                 )}
                 {/* Special Package Applied Notification */}
@@ -824,7 +832,7 @@ export function AdminCalculatorClient() {
                 <div className="flex justify-between items-center pt-2 border-t">
                   <span className="text-subheading">Total</span>
                   <span className="text-amount text-primary">
-                    ${calculation.total.toFixed(2)}
+                    ${formatMoney(calculation.total)}
                   </span>
                 </div>
               </div>

@@ -26,6 +26,11 @@ import {
   motelOccupancyFromPayingCount,
   payingAttendeeLabel,
 } from "@/lib/motel-occupancy"
+import {
+  formatMoney,
+  formatSiteFeeLine,
+  formatUnitLine,
+} from "@/lib/rate-display"
 
 interface Rate {
   id: number
@@ -54,10 +59,6 @@ const lodgingOptions = [
 
 type LodgingType = (typeof lodgingOptions)[number]["value"]
 
-function formatMoney(amount: number) {
-  return amount.toFixed(2)
-}
-
 export function CalculatorClient({ ratesData }: CalculatorClientProps) {
   const [adults, setAdults] = useState(2)
   const [youth, setYouth] = useState(0)
@@ -85,60 +86,86 @@ export function CalculatorClient({ ratesData }: CalculatorClientProps) {
 
   const simpleCalculation = useMemo(() => {
     if (!ratesData?.rates) {
-      return { adults: 0, youth: 0, children: 0, infants: 0, siteFee: 0, total: 0 }
+      return {
+        adults: 0,
+        youth: 0,
+        children: 0,
+        infants: 0,
+        siteFee: 0,
+        total: 0,
+        adultUnit: 0,
+        youthUnit: 0,
+        childUnit: 0,
+        siteNightRate: 0,
+      }
     }
 
     const rateCategory = lodgingType
 
+    let adultUnit = 0
+    let youthUnit = 0
+    let childUnit = 0
     let adultCost = 0
     let youthCost = 0
     let childCost = 0
     const infantCost = 0
 
     if (lodgingType === "motel") {
-      adultCost = adults * getRate(rateCategory, `motel_${occupancyType}_adult`)
-      youthCost = youth * getRate(rateCategory, "motel_youth")
-      childCost = children * getRate(rateCategory, "motel_child")
+      adultUnit = getRate(rateCategory, `motel_${occupancyType}_adult`)
+      youthUnit = getRate(rateCategory, "motel_youth")
+      childUnit = getRate(rateCategory, "motel_child")
+      adultCost = adults * adultUnit
+      youthCost = youth * youthUnit
+      childCost = children * childUnit
     } else if (lodgingType === "rv") {
-      adultCost = adults * getRate(rateCategory, "rv_adult")
-      youthCost = youth * getRate(rateCategory, "rv_youth")
-      childCost = children * getRate(rateCategory, "rv_child")
+      adultUnit = getRate(rateCategory, "rv_adult")
+      youthUnit = getRate(rateCategory, "rv_youth")
+      childUnit = getRate(rateCategory, "rv_child")
+      adultCost = adults * adultUnit
+      youthCost = youth * youthUnit
+      childCost = children * childUnit
     } else if (lodgingType === "tent") {
-      adultCost = adults * getRate(rateCategory, "tent_adult")
-      youthCost = youth * getRate(rateCategory, "tent_youth")
-      childCost = children * getRate(rateCategory, "tent_child")
+      adultUnit = getRate(rateCategory, "tent_adult")
+      youthUnit = getRate(rateCategory, "tent_youth")
+      childUnit = getRate(rateCategory, "tent_child")
+      adultCost = adults * adultUnit
+      youthCost = youth * youthUnit
+      childCost = children * childUnit
     } else if (lodgingType === "drivein") {
       const daysCount = 5
-      const adultEntry = adults * getRate("drivein", "drivein_adult") * daysCount
-      const youthEntry = youth * getRate("drivein", "drivein_youth") * daysCount
-      const childEntry = children * getRate("drivein", "drivein_child") * daysCount
+      const adultEntry = getRate("drivein", "drivein_adult") * daysCount
+      const youthEntry = getRate("drivein", "drivein_youth") * daysCount
+      const childEntry = getRate("drivein", "drivein_child") * daysCount
 
       const adultMeals =
-        adults *
-        (getRate("meal_addition", "breakfast_adult") * 4 +
-          getRate("meal_addition", "lunch_adult") * 5 +
-          getRate("meal_addition", "dinner_adult") * 4)
+        getRate("meal_addition", "breakfast_adult") * 4 +
+        getRate("meal_addition", "lunch_adult") * 5 +
+        getRate("meal_addition", "dinner_adult") * 4
       const youthMeals =
-        youth *
-        (getRate("meal_addition", "breakfast_youth") * 4 +
-          getRate("meal_addition", "lunch_youth") * 5 +
-          getRate("meal_addition", "dinner_youth") * 4)
+        getRate("meal_addition", "breakfast_youth") * 4 +
+        getRate("meal_addition", "lunch_youth") * 5 +
+        getRate("meal_addition", "dinner_youth") * 4
       const childMeals =
-        children *
-        (getRate("meal_addition", "breakfast_child") * 4 +
-          getRate("meal_addition", "lunch_child") * 5 +
-          getRate("meal_addition", "dinner_child") * 4)
+        getRate("meal_addition", "breakfast_child") * 4 +
+        getRate("meal_addition", "lunch_child") * 5 +
+        getRate("meal_addition", "dinner_child") * 4
 
-      adultCost = adultEntry + adultMeals
-      youthCost = youthEntry + youthMeals
-      childCost = childEntry + childMeals
+      adultUnit = adultEntry + adultMeals
+      youthUnit = youthEntry + youthMeals
+      childUnit = childEntry + childMeals
+      adultCost = adults * adultUnit
+      youthCost = youth * youthUnit
+      childCost = children * childUnit
     }
 
     let siteFee = 0
+    let siteNightRate = 0
     if (lodgingType === "rv") {
-      siteFee = getRate("rv", "rv_site_night") * numNights
+      siteNightRate = getRate("rv", "rv_site_night")
+      siteFee = siteNightRate * numNights
     } else if (lodgingType === "tent") {
-      siteFee = getRate("tent", "tent_site_night") * numNights
+      siteNightRate = getRate("tent", "tent_site_night")
+      siteFee = siteNightRate * numNights
     }
 
     return {
@@ -148,6 +175,10 @@ export function CalculatorClient({ ratesData }: CalculatorClientProps) {
       infants: infantCost,
       siteFee,
       total: adultCost + youthCost + childCost + siteFee,
+      adultUnit,
+      youthUnit,
+      childUnit,
+      siteNightRate,
     }
   }, [adults, youth, children, lodgingType, occupancyType, numNights, ratesData, getRate])
 
@@ -223,8 +254,8 @@ export function CalculatorClient({ ratesData }: CalculatorClientProps) {
                       </span>
                     </div>
                     <div className="text-right tabular-nums">
-                      <span className="font-semibold">${getRate("motel", `motel_${occupancyType}_adult`)}</span>
-                      <span className="text-sm text-muted-foreground">/adult</span>
+                      <span className="font-semibold">${formatMoney(simpleCalculation.adultUnit)}</span>
+                      <span className="text-sm text-muted-foreground">/person</span>
                     </div>
                   </div>
                   <p className="mt-2 text-xs text-muted-foreground">
@@ -313,23 +344,19 @@ export function CalculatorClient({ ratesData }: CalculatorClientProps) {
                 <dl className="space-y-1 text-sm">
                   {adults > 0 && (
                     <div className="flex justify-between gap-4">
-                      <dt>
-                        {adults} adult{adults > 1 ? "s" : ""}
-                      </dt>
+                      <dt>{formatUnitLine(adults, simpleCalculation.adultUnit)}</dt>
                       <dd className="tabular-nums">${formatMoney(simpleCalculation.adults)}</dd>
                     </div>
                   )}
                   {youth > 0 && (
                     <div className="flex justify-between gap-4">
-                      <dt>{youth} youth (12–17)</dt>
+                      <dt>{formatUnitLine(youth, simpleCalculation.youthUnit)}</dt>
                       <dd className="tabular-nums">${formatMoney(simpleCalculation.youth)}</dd>
                     </div>
                   )}
                   {children > 0 && (
                     <div className="flex justify-between gap-4">
-                      <dt>
-                        {children} child{children > 1 ? "ren" : ""} (6–11)
-                      </dt>
+                      <dt>{formatUnitLine(children, simpleCalculation.childUnit)}</dt>
                       <dd className="tabular-nums">${formatMoney(simpleCalculation.children)}</dd>
                     </div>
                   )}
@@ -345,7 +372,7 @@ export function CalculatorClient({ ratesData }: CalculatorClientProps) {
                 {simpleCalculation.siteFee > 0 && (
                   <div className="border-t border-primary/15 pt-2">
                     <div className="flex justify-between gap-4 text-sm">
-                      <span>Site fee ({numNights} nights)</span>
+                      <span>{formatSiteFeeLine(numNights, simpleCalculation.siteNightRate)}</span>
                       <span className="tabular-nums">${formatMoney(simpleCalculation.siteFee)}</span>
                     </div>
                   </div>

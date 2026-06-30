@@ -35,6 +35,7 @@ import {
   Calendar,
   Clock
 } from "lucide-react"
+import { calculatorCategoryLabel, ratePricingHint } from "@/lib/rate-display"
 
 interface Rate {
   id: number
@@ -57,18 +58,19 @@ interface RateChart {
 
 const categoryIcons: Record<string, typeof DollarSign> = {
   registration: Calendar,
+  motel: Home,
+  rv: Home,
+  tent: Tent,
+  drivein: Home,
+  deduction: DollarSign,
+  meal_addition: DollarSign,
+  special_3_9: Star,
+  special_2_6: Star,
+  special_1_3: Star,
   lodging: Users,
   site_fee: Home,
   extra: Star,
   other: DollarSign,
-}
-
-const categoryLabels: Record<string, string> = {
-  registration: "Registration Fees",
-  lodging: "Lodging Rates (Per Person)",
-  site_fee: "Site Fees",
-  extra: "Extras",
-  other: "Other Fees",
 }
 
 export function RatesClient() {
@@ -228,8 +230,8 @@ export function RatesClient() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Rate Charts</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-section-title text-balance">Rate Charts</h1>
+          <p className="text-lead text-muted-foreground">
             Manage pricing for registrations and calculator
           </p>
         </div>
@@ -276,7 +278,7 @@ export function RatesClient() {
               </div>
             </div>
             {error && (
-              <div className="text-sm text-red-500 bg-red-50 p-2 rounded">
+              <div className="callout-destructive rounded-md p-2 text-sm">
                 {error}
               </div>
             )}
@@ -320,9 +322,9 @@ export function RatesClient() {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <CardTitle className="text-2xl">{chart.year}</CardTitle>
+                    <CardTitle className="text-amount tabular-nums">{chart.year}</CardTitle>
                     {chart.is_active && (
-                      <Badge className="bg-green-500/10 text-green-600 border-green-500/20">
+                      <Badge className="border border-success/20 bg-surface-highlight text-success">
                         <CheckCircle className="h-3 w-3 mr-1" />
                         Active
                       </Badge>
@@ -331,7 +333,7 @@ export function RatesClient() {
                   {!chart.is_active && (
                     <Button 
                       variant="outline" 
-                      size="sm"
+                      className="min-h-11"
                       onClick={() => handleSetActive(chart.year)}
                     >
                       Set as Active
@@ -377,7 +379,7 @@ export function RatesClient() {
                     <div key={category} className="space-y-3">
                       <h4 className="font-semibold flex items-center gap-2">
                         <Icon className="h-4 w-4" />
-                        {categoryLabels[category] || category}
+                        {calculatorCategoryLabel(category)}
                       </h4>
                       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                         {rates.map((rate) => {
@@ -393,11 +395,9 @@ export function RatesClient() {
                                 <p className="font-medium text-sm truncate">
                                   {rate.label}
                                 </p>
-                                {rate.description && (
-                                  <p className="text-xs text-muted-foreground truncate">
-                                    {rate.description}
-                                  </p>
-                                )}
+                                <p className="text-xs text-muted-foreground truncate">
+                                  {rate.description || ratePricingHint(rate)}
+                                </p>
                               </div>
                               <div className="flex items-center gap-2">
                                 <div className="relative">
@@ -410,21 +410,21 @@ export function RatesClient() {
                                       ...prev,
                                       [rate.id]: e.target.value
                                     }))}
-                                    className="w-24 pl-6 h-8 text-sm"
+                                    className="w-24 pl-6"
                                   />
                                 </div>
                                 {isEdited && (
                                   <Button
-                                    size="sm"
+                                    size="icon"
                                     variant="ghost"
-                                    className="h-8 w-8 p-0"
                                     onClick={() => handleSaveRate(rate.id)}
                                     disabled={saving === rate.id}
+                                    aria-label={`Save ${rate.label} rate`}
                                   >
                                     {saving === rate.id ? (
-                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                      <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
                                     ) : (
-                                      <Save className="h-4 w-4" />
+                                      <Save className="h-4 w-4" aria-hidden="true" />
                                     )}
                                   </Button>
                                 )}
