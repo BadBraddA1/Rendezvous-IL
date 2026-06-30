@@ -38,7 +38,14 @@ import {
 import {
   formatMoney,
   formatSiteFeeLine,
+  formatUnitLine,
 } from "@/lib/rate-display"
+import {
+  createRateGetter,
+  driveInEntryDays,
+  packageTypeLabel,
+} from "@/lib/rate-lookup"
+import { AdminRetryButton } from "@/components/admin/admin-panel-states"
 
 interface Rate {
   id: number
@@ -68,7 +75,14 @@ interface MemberAttendance {
   meals: Record<string, string[]>
 }
 
-const fetcher = (url: string) => fetch(url).then(res => res.json())
+const fetcher = async (url: string) => {
+  const res = await fetch(url)
+  const data = await res.json()
+  if (!res.ok) {
+    throw new Error(typeof data.error === "string" ? data.error : "Failed to load calculator data")
+  }
+  return data
+}
 
 const NIGHTS = ["mon", "tue", "wed", "thu"] as const
 /** RV and tent site fees are priced per night for the event (Mon–Thu). */
@@ -107,7 +121,7 @@ function getAgeGroup(age: number): "adult" | "youth" | "child" | "infant" {
 
 export function AdminCalculatorClient() {
   const [year, setYear] = useState("2027")
-  const { data: ratesData, isLoading } = useSWR<RatesData>(
+  const { data: ratesData, error: ratesError, isLoading, mutate: reloadRates } = useSWR<RatesData>(
     `/api/admin/calculator?year=${year}`,
     fetcher
   )
@@ -170,11 +184,11 @@ export function AdminCalculatorClient() {
   })
 
   // Helper to get rate amount by category and name pattern
-  const getRate = useCallback((category: string, namePattern: string): number => {
-    if (!ratesData?.rates?.[category]) return 0
-    const rate = ratesData.rates[category].find(r => r.name.includes(namePattern))
-    return rate ? parseFloat(rate.amount) : 0
-  }, [ratesData])
+  const getRate = useCallback(
+    (category: string, namePattern: string) =>
+      createRateGetter(ratesData?.rates)(category, namePattern),
+    [ratesData],
+  )
 
   // Add a new member
   const addMember = () => {
@@ -288,48 +302,52 @@ export function AdminCalculatorClient() {
       let baseCost = 0
       let deductions = 0
       let additions = 0
+      const isInfant = member.ageGroup === "infant" || !isPayingAttendeeAge(member.age)
 
       // Determine which rate category to use
       const rateCategory = packageType === "regular" ? lodgingType : packageType
 
-      // Get base lodging rate
-      if (lodgingType === "motel") {
-        if (member.ageGroup === "adult") {
-          baseCost = getRate(rateCategory, `motel_${occupancyType}_adult`)
-        } else {
-          baseCost = getRate(rateCategory, `motel_${member.ageGroup}`)
+      if (!isInfant) {
+        // Get base lodging rate (all amounts are per person)
+        if (lodgingType === "motel") {
+          if (member.ageGroup === "adult") {
+            baseCost = getRate(rateCategory, `motel_${occupancyType}_adult`)
+          } else {
+            baseCost = getRate(rateCategory, `motel_${member.ageGroup}`)
+          }
+        } else if (lodgingType === "rv") {
+          baseCost = getRate(rateCategory, `rv_${member.ageGroup}`)
+        } else if (lodgingType === "tent") {
+          baseCost = getRate(rateCategory, `tent_${member.ageGroup}`)
+        } else if (lodgingType === "drivein") {
+          const entryDays = driveInEntryDays(att.meals)
+          baseCost = getRate("drivein", `drivein_${member.ageGroup}`) * entryDays
         }
-      } else if (lodgingType === "rv") {
-        baseCost = getRate(rateCategory, `rv_${member.ageGroup}`)
-      } else if (lodgingType === "tent") {
-        baseCost = getRate(rateCategory, `tent_${member.ageGroup}`)
-      } else if (lodgingType === "drivein") {
-        baseCost = getRate("drivein", `drivein_${member.ageGroup}`)
-      }
 
-      // For regular package, calculate deductions for missed meals (special packages have fixed prices)
-      if (packageType === "regular" && lodgingType !== "drivein") {
-        // Monday dinner deduction
-        if (!att.nights.includes("mon") || !att.meals.mon?.includes("dinner")) {
-          deductions += Math.abs(getRate("deduction", `monday_dinner_${member.ageGroup}`))
+        // For regular package, calculate deductions for missed meals (special packages have fixed prices)
+        if (packageType === "regular" && lodgingType !== "drivein") {
+          // Monday dinner deduction
+          if (!att.nights.includes("mon") || !att.meals.mon?.includes("dinner")) {
+            deductions += Math.abs(getRate("deduction", `monday_dinner_${member.ageGroup}`))
+          }
+          // Friday breakfast deduction
+          if (!att.meals.fri?.includes("breakfast")) {
+            deductions += Math.abs(getRate("deduction", `friday_breakfast_${member.ageGroup}`))
+          }
+          // Friday lunch deduction
+          if (!att.meals.fri?.includes("lunch")) {
+            deductions += Math.abs(getRate("deduction", `friday_lunch_${member.ageGroup}`))
+          }
         }
-        // Friday breakfast deduction  
-        if (!att.meals.fri?.includes("breakfast")) {
-          deductions += Math.abs(getRate("deduction", `friday_breakfast_${member.ageGroup}`))
-        }
-        // Friday lunch deduction
-        if (!att.meals.fri?.includes("lunch")) {
-          deductions += Math.abs(getRate("deduction", `friday_lunch_${member.ageGroup}`))
-        }
-      }
 
-      // Drive-in meal additions
-      if (lodgingType === "drivein") {
-        Object.entries(att.meals).forEach(([day, meals]) => {
-          meals.forEach(meal => {
-            additions += getRate("meal_addition", `${meal}_${member.ageGroup}`)
+        // Drive-in meal additions (per meal, per person)
+        if (lodgingType === "drivein") {
+          Object.entries(att.meals).forEach(([, meals]) => {
+            meals.forEach(meal => {
+              additions += getRate("meal_addition", `${meal}_${member.ageGroup}`)
+            })
           })
-        })
+        }
       }
 
       return {
@@ -369,6 +387,41 @@ export function AdminCalculatorClient() {
     }
   }, [members, attendance, lodgingType, numNights, ratesData, getRate, packageType])
 
+  const ageGroupSummary = useMemo(() => {
+    type Row = { count: number; unit: number; lineTotal: number }
+    const summary: Record<"adult" | "youth" | "child" | "infant", Row> = {
+      adult: { count: 0, unit: 0, lineTotal: 0 },
+      youth: { count: 0, unit: 0, lineTotal: 0 },
+      child: { count: 0, unit: 0, lineTotal: 0 },
+      infant: { count: 0, unit: 0, lineTotal: 0 },
+    }
+
+    for (const { member, baseCost } of calculation.members) {
+      const group = summary[member.ageGroup]
+      group.count += 1
+      if (member.ageGroup === "infant") continue
+      group.unit = baseCost
+      group.lineTotal += baseCost
+    }
+
+    return summary
+  }, [calculation.members])
+
+  const payingAttendeeCount = useMemo(
+    () =>
+      members.filter(
+        (member) => isPayingAttendeeAge(member.age) && attendance[member.id]?.attending,
+      ).length,
+    [members, attendance],
+  )
+
+  const motelAdultUnit = useMemo(() => {
+    if (!ratesData?.rates || lodgingType !== "motel") return 0
+    const rateCategory = packageType === "regular" ? lodgingType : packageType
+    const occupancy = motelOccupancyFromPayingCount(payingAttendeeCount)
+    return getRate(rateCategory, `motel_${occupancy}_adult`)
+  }, [ratesData, lodgingType, packageType, payingAttendeeCount, getRate])
+
   // Reset to defaults
   const resetCalculator = () => {
     setLodgingType("motel")
@@ -391,10 +444,34 @@ export function AdminCalculatorClient() {
     )
   }
 
+  if (ratesError || !ratesData?.rates) {
+    return (
+      <div className="space-y-4">
+        <header className="admin-page-header">
+          <h1 className="text-section-title flex items-center gap-2">
+            <Calculator className="h-6 w-6" />
+            Rate Calculator
+          </h1>
+        </header>
+        <Card className="callout-destructive border-destructive/30">
+          <CardHeader>
+            <CardTitle className="text-subheading">Could not load {year} rates</CardTitle>
+            <CardDescription>
+              {ratesError?.message || `No rate chart found for ${year}. Create one under Admin → Rates.`}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <AdminRetryButton onRetry={() => reloadRates()} />
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <header className="admin-page-header space-y-4">
         <div>
           <h1 className="text-section-title flex items-center gap-2">
             <Calculator className="h-6 w-6" />
@@ -404,16 +481,15 @@ export function AdminCalculatorClient() {
             Test all pricing scenarios for {year}
           </p>
         </div>
-        <div className="flex items-center gap-4">
-          {/* Public Calculator Toggle */}
-          <div className="flex items-center gap-3 px-4 py-2 rounded-lg border bg-card">
+        <div className="admin-toolbar">
+          <div className="flex items-center gap-3 rounded-lg border bg-card px-4 py-2 admin-toolbar-action">
             <div className="flex items-center gap-2">
               {statusData?.enabled ? (
                 <Globe className="h-4 w-4 text-success" />
               ) : (
                 <GlobeLock className="h-4 w-4 text-muted-foreground" />
               )}
-              <span className="text-sm font-medium">Public Calculator</span>
+              <span className="text-sm font-medium">Public calculator</span>
             </div>
             <Switch
               checked={statusData?.enabled || false}
@@ -422,9 +498,9 @@ export function AdminCalculatorClient() {
             />
             {isTogglingStatus && <Loader2 className="h-4 w-4 animate-spin" />}
           </div>
-          
+
           <Select value={year} onValueChange={setYear}>
-            <SelectTrigger className="w-[120px]">
+            <SelectTrigger className="admin-toolbar-action w-full sm:w-[120px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -432,11 +508,17 @@ export function AdminCalculatorClient() {
               <SelectItem value="2026">2026</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" size="icon" onClick={resetCalculator} aria-label="Reset calculator">
+          <Button
+            variant="outline"
+            size="icon"
+            className="admin-toolbar-action shrink-0"
+            onClick={resetCalculator}
+            aria-label="Reset calculator"
+          >
             <RefreshCw className="h-4 w-4" aria-hidden="true" />
           </Button>
         </div>
-      </div>
+      </header>
 
       {/* Status Banner */}
       {!statusLoading && (
@@ -511,24 +593,26 @@ export function AdminCalculatorClient() {
               {lodgingType === "motel" && (
                 <div className="pt-4 border-t">
                   <Label className="text-sm font-medium mb-2 block">Room Occupancy</Label>
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                    <div className="flex-1">
+                  <div className="flex flex-wrap items-center gap-3 p-3 rounded-lg bg-muted/50">
+                    <div className="min-w-0 flex-1">
                       {(() => {
-                        const payingAttendees = members.filter(
-                          (member) =>
-                            isPayingAttendeeAge(member.age) && attendance[member.id]?.attending,
-                        ).length
-                        const occupancyType = motelOccupancyFromPayingCount(payingAttendees)
+                        const occupancyType = motelOccupancyFromPayingCount(payingAttendeeCount)
                         return (
                           <>
                             <span className="font-medium capitalize">{occupancyType}</span>
                             <span className="text-muted-foreground ml-1">
-                              ({payingAttendeeLabel(payingAttendees)})
+                              ({payingAttendeeLabel(payingAttendeeCount)})
                             </span>
                           </>
                         )
                       })()}
                     </div>
+                    {motelAdultUnit > 0 && (
+                      <div className="text-right tabular-nums">
+                        <span className="font-semibold">${formatMoney(motelAdultUnit)}</span>
+                        <span className="text-sm text-muted-foreground">/person (adult)</span>
+                      </div>
+                    )}
                   </div>
                   <p className="text-xs text-muted-foreground mt-2">
                     Occupancy is based on paying attendees (age 6+), not adults only. Infants do not
@@ -596,15 +680,15 @@ export function AdminCalculatorClient() {
               <div className="space-y-4">
                 {members.map((member) => (
                   <div key={member.id} className="border rounded-lg p-4 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4 flex-1">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
                         <Input
                           value={member.name}
                           onChange={(e) => updateMember(member.id, { name: e.target.value })}
-                          className="max-w-[200px]"
+                          className="w-full sm:max-w-[200px]"
                         />
                         <div className="flex items-center gap-2">
-                          <Label className="text-sm text-muted-foreground">Age:</Label>
+                          <Label className="text-sm text-muted-foreground shrink-0">Age:</Label>
                           <Input
                             type="number"
                             value={member.age}
@@ -613,13 +697,13 @@ export function AdminCalculatorClient() {
                             min={0}
                           />
                         </div>
-                        <Badge variant="secondary">
+                        <Badge variant="secondary" className="w-fit">
                           {member.ageGroup === "adult" ? "Adult (18+)" :
                            member.ageGroup === "youth" ? "Youth (12-17)" :
                            member.ageGroup === "child" ? "Child (6-11)" : "Infant (0-5)"}
                         </Badge>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center justify-between gap-2 sm:justify-end">
                         <div className="flex items-center gap-2">
                           <Checkbox
                             id={`attending-${member.id}`}
@@ -737,68 +821,103 @@ export function AdminCalculatorClient() {
         </div>
 
         {/* Results Panel */}
-        <div>
-          <Card className="sticky top-24 border-primary/20 bg-surface-highlight">
+        <div className="min-w-0">
+          <Card className="site-sticky-top border-primary/20 bg-surface-highlight lg:sticky">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <DollarSign className="h-5 w-5" />
                 Cost Breakdown
               </CardTitle>
               <CardDescription>
-                {year} • {packageType === "regular" ? "Regular 4/12" : packageType.replace("_", "/").toUpperCase()}
+                {year} · {packageTypeLabel(packageType)}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Per-member breakdown */}
+              {/* Per age group summary */}
               <div className="space-y-2">
+                <h4 className="font-semibold text-sm">Lodging (per person)</h4>
+                <dl className="space-y-1 text-sm">
+                  {ageGroupSummary.adult.count > 0 && (
+                    <div className="flex flex-wrap justify-between gap-x-4 gap-y-1">
+                      <dt className="min-w-0">{formatUnitLine(ageGroupSummary.adult.count, ageGroupSummary.adult.unit, "per person")}</dt>
+                      <dd className="tabular-nums shrink-0">${formatMoney(ageGroupSummary.adult.lineTotal)}</dd>
+                    </div>
+                  )}
+                  {ageGroupSummary.youth.count > 0 && (
+                    <div className="flex flex-wrap justify-between gap-x-4 gap-y-1">
+                      <dt className="min-w-0">{formatUnitLine(ageGroupSummary.youth.count, ageGroupSummary.youth.unit, "per person")}</dt>
+                      <dd className="tabular-nums shrink-0">${formatMoney(ageGroupSummary.youth.lineTotal)}</dd>
+                    </div>
+                  )}
+                  {ageGroupSummary.child.count > 0 && (
+                    <div className="flex flex-wrap justify-between gap-x-4 gap-y-1">
+                      <dt className="min-w-0">{formatUnitLine(ageGroupSummary.child.count, ageGroupSummary.child.unit, "per person")}</dt>
+                      <dd className="tabular-nums shrink-0">${formatMoney(ageGroupSummary.child.lineTotal)}</dd>
+                    </div>
+                  )}
+                  {ageGroupSummary.infant.count > 0 && (
+                    <div className="flex flex-wrap justify-between gap-x-4 gap-y-1 text-muted-foreground">
+                      <dt>{ageGroupSummary.infant.count} infant{ageGroupSummary.infant.count === 1 ? "" : "s"} (0–5)</dt>
+                      <dd>Free</dd>
+                    </div>
+                  )}
+                </dl>
+              </div>
+
+              {/* Per-member breakdown */}
+              <div className="space-y-2 border-t pt-3">
                 <h4 className="font-semibold text-sm flex items-center gap-2">
                   <Users className="h-4 w-4" />
-                  Per Person
+                  By person
                 </h4>
                 {calculation.members.map(({ member, baseCost, deductions, additions, total }) => (
                   <div key={member.id} className="text-sm border-b pb-2 last:border-0">
-                    <div className="flex justify-between font-medium">
-                      <span>{member.name}</span>
-                      <span>${formatMoney(total)}</span>
+                    <div className="flex flex-wrap justify-between gap-x-4 gap-y-1 font-medium">
+                      <span className="min-w-0">{member.name}</span>
+                      <span className="tabular-nums shrink-0">
+                        {member.ageGroup === "infant" ? "Free" : `$${formatMoney(total)}`}
+                      </span>
                     </div>
-                    <div className="text-xs text-muted-foreground space-y-0.5 mt-1">
-                      <div className="flex justify-between">
-                        <span>Lodging ({member.ageGroup})</span>
-                        <span>${formatMoney(baseCost)}/person</span>
+                    {member.ageGroup !== "infant" && (
+                      <div className="text-xs text-muted-foreground space-y-0.5 mt-1">
+                        <div className="flex flex-wrap justify-between gap-x-4 gap-y-1">
+                          <span>Lodging ({member.ageGroup})</span>
+                          <span className="tabular-nums shrink-0">${formatMoney(baseCost)}/person</span>
+                        </div>
+                        {deductions > 0 && (
+                          <div className="flex flex-wrap justify-between gap-x-4 gap-y-1 text-success">
+                            <span>Meal deductions</span>
+                            <span className="tabular-nums shrink-0">-${formatMoney(deductions)}</span>
+                          </div>
+                        )}
+                        {additions > 0 && (
+                          <div className="flex flex-wrap justify-between gap-x-4 gap-y-1 text-warning">
+                            <span>Meal additions</span>
+                            <span className="tabular-nums shrink-0">+${formatMoney(additions)}</span>
+                          </div>
+                        )}
                       </div>
-                      {deductions > 0 && (
-                        <div className="flex justify-between text-success">
-                          <span>Meal deductions</span>
-                          <span>-${formatMoney(deductions)}</span>
-                        </div>
-                      )}
-                      {additions > 0 && (
-                        <div className="flex justify-between text-warning">
-                          <span>Meal additions</span>
-                          <span>+${formatMoney(additions)}</span>
-                        </div>
-                      )}
-                    </div>
+                    )}
                   </div>
                 ))}
               </div>
 
               {/* Site fee */}
               {calculation.siteFee > 0 && (
-                <div className="space-y-2">
-                  <h4 className="font-semibold text-sm">Site Fee</h4>
-                  <div className="flex justify-between text-sm">
-                    <span>{formatSiteFeeLine(numNights, calculation.siteNightRate)}</span>
-                    <span>${formatMoney(calculation.siteFee)}</span>
+                <div className="space-y-2 border-t pt-3">
+                  <h4 className="font-semibold text-sm">Site fee (per site)</h4>
+                  <div className="flex flex-wrap justify-between gap-x-4 gap-y-1 text-sm">
+                    <span className="min-w-0">{formatSiteFeeLine(numNights, calculation.siteNightRate)}</span>
+                    <span className="tabular-nums shrink-0">${formatMoney(calculation.siteFee)}</span>
                   </div>
                 </div>
               )}
 
               {/* Summary */}
               <div className="pt-4 border-t-2 space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Lodging subtotal ({calculation.members.length} people)</span>
-                  <span>${formatMoney(calculation.lodging)}</span>
+                <div className="flex flex-wrap justify-between gap-x-4 gap-y-1 text-sm">
+                  <span>Lodging subtotal ({payingAttendeeCount} paying)</span>
+                  <span className="tabular-nums shrink-0">${formatMoney(calculation.lodging)}</span>
                 </div>
                 {calculation.deductions > 0 && (
                   <div className="flex justify-between text-sm text-success">
