@@ -21,6 +21,11 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
+import {
+  countPayingAttendees,
+  motelOccupancyFromPayingCount,
+  payingAttendeeLabel,
+} from "@/lib/motel-occupancy"
 
 interface Rate {
   id: number
@@ -62,12 +67,12 @@ export function CalculatorClient({ ratesData }: CalculatorClientProps) {
 
   const numNights = 4
 
-  const occupancyType = useMemo((): "single" | "double" | "triple" | "quad" => {
-    if (adults === 1) return "single"
-    if (adults === 2) return "double"
-    if (adults === 3) return "triple"
-    return "quad"
-  }, [adults])
+  const payingCount = countPayingAttendees({ adults, youth, children })
+
+  const occupancyType = useMemo(
+    () => motelOccupancyFromPayingCount(payingCount),
+    [payingCount],
+  )
 
   const getRate = useCallback(
     (category: string, namePattern: string): number => {
@@ -185,7 +190,7 @@ export function CalculatorClient({ ratesData }: CalculatorClientProps) {
         <div className="space-y-6 lg:col-span-2">
           <Card className="border-primary/15">
             <CardHeader>
-              <CardTitle className="font-display flex items-center gap-2 text-lg">
+              <CardTitle className="flex items-center gap-2 text-widget-heading">
                 <Home className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
                 Lodging type
               </CardTitle>
@@ -214,7 +219,7 @@ export function CalculatorClient({ ratesData }: CalculatorClientProps) {
                     <div className="flex-1">
                       <span className="font-medium capitalize">{occupancyType}</span>
                       <span className="ml-1 text-muted-foreground">
-                        ({adults} {adults === 1 ? "adult" : "adults"})
+                        ({payingAttendeeLabel(payingCount)})
                       </span>
                     </div>
                     <div className="text-right tabular-nums">
@@ -223,7 +228,8 @@ export function CalculatorClient({ ratesData }: CalculatorClientProps) {
                     </div>
                   </div>
                   <p className="mt-2 text-xs text-muted-foreground">
-                    Occupancy is set automatically from the number of adults
+                    Occupancy is based on paying attendees (adults, youth, and children age 6+). Infants
+                    are free and do not count.
                   </p>
                 </div>
               )}
@@ -260,7 +266,7 @@ export function CalculatorClient({ ratesData }: CalculatorClientProps) {
 
           <Card className="border-primary/15">
             <CardHeader>
-              <CardTitle className="font-display flex items-center gap-2 text-lg">
+              <CardTitle className="flex items-center gap-2 text-widget-heading">
                 <Users className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
                 Family members
               </CardTitle>
@@ -290,10 +296,10 @@ export function CalculatorClient({ ratesData }: CalculatorClientProps) {
           </Card>
         </div>
 
-        <div className="lg:sticky lg:top-[calc(5.5rem+env(safe-area-inset-top,0px))]">
+        <div className="site-sticky-top lg:sticky">
           <Card className="border-primary/15 bg-surface-highlight">
             <CardHeader>
-              <CardTitle className="font-display flex items-center gap-2 text-lg">
+              <CardTitle className="flex items-center gap-2 text-widget-heading">
                 <Calculator className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
                 Cost estimate
               </CardTitle>
@@ -348,8 +354,8 @@ export function CalculatorClient({ ratesData }: CalculatorClientProps) {
 
               <div className="border-t-2 border-primary/20 pt-4" aria-live="polite" aria-atomic="true">
                 <div className="flex items-center justify-between gap-4">
-                  <span className="text-lg font-bold">Estimated total</span>
-                  <span className="font-display text-2xl font-bold text-primary tabular-nums">
+                  <span className="text-subheading">Estimated total</span>
+                  <span className="text-amount text-primary tabular-nums">
                     ${formatMoney(simpleCalculation.total)}
                   </span>
                 </div>

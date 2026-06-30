@@ -30,6 +30,11 @@ import {
 } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
 import useSWR, { mutate } from "swr"
+import {
+  isPayingAttendeeAge,
+  motelOccupancyFromPayingCount,
+  payingAttendeeLabel,
+} from "@/lib/motel-occupancy"
 
 interface Rate {
   id: number
@@ -271,12 +276,8 @@ export function AdminCalculatorClient() {
 
     const attendingMembers = members.filter(m => attendance[m.id]?.attending)
     
-    // Auto-calculate occupancy based on attending adults
-    const attendingAdults = attendingMembers.filter(m => m.ageGroup === "adult").length
-    const occupancyType: "single" | "double" | "triple" | "quad" = 
-      attendingAdults === 1 ? "single" : 
-      attendingAdults === 2 ? "double" : 
-      attendingAdults === 3 ? "triple" : "quad"
+    const payingAttendees = attendingMembers.filter(m => isPayingAttendeeAge(m.age)).length
+    const occupancyType = motelOccupancyFromPayingCount(payingAttendees)
     
     const memberCosts = attendingMembers.map(member => {
       const att = attendance[member.id]
@@ -504,18 +505,26 @@ export function AdminCalculatorClient() {
                   <Label className="text-sm font-medium mb-2 block">Room Occupancy</Label>
                   <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
                     <div className="flex-1">
-                      <span className="font-medium capitalize">{calculation.members.length > 0 ? (
-                        members.filter(m => m.ageGroup === "adult" && attendance[m.id]?.attending).length === 1 ? "single" :
-                        members.filter(m => m.ageGroup === "adult" && attendance[m.id]?.attending).length === 2 ? "double" :
-                        members.filter(m => m.ageGroup === "adult" && attendance[m.id]?.attending).length === 3 ? "triple" : "quad"
-                      ) : "double"}</span>
-                      <span className="text-muted-foreground ml-1">
-                        ({members.filter(m => m.ageGroup === "adult" && attendance[m.id]?.attending).length} {members.filter(m => m.ageGroup === "adult" && attendance[m.id]?.attending).length === 1 ? "adult" : "adults"})
-                      </span>
+                      {(() => {
+                        const payingAttendees = members.filter(
+                          (member) =>
+                            isPayingAttendeeAge(member.age) && attendance[member.id]?.attending,
+                        ).length
+                        const occupancyType = motelOccupancyFromPayingCount(payingAttendees)
+                        return (
+                          <>
+                            <span className="font-medium capitalize">{occupancyType}</span>
+                            <span className="text-muted-foreground ml-1">
+                              ({payingAttendeeLabel(payingAttendees)})
+                            </span>
+                          </>
+                        )
+                      })()}
                     </div>
                   </div>
                   <p className="text-xs text-muted-foreground mt-2">
-                    Occupancy is automatically set based on attending adults
+                    Occupancy is based on paying attendees (age 6+), not adults only. Infants do not
+                    count.
                   </p>
                 </div>
               )}
