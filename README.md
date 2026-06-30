@@ -59,7 +59,7 @@ pnpm db:verify
 - Admin roles: `admin`, `editor`, `viewer`, and **`checkin`** (check-in station only — web + iOS). Permissions live in `lib/clerk-auth.ts` (`getAdminPermissions`).
 - **`/admin/audit`** — expandable activity feed: search, date range, action filters, before/after field changes, and summary stats (`GET /api/admin/audit?action=&from=&limit=`).
 - **Registration previews** (`/admin`) — toggles for admin test registration (`/registration-test2026`) and express registration preview (`/account/express-registration`); stored in `app_settings`.
-- **Rate calculator** (`/calculator`, `/admin/calculator`, `/admin/rates`) — lodging line items are **per person** (breakdown shows `count × unit`); RV/tent **site fees** are per site per night. Motel room occupancy is from paying attendees age 6+ (`lib/motel-occupancy.ts`). Admin calculator prices **each person from their own nights/meals**: missed standard meals deduct via `lib/calculator-meals.ts`; exact 3/9, 2/6, or 1/3 night+meal combos use special package rates (`lib/admin-calculator-cost.ts`).
+- **Rate calculator** (`/calculator`, `/admin/calculator`, `/admin/rates`) — lodging line items are **per person**; RV/tent **site fees** use one-tap night buttons (per site). Admin calculator has **package presets** (full week, 3/9, 2/6, 1/3), tap-to-toggle night chips, optional meal grid, and **same schedule for whole family** toggle (`lib/calculator-schedule.ts`, `components/admin/calculator-schedule-picker.tsx`).
 - API: `GET/PUT /api/family/profile`, `POST/DELETE /api/family/members`
 
 ## Family directory (`/directory`)

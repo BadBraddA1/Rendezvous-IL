@@ -5,15 +5,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { 
-  Calculator, 
-  Users, 
-  Home, 
+import {
+  Calculator,
+  Users,
+  Home,
   Tent,
   Truck,
   Car,
@@ -22,34 +20,27 @@ import {
   Minus,
   RefreshCw,
   Info,
-  Calendar,
-  Sparkles,
   Globe,
   GlobeLock,
-  Loader2
+  Loader2,
 } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
 import useSWR, { mutate } from "swr"
+import { payingAttendeeLabel, motelOccupancyFromPayingCount } from "@/lib/motel-occupancy"
+import { formatMoney, formatSiteFeeLine } from "@/lib/rate-display"
+import { packageTypeLabel } from "@/lib/rate-lookup"
+import { computeAdminCalculatorCost, getAgeGroup } from "@/lib/admin-calculator-cost"
 import {
-  payingAttendeeLabel,
-  motelOccupancyFromPayingCount,
-} from "@/lib/motel-occupancy"
-import {
-  formatMoney,
-  formatSiteFeeLine,
-} from "@/lib/rate-display"
-import {
-  packageTypeLabel,
-} from "@/lib/rate-lookup"
-import {
-  computeAdminCalculatorCost,
-  getAgeGroup,
-} from "@/lib/admin-calculator-cost"
+  fullWeekAttendance,
+  LODGING_NIGHTS,
+  type MemberAttendance,
+} from "@/lib/calculator-schedule"
 import { countSelectedMeals } from "@/lib/calculator-meals"
-import {
-  useCalculatorRates,
-} from "@/lib/calculator-rates-swr"
+import { useCalculatorRates } from "@/lib/calculator-rates-swr"
 import { AdminRetryButton } from "@/components/admin/admin-panel-states"
+import { CalculatorSchedulePicker } from "@/components/admin/calculator-schedule-picker"
+import { CalculatorSiteNights } from "@/components/admin/calculator-site-nights"
+import { cn } from "@/lib/utils"
 
 interface Rate {
   id: number
@@ -72,12 +63,6 @@ interface FamilyMember {
   age: number
 }
 
-interface MemberAttendance {
-  attending: boolean
-  nights: string[]
-  meals: Record<string, string[]>
-}
-
 const fetcher = async (url: string) => {
   const res = await fetch(url, { cache: "no-store" })
   const data = await res.json()
@@ -87,55 +72,14 @@ const fetcher = async (url: string) => {
   return data
 }
 
-const DEFAULT_MEALS: MemberAttendance["meals"] = {
-  mon: ["dinner"],
-  tue: ["breakfast", "lunch", "dinner"],
-  wed: ["breakfast", "lunch", "dinner"],
-  thu: ["breakfast", "lunch", "dinner"],
-  fri: ["breakfast", "lunch"],
-}
+const MAX_LODGING_NIGHTS = LODGING_NIGHTS.length
 
-function defaultAttendance(): MemberAttendance {
-  return {
-    attending: true,
-    nights: [...NIGHTS],
-    meals: {
-      mon: [...DEFAULT_MEALS.mon],
-      tue: [...DEFAULT_MEALS.tue],
-      wed: [...DEFAULT_MEALS.wed],
-      thu: [...DEFAULT_MEALS.thu],
-      fri: [...DEFAULT_MEALS.fri],
-    },
-  }
-}
-
-const NIGHTS = ["mon", "tue", "wed", "thu"] as const
-/** RV and tent site fees are priced per night for the event (Mon–Thu). */
-const MAX_LODGING_NIGHTS = NIGHTS.length
-
-function clampLodgingNights(value: number): number {
-  return Math.min(MAX_LODGING_NIGHTS, Math.max(1, value))
-}
-const MEALS = {
-  mon: ["dinner"],
-  tue: ["breakfast", "lunch", "dinner"],
-  wed: ["breakfast", "lunch", "dinner"],
-  thu: ["breakfast", "lunch", "dinner"],
-  fri: ["breakfast", "lunch"],
-} as const
-
-const NIGHT_LABELS: Record<string, string> = {
-  mon: "Monday",
-  tue: "Tuesday",
-  wed: "Wednesday",
-  thu: "Thursday",
-}
-
-const MEAL_LABELS: Record<string, string> = {
-  breakfast: "Breakfast",
-  lunch: "Lunch",
-  dinner: "Dinner",
-}
+const LODGING_OPTIONS = [
+  { value: "motel" as const, label: "Motel", icon: Home },
+  { value: "rv" as const, label: "RV", icon: Truck },
+  { value: "tent" as const, label: "Tent", icon: Tent },
+  { value: "drivein" as const, label: "Drive-in", icon: Car },
+]
 
 function ageGroupLabel(ageGroup: ReturnType<typeof getAgeGroup>): string {
   switch (ageGroup) {
@@ -184,21 +128,40 @@ export function AdminCalculatorClient() {
     }
   }
 
-  // Lodging configuration
   const [lodgingType, setLodgingType] = useState<"motel" | "rv" | "tent" | "drivein">("motel")
   const [numNights, setNumNights] = useState(4)
+  const [sameScheduleForAll, setSameScheduleForAll] = useState(true)
 
-  // Family members for testing
   const [members, setMembers] = useState<FamilyMember[]>([
     { id: "1", name: "Adult 1", age: 35 },
     { id: "2", name: "Adult 2", age: 33 },
   ])
 
-  // Attendance tracking per member
   const [attendance, setAttendance] = useState<Record<string, MemberAttendance>>({
-    "1": defaultAttendance(),
-    "2": defaultAttendance(),
+    "1": fullWeekAttendance(),
+    "2": fullWeekAttendance(),
   })
+
+  const scheduleLeadMemberId =
+    members.find((m) => attendance[m.id]?.attending)?.id ?? members[0]?.id
+
+  const setMemberAttendance = (memberId: string, next: MemberAttendance) => {
+    setAttendance((prev) => {
+      if (!sameScheduleForAll) {
+        return { ...prev, [memberId]: next }
+      }
+      const updated = { ...prev }
+      for (const member of members) {
+        const current = updated[member.id]
+        if (!current?.attending) continue
+        updated[member.id] = {
+          ...next,
+          attending: current.attending,
+        }
+      }
+      return updated
+    })
+  }
 
   const calculation = computeAdminCalculatorCost({
     members,
@@ -233,7 +196,7 @@ export function AdminCalculatorClient() {
     ])
     setAttendance((prev) => ({
       ...prev,
-      [newId]: defaultAttendance(),
+      [newId]: fullWeekAttendance(),
     }))
   }
 
@@ -257,67 +220,17 @@ export function AdminCalculatorClient() {
     )
   }
 
-  // Toggle night attendance
-  const toggleNight = (memberId: string, night: string) => {
-    setAttendance((prev) => {
-      const memberAtt = prev[memberId]
-      if (!memberAtt) return prev
-
-      const nights = memberAtt.nights.includes(night)
-        ? memberAtt.nights.filter((n) => n !== night)
-        : [...memberAtt.nights, night]
-
-      const meals = { ...memberAtt.meals }
-      if (!nights.includes(night)) {
-        delete meals[night]
-        const nextDay = NIGHTS[NIGHTS.indexOf(night as (typeof NIGHTS)[number]) + 1]
-        if (nextDay && meals[nextDay]) {
-          meals[nextDay] = meals[nextDay].filter((m) => m !== "breakfast")
-        }
-      } else {
-        const mealKey = night as keyof typeof MEALS
-        meals[night] = mealKey in MEALS ? [...MEALS[mealKey]] : []
-      }
-
-      return {
-        ...prev,
-        [memberId]: { ...memberAtt, nights, meals },
-      }
-    })
-  }
-
-  // Toggle meal
-  const toggleMeal = (memberId: string, day: string, meal: string) => {
-    setAttendance((prev) => {
-      const memberAtt = prev[memberId]
-      if (!memberAtt) return prev
-
-      const dayMeals = memberAtt.meals[day] || []
-      const newDayMeals = dayMeals.includes(meal)
-        ? dayMeals.filter((m) => m !== meal)
-        : [...dayMeals, meal]
-
-      return {
-        ...prev,
-        [memberId]: {
-          ...memberAtt,
-          meals: { ...memberAtt.meals, [day]: newDayMeals },
-        },
-      }
-    })
-  }
-
-  // Reset to defaults
   const resetCalculator = () => {
     setLodgingType("motel")
     setNumNights(4)
+    setSameScheduleForAll(true)
     setMembers([
       { id: "1", name: "Adult 1", age: 35 },
       { id: "2", name: "Adult 2", age: 33 },
     ])
     setAttendance({
-      "1": defaultAttendance(),
-      "2": defaultAttendance(),
+      "1": fullWeekAttendance(),
+      "2": fullWeekAttendance(),
     })
   }
 
@@ -449,44 +362,29 @@ export function AdminCalculatorClient() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Home className="h-5 w-5" />
-                Lodging Type
+                Lodging
               </CardTitle>
+              <CardDescription>Tap a lodging type — RV and tent include site nights below.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <RadioGroup
-                value={lodgingType}
-                onValueChange={(v) => setLodgingType(v as typeof lodgingType)}
-                className="grid grid-cols-2 md:grid-cols-4 gap-4"
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="motel" id="motel" />
-                  <Label htmlFor="motel" className="flex items-center gap-2 cursor-pointer">
-                    <Home className="h-4 w-4" />
-                    Motel
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="rv" id="rv" />
-                  <Label htmlFor="rv" className="flex items-center gap-2 cursor-pointer">
-                    <Truck className="h-4 w-4" />
-                    RV
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="tent" id="tent" />
-                  <Label htmlFor="tent" className="flex items-center gap-2 cursor-pointer">
-                    <Tent className="h-4 w-4" />
-                    Tent
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="drivein" id="drivein" />
-                  <Label htmlFor="drivein" className="flex items-center gap-2 cursor-pointer">
-                    <Car className="h-4 w-4" />
-                    Drive-In
-                  </Label>
-                </div>
-              </RadioGroup>
+              <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+                {LODGING_OPTIONS.map(({ value, label, icon: Icon }) => (
+                  <Button
+                    key={value}
+                    type="button"
+                    variant={lodgingType === value ? "default" : "outline"}
+                    className={cn(
+                      "h-auto min-h-11 flex-col gap-1 py-3",
+                      lodgingType === value && "shadow-sm",
+                    )}
+                    onClick={() => setLodgingType(value)}
+                    aria-pressed={lodgingType === value}
+                  >
+                    <Icon className="h-5 w-5" aria-hidden="true" />
+                    <span>{label}</span>
+                  </Button>
+                ))}
+              </div>
 
               {lodgingType === "motel" && (
                 <div className="pt-4 border-t">
@@ -522,95 +420,118 @@ export function AdminCalculatorClient() {
               )}
 
               {(lodgingType === "rv" || lodgingType === "tent") && (
-                <div className="pt-4 border-t">
-                  <Label className="text-sm font-medium mb-2 block">Number of Nights</Label>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => setNumNights(clampLodgingNights(numNights - 1))}
-                      disabled={numNights <= 1}
-                      aria-label="Decrease number of nights"
-                    >
-                      <Minus className="h-4 w-4" aria-hidden="true" />
-                    </Button>
-                    <Input
-                      type="number"
-                      min={1}
-                      max={MAX_LODGING_NIGHTS}
-                      value={numNights}
-                      onChange={(e) =>
-                        setNumNights(clampLodgingNights(parseInt(e.target.value, 10) || 1))
-                      }
-                      className="w-20 text-center"
-                    />
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => setNumNights(clampLodgingNights(numNights + 1))}
-                      disabled={numNights >= MAX_LODGING_NIGHTS}
-                      aria-label="Increase number of nights"
-                    >
-                      <Plus className="h-4 w-4" aria-hidden="true" />
-                    </Button>
-                  </div>
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    Maximum {MAX_LODGING_NIGHTS} nights (Monday through Thursday).
-                  </p>
+                <div className="border-t pt-4">
+                  <CalculatorSiteNights
+                    value={numNights}
+                    max={MAX_LODGING_NIGHTS}
+                    onChange={setNumNights}
+                  />
                 </div>
               )}
             </CardContent>
           </Card>
 
-          {/* Family Members */}
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  Family Members
-                </CardTitle>
-                <Button size="sm" className="min-h-11" onClick={addMember}>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    Family
+                  </CardTitle>
+                  <CardDescription className="mt-1">
+                    Set ages, then pick one schedule for everyone or customize per person.
+                  </CardDescription>
+                </div>
+                <Button size="sm" className="min-h-11 shrink-0" onClick={addMember}>
                   <Plus className="h-4 w-4 mr-1" />
-                  Add Person
+                  Add person
                 </Button>
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {members.map((member) => (
-                  <div key={member.id} className="border rounded-lg p-4 space-y-4">
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
+            <CardContent className="space-y-4">
+              {members.filter((m) => attendance[m.id]?.attending).length > 1 && (
+                <div className="flex items-center justify-between gap-3 rounded-lg border bg-card px-3 py-2">
+                  <Label htmlFor="same-schedule" className="text-sm font-medium cursor-pointer">
+                    Same schedule for whole family
+                  </Label>
+                  <Switch
+                    id="same-schedule"
+                    checked={sameScheduleForAll}
+                    onCheckedChange={setSameScheduleForAll}
+                  />
+                </div>
+              )}
+
+              {sameScheduleForAll &&
+                scheduleLeadMemberId &&
+                attendance[scheduleLeadMemberId]?.attending && (
+                  <CalculatorSchedulePicker
+                    attendance={attendance[scheduleLeadMemberId]}
+                    onChange={(next) => setMemberAttendance(scheduleLeadMemberId, next)}
+                    driveIn={lodgingType === "drivein"}
+                  />
+                )}
+
+              <div className="space-y-3">
+                {members.map((member) => {
+                  const memberAtt = attendance[member.id]
+                  const showOwnSchedule = memberAtt?.attending && !sameScheduleForAll
+
+                  return (
+                  <div key={member.id} className="rounded-lg border p-3 space-y-3">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex min-w-0 flex-wrap items-center gap-2">
                         <Input
                           value={member.name}
                           onChange={(e) => updateMember(member.id, { name: e.target.value })}
-                          className="w-full sm:max-w-[200px]"
+                          className="h-11 w-full max-w-[9rem]"
+                          aria-label="Name"
                         />
-                        <div className="flex items-center gap-2">
-                          <Label className="text-sm text-muted-foreground shrink-0">Age:</Label>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-11 w-11 shrink-0"
+                            onClick={() => updateMember(member.id, { age: Math.max(0, member.age - 1) })}
+                            aria-label="Decrease age"
+                          >
+                            <Minus className="h-4 w-4" />
+                          </Button>
                           <Input
                             type="number"
                             value={member.age}
-                            onChange={(e) => updateMember(member.id, { age: parseInt(e.target.value) || 0 })}
-                            className="w-20"
+                            onChange={(e) =>
+                              updateMember(member.id, { age: parseInt(e.target.value, 10) || 0 })
+                            }
+                            className="h-11 w-14 text-center tabular-nums px-1"
                             min={0}
+                            aria-label="Age"
                           />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-11 w-11 shrink-0"
+                            onClick={() => updateMember(member.id, { age: member.age + 1 })}
+                            aria-label="Increase age"
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
                         </div>
-                        <Badge variant="secondary" className="w-fit">
-                          {ageGroupLabel(getAgeGroup(member.age))}
-                        </Badge>
+                        <Badge variant="secondary">{ageGroupLabel(getAgeGroup(member.age))}</Badge>
                       </div>
                       <div className="flex items-center justify-between gap-2 sm:justify-end">
                         <div className="flex items-center gap-2">
                           <Checkbox
                             id={`attending-${member.id}`}
-                            checked={attendance[member.id]?.attending}
+                            checked={memberAtt?.attending}
                             onCheckedChange={(checked) => {
                               setAttendance((prev) => ({
                                 ...prev,
                                 [member.id]: {
-                                  ...(prev[member.id] ?? defaultAttendance()),
+                                  ...(prev[member.id] ?? fullWeekAttendance()),
                                   attending: checked === true,
                                 },
                               }))
@@ -624,98 +545,35 @@ export function AdminCalculatorClient() {
                           <Button
                             variant="ghost"
                             size="icon"
+                            className="h-11 w-11"
                             onClick={() => removeMember(member.id)}
                             aria-label={`Remove ${member.name || "family member"}`}
                           >
-                            <Minus className="h-4 w-4" aria-hidden="true" />
+                            <Minus className="h-4 w-4" />
                           </Button>
                         )}
                       </div>
                     </div>
 
-                    {/* Attendance Details */}
-                    {attendance[member.id]?.attending && lodgingType !== "drivein" && (
-                      <Tabs defaultValue="nights" className="w-full">
-                        <TabsList className="grid w-full grid-cols-2">
-                          <TabsTrigger value="nights">
-                            <Calendar className="h-4 w-4 mr-2" />
-                            Nights
-                          </TabsTrigger>
-                          <TabsTrigger value="meals">Meals</TabsTrigger>
-                        </TabsList>
-                        <TabsContent value="nights" className="pt-4">
-                          <div className="flex flex-wrap gap-2">
-                            {NIGHTS.map((night) => (
-                              <div key={night} className="flex items-center gap-2">
-                                <Checkbox
-                                  id={`${member.id}-${night}`}
-                                  checked={attendance[member.id]?.nights.includes(night)}
-                                  onCheckedChange={() => toggleNight(member.id, night)}
-                                />
-                                <Label htmlFor={`${member.id}-${night}`} className="text-sm cursor-pointer">
-                                  {NIGHT_LABELS[night]}
-                                </Label>
-                              </div>
-                            ))}
-                          </div>
-                        </TabsContent>
-                        <TabsContent value="meals" className="pt-4">
-                          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
-                            {Object.entries(MEALS).map(([day, availableMeals]) => (
-                              <div key={day} className="space-y-2">
-                                <Label className="font-medium capitalize">{day}</Label>
-                                {availableMeals.map((meal) => (
-                                  <div key={`${day}-${meal}`} className="flex items-center gap-2">
-                                    <Checkbox
-                                      id={`${member.id}-${day}-${meal}`}
-                                      checked={attendance[member.id]?.meals[day]?.includes(meal)}
-                                      onCheckedChange={() => toggleMeal(member.id, day, meal)}
-                                    />
-                                    <Label
-                                      htmlFor={`${member.id}-${day}-${meal}`}
-                                      className="text-xs cursor-pointer"
-                                    >
-                                      {MEAL_LABELS[meal]}
-                                    </Label>
-                                  </div>
-                                ))}
-                              </div>
-                            ))}
-                          </div>
-                        </TabsContent>
-                      </Tabs>
+                    {showOwnSchedule && memberAtt && (
+                      <CalculatorSchedulePicker
+                        attendance={memberAtt}
+                        onChange={(next) => setMemberAttendance(member.id, next)}
+                        driveIn={lodgingType === "drivein"}
+                        compact={lodgingType === "drivein"}
+                      />
                     )}
 
-                    {/* Drive-in meal selection */}
-                    {lodgingType === "drivein" && attendance[member.id]?.attending && (
-                      <div className="pt-2">
-                        <Label className="text-sm font-medium mb-2 block">Meals to Add</Label>
-                        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
-                          {Object.entries(MEALS).map(([day, availableMeals]) => (
-                            <div key={day} className="space-y-2">
-                              <Label className="font-medium capitalize">{day}</Label>
-                              {availableMeals.map((meal) => (
-                                <div key={`${day}-${meal}`} className="flex items-center gap-2">
-                                  <Checkbox
-                                    id={`${member.id}-${day}-${meal}`}
-                                    checked={attendance[member.id]?.meals[day]?.includes(meal)}
-                                    onCheckedChange={() => toggleMeal(member.id, day, meal)}
-                                  />
-                                  <Label
-                                    htmlFor={`${member.id}-${day}-${meal}`}
-                                    className="text-xs cursor-pointer"
-                                  >
-                                    {MEAL_LABELS[meal]}
-                                  </Label>
-                                </div>
-                              ))}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                    {sameScheduleForAll &&
+                      memberAtt?.attending &&
+                      member.id !== scheduleLeadMemberId && (
+                        <p className="text-xs text-muted-foreground">
+                          Uses the family schedule above.
+                        </p>
+                      )}
                   </div>
-                ))}
+                  )
+                })}
               </div>
             </CardContent>
           </Card>
@@ -863,10 +721,9 @@ export function AdminCalculatorClient() {
                 )}
                 {/* Special Package Applied Notification */}
                 {calculation.members.some((m) => m.packageType !== "regular") && (
-                  <div className="flex items-center gap-2 p-2 rounded-md bg-surface-highlight border border-success/30">
-                    <Sparkles className="h-4 w-4 text-success" />
+                  <div className="flex items-center gap-2 rounded-md border border-success/30 bg-surface-highlight p-2">
                     <span className="text-sm font-medium text-success">
-                      Partial-week package rates apply per person when nights/meals match 3/9, 2/6, or 1/3.
+                      Partial-week packages (3/9, 2/6, 1/3) available from the schedule dropdown.
                     </span>
                   </div>
                 )}
@@ -883,9 +740,9 @@ export function AdminCalculatorClient() {
                 <div className="flex gap-2 text-xs text-muted-foreground">
                   <Info className="h-4 w-4 flex-shrink-0 mt-0.5" />
                   <p>
-                    Each person is priced separately. Unchecking nights removes meals and lowers that
-                    person&apos;s rate via meal deductions, or switches them to a 3/9, 2/6, or 1/3 package
-                    when nights and meals match exactly. Drive-in guests pay per meal.
+                    Pick a package preset or tap night buttons — meals stay in sync automatically.
+                    Turn off &quot;Same schedule for whole family&quot; to price each person separately.
+                    RV/tent site fee uses the lodging night buttons above.
                   </p>
                 </div>
               </div>

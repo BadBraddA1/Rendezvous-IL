@@ -3,7 +3,10 @@ import {
   computeRegularMealDeductions,
   countSelectedMeals,
 } from "@/lib/calculator-meals"
+import type { MemberAttendance } from "@/lib/calculator-schedule"
 import { createRateGetter, driveInEntryDays, type RateRow } from "@/lib/rate-lookup"
+
+export type { MemberAttendance }
 
 export type LodgingType = "motel" | "rv" | "tent" | "drivein"
 export type PackageType = "regular" | "special_3_9" | "special_2_6" | "special_1_3"
@@ -13,12 +16,6 @@ export interface CalculatorMember {
   id: string
   name: string
   age: number
-}
-
-export interface MemberAttendance {
-  attending: boolean
-  nights: string[]
-  meals: Record<string, string[]>
 }
 
 export function getAgeGroup(age: number): AgeGroup {
