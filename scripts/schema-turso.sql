@@ -181,6 +181,22 @@ CREATE TABLE IF NOT EXISTS family_members_v2 (
   notes TEXT
 );
 
+CREATE TABLE IF NOT EXISTS signature_requests (
+  id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+  registration_id INTEGER NOT NULL,
+  role TEXT NOT NULL,
+  parent_name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  token TEXT NOT NULL UNIQUE,
+  signed_name TEXT,
+  signed_at TEXT,
+  sent_at TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_signature_requests_token ON signature_requests(token);
+CREATE INDEX IF NOT EXISTS idx_signature_requests_registration ON signature_requests(registration_id);
+
 CREATE TABLE IF NOT EXISTS feedback (
   id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
   registration_id INTEGER,

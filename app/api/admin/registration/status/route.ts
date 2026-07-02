@@ -6,6 +6,7 @@ import {
   getRegistrationPreviewSettings,
   setExpressRegistrationPreviewEnabled,
   setRegistrationTestEnabled,
+  setSignatureEmailsEnabled,
 } from "@/lib/registration-settings"
 
 export const dynamic = "force-dynamic"
@@ -80,6 +81,22 @@ export async function POST(request: Request) {
         {
           from: { enabled: before.expressRegistrationPreviewEnabled },
           to: { enabled: body.expressRegistrationPreviewEnabled },
+        },
+        ipAddress,
+        userAgent,
+      )
+    }
+
+    if (typeof body.signatureEmailsEnabled === "boolean") {
+      await setSignatureEmailsEnabled(body.signatureEmailsEnabled)
+      await logAuditAction(
+        adminEmail,
+        body.signatureEmailsEnabled ? "enable_signature_emails" : "disable_signature_emails",
+        "registration",
+        undefined,
+        {
+          from: { enabled: before.signatureEmailsEnabled },
+          to: { enabled: body.signatureEmailsEnabled },
         },
         ipAddress,
         userAgent,

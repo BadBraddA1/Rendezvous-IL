@@ -13,6 +13,9 @@ export type AdminRegistrationListRow = {
   created_at: string
   source: "legacy" | "v2"
   event_year: RegistrationEventYear
+  /** Emailed parent signatures still outstanding (0 when feature unused). */
+  signatures_pending?: number
+  signatures_total?: number
 }
 
 type ListFilters = {
@@ -284,10 +287,38 @@ async function fetchV2Registrations(filters: ListFilters): Promise<AdminRegistra
   return rows.map((row) => mapV2Row(row, year))
 }
 
+/** Attach pending/total signature-request counts to legacy rows. */
+async function annotateSignatureCounts(rows: AdminRegistrationListRow[]): Promise<void> {
+  if (rows.length === 0) return
+  let counts: SqlRow[] = []
+  try {
+    counts = await sql`
+      SELECT
+        registration_id,
+        COUNT(*) as total,
+        SUM(CASE WHEN signed_at IS NULL THEN 1 ELSE 0 END) as pending
+      FROM signature_requests
+      GROUP BY registration_id
+    `
+  } catch {
+    // Table doesn't exist yet (feature never enabled) — nothing to annotate.
+    return
+  }
+  const byId = new Map(counts.map((c) => [String(c.registration_id), c]))
+  for (const row of rows) {
+    if (row.source !== "legacy") continue
+    const count = byId.get(row.id)
+    if (!count) continue
+    row.signatures_total = Number(count.total ?? 0)
+    row.signatures_pending = Number(count.pending ?? 0)
+  }
+}
+
 export async function fetchAdminRegistrationList(
   filters: ListFilters,
 ): Promise<AdminRegistrationListRow[]> {
   const legacyRows = await fetchLegacyRegistrations(filters)
+  await annotateSignatureCounts(legacyRows)
   if (filters.year !== 2027) {
     return legacyRows
   }

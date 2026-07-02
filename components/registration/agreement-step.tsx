@@ -4,17 +4,20 @@ import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { CheckCircle2, AlertCircle } from "lucide-react"
+import { CheckCircle2, AlertCircle, Mail } from "lucide-react"
 import { SignatureField } from "@/components/registration/signature-field"
 import type { RegistrationData } from "@/types/registration"
+import { AGREEMENT_INTRO, AGREEMENT_ITEMS } from "@/lib/agreement-content"
 import { calculateRegistrationFee, isDiscountedRegistration } from "@/utils/registration-fee"
 
 type Props = {
   data: RegistrationData
   updateData: (updates: Partial<RegistrationData>) => void
+  /** When on, parents sign via emailed links instead of typing signatures here. */
+  signatureEmailsEnabled?: boolean
 }
 
-export function AgreementStep({ data, updateData }: Props) {
+export function AgreementStep({ data, updateData, signatureEmailsEnabled = false }: Props) {
   const registrationFee = calculateRegistrationFee()
   const isDiscountedRate = isDiscountedRegistration()
   const grandTotal =
@@ -88,18 +91,11 @@ export function AgreementStep({ data, updateData }: Props) {
         <Card>
           <CardContent className="pt-6">
             <div className="space-y-3 text-sm">
-              <p className="font-medium">By registering, you agree to:</p>
+              <p className="font-medium">{AGREEMENT_INTRO}</p>
               <ul className="ml-4 space-y-2 list-disc text-muted-foreground">
-                <li>Behave as a Christian at all times and be mindful of your example & influence</li>
-                <li>Be responsible for your children during activities and free time</li>
-                <li>Observe quiet time from 12:00 AM - 6:00 AM</li>
-                <li>Follow posted speed limits (streets are also sidewalks)</li>
-                <li>Ride bicycles on paved areas only</li>
-                <li>Fish only in designated areas (beachfront & south of Lakeside Dining Room)</li>
-                <li>
-                  Hold Lake Williamson Christian Center and Rendezvous leadership harmless for injuries, damages, and
-                  losses
-                </li>
+                {AGREEMENT_ITEMS.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
               </ul>
             </div>
           </CardContent>
@@ -109,27 +105,62 @@ export function AgreementStep({ data, updateData }: Props) {
       {/* Digital Signatures */}
       <div className="space-y-4">
         <h3 className="font-semibold">Digital Signatures</h3>
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>Both parents must sign, whether attending or not</AlertDescription>
-        </Alert>
+        {signatureEmailsEnabled ? (
+          <Card className="border-primary/20 bg-surface-highlight">
+            <CardContent className="pt-6">
+              <div className="flex items-start gap-3">
+                <Mail className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+                <div className="space-y-2 text-sm">
+                  <p className="font-medium">Each parent signs by email</p>
+                  <p className="text-muted-foreground">
+                    After you submit, each parent receives a personal signing link at their own
+                    email address. You can finish registration now — but your family can't be
+                    checked in at the event until both parents have signed.
+                  </p>
+                  {(() => {
+                    const parentEmails = data.familyMembers
+                      .filter((m) => m.parentRole && m.email?.trim())
+                      .map((m) => `${m.firstName || (m.parentRole === "father" ? "Father" : "Mother")} (${m.email!.trim()})`)
+                    return parentEmails.length > 0 ? (
+                      <p className="text-muted-foreground">
+                        Signing links will be sent to: <strong>{parentEmails.join(" and ")}</strong>
+                      </p>
+                    ) : (
+                      <p className="text-muted-foreground">
+                        No parent roles were selected on the Family Info step, so one signing link
+                        will be sent to <strong>{data.email || "your primary email"}</strong>.
+                      </p>
+                    )
+                  })()}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <>
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>Both parents must sign, whether attending or not</AlertDescription>
+            </Alert>
 
-        <div className="grid gap-6 md:grid-cols-2">
-          <SignatureField
-            id="fatherSignature"
-            label="Father's signature"
-            value={data.fatherSignature}
-            onChange={(fatherSignature) => updateData({ fatherSignature })}
-            required
-          />
-          <SignatureField
-            id="motherSignature"
-            label="Mother's signature"
-            value={data.motherSignature}
-            onChange={(motherSignature) => updateData({ motherSignature })}
-            required
-          />
-        </div>
+            <div className="grid gap-6 md:grid-cols-2">
+              <SignatureField
+                id="fatherSignature"
+                label="Father's signature"
+                value={data.fatherSignature}
+                onChange={(fatherSignature) => updateData({ fatherSignature })}
+                required
+              />
+              <SignatureField
+                id="motherSignature"
+                label="Mother's signature"
+                value={data.motherSignature}
+                onChange={(motherSignature) => updateData({ motherSignature })}
+                required
+              />
+            </div>
+          </>
+        )}
       </div>
 
       {/* Final Agreement Checkbox */}

@@ -1,5 +1,6 @@
 import type { RegistrationData } from "@/types/registration"
 import { formatArrivalDepartureNotes } from "@/lib/registration-arrival-departure"
+import { AGREEMENT_INTRO, AGREEMENT_ITEMS } from "@/lib/agreement-content"
 
 /** sRGB approximations of site OKLCH tokens (DESIGN.md) for email clients. */
 export const EMAIL_BRAND = {
@@ -66,6 +67,44 @@ export function generateMagicLinkEmail(magicLink: string): string {
     <p style="color: ${EMAIL_BRAND.muted}; font-size: 14px;">This link expires in 7 days. If you didn't request it, you can ignore this email.</p>
   `
   return emailShell(body, "Admin Access", "Rendezvous 2027")
+}
+
+export function generateSignatureRequestEmail(params: {
+  parentName: string
+  familyLastName: string
+  signUrl: string
+}): string {
+  const { parentName, familyLastName, signUrl } = params
+  const agreementItems = AGREEMENT_ITEMS.map(
+    (item) => `<li style="margin: 6px 0;">${item}</li>`,
+  ).join("")
+
+  const body = `
+    <p>Dear ${parentName},</p>
+    <p>
+      Your family's registration for <strong>Rendezvous 2027</strong> (${familyLastName} Family)
+      has been submitted. Each parent signs the event agreement individually — this link is
+      just for you.
+    </p>
+    <div style="background: ${EMAIL_BRAND.surface}; padding: 16px 20px; border-radius: 8px; border: 1px solid ${EMAIL_BRAND.border}; margin: 20px 0;">
+      <p style="margin: 0 0 8px 0; font-weight: bold;">${AGREEMENT_INTRO}</p>
+      <ul style="margin: 0; padding-left: 20px; color: ${EMAIL_BRAND.muted};">
+        ${agreementItems}
+      </ul>
+    </div>
+    <div style="margin: 24px 0; text-align: center;">
+      <a href="${signUrl}" style="background: ${EMAIL_BRAND.primary}; color: ${EMAIL_BRAND.onPrimary}; padding: 14px 28px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: bold;">
+        Review & Sign
+      </a>
+    </div>
+    <p style="color: ${EMAIL_BRAND.muted}; font-size: 14px;">Or copy and paste this link:</p>
+    <p style="background: ${EMAIL_BRAND.surface}; padding: 12px; border-radius: 6px; border: 1px solid ${EMAIL_BRAND.border}; word-break: break-all; font-size: 12px;">${signUrl}</p>
+    <p style="color: ${EMAIL_BRAND.muted}; font-size: 14px;">
+      Your family can be checked in at the event once both parents have signed.
+      This link is personal — please don't forward it.
+    </p>
+  `
+  return emailShell(body, "Signature Needed", "Rendezvous 2027 Registration")
 }
 
 export function generateAdminBulkEmail(familyLastName: string, message: string): string {

@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useToast } from "@/hooks/use-toast"
-import { QrCode, Search, Camera, CameraOff, CheckCircle2, RotateCcw, Loader2 } from "lucide-react"
+import { QrCode, Search, Camera, CameraOff, CheckCircle2, RotateCcw, Loader2, FileSignature } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
 import { AdminConfirmDialog } from "./admin-confirm-dialog"
 import { normalizeStringArray } from "@/lib/normalize-string-array"
@@ -61,6 +61,7 @@ export function CheckinStation() {
   const [roomKeys, setRoomKeys] = useState("")
   const [tshirtsDist, setTshirtsDist] = useState(false)
   const [undoConfirmOpen, setUndoConfirmOpen] = useState(false)
+  const [pendingSignatures, setPendingSignatures] = useState<string[]>([])
   const scannerRef = useRef<{ stop: () => Promise<void>; clear: () => void } | null>(null)
   const { toast } = useToast()
 
@@ -106,6 +107,29 @@ export function CheckinStation() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scannerActive])
 
+  /** Signing emails feature: names of parents who still need to sign (only when enforced). */
+  const fetchPendingSignatures = async (registrationId: number) => {
+    try {
+      const res = await fetch(`/api/admin/registrations/${registrationId}/signatures`)
+      if (!res.ok) {
+        setPendingSignatures([])
+        return
+      }
+      const data = await res.json()
+      if (!data.enforced || !Array.isArray(data.requests)) {
+        setPendingSignatures([])
+        return
+      }
+      setPendingSignatures(
+        data.requests
+          .filter((r: { signed_at: string | null }) => !r.signed_at)
+          .map((r: { parent_name: string }) => r.parent_name),
+      )
+    } catch {
+      setPendingSignatures([])
+    }
+  }
+
   const lookupByCode = async (rawCode: string) => {
     setLoading(true)
     setSearchResults([])
@@ -121,6 +145,7 @@ export function CheckinStation() {
       setResult(data)
       setRoomKeys(normalizeStringArray(data.registration?.pre_assigned_keys).join(", "))
       setTshirtsDist(!!data.registration?.tshirts_distributed)
+      if (data.registration?.id) void fetchPendingSignatures(data.registration.id)
     } catch (error) {
       console.error("[v0] Lookup failed:", error)
       toast({ title: "Error", description: "Lookup failed", variant: "destructive" })
@@ -165,6 +190,7 @@ export function CheckinStation() {
       })
       setRoomKeys(normalizeStringArray(data.registration?.pre_assigned_keys).join(", "))
       setTshirtsDist(!!data.registration?.tshirts_distributed)
+      void fetchPendingSignatures(reg.id)
     } catch (error) {
       console.error("[v0] Could not load:", error)
     } finally {
@@ -182,7 +208,19 @@ export function CheckinStation() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ room_keys: keys, tshirts_distributed: tshirtsDist }),
       })
-      if (!res.ok) throw new Error("Failed")
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        if (res.status === 409) {
+          if (Array.isArray(data.pendingSignatures)) setPendingSignatures(data.pendingSignatures)
+          toast({
+            title: "Signatures pending",
+            description: data.error || "Both parents must sign before check-in.",
+            variant: "destructive",
+          })
+          return
+        }
+        throw new Error(data.error || "Failed")
+      }
       const data = await res.json()
       setResult({ ...result, registration: data.registration })
       toast({ title: "Checked in!", description: `${result.registration.family_last_name} family is checked in.` })
@@ -225,6 +263,7 @@ export function CheckinStation() {
     setSearchResults([])
     setRoomKeys("")
     setTshirtsDist(false)
+    setPendingSignatures([])
   }
 
   return (
@@ -386,6 +425,19 @@ export function CheckinStation() {
                 </div>
               )}
 
+              {pendingSignatures.length > 0 && !result.registration.checked_in && (
+                <div className="callout-destructive flex items-start gap-3 rounded-lg border p-3">
+                  <FileSignature className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                  <div className="text-sm">
+                    <p className="font-medium">Signatures pending — check-in blocked</p>
+                    <p>
+                      Waiting on: {pendingSignatures.join(", ")}. Resend the signing email or mark
+                      it signed from this family's registration page.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               <Separator />
 
               <div className="space-y-3">
@@ -420,7 +472,11 @@ export function CheckinStation() {
                     <RotateCcw className="h-4 w-4" />Undo Check-In
                   </Button>
                 ) : (
-                  <Button onClick={handleCheckIn} className="flex-1 gap-2" disabled={loading}>
+                  <Button
+                    onClick={handleCheckIn}
+                    className="flex-1 gap-2"
+                    disabled={loading || pendingSignatures.length > 0}
+                  >
                     {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
                     Check In Family
                   </Button>

@@ -18,7 +18,13 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json())
 type RegistrationStatusResponse = {
   testRegistrationEnabled: boolean
   expressRegistrationPreviewEnabled: boolean
+  signatureEmailsEnabled: boolean
 }
+
+type ToggleKey =
+  | "testRegistrationEnabled"
+  | "expressRegistrationPreviewEnabled"
+  | "signatureEmailsEnabled"
 
 type Props = {
   isAdmin: boolean
@@ -29,14 +35,9 @@ export function RegistrationPreviewToggles({ isAdmin }: Props) {
     "/api/admin/registration/status",
     fetcher,
   )
-  const [togglingKey, setTogglingKey] = useState<
-    "testRegistrationEnabled" | "expressRegistrationPreviewEnabled" | null
-  >(null)
+  const [togglingKey, setTogglingKey] = useState<ToggleKey | null>(null)
 
-  async function toggleSetting(
-    key: "testRegistrationEnabled" | "expressRegistrationPreviewEnabled",
-    currentlyEnabled: boolean,
-  ) {
+  async function toggleSetting(key: ToggleKey, currentlyEnabled: boolean) {
     if (!isAdmin) return
     setTogglingKey(key)
     try {
@@ -55,6 +56,7 @@ export function RegistrationPreviewToggles({ isAdmin }: Props) {
 
   const testEnabled = data?.testRegistrationEnabled ?? false
   const expressEnabled = data?.expressRegistrationPreviewEnabled ?? false
+  const signatureEmailsEnabled = data?.signatureEmailsEnabled ?? false
 
   return (
     <Card>
@@ -138,6 +140,34 @@ export function RegistrationPreviewToggles({ isAdmin }: Props) {
                     }
                     disabled={!isAdmin || togglingKey !== null}
                     aria-label="Toggle express registration preview"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between gap-4 rounded-lg border px-4 py-3">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">Parent signature emails</span>
+                    <Badge variant={signatureEmailsEnabled ? "default" : "secondary"}>
+                      {signatureEmailsEnabled ? "On" : "Off"}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Emails each parent a personal signing link after registration. Families can finish
+                    registering, but check-in is blocked until both parents have signed.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  {togglingKey === "signatureEmailsEnabled" && (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  )}
+                  <Switch
+                    checked={signatureEmailsEnabled}
+                    onCheckedChange={() =>
+                      void toggleSetting("signatureEmailsEnabled", signatureEmailsEnabled)
+                    }
+                    disabled={!isAdmin || togglingKey !== null}
+                    aria-label="Toggle parent signature emails"
                   />
                 </div>
               </div>

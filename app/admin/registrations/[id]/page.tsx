@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 import Link from "next/link"
 import { AdminNav } from "@/components/admin/admin-nav"
 import { RegistrationEditForm } from "@/components/admin/registration-edit-form"
+import { SignatureRequestsPanel } from "@/components/admin/signature-requests-panel"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ShieldAlert, LogIn, Home } from "lucide-react"
@@ -128,8 +129,12 @@ export default async function RegistrationEditPage({
     <div className="admin-shell">
       <AdminNav currentPage="registrations" admin={admin} />
       <main id="main-content" className="admin-main">
-        <div className="admin-container max-w-5xl">
+        <div className="admin-container max-w-5xl space-y-6">
           <RegistrationEditForm registrationId={legacyId} eventYear={eventYear} />
+          <SignatureRequestsPanel
+            registrationId={legacyId}
+            canManage={admin.role === "admin" || admin.role === "editor"}
+          />
         </div>
       </main>
     </div>

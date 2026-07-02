@@ -36,6 +36,8 @@ type AdminRegistrationRow = {
   created_at: string
   source?: "legacy" | "v2"
   event_year?: RegistrationEventYear
+  signatures_pending?: number
+  signatures_total?: number
 }
 
 function readStoredEventYear(): RegistrationEventYear {
@@ -373,6 +375,12 @@ export function RegistrationsTable() {
                               {reg.source === "v2" && (
                                 <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
                                   Family
+                                </Badge>
+                              )}
+                              {(reg.signatures_pending ?? 0) > 0 && (
+                                <Badge variant="destructive" className="text-[10px]">
+                                  Signatures {((reg.signatures_total ?? 0) - (reg.signatures_pending ?? 0))}/
+                                  {reg.signatures_total}
                                 </Badge>
                               )}
                             </div>

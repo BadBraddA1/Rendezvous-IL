@@ -32,9 +32,13 @@ const STEPS = [
 
 type Props = {
   localDevBypass?: boolean
+  signatureEmailsEnabled?: boolean
 }
 
-export function RegistrationTest2026Client({ localDevBypass = false }: Props) {
+export function RegistrationTest2026Client({
+  localDevBypass = false,
+  signatureEmailsEnabled = false,
+}: Props) {
   const [currentStep, setCurrentStep] = useState(1)
   const [debugLoading, setDebugLoading] = useState(false)
   const [debugResponse, setDebugResponse] = useState<unknown>(null)
@@ -344,7 +348,13 @@ export function RegistrationTest2026Client({ localDevBypass = false }: Props) {
               {currentStep === 2 && <LodgingStep data={registrationData} updateData={updateData} />}
               {currentStep === 3 && <MerchandiseStep data={registrationData} updateData={updateData} />}
               {currentStep === 4 && <AdditionalInfoStep data={registrationData} updateData={updateData} />}
-              {currentStep === 5 && <AgreementStep data={registrationData} updateData={updateData} />}
+              {currentStep === 5 && (
+                <AgreementStep
+                  data={registrationData}
+                  updateData={updateData}
+                  signatureEmailsEnabled={signatureEmailsEnabled}
+                />
+              )}
               {currentStep === 6 && <ConfirmationStep data={registrationData} />}
             </CardContent>
           </Card>

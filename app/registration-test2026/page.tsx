@@ -9,6 +9,7 @@ import {
   canAccessRegistrationTest,
   isLocalRegistrationTestBypass,
 } from "@/lib/registration-access"
+import { isSignatureEmailsEnabled } from "@/lib/registration-settings"
 import { RegistrationTest2026Client } from "./registration-test2026-client"
 
 export default async function RegistrationTestPage() {
@@ -73,5 +74,12 @@ export default async function RegistrationTestPage() {
     }
   }
 
-  return <RegistrationTest2026Client localDevBypass={localDev} />
+  const signatureEmailsEnabled = await isSignatureEmailsEnabled()
+
+  return (
+    <RegistrationTest2026Client
+      localDevBypass={localDev}
+      signatureEmailsEnabled={signatureEmailsEnabled}
+    />
+  )
 }

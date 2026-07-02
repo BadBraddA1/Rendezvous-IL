@@ -3,6 +3,8 @@ import { checkCheckInAuth, logAuditAction } from "@/lib/admin-auth"
 import { getRequestAuditMeta } from "@/lib/audit-log"
 import { sql } from "@/lib/db"
 import { normalizeRegistrationRow } from "@/lib/normalize-string-array"
+import { isSignatureEmailsEnabled } from "@/lib/registration-settings"
+import { getSignatureStatus } from "@/lib/signature-requests"
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const admin = await checkCheckInAuth()
@@ -12,6 +14,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const { id } = await params
     const body = await req.json().catch(() => ({}))
     const { room_keys, tshirts_distributed } = body
+
+    if (await isSignatureEmailsEnabled()) {
+      const signatures = await getSignatureStatus(Number(id))
+      if (signatures.pendingNames.length > 0) {
+        return NextResponse.json(
+          {
+            error: `Cannot check in — waiting on signatures from: ${signatures.pendingNames.join(", ")}. Resend the signing email or mark it signed from the registration page.`,
+            pendingSignatures: signatures.pendingNames,
+          },
+          { status: 409 },
+        )
+      }
+    }
 
     const keys = Array.isArray(room_keys) ? room_keys : []
     const keysJson = JSON.stringify(keys)
