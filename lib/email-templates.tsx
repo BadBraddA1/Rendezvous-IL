@@ -138,6 +138,48 @@ export function generateLessonBidEmail(params: {
   return emailShell(body, "Lesson Topics", "Rendezvous 2027")
 }
 
+export function generateVolunteerAssignmentEmail(params: {
+  volunteerName: string
+  familyLastName: string
+  assignments: { serviceLabel: string; role: string; lessonTitle?: string | null; scripture?: string | null }[]
+}): string {
+  const { volunteerName, familyLastName, assignments } = params
+
+  const rows = assignments
+    .map(
+      (a) => `
+        <tr>
+          <td style="padding: 8px 12px; border: 1px solid ${EMAIL_BRAND.border};">${a.serviceLabel}</td>
+          <td style="padding: 8px 12px; border: 1px solid ${EMAIL_BRAND.border};">
+            ${a.role}${a.lessonTitle ? `<br /><span style="color: ${EMAIL_BRAND.muted}; font-size: 13px;">${a.lessonTitle}${a.scripture ? ` — ${a.scripture}` : ""}</span>` : ""}
+          </td>
+        </tr>`,
+    )
+    .join("")
+
+  const body = `
+    <p>Dear ${volunteerName}${familyLastName ? ` (${familyLastName} Family)` : ""},</p>
+    <p>
+      Thank you for volunteering to help lead our worship services at Rendezvous!
+      Here ${assignments.length === 1 ? "is your assignment" : "are your assignments"}:
+    </p>
+    <table style="border-collapse: collapse; width: 100%; margin: 16px 0;">
+      <thead>
+        <tr>
+          <th style="padding: 8px 12px; border: 1px solid ${EMAIL_BRAND.border}; background: ${EMAIL_BRAND.surface}; text-align: left;">Service</th>
+          <th style="padding: 8px 12px; border: 1px solid ${EMAIL_BRAND.border}; background: ${EMAIL_BRAND.surface}; text-align: left;">Role</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <p style="color: ${EMAIL_BRAND.muted}; font-size: 14px;">
+      If you have a conflict or any questions, just reply to this email and we'll adjust the
+      schedule.
+    </p>
+  `
+  return emailShell(body, "Your Worship Service Assignments", "Rendezvous 2027")
+}
+
 export function generateAdminBulkEmail(familyLastName: string, message: string): string {
   const messageHtml = message
     .split("\n")

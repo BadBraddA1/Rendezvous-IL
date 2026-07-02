@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { AdminListSkeleton, AdminRetryButton } from "./admin-panel-states"
 import { useToast } from "@/hooks/use-toast"
-import { CalendarDays, GripVertical, Loader2, Search, Sparkles, Users } from "lucide-react"
+import { CalendarDays, GripVertical, Loader2, Mail, Search, Sparkles, Users } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 type Volunteer = {
@@ -28,6 +28,7 @@ type Volunteer = {
   family_last_name: string | null
   claimed_lesson_id: number | null
   claimed_lesson_title: string | null
+  volunteer_email: string | null
 }
 
 type Service = { date: string; timeSlot: string; label: string }
@@ -121,6 +122,7 @@ export function VolunteerScheduleManager({ canManage, eventYear }: Props) {
   const [lessonDrafts, setLessonDrafts] = useState<Record<number, { title: string; scripture: string }>>({})
   const [autoDraft, setAutoDraft] = useState<DraftAssignment[] | null>(null)
   const [applyingDraft, setApplyingDraft] = useState(false)
+  const [sendingAssignments, setSendingAssignments] = useState(false)
   const [dragOverSlot, setDragOverSlot] = useState<string | null>(null)
   const { toast } = useToast()
 
@@ -371,6 +373,41 @@ export function VolunteerScheduleManager({ canManage, eventYear }: Props) {
     }
   }
 
+  const sendAssignmentEmails = async () => {
+    if (
+      !window.confirm(
+        "Email every assigned volunteer their worship service assignments? One email per person, sent to their volunteer email (or family email as fallback).",
+      )
+    ) {
+      return
+    }
+    setSendingAssignments(true)
+    try {
+      const res = await fetch("/api/admin/volunteers/send-assignments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ year: eventYear }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || "Could not send emails")
+      toast({
+        title: `${data.sent} email${data.sent === 1 ? "" : "s"} sent`,
+        description: data.noEmail?.length
+          ? `No email on file for: ${data.noEmail.join(", ")}`
+          : "Every assigned volunteer was emailed.",
+      })
+      await fetchVolunteers()
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Could not send emails.",
+        variant: "destructive",
+      })
+    } finally {
+      setSendingAssignments(false)
+    }
+  }
+
   const rosterRows = useMemo(() => {
     if (!volunteers) return []
     const search = rosterSearch.trim().toLowerCase()
@@ -429,6 +466,21 @@ export function VolunteerScheduleManager({ canManage, eventYear }: Props) {
               >
                 <Sparkles className="mr-2 h-4 w-4" aria-hidden="true" />
                 Auto-fill week
+              </Button>
+            )}
+            {canManage && (
+              <Button
+                variant="outline"
+                className="min-h-11"
+                disabled={volunteers === null || sendingAssignments || assignedCount === 0}
+                onClick={() => void sendAssignmentEmails()}
+              >
+                {sendingAssignments ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+                ) : (
+                  <Mail className="mr-2 h-4 w-4" aria-hidden="true" />
+                )}
+                Email assignments
               </Button>
             )}
           </div>
@@ -737,7 +789,14 @@ export function VolunteerScheduleManager({ canManage, eventYear }: Props) {
                 ) : (
                   rosterRows.map((volunteer) => (
                     <TableRow key={volunteer.id}>
-                      <TableCell className="font-medium">{volunteer.volunteer_name}</TableCell>
+                      <TableCell className="font-medium">
+                        {volunteer.volunteer_name}
+                        {volunteer.volunteer_email && (
+                          <p className="text-xs font-normal text-muted-foreground">
+                            {volunteer.volunteer_email}
+                          </p>
+                        )}
+                      </TableCell>
                       <TableCell>
                         {volunteer.registration_id ? (
                           <Link

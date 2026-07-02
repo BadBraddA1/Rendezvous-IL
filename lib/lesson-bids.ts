@@ -1,7 +1,8 @@
 import { randomBytes } from "node:crypto"
-import { sql, type SqlRow } from "@/lib/db"
+import { sql } from "@/lib/db"
 import { resend } from "@/lib/resend"
 import { generateLessonBidEmail } from "@/lib/email-templates"
+import { ensureVolunteerEmailColumn, resolveVolunteerEmail } from "@/lib/volunteer-scheduling"
 
 export type LessonTopic = {
   id: number
@@ -137,30 +138,6 @@ export async function deleteTopic(id: number): Promise<boolean> {
 
 // ---------- Invites ----------
 
-/**
- * Best contact for a volunteer: the family member with the same first name
- * who has an email (collected on the registration form), falling back to the
- * registration's primary email.
- */
-async function resolveVolunteerEmail(volunteer: SqlRow): Promise<string | null> {
-  const firstName = String(volunteer.volunteer_name ?? "").trim().split(/\s+/)[0]?.toLowerCase()
-  if (volunteer.registration_id && firstName) {
-    const [member] = await sql`
-      SELECT email FROM family_members
-      WHERE registration_id = ${volunteer.registration_id}
-        AND email IS NOT NULL AND email != ''
-        AND LOWER(first_name) = ${firstName}
-      LIMIT 1
-    `
-    if (member?.email) return String(member.email)
-  }
-  if (volunteer.registration_id) {
-    const [reg] = await sql`SELECT email FROM registrations WHERE id = ${volunteer.registration_id}`
-    if (reg?.email) return String(reg.email)
-  }
-  return null
-}
-
 export type InviteResult =
   | { ok: true; email: string }
   | { ok: false; reason: string }
@@ -168,6 +145,7 @@ export type InviteResult =
 /** Send (or resend) a bid invite email to a "Presenting a lesson" volunteer. */
 export async function sendBidInvite(volunteerId: number, baseUrl: string): Promise<InviteResult> {
   await ensureLessonTables()
+  await ensureVolunteerEmailColumn()
 
   const [volunteer] = await sql`
     SELECT vs.*, r.family_last_name, COALESCE(r.event_year, 2026) as event_year

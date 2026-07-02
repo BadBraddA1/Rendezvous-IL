@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { checkAdminAuth } from "@/lib/admin-auth"
 import { sql } from "@/lib/db"
 import { ensureLessonTables } from "@/lib/lesson-bids"
+import { ensureVolunteerEmailColumn } from "@/lib/volunteer-scheduling"
 import { parseRegistrationEventYear } from "@/lib/registration-event-years"
 
 export const dynamic = "force-dynamic"
@@ -13,6 +14,7 @@ export async function GET(req: NextRequest) {
 
   try {
     await ensureLessonTables()
+    await ensureVolunteerEmailColumn()
     const year = parseRegistrationEventYear(req.nextUrl.searchParams.get("year"))
     const volunteers = await sql`
       SELECT
@@ -29,6 +31,7 @@ export async function GET(req: NextRequest) {
         vs.notes,
         vs.lesson_bid_sent_at,
         vs.claimed_lesson_id,
+        vs.volunteer_email,
         r.family_last_name,
         lt.title as claimed_lesson_title,
         lb.submitted_at as bid_submitted_at,

@@ -56,9 +56,19 @@ export function AdditionalInfoStep({ data, updateData }: Props) {
   }
 
   const addVolunteerToType = (type: string, name: string) => {
-    updateData({
+    const updates: Partial<typeof data> = {
       volunteerSignups: data.volunteerSignups.map((v) => (v.type === type ? { ...v, names: [...v.names, name] } : v)),
-    })
+    }
+    // Seed the volunteer's contact email from the family member's email.
+    const member = data.familyMembers.find((m) => m.firstName === name)
+    if (member?.email && !data.volunteerEmails?.[name]) {
+      updates.volunteerEmails = { ...data.volunteerEmails, [name]: member.email }
+    }
+    updateData(updates)
+  }
+
+  const setVolunteerEmail = (name: string, email: string) => {
+    updateData({ volunteerEmails: { ...data.volunteerEmails, [name]: email } })
   }
 
   const removeVolunteerFromType = (type: string, name: string) => {
@@ -277,6 +287,34 @@ export function AdditionalInfoStep({ data, updateData }: Props) {
                 </div>
               )
             })}
+
+            {(() => {
+              const uniqueNames = [...new Set(data.volunteerSignups.flatMap((v) => v.names))]
+              if (uniqueNames.length === 0) return null
+              return (
+                <div className="space-y-3 rounded-lg border p-4">
+                  <div>
+                    <p className="font-medium">Volunteer contact emails</p>
+                    <p className="text-sm text-muted-foreground">
+                      We'll email each volunteer their worship service assignments and lesson
+                      details directly (instead of only the main family email).
+                    </p>
+                  </div>
+                  {uniqueNames.map((name) => (
+                    <div key={name}>
+                      <Label htmlFor={`volunteer-email-${name}`}>Email for {name}</Label>
+                      <Input
+                        id={`volunteer-email-${name}`}
+                        type="email"
+                        placeholder="name@example.com"
+                        value={data.volunteerEmails?.[name] ?? ""}
+                        onChange={(e) => setVolunteerEmail(name, e.target.value)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )
+            })()}
           </div>
         )}
       </div>

@@ -45,6 +45,13 @@ export type VolunteerSignup = {
   names: string[]
 }
 
+/**
+ * Volunteer first name -> email. Collected so schedule assignments and
+ * lesson-bid links go straight to the volunteer instead of only the
+ * registration's primary email.
+ */
+export type VolunteerEmails = Record<string, string>
+
 export type RegistrationData = {
   familyLastName: string
   email: string
@@ -74,6 +81,7 @@ export type RegistrationData = {
   emergencyContactPhone: string
   healthInfo: HealthInfo[]
   volunteerSignups: VolunteerSignup[]
+  volunteerEmails?: VolunteerEmails
   sessionSuggestions: {
     moms: string
     dads: string

@@ -1,5 +1,44 @@
 import { sql, type SqlRow } from "@/lib/db"
 
+let volunteerEmailEnsured = false
+
+/** volunteer_email is added lazily (deployed DB predates it). */
+export async function ensureVolunteerEmailColumn(): Promise<void> {
+  if (volunteerEmailEnsured) return
+  const rows = await sql.query("PRAGMA table_info(volunteer_signups)")
+  if (!rows.some((r) => r.name === "volunteer_email")) {
+    await sql.query("ALTER TABLE volunteer_signups ADD COLUMN volunteer_email TEXT")
+  }
+  volunteerEmailEnsured = true
+}
+
+/**
+ * Best contact for a volunteer: the email entered for them in the volunteer
+ * section of the registration form, then the family member with the same
+ * first name who has an email, then the registration's primary email.
+ */
+export async function resolveVolunteerEmail(volunteer: SqlRow): Promise<string | null> {
+  if (volunteer.volunteer_email && String(volunteer.volunteer_email).trim()) {
+    return String(volunteer.volunteer_email).trim()
+  }
+  const firstName = String(volunteer.volunteer_name ?? "").trim().split(/\s+/)[0]?.toLowerCase()
+  if (volunteer.registration_id && firstName) {
+    const [member] = await sql`
+      SELECT email FROM family_members
+      WHERE registration_id = ${volunteer.registration_id}
+        AND email IS NOT NULL AND email != ''
+        AND LOWER(first_name) = ${firstName}
+      LIMIT 1
+    `
+    if (member?.email) return String(member.email)
+  }
+  if (volunteer.registration_id) {
+    const [reg] = await sql`SELECT email FROM registrations WHERE id = ${volunteer.registration_id}`
+    if (reg?.email) return String(reg.email)
+  }
+  return null
+}
+
 /**
  * Scheduling rules for worship-service volunteers:
  * 1. A slot (date + time slot + prayer type + role) holds one volunteer.

@@ -482,7 +482,8 @@ CREATE TABLE IF NOT EXISTS volunteer_signups (
   prayer_type TEXT,
   lesson_title TEXT,
   scripture_reading TEXT,
-  lesson_details_submitted_at TEXT
+  lesson_details_submitted_at TEXT,
+  volunteer_email TEXT  -- added lazily by lib/submit-test-registration.ts
 );
 
 CREATE TABLE IF NOT EXISTS volunteers (

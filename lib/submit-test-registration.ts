@@ -16,6 +16,10 @@ async function ensureContactColumns() {
   const cols = new Set(rows.map((r) => r.name))
   if (!cols.has("email")) await sql.query("ALTER TABLE family_members ADD COLUMN email TEXT")
   if (!cols.has("phone")) await sql.query("ALTER TABLE family_members ADD COLUMN phone TEXT")
+  const vsRows = await sql.query("PRAGMA table_info(volunteer_signups)")
+  if (!vsRows.some((r) => r.name === "volunteer_email")) {
+    await sql.query("ALTER TABLE volunteer_signups ADD COLUMN volunteer_email TEXT")
+  }
   contactColumnsEnsured = true
 }
 
@@ -119,9 +123,10 @@ export async function submitTestRegistration(data: RegistrationData) {
 
   for (const volunteer of data.volunteerSignups ?? []) {
     for (const volunteerName of volunteer.names ?? []) {
+      const volunteerEmail = data.volunteerEmails?.[volunteerName]?.trim() || null
       await sql`
-        INSERT INTO volunteer_signups (registration_id, volunteer_type, volunteer_name)
-        VALUES (${registrationId}, ${volunteer.type}, ${volunteerName})
+        INSERT INTO volunteer_signups (registration_id, volunteer_type, volunteer_name, volunteer_email)
+        VALUES (${registrationId}, ${volunteer.type}, ${volunteerName}, ${volunteerEmail})
       `
     }
   }
