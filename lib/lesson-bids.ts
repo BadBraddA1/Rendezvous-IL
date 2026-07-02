@@ -6,7 +6,12 @@ import { ensureVolunteerEmailColumn, resolveVolunteerEmail } from "@/lib/volunte
 
 export type LessonTopic = {
   id: number
+  /** The topic/theme name. */
   title: string
+  /** Suggested lesson title (optional, distinct from the topic). */
+  lesson_title: string | null
+  /** Scripture reference for the topic. */
+  scripture: string | null
   description: string | null
   sort_order: number
   event_year: number
@@ -17,6 +22,8 @@ export type LessonTopic = {
 }
 
 export const DEFAULT_LESSON_EVENT_YEAR = 2027
+/** Topics from the old dash have no event_year — they belong to last year. */
+export const LEGACY_LESSON_EVENT_YEAR = 2026
 
 export type LessonBid = {
   id: number
@@ -52,13 +59,31 @@ export async function ensureLessonTables(): Promise<void> {
       claimed_by_bid_id INTEGER,
       claimed_at TEXT,
       claimed_by_volunteer_id INTEGER,
-      event_year INTEGER
+      event_year INTEGER,
+      lesson_title TEXT,
+      scripture TEXT
     )
   `)
-  // Production may have the table from the old dash without event_year.
-  const topicCols = await sql.query("PRAGMA table_info(lesson_topics)")
-  if (!topicCols.some((c) => c.name === "event_year")) {
-    await sql.query("ALTER TABLE lesson_topics ADD COLUMN event_year INTEGER")
+  // Production has the table from the old dash — self-heal any columns we
+  // read or write that its schema predates.
+  const topicCols = new Set(
+    (await sql.query("PRAGMA table_info(lesson_topics)")).map((c) => String(c.name)),
+  )
+  const neededTopicCols: [string, string][] = [
+    ["event_year", "INTEGER"],
+    ["lesson_title", "TEXT"],
+    ["scripture", "TEXT"],
+    ["updated_at", "TEXT"],
+    ["claimed_at", "TEXT"],
+    ["claimed_by_bid_id", "INTEGER"],
+    ["claimed_by_volunteer_id", "INTEGER"],
+    ["assigned_presenter_name", "TEXT"],
+    ["assigned_registration_id", "INTEGER"],
+  ]
+  for (const [name, type] of neededTopicCols) {
+    if (!topicCols.has(name)) {
+      await sql.query(`ALTER TABLE lesson_topics ADD COLUMN ${name} ${type}`)
+    }
   }
   await sql.query(`
     CREATE TABLE IF NOT EXISTS lesson_bids (
@@ -81,47 +106,53 @@ export async function ensureLessonTables(): Promise<void> {
 
 // ---------- Topics ----------
 
+export type TopicInput = {
+  /** Topic/theme name (required). */
+  title: string
+  /** Suggested lesson title. */
+  lessonTitle: string | null
+  /** Scripture reference. */
+  scripture: string | null
+}
+
 export async function listTopics(
   year: number = DEFAULT_LESSON_EVENT_YEAR,
 ): Promise<LessonTopic[]> {
   await ensureLessonTables()
   const rows = await sql`
-    SELECT id, title, description, sort_order,
-      COALESCE(event_year, ${DEFAULT_LESSON_EVENT_YEAR}) as event_year,
+    SELECT id, title, lesson_title, scripture, description, sort_order,
+      COALESCE(event_year, ${LEGACY_LESSON_EVENT_YEAR}) as event_year,
       claimed_by_volunteer_id, claimed_at, assigned_presenter_name
     FROM lesson_topics
-    WHERE COALESCE(event_year, ${DEFAULT_LESSON_EVENT_YEAR}) = ${year}
+    WHERE COALESCE(event_year, ${LEGACY_LESSON_EVENT_YEAR}) = ${year}
     ORDER BY sort_order, id
   `
   return rows as unknown as LessonTopic[]
 }
 
 export async function createTopic(
-  title: string,
-  description: string | null,
+  topic: TopicInput,
   year: number = DEFAULT_LESSON_EVENT_YEAR,
 ): Promise<void> {
   await ensureLessonTables()
   await sql`
-    INSERT INTO lesson_topics (title, description, event_year, sort_order)
+    INSERT INTO lesson_topics (title, lesson_title, scripture, event_year, sort_order)
     VALUES (
-      ${title},
-      ${description},
+      ${topic.title},
+      ${topic.lessonTitle},
+      ${topic.scripture},
       ${year},
       (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM lesson_topics)
     )
   `
 }
 
-export async function updateTopic(
-  id: number,
-  title: string,
-  description: string | null,
-): Promise<void> {
+export async function updateTopic(id: number, topic: TopicInput): Promise<void> {
   await ensureLessonTables()
   await sql`
     UPDATE lesson_topics
-    SET title = ${title}, description = ${description}, updated_at = CURRENT_TIMESTAMP
+    SET title = ${topic.title}, lesson_title = ${topic.lessonTitle},
+        scripture = ${topic.scripture}, updated_at = CURRENT_TIMESTAMP
     WHERE id = ${id}
   `
 }

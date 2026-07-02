@@ -50,7 +50,8 @@ export default async function LessonBidPage({ params }: { params: Promise<{ toke
           topics={topics.map((t) => ({
             id: t.id,
             title: t.title,
-            description: t.description,
+            description:
+              [t.lesson_title, t.scripture].filter(Boolean).join(" — ") || t.description,
             claimed: Boolean(t.claimed_by_volunteer_id),
           }))}
           initialPicks={[bid.pick_1, bid.pick_2, bid.pick_3].filter((p): p is number => p !== null)}

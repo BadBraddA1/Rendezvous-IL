@@ -1,4 +1,5 @@
 import { sql } from "@/lib/db"
+import { ensureLessonTables } from "@/lib/lesson-bids"
 import { LIVE_UPDATE_SCHEDULE } from "@/lib/live-updates/schedule"
 import { getChicagoWallClock } from "@/lib/live-updates/chicago-time"
 import type { VolunteerSchedule } from "@/lib/live-updates/types"
@@ -95,14 +96,15 @@ export async function fetchNextVolunteerScheduleForLiveUpdates(): Promise<Volunt
   const timeSlot =
     nextAssembly.startHour < 12 ? "Morning Devotion" : "Evening Devotion"
 
+  await ensureLessonTables()
   const volunteers = await sql`
     SELECT 
       vs.volunteer_name,
       vs.volunteer_type,
       vs.prayer_type,
       r.family_last_name,
-      COALESCE(NULLIF(vs.lesson_title, ''), lt.title) as lesson_title,
-      COALESCE(NULLIF(vs.scripture_reading, ''), lt.description) as lesson_scripture
+      COALESCE(NULLIF(vs.lesson_title, ''), lt.lesson_title, lt.title) as lesson_title,
+      COALESCE(NULLIF(vs.scripture_reading, ''), lt.scripture) as lesson_scripture
     FROM volunteer_signups vs
     LEFT JOIN registrations r ON vs.registration_id = r.id
     LEFT JOIN lesson_topics lt ON vs.claimed_lesson_id = lt.id

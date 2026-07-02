@@ -45,7 +45,8 @@ export async function POST(req: NextRequest) {
 
     const assigned = await sql`
       SELECT vs.*, r.family_last_name,
-        COALESCE(NULLIF(vs.lesson_title, ''), lt.title) as effective_lesson_title
+        COALESCE(NULLIF(vs.lesson_title, ''), lt.lesson_title, lt.title) as effective_lesson_title,
+        COALESCE(NULLIF(vs.scripture_reading, ''), lt.scripture) as effective_scripture
       FROM volunteer_signups vs
       LEFT JOIN registrations r ON vs.registration_id = r.id
       LEFT JOIN lesson_topics lt ON vs.claimed_lesson_id = lt.id
@@ -86,7 +87,7 @@ export async function POST(req: NextRequest) {
               serviceLabel: formatServiceLabel(String(row.assigned_date), String(row.time_slot ?? "")),
               role: roleLabel(row),
               lessonTitle: row.effective_lesson_title ? String(row.effective_lesson_title) : null,
-              scripture: row.scripture_reading ? String(row.scripture_reading) : null,
+              scripture: row.effective_scripture ? String(row.effective_scripture) : null,
             })),
           }),
         })

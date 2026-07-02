@@ -245,7 +245,9 @@ CREATE TABLE IF NOT EXISTS lesson_topics (
   claimed_by_bid_id INTEGER,
   claimed_at TEXT,
   claimed_by_volunteer_id INTEGER,
-  event_year INTEGER  -- NULL treated as 2027 (added lazily by lib/lesson-bids.ts)
+  event_year INTEGER,   -- NULL treated as 2026/legacy (added lazily by lib/lesson-bids.ts)
+  lesson_title TEXT,    -- suggested lesson title (topic name lives in `title`)
+  scripture TEXT        -- scripture reference for the topic
 );
 
 CREATE TABLE IF NOT EXISTS meals (

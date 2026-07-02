@@ -29,14 +29,14 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}))
     const title = typeof body.title === "string" ? body.title.trim() : ""
-    if (!title) return NextResponse.json({ error: "Title is required" }, { status: 400 })
-    const description =
-      typeof body.description === "string" && body.description.trim()
-        ? body.description.trim()
-        : null
+    if (!title) return NextResponse.json({ error: "Topic is required" }, { status: 400 })
+    const lessonTitle =
+      typeof body.lessonTitle === "string" && body.lessonTitle.trim() ? body.lessonTitle.trim() : null
+    const scripture =
+      typeof body.scripture === "string" && body.scripture.trim() ? body.scripture.trim() : null
     const year = parseRegistrationEventYear(body.year)
 
-    await createTopic(title, description, year)
+    await createTopic({ title, lessonTitle, scripture }, year)
 
     const { ipAddress, userAgent } = getRequestAuditMeta(req)
     await logAuditAction(

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { sql } from "@/lib/db"
+import { ensureLessonTables } from "@/lib/lesson-bids"
 
 export type VolunteerScheduleSlot = {
   openingPrayer: string | null
@@ -107,6 +108,7 @@ export async function GET(request: Request) {
 
   if (from && to) {
     try {
+      await ensureLessonTables()
       const volunteers = await sql`
         SELECT 
           vs.volunteer_name,
@@ -116,8 +118,8 @@ export async function GET(request: Request) {
           vs.assigned_date,
           vs.time_slot,
           r.family_last_name,
-          COALESCE(NULLIF(vs.lesson_title, ''), lt.title) as lesson_title,
-          COALESCE(NULLIF(vs.scripture_reading, ''), lt.description) as lesson_scripture
+          COALESCE(NULLIF(vs.lesson_title, ''), lt.lesson_title, lt.title) as lesson_title,
+          COALESCE(NULLIF(vs.scripture_reading, ''), lt.scripture) as lesson_scripture
         FROM volunteer_signups vs
         LEFT JOIN registrations r ON vs.registration_id = r.id
         LEFT JOIN lesson_topics lt ON vs.claimed_lesson_id = lt.id
@@ -154,6 +156,7 @@ export async function GET(request: Request) {
   }
 
   try {
+    await ensureLessonTables()
     const volunteers = await sql`
       SELECT 
         vs.volunteer_name,
@@ -161,8 +164,8 @@ export async function GET(request: Request) {
         vs.prayer_type,
         vs.schedule_status,
         r.family_last_name,
-        COALESCE(NULLIF(vs.lesson_title, ''), lt.title) as lesson_title,
-        COALESCE(NULLIF(vs.scripture_reading, ''), lt.description) as lesson_scripture
+        COALESCE(NULLIF(vs.lesson_title, ''), lt.lesson_title, lt.title) as lesson_title,
+        COALESCE(NULLIF(vs.scripture_reading, ''), lt.scripture) as lesson_scripture
       FROM volunteer_signups vs
       LEFT JOIN registrations r ON vs.registration_id = r.id
       LEFT JOIN lesson_topics lt ON vs.claimed_lesson_id = lt.id

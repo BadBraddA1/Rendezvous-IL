@@ -6,7 +6,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { AdminListSkeleton, AdminRetryButton } from "./admin-panel-states"
 import { useToast } from "@/hooks/use-toast"
@@ -15,6 +14,8 @@ import { BookOpen, Loader2, Mail, Pencil, Plus, Trash2, Trophy, X } from "lucide
 type Topic = {
   id: number
   title: string
+  lesson_title: string | null
+  scripture: string | null
   description: string | null
   claimed_by_volunteer_id: number | null
   assigned_presenter_name: string | null
@@ -58,7 +59,8 @@ export function LessonBidManager({ canManage, eventYear }: Props) {
   // Topic form state (shared between "add" and "edit")
   const [editingTopicId, setEditingTopicId] = useState<number | "new" | null>(null)
   const [topicTitle, setTopicTitle] = useState("")
-  const [topicDescription, setTopicDescription] = useState("")
+  const [topicLessonTitle, setTopicLessonTitle] = useState("")
+  const [topicScripture, setTopicScripture] = useState("")
 
   useEffect(() => {
     setTopics(null)
@@ -100,13 +102,15 @@ export function LessonBidManager({ canManage, eventYear }: Props) {
   const startEdit = (topic: Topic | null) => {
     setEditingTopicId(topic ? topic.id : "new")
     setTopicTitle(topic?.title ?? "")
-    setTopicDescription(topic?.description ?? "")
+    setTopicLessonTitle(topic?.lesson_title ?? "")
+    setTopicScripture(topic?.scripture ?? "")
   }
 
   const cancelEdit = () => {
     setEditingTopicId(null)
     setTopicTitle("")
-    setTopicDescription("")
+    setTopicLessonTitle("")
+    setTopicScripture("")
   }
 
   const saveTopic = async () => {
@@ -121,7 +125,8 @@ export function LessonBidManager({ canManage, eventYear }: Props) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             title: topicTitle.trim(),
-            description: topicDescription.trim(),
+            lessonTitle: topicLessonTitle.trim(),
+            scripture: topicScripture.trim(),
             year: eventYear,
           }),
         },
@@ -239,7 +244,14 @@ export function LessonBidManager({ canManage, eventYear }: Props) {
                   <div key={topic.id} className="flex items-start justify-between gap-3 rounded-lg border p-3">
                     <div className="min-w-0">
                       <p className="font-medium">{topic.title}</p>
-                      {topic.description && (
+                      {(topic.lesson_title || topic.scripture) && (
+                        <p className="mt-0.5 text-sm text-muted-foreground">
+                          {topic.lesson_title}
+                          {topic.lesson_title && topic.scripture && " — "}
+                          {topic.scripture}
+                        </p>
+                      )}
+                      {!topic.lesson_title && !topic.scripture && topic.description && (
                         <p className="mt-0.5 text-sm text-muted-foreground">{topic.description}</p>
                       )}
                     </div>
@@ -287,15 +299,20 @@ export function LessonBidManager({ canManage, eventYear }: Props) {
                     <Input
                       value={topicTitle}
                       onChange={(e) => setTopicTitle(e.target.value)}
-                      placeholder="Topic title"
-                      aria-label="Topic title"
+                      placeholder="Topic (e.g., Faith under pressure)"
+                      aria-label="Topic"
                     />
-                    <Textarea
-                      value={topicDescription}
-                      onChange={(e) => setTopicDescription(e.target.value)}
-                      placeholder="Short description (optional)"
-                      aria-label="Topic description"
-                      rows={2}
+                    <Input
+                      value={topicLessonTitle}
+                      onChange={(e) => setTopicLessonTitle(e.target.value)}
+                      placeholder="Lesson title (optional)"
+                      aria-label="Lesson title"
+                    />
+                    <Input
+                      value={topicScripture}
+                      onChange={(e) => setTopicScripture(e.target.value)}
+                      placeholder="Scripture (e.g., Daniel 3:16-18)"
+                      aria-label="Scripture"
                     />
                     <div className="flex gap-2">
                       <Button
