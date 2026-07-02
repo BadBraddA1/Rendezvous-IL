@@ -46,10 +46,21 @@ struct AccountView: View {
         }
     }
 
+    /// Clerk made `User.fullName` internal; build the display name from the
+    /// public first/last name fields instead.
+    private var clerkUserDisplayName: String? {
+        guard let user = Clerk.shared.user else { return nil }
+        let name = [user.firstName, user.lastName]
+            .compactMap { $0?.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
+        return name.isEmpty ? nil : name
+    }
+
     private var signedInContent: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                if let name = session.adminName ?? Clerk.shared.user?.fullName {
+                if let name = session.adminName ?? clerkUserDisplayName {
                     Text("Signed in as \(name)")
                         .font(.headline)
                 }

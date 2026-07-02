@@ -1,3 +1,4 @@
+import Clerk
 import SwiftUI
 
 struct DirectoryView: View {
