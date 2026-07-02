@@ -485,6 +485,28 @@ export function FamilyInfoStep({ data, updateData }: Props) {
                     />
                   </div>
                 </div>
+
+                {(member.email?.trim() || member.phone?.trim()) && (
+                  <div className="flex items-start space-x-2">
+                    <Checkbox
+                      id={`shareContact-${member.id}`}
+                      checked={member.shareContactInDirectory ?? false}
+                      onCheckedChange={(checked) =>
+                        updateFamilyMember(member.id, { shareContactInDirectory: checked as boolean })
+                      }
+                    />
+                    <Label
+                      htmlFor={`shareContact-${member.id}`}
+                      className="cursor-pointer text-sm font-normal leading-snug"
+                    >
+                      Show this email/phone in the Family Directory
+                      <span className="block text-xs text-muted-foreground">
+                        Names and ages are always listed — contact info only shows if you check
+                        this box.
+                      </span>
+                    </Label>
+                  </div>
+                )}
               </div>
               <Button
                 variant="ghost"

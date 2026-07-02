@@ -27,6 +27,15 @@ import {
   type RegistrationEventYear,
 } from "@/lib/registration-event-years"
 
+type DirectoryMember = {
+  name: string
+  role: "father" | "mother" | "child"
+  age: number | null
+  is_adult: boolean
+  email: string | null
+  phone: string | null
+}
+
 type DirectoryFamily = {
   id: number
   family_last_name: string
@@ -40,6 +49,14 @@ type DirectoryFamily = {
   contact_phones: DirectoryContactPhone[]
   member_count: number
   member_names: string[]
+  members: DirectoryMember[]
+}
+
+/** "Adult" for 18+, otherwise the age; nothing when age is unknown. */
+function memberAgeLabel(member: DirectoryMember): string | null {
+  if (member.is_adult) return "Adult"
+  if (member.age !== null) return String(member.age)
+  return null
 }
 
 function pickDirectoryYear(
@@ -332,14 +349,63 @@ export default function DirectoryPage() {
                           <h2 className="text-lg font-semibold break-words">
                             {family.family_last_name} Family
                           </h2>
-                          {(family.husband_first_name || family.wife_first_name) && (
-                            <p className="text-sm text-muted-foreground break-words">
-                              {[family.husband_first_name, family.wife_first_name]
-                                .filter(Boolean)
-                                .join(" & ")}
-                            </p>
-                          )}
+                          {family.members.length === 0 &&
+                            (family.husband_first_name || family.wife_first_name) && (
+                              <p className="text-sm text-muted-foreground break-words">
+                                {[family.husband_first_name, family.wife_first_name]
+                                  .filter(Boolean)
+                                  .join(" & ")}
+                              </p>
+                            )}
                         </div>
+
+                        {family.members.length > 0 && (
+                          <div className="min-w-0 space-y-1.5 text-sm">
+                            {family.members
+                              .filter((member) => member.role !== "child")
+                              .map((member) => (
+                                <div key={`${member.role}-${member.name}`} className="min-w-0">
+                                  <p className="break-words">
+                                    <span className="font-medium">
+                                      {member.role === "father" ? "Father" : "Mother"}:
+                                    </span>{" "}
+                                    {member.name}
+                                  </p>
+                                  {member.email && (
+                                    <a
+                                      href={`mailto:${member.email}`}
+                                      className="block min-w-0 break-all pl-4 text-xs text-primary hover:underline"
+                                    >
+                                      {member.email}
+                                    </a>
+                                  )}
+                                </div>
+                              ))}
+                            {family.members.some((member) => member.role === "child") && (
+                              <p className="min-w-0 break-words text-muted-foreground">
+                                <span className="font-medium text-foreground">Kids:</span>{" "}
+                                {family.members
+                                  .filter((member) => member.role === "child")
+                                  .map((member) => {
+                                    const label = memberAgeLabel(member)
+                                    return label ? `${member.name} (${label})` : member.name
+                                  })
+                                  .join(", ")}
+                              </p>
+                            )}
+                            {family.members
+                              .filter((member) => member.role === "child" && member.email)
+                              .map((member) => (
+                                <a
+                                  key={`kid-email-${member.name}`}
+                                  href={`mailto:${member.email}`}
+                                  className="block min-w-0 break-all pl-4 text-xs text-primary hover:underline"
+                                >
+                                  {member.name}: {member.email}
+                                </a>
+                              ))}
+                          </div>
+                        )}
                         {family.home_congregation && (
                           <p className="flex items-start gap-2 text-sm text-muted-foreground">
                             <Church className="mt-0.5 h-4 w-4 shrink-0" />
@@ -369,7 +435,7 @@ export default function DirectoryPage() {
                             <Users className="h-4 w-4 shrink-0" />
                             {family.member_count} attendee{family.member_count === 1 ? "" : "s"}
                           </p>
-                          {family.member_names.length > 0 && (
+                          {family.members.length === 0 && family.member_names.length > 0 && (
                             <p className="min-w-0 break-words pl-6">
                               {family.member_names.slice(0, 6).join(", ")}
                               {family.member_names.length > 6 ? "…" : ""}

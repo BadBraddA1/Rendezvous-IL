@@ -4,8 +4,10 @@ import { getSqliteErrorMessage, isMissingSqliteColumn } from "@/lib/sqlite-error
 import {
   buildDirectoryContactPhones,
   contactPhoneSearchHaystack,
+  memberDisplayName,
   type DirectoryContactPhone,
 } from "@/lib/directory-contacts"
+import { formatPhoneForStorage } from "@/lib/phone-format"
 
 let directorySchemaReady: Promise<void> | null = null
 
@@ -25,6 +27,12 @@ async function runFamilyDirectoryMigrations() {
     "ALTER TABLE families ADD COLUMN photo_updated_at TEXT",
     "ALTER TABLE family_members_v2 ADD COLUMN phone TEXT",
     "ALTER TABLE registrations ADD COLUMN event_year INTEGER DEFAULT 2026",
+    // Registration-form member contacts + directory opt-in (also added lazily
+    // on submission; repeated here so the directory can read them safely).
+    "ALTER TABLE family_members ADD COLUMN email TEXT",
+    "ALTER TABLE family_members ADD COLUMN phone TEXT",
+    "ALTER TABLE family_members ADD COLUMN parent_role TEXT",
+    "ALTER TABLE family_members ADD COLUMN share_contact_directory INTEGER DEFAULT 0",
   ]
 
   for (const statement of statements) {
@@ -75,6 +83,17 @@ export function isFamilyDirectoryListed(value: unknown): boolean {
   return Number(value) !== 0
 }
 
+export type DirectoryMember = {
+  name: string
+  role: "father" | "mother" | "child"
+  /** Age at display time; null when unknown. */
+  age: number | null
+  is_adult: boolean
+  /** Only set when the member opted in to sharing contact info. */
+  email: string | null
+  phone: string | null
+}
+
 export type FamilyDirectoryEntry = {
   id: number
   family_last_name: string
@@ -88,9 +107,11 @@ export type FamilyDirectoryEntry = {
   contact_phones: DirectoryContactPhone[]
   member_count: number
   member_names: string[]
+  /** Registration members for the year: parents first, kids by age. Empty for legacy entries. */
+  members: DirectoryMember[]
 }
 
-type DirectoryEntryDraft = Omit<FamilyDirectoryEntry, "contact_phones"> & {
+type DirectoryEntryDraft = Omit<FamilyDirectoryEntry, "contact_phones" | "members"> & {
   legacy_husband_phone: string | null
   legacy_wife_phone: string | null
 }
@@ -298,7 +319,8 @@ export async function fetchDirectoryEntries(
 
   try {
     const entries = await queryDirectoryEntries(year)
-    return attachDirectoryContactPhones(entries)
+    const withPhones = await attachDirectoryContactPhones(entries)
+    return attachRegistrationMembers(withPhones, year)
   } catch (error) {
     if (
       isMissingSqliteColumn(error, "photo_url") ||
@@ -309,6 +331,109 @@ export async function fetchDirectoryEntries(
     }
     throw error
   }
+}
+
+function directoryMemberAge(row: SqlRow): number | null {
+  if (row.age !== null && row.age !== undefined && Number.isFinite(Number(row.age))) {
+    return Number(row.age)
+  }
+  const dob = row.date_of_birth ? String(row.date_of_birth) : ""
+  if (!dob) return null
+  const parsed = new Date(dob)
+  if (Number.isNaN(parsed.getTime())) return null
+  const now = new Date()
+  let age = now.getFullYear() - parsed.getFullYear()
+  const beforeBirthday =
+    now.getMonth() < parsed.getMonth() ||
+    (now.getMonth() === parsed.getMonth() && now.getDate() < parsed.getDate())
+  if (beforeBirthday) age -= 1
+  return age >= 0 && age < 130 ? age : null
+}
+
+/**
+ * Pull each family's registration members for the year: father and mother
+ * called out first, kids sorted oldest-to-youngest. Email/phone only come
+ * through when the member checked "show in directory" during registration.
+ */
+async function attachRegistrationMembers(
+  entries: Omit<FamilyDirectoryEntry, "members">[],
+  year: RegistrationEventYear,
+): Promise<FamilyDirectoryEntry[]> {
+  if (entries.length === 0) return []
+
+  let rows: SqlRow[] = []
+  try {
+    // One registration per family email (the latest for the year).
+    rows = await sql`
+      SELECT
+        fm.first_name, fm.last_name, fm.age, fm.date_of_birth,
+        fm.parent_role, fm.email, fm.phone,
+        COALESCE(fm.share_contact_directory, 0) as share_contact,
+        fm.is_adult_override,
+        LOWER(r.email) as reg_email
+      FROM family_members fm
+      JOIN registrations r ON fm.registration_id = r.id
+      WHERE COALESCE(r.event_year, 2026) = ${year}
+        AND r.id = (
+          SELECT MAX(r2.id) FROM registrations r2
+          WHERE LOWER(r2.email) = LOWER(r.email)
+            AND COALESCE(r2.event_year, 2026) = ${year}
+        )
+    `
+  } catch (error) {
+    // Very old schemas may predate the contact columns; fall back gracefully.
+    if (isMissingSqliteColumn(error, "share_contact_directory")) {
+      return entries.map((entry) => ({ ...entry, members: [] }))
+    }
+    throw error
+  }
+
+  const membersByEmail = new Map<string, DirectoryMember[]>()
+  for (const row of rows) {
+    const regEmail = String(row.reg_email ?? "")
+    if (!regEmail) continue
+
+    const role =
+      row.parent_role === "father" || row.parent_role === "mother" ? row.parent_role : "child"
+    const age = directoryMemberAge(row)
+    const shareContact = Number(row.share_contact) === 1
+    const member: DirectoryMember = {
+      name: memberDisplayName(String(row.first_name ?? ""), String(row.last_name ?? "")),
+      role,
+      age,
+      is_adult:
+        role !== "child" || Number(row.is_adult_override) === 1 || (age !== null && age >= 18),
+      email: shareContact && row.email ? String(row.email) : null,
+      phone: shareContact && row.phone ? formatPhoneForStorage(String(row.phone)) : null,
+    }
+
+    const bucket = membersByEmail.get(regEmail) || []
+    bucket.push(member)
+    membersByEmail.set(regEmail, bucket)
+  }
+
+  const roleOrder = { father: 0, mother: 1, child: 2 } as const
+  for (const bucket of membersByEmail.values()) {
+    bucket.sort((a, b) => {
+      if (roleOrder[a.role] !== roleOrder[b.role]) return roleOrder[a.role] - roleOrder[b.role]
+      return (b.age ?? -1) - (a.age ?? -1)
+    })
+  }
+
+  return entries.map((entry) => {
+    const members = entry.email ? (membersByEmail.get(entry.email.toLowerCase()) ?? []) : []
+    // Prefer opted-in registration phones over profile phones when present.
+    const sharedPhones: DirectoryContactPhone[] = members
+      .filter((m) => m.phone)
+      .map((m) => ({ member_id: null, name: m.name, phone: m.phone! }))
+    return {
+      ...entry,
+      members,
+      contact_phones: sharedPhones.length > 0 ? sharedPhones : entry.contact_phones,
+      member_count: members.length > 0 ? members.length : entry.member_count,
+      member_names: members.length > 0 ? members.map((m) => m.name) : entry.member_names,
+    }
+  })
 }
 
 async function queryDirectoryEntries(year: RegistrationEventYear): Promise<DirectoryEntryDraft[]> {
@@ -354,7 +479,7 @@ async function queryDirectoryEntries(year: RegistrationEventYear): Promise<Direc
 
 async function attachDirectoryContactPhones(
   entries: DirectoryEntryDraft[],
-): Promise<FamilyDirectoryEntry[]> {
+): Promise<Omit<FamilyDirectoryEntry, "members">[]> {
   if (entries.length === 0) return []
 
   const memberRows = await sql`

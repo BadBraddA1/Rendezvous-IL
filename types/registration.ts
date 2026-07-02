@@ -25,6 +25,8 @@ export type FamilyMember = {
   /** Required for father/mother, optional for everyone else. */
   email?: string
   phone?: string
+  /** Opt-in: show this member's email/phone in the family directory. */
+  shareContactInDirectory?: boolean
 }
 
 export type TshirtOrder = {
