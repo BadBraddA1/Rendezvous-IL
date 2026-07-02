@@ -10,7 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { LayoutDashboard, Users, Settings, FileText, MapPin, MessageSquare, Utensils, Eye, ClipboardCheck, User, Home, Shield, DollarSign, ScanLine, UserCheck, QrCode, Megaphone, Star, Calculator, ChevronDown, Monitor } from "lucide-react"
+import { LayoutDashboard, Users, Settings, FileText, MapPin, MessageSquare, Utensils, Eye, ClipboardCheck, User, Home, Shield, DollarSign, ScanLine, UserCheck, QrCode, Megaphone, Star, Calculator, ChevronDown, Monitor, Church } from "lucide-react"
 import type { AdminRole } from "@/lib/admin-permissions"
 import { getAdminPermissions } from "@/lib/admin-permissions"
 
@@ -124,6 +124,13 @@ export function AdminNav({ currentPage, admin }: AdminNavProps) {
           label: "Meals",
           icon: Utensils,
           page: "meals",
+          show: (role) => getAdminPermissions(role).canViewRegistrations,
+        },
+        {
+          href: "/admin/volunteers",
+          label: "Volunteers",
+          icon: Church,
+          page: "volunteers",
           show: (role) => getAdminPermissions(role).canViewRegistrations,
         },
         {

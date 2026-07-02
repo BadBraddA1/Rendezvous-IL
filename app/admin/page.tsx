@@ -7,7 +7,7 @@ import {
   Users, DollarSign, ShieldX, LogIn, 
   Megaphone, Star, ClipboardCheck, AlertCircle, 
   Calendar, Home, Tent, Truck, Car,
-  Calculator, Clock, CheckCircle2
+  Calculator, Clock, CheckCircle2, Church
 } from "lucide-react"
 import Link from "next/link"
 import { sql } from "@/lib/db"
@@ -490,6 +490,12 @@ export default async function AdminDashboard() {
                   <Link href="/admin/meals">
                     <Calendar className="h-4 w-4" />
                     Manage Meals
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" className="admin-toolbar-action justify-start gap-2">
+                  <Link href="/admin/volunteers">
+                    <Church className="h-4 w-4" />
+                    Worship Volunteers
                   </Link>
                 </Button>
                 <Button asChild variant="outline" className="admin-toolbar-action justify-start gap-2">
