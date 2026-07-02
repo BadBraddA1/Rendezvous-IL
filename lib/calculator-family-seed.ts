@@ -32,16 +32,15 @@ export type CalculatorFamilySeed = {
 }
 
 export async function getRatesGroupedByYear(year: number): Promise<Record<string, RateRow[]> | null> {
-  const charts = await sql`
-    SELECT * FROM rate_charts WHERE year = ${year} LIMIT 1
-  `
-  if (charts.length === 0) return null
-
+  // Single round-trip: join instead of chart lookup + rates fetch.
   const rates = await sql`
-    SELECT * FROM rates
-    WHERE rate_chart_id = ${charts[0].id}
-    ORDER BY category, sort_order
+    SELECT r.category, r.name, r.amount
+    FROM rates r
+    JOIN rate_charts c ON r.rate_chart_id = c.id
+    WHERE c.year = ${year}
+    ORDER BY r.category, r.sort_order
   `
+  if (rates.length === 0) return null
 
   const grouped: Record<string, RateRow[]> = {}
   for (const rate of rates) {
@@ -151,11 +150,13 @@ async function getPriorRegistrationFromV2(
   }
 }
 
-async function getPriorRegistration(
+export type PriorRegistration = { registration: SqlRow; members: RegistrationMemberRow[] }
+
+export async function getPriorRegistration(
   familyEmail: string,
   beforeYear: number,
   familyId?: number,
-): Promise<{ registration: SqlRow; members: RegistrationMemberRow[] } | null> {
+): Promise<PriorRegistration | null> {
   const legacy = await getPriorRegistrationFromLegacy(familyEmail, beforeYear)
   if (legacy) return legacy
 
@@ -186,8 +187,13 @@ export async function buildCalculatorFamilySeed(input: {
     date_of_birth: string | null
   }[]
   targetYear: number
+  /** Pass a preloaded prior registration to skip the lookup (lets callers parallelize). */
+  prior?: PriorRegistration | null
 }): Promise<CalculatorFamilySeed | null> {
-  const prior = await getPriorRegistration(input.familyEmail, input.targetYear, input.familyId)
+  const prior =
+    input.prior !== undefined
+      ? input.prior
+      : await getPriorRegistration(input.familyEmail, input.targetYear, input.familyId)
   if (!prior) return null
 
   const sourceYear = Number(

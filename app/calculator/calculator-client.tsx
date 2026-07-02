@@ -137,10 +137,10 @@ export function CalculatorClient({ ratesData, initialEnabled }: CalculatorClient
     ? initialEnabled
     : (statusData?.enabled ?? initialEnabled)
 
-  const familyApiUrl =
-    authLoaded && isSignedIn && ratesData?.year
-      ? `/api/calculator/family?year=${ratesData.year}`
-      : null
+  // Fire immediately (before Clerk JS finishes loading) — the API answers
+  // { authenticated: false } cheaply for guests, so this is safe and shaves
+  // Clerk's client init time off the lookup.
+  const familyApiUrl = ratesData?.year ? `/api/calculator/family?year=${ratesData.year}` : null
 
   const { data: familyData, isLoading: familyLoading } = useSWR<FamilyApiResponse>(
     familyApiUrl,

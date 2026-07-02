@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth, currentUser } from "@clerk/nextjs/server"
-import { buildCalculatorFamilySeed } from "@/lib/calculator-family-seed"
-import { resolveFamilyForUser, getFamilyMembers } from "@/lib/family-auth"
+import { buildCalculatorFamilySeed, getPriorRegistration } from "@/lib/calculator-family-seed"
+import { getFamilyByClerkId, resolveFamilyForUser, getFamilyMembers } from "@/lib/family-auth"
 
 export const dynamic = "force-dynamic"
 
@@ -13,10 +13,14 @@ export async function GET(request: Request) {
       return NextResponse.json({ authenticated: false })
     }
 
-    const user = await currentUser()
-    const email = user?.emailAddresses[0]?.emailAddress
+    // Fast path: already-linked families skip the Clerk currentUser() network call.
+    let family = await getFamilyByClerkId(userId)
+    if (!family) {
+      const user = await currentUser()
+      const email = user?.emailAddresses[0]?.emailAddress
+      family = await resolveFamilyForUser(userId, email)
+    }
 
-    const family = await resolveFamilyForUser(userId, email)
     if (!family) {
       return NextResponse.json({
         authenticated: true,
@@ -27,13 +31,18 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const targetYear = Number(searchParams.get("year") ?? "2027")
 
-    const profileMembers = await getFamilyMembers(family.id)
+    const [profileMembers, prior] = await Promise.all([
+      getFamilyMembers(family.id),
+      family.email ? getPriorRegistration(family.email, targetYear, family.id) : Promise.resolve(null),
+    ])
+
     const seed = family.email
       ? await buildCalculatorFamilySeed({
           familyEmail: family.email,
           familyId: family.id,
           profileMembers,
           targetYear,
+          prior,
         })
       : null
 
