@@ -44,12 +44,6 @@ const LODGING_LABELS: Record<string, string> = {
   tent: "Tent camping",
 }
 
-function shirtSizeLabel(size: string): string {
-  if (size.startsWith("y")) return `Youth ${size.slice(1)}`
-  if (size.startsWith("a")) return `Adult ${size.slice(1)}`
-  return size
-}
-
 type Props = {
   prefill: RegistrationData
   sourceYear: number
@@ -85,36 +79,58 @@ export function ExpressRegistrationClient({
     registrationData.familyMembers.map((m) => m.age).join(","),
   ])
 
-  const isEditing = Boolean(editingSteps[currentStep])
+  // Steps 3 (merch/add-ons/scholarship) and 4 (emergency contact, volunteers)
+  // never carry over — they're always a fresh fill-out, not a confirmation.
+  const FRESH_STEPS = [3, 4]
+  const isFreshStep = FRESH_STEPS.includes(currentStep)
+  const isEditing = isFreshStep || Boolean(editingSteps[currentStep])
   const setEditing = (editing: boolean) =>
     setEditingSteps((prev) => ({ ...prev, [currentStep]: editing }))
 
+  const [stepError, setStepError] = useState<string | null>(null)
+
   const goToStep = (step: number, edit = false) => {
     setCurrentStep(step)
+    setStepError(null)
     if (edit) setEditingSteps((prev) => ({ ...prev, [step]: true }))
     window.scrollTo({ top: 0, behavior: "smooth" })
   }
 
-  const nextStep = () => goToStep(Math.min(currentStep + 1, STEPS.length))
+  const nextStep = () => {
+    if (currentStep === 4) {
+      if (!registrationData.emergencyContactName.trim() || !registrationData.emergencyContactPhone.trim()) {
+        setStepError("Please enter an emergency contact name and phone number — we need a fresh one every year.")
+        return
+      }
+    }
+    goToStep(Math.min(currentStep + 1, STEPS.length))
+  }
   const prevStep = () => goToStep(Math.max(currentStep - 1, 1))
 
   const confirmButtons = (
-    <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
-      <Button variant="outline" onClick={prevStep} disabled={currentStep === 1}>
-        <ChevronLeft className="mr-2 h-4 w-4" aria-hidden="true" />
-        Back
-      </Button>
-      <div className="flex flex-col gap-3 sm:flex-row">
-        {!isEditing && (
-          <Button variant="outline" onClick={() => setEditing(true)}>
-            <Pencil className="mr-2 h-4 w-4" aria-hidden="true" />
-            Make changes
-          </Button>
-        )}
-        <Button onClick={nextStep}>
-          <Check className="mr-2 h-4 w-4" aria-hidden="true" />
-          {isEditing ? "Done — continue" : "Yes, still right — continue"}
+    <div className="space-y-3 border-t pt-4">
+      {stepError && (
+        <Alert variant="destructive">
+          <AlertDescription>{stepError}</AlertDescription>
+        </Alert>
+      )}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <Button variant="outline" onClick={prevStep} disabled={currentStep === 1}>
+          <ChevronLeft className="mr-2 h-4 w-4" aria-hidden="true" />
+          Back
         </Button>
+        <div className="flex flex-col gap-3 sm:flex-row">
+          {!isEditing && (
+            <Button variant="outline" onClick={() => setEditing(true)}>
+              <Pencil className="mr-2 h-4 w-4" aria-hidden="true" />
+              Make changes
+            </Button>
+          )}
+          <Button onClick={nextStep}>
+            <Check className="mr-2 h-4 w-4" aria-hidden="true" />
+            {isFreshStep ? "Continue" : isEditing ? "Done — continue" : "Yes, still right — continue"}
+          </Button>
+        </div>
       </div>
     </div>
   )
@@ -124,6 +140,16 @@ export function ExpressRegistrationClient({
       <AlertDescription>
         This is what you had for <strong>Rendezvous {sourceYear}</strong>. Is it still right for
         2027? If anything changed, tap <strong>Make changes</strong>.
+      </AlertDescription>
+    </Alert>
+  )
+
+  const freshStepBanner = (
+    <Alert className="border-amber-500/30 bg-amber-500/10">
+      <AlertDescription>
+        {currentStep === 3
+          ? "T-shirts, add-ons, and the scholarship fund don't carry over — please fill these out fresh for 2027."
+          : "Your emergency contact and worship service volunteers must be re-entered every year. Health information carried over — please double-check it."}
       </AlertDescription>
     </Alert>
   )
@@ -227,120 +253,9 @@ export function ExpressRegistrationClient({
     </div>
   )
 
-  const totalShirts = registrationData.tshirtOrders.reduce((sum, o) => sum + o.quantity, 0)
-  const merchandiseSummary = (
-    <div className="space-y-3">
-      {totalShirts === 0 &&
-      registrationData.climbingTowerParticipants === 0 &&
-      registrationData.scholarshipDonation === 0 &&
-      !registrationData.scholarshipRequested ? (
-        <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-          You didn&apos;t order any merchandise or add-ons for {sourceYear}. Continue if that&apos;s
-          still the plan, or make changes to add t-shirts, climbing tower, or a scholarship
-          donation.
-        </p>
-      ) : (
-        <div className="space-y-2">
-          {registrationData.tshirtOrders.length > 0 && (
-            <div className="flex items-start gap-3 rounded-lg border p-3">
-              <Shirt className="mt-0.5 h-4 w-4 text-primary" aria-hidden="true" />
-              <div className="text-sm">
-                <p className="font-medium">T-shirts (${registrationData.tshirtTotal.toFixed(2)})</p>
-                <p className="text-muted-foreground">
-                  {registrationData.tshirtOrders
-                    .map((order) => `${order.quantity} × ${shirtSizeLabel(order.size)}`)
-                    .join(", ")}
-                </p>
-              </div>
-            </div>
-          )}
-          {registrationData.climbingTowerParticipants > 0 && (
-            <div className="rounded-lg border p-3 text-sm">
-              <p className="font-medium">
-                Climbing tower — {registrationData.climbingTowerParticipants}{" "}
-                {registrationData.climbingTowerParticipants === 1 ? "person" : "people"} ($
-                {registrationData.climbingTowerTotal.toFixed(2)})
-              </p>
-            </div>
-          )}
-          {registrationData.scholarshipDonation > 0 && (
-            <div className="rounded-lg border p-3 text-sm">
-              <p className="font-medium">
-                Scholarship donation — ${registrationData.scholarshipDonation.toFixed(2)}
-              </p>
-            </div>
-          )}
-          {registrationData.scholarshipRequested && (
-            <div className="rounded-lg border p-3 text-sm">
-              <p className="font-medium">Financial assistance requested</p>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  )
-
-  const additionalSummary = (
-    <div className="space-y-3 text-sm">
-      <div className="rounded-lg border p-3">
-        <p className="font-medium">Emergency contact</p>
-        <p className="text-muted-foreground">
-          {registrationData.emergencyContactName
-            ? `${registrationData.emergencyContactName} (${registrationData.emergencyContactRelationship || "relationship not listed"}) — ${registrationData.emergencyContactPhone || "no phone"}`
-            : "Not on file — please add one."}
-        </p>
-      </div>
-
-      <div className="rounded-lg border p-3">
-        <p className="font-medium">Health information</p>
-        {registrationData.healthInfo.length === 0 ? (
-          <p className="text-muted-foreground">None listed.</p>
-        ) : (
-          <ul className="mt-1 space-y-1 text-muted-foreground">
-            {registrationData.healthInfo.map((info) => (
-              <li key={info.id} className="break-words">
-                {info.fullName} — {info.condition}
-                {info.medicationOnHand ? " (medication on hand)" : ""}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      <div className="rounded-lg border p-3">
-        <p className="font-medium">Worship service volunteers</p>
-        {registrationData.volunteerSignups.length === 0 ? (
-          <p className="text-muted-foreground">Nobody volunteered last year.</p>
-        ) : (
-          <ul className="mt-1 space-y-1 text-muted-foreground">
-            {registrationData.volunteerSignups.map((signup) => (
-              <li key={signup.type} className="break-words">
-                {signup.type}: {signup.names.join(", ") || "—"}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      {(registrationData.sessionSuggestions.moms || registrationData.sessionSuggestions.dads) && (
-        <div className="rounded-lg border p-3">
-          <p className="font-medium">Session suggestions</p>
-          {registrationData.sessionSuggestions.moms && (
-            <p className="text-muted-foreground">Moms: {registrationData.sessionSuggestions.moms}</p>
-          )}
-          {registrationData.sessionSuggestions.dads && (
-            <p className="text-muted-foreground">Dads: {registrationData.sessionSuggestions.dads}</p>
-          )}
-        </div>
-      )}
-    </div>
-  )
-
   const summaries: Record<number, React.ReactNode> = {
     1: familySummary,
     2: lodgingSummary,
-    3: merchandiseSummary,
-    4: additionalSummary,
   }
 
   const editors: Record<number, React.ReactNode> = {
@@ -362,8 +277,9 @@ export function ExpressRegistrationClient({
               Welcome back, {registrationData.familyLastName} family!
             </p>
             <p className="text-sm text-muted-foreground">
-              We loaded everything from your {sourceYear} registration. Review each section,
-              change what you need, sign, and you&apos;re done.
+              We loaded your family and lodging from your {sourceYear} registration. T-shirts,
+              add-ons, scholarship, emergency contact, and volunteers are asked fresh each year.
+              Review, fill in the new-year items, sign, and you&apos;re done.
             </p>
           </div>
         </div>
@@ -389,13 +305,15 @@ export function ExpressRegistrationClient({
               {STEPS[currentStep - 1].title}
             </CardTitle>
             <CardDescription>
-              {isEditing
-                ? "Make your changes below, then continue."
-                : `From your ${sourceYear} registration`}
+              {isFreshStep
+                ? "Fresh every year — this doesn't carry over"
+                : isEditing
+                  ? "Make your changes below, then continue."
+                  : `From your ${sourceYear} registration`}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {!isEditing && stillRightBanner}
+            {isFreshStep ? freshStepBanner : !isEditing && stillRightBanner}
             {isEditing ? editors[currentStep] : summaries[currentStep]}
             {confirmButtons}
           </CardContent>

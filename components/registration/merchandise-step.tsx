@@ -6,10 +6,9 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Plus, Trash2, ShirtIcon, Mountain, AlertCircle, Ruler } from "lucide-react"
+import { Plus, Trash2, ShirtIcon, Mountain, AlertCircle } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import Image from "next/image"
+import { SizeChartDialog } from "@/components/registration/size-chart-dialog"
 import type { RegistrationData, TshirtOrder } from "@/types/registration"
 
 type Props = {
@@ -84,28 +83,7 @@ export function MerchandiseStep({ data, updateData }: Props) {
             <ShirtIcon className="h-5 w-5 text-primary" />
             <h3 className="font-semibold">Rendezvous T-Shirts (Interest Gauge)</h3>
           </div>
-          <Dialog open={sizeChartOpen} onOpenChange={setSizeChartOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-2 bg-transparent">
-                <Ruler className="h-4 w-4" />
-                Size Chart
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>T-Shirt Size Charts</DialogTitle>
-              </DialogHeader>
-              <div className="relative w-full">
-                <Image
-                  src="/shirt-size-charts.png"
-                  alt="T-Shirt Size Charts showing Adult, Ladies, Youth, Toddler and Infant sizing"
-                  width={900}
-                  height={1200}
-                  className="w-full h-auto rounded-md"
-                />
-              </div>
-            </DialogContent>
-          </Dialog>
+          <SizeChartDialog open={sizeChartOpen} onOpenChange={setSizeChartOpen} />
         </div>
         <div className="rounded-lg border-2 border-dashed border-primary/30 bg-primary/5 p-4">
           <p className="text-sm font-medium text-foreground mb-3">

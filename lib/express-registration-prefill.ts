@@ -1,14 +1,6 @@
 import { sql, type SqlRow } from "@/lib/db"
 import { calculateLodgingCost } from "@/lib/lodging-cost"
-import type {
-  FamilyMember,
-  HealthInfo,
-  LodgingType,
-  RegistrationData,
-  TshirtOrder,
-  VolunteerEmails,
-  VolunteerSignup,
-} from "@/types/registration"
+import type { FamilyMember, HealthInfo, LodgingType, RegistrationData } from "@/types/registration"
 import { DEFAULT_ARRIVAL_DEPARTURE } from "@/lib/registration-arrival-departure"
 
 export const EXPRESS_TARGET_YEAR = 2027
@@ -80,15 +72,11 @@ export async function getExpressPrefill(familyEmail: string): Promise<ExpressPre
   )
   const yearGap = Math.max(0, EXPRESS_TARGET_YEAR - sourceYear)
 
-  const [memberRows, tshirtRows, healthRows, volunteerRows, suggestionRows] = await Promise.all([
+  // T-shirts, add-ons, scholarship, emergency contact, and volunteer signups
+  // are intentionally not loaded — those must be re-entered every year.
+  const [memberRows, healthRows, suggestionRows] = await Promise.all([
     sql`SELECT * FROM family_members WHERE registration_id = ${registrationId} ORDER BY id ASC`,
-    sql`SELECT * FROM tshirt_orders WHERE registration_id = ${registrationId} ORDER BY id ASC`.catch(
-      () => [] as SqlRow[],
-    ),
     sql`SELECT * FROM health_info WHERE registration_id = ${registrationId} ORDER BY id ASC`.catch(
-      () => [] as SqlRow[],
-    ),
-    sql`SELECT * FROM volunteer_signups WHERE registration_id = ${registrationId} ORDER BY id ASC`.catch(
       () => [] as SqlRow[],
     ),
     sql`SELECT * FROM session_suggestions WHERE registration_id = ${registrationId}`.catch(
@@ -122,16 +110,6 @@ export async function getExpressPrefill(familyEmail: string): Promise<ExpressPre
     }
   })
 
-  const tshirtOrders: TshirtOrder[] = tshirtRows.map((row, index) => ({
-    id: String(index + 1),
-    size: String(row.size ?? "aM"),
-    quantity: Number(row.quantity ?? 1),
-  }))
-  const tshirtTotal = tshirtOrders.reduce((sum, order) => sum + order.quantity * 12, 0)
-
-  const climbingTowerTotal = Number(reg.climbing_tower_total ?? 0)
-  const climbingTowerParticipants = Math.max(0, Math.round(climbingTowerTotal / 10))
-
   const healthInfo: HealthInfo[] = healthRows
     .filter((row) => row.full_name && row.condition)
     .map((row, index) => ({
@@ -140,23 +118,6 @@ export async function getExpressPrefill(familyEmail: string): Promise<ExpressPre
       condition: String(row.condition),
       medicationOnHand: Boolean(row.medication_on_hand),
     }))
-
-  const volunteerMap = new Map<string, string[]>()
-  const volunteerEmails: VolunteerEmails = {}
-  for (const row of volunteerRows) {
-    const type = String(row.volunteer_type ?? "")
-    const name = String(row.volunteer_name ?? "")
-    if (!type || !name) continue
-    const names = volunteerMap.get(type) ?? []
-    if (!names.includes(name)) names.push(name)
-    volunteerMap.set(type, names)
-    if (typeof row.volunteer_email === "string" && row.volunteer_email) {
-      volunteerEmails[name] = row.volunteer_email
-    }
-  }
-  const volunteerSignups: VolunteerSignup[] = Array.from(volunteerMap.entries()).map(
-    ([type, names]) => ({ type, names }),
-  )
 
   const sessionSuggestions = { moms: "", dads: "" }
   for (const row of suggestionRows) {
@@ -185,18 +146,21 @@ export async function getExpressPrefill(familyEmail: string): Promise<ExpressPre
     familyMembers: updatedMembers,
     lodgingType,
     lodgingTotal,
-    tshirtOrders,
-    tshirtTotal,
-    climbingTowerParticipants,
-    climbingTowerTotal,
-    scholarshipDonation: Number(reg.scholarship_donation ?? 0),
-    scholarshipRequested: Boolean(reg.scholarship_requested),
-    emergencyContactName: String(reg.emergency_contact_name ?? ""),
-    emergencyContactRelationship: String(reg.emergency_contact_relationship ?? ""),
-    emergencyContactPhone: String(reg.emergency_contact_phone ?? ""),
+    // Intentionally NOT carried over — these must be re-entered every year:
+    // t-shirts, add-ons, scholarship fund, emergency contact, and worship
+    // service volunteers.
+    tshirtOrders: [],
+    tshirtTotal: 0,
+    climbingTowerParticipants: 0,
+    climbingTowerTotal: 0,
+    scholarshipDonation: 0,
+    scholarshipRequested: false,
+    emergencyContactName: "",
+    emergencyContactRelationship: "",
+    emergencyContactPhone: "",
     healthInfo,
-    volunteerSignups,
-    volunteerEmails,
+    volunteerSignups: [],
+    volunteerEmails: {},
     sessionSuggestions,
     fatherSignature: "",
     motherSignature: "",
