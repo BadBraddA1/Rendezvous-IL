@@ -29,7 +29,11 @@ async function ensureContactColumns() {
   contactColumnsEnsured = true
 }
 
-export async function submitTestRegistration(data: RegistrationData) {
+export async function submitTestRegistration(
+  data: RegistrationData,
+  options?: { paymentNotes?: string },
+) {
+  const paymentNotes = options?.paymentNotes ?? "ADMIN_TEST"
   await ensureContactColumns()
 
   const arrivalNotes = formatArrivalDepartureNotes(
@@ -75,7 +79,7 @@ export async function submitTestRegistration(data: RegistrationData) {
       ${data.motherSignature || null},
       ${data.registrationFee ?? 25},
       'pending',
-      'ADMIN_TEST',
+      ${paymentNotes},
       2027
     )
     RETURNING id

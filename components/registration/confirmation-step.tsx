@@ -14,9 +14,17 @@ type Props = {
   onBack?: () => void
   onEditStep?: (step: number) => void
   backLabel?: string
+  /** Override the POST target (e.g. the express re-registration endpoint). */
+  submitEndpoint?: string
 }
 
-export function ConfirmationStep({ data, onBack, onEditStep, backLabel = "Go back" }: Props) {
+export function ConfirmationStep({
+  data,
+  onBack,
+  onEditStep,
+  backLabel = "Go back",
+  submitEndpoint = "/api/registration",
+}: Props) {
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [registrationId, setRegistrationId] = useState<number | null>(null)
@@ -39,7 +47,7 @@ export function ConfirmationStep({ data, onBack, onEditStep, backLabel = "Go bac
     setSubmitError(null)
 
     try {
-      const response = await fetch("/api/registration", {
+      const response = await fetch(submitEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),

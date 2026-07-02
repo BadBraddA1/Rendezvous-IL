@@ -63,7 +63,8 @@ export async function getAdminDashboardSummary(eventYear = 2027): Promise<AdminD
   `
 
   const [expressStats] = await sql`
-    SELECT COUNT(*)::int as count FROM express_registration_2027
+    SELECT COUNT(*) as count FROM registrations
+    WHERE payment_notes = 'EXPRESS_TEST' AND event_year = 2027
   `
 
   const [pendingStats] = await sql`

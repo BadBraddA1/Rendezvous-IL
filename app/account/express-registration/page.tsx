@@ -3,14 +3,11 @@ import { redirect } from "next/navigation"
 import { currentUser } from "@clerk/nextjs/server"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { ShieldAlert, Users } from "lucide-react"
-import {
-  getCurrentFamily,
-  getExpressRegistrationData,
-  getFamilyByEmail,
-  linkFamilyToClerk,
-} from "@/lib/family-auth"
+import { ShieldAlert, Users, FileQuestion } from "lucide-react"
+import { getCurrentFamily, getFamilyByEmail, linkFamilyToClerk } from "@/lib/family-auth"
 import { canAccessExpressRegistrationPreview } from "@/lib/registration-access"
+import { isSignatureEmailsEnabled } from "@/lib/registration-settings"
+import { getExpressPrefill } from "@/lib/express-registration-prefill"
 import { ExpressRegistrationClient } from "./express-registration-client"
 
 export default async function ExpressRegistrationPage() {
@@ -80,21 +77,50 @@ export default async function ExpressRegistrationPage() {
     )
   }
 
-  const expressData = userEmail ? await getExpressRegistrationData(userEmail) : null
+  const prefillEmail = family.email || userEmail || ""
+  const prefill = prefillEmail ? await getExpressPrefill(prefillEmail) : null
+
+  if (!prefill) {
+    return (
+      <div className="mx-auto max-w-2xl space-y-6">
+        <Card>
+          <CardHeader className="text-center">
+            <FileQuestion className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
+            <CardTitle>No previous registration found</CardTitle>
+            <CardDescription>
+              Express registration reuses your last year&apos;s answers, but we couldn&apos;t find a past
+              registration for {prefillEmail || "your email"}. Use the standard form instead — next year
+              you&apos;ll be able to register the fast way.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
+            <Button asChild>
+              <Link href="/registration-test2026">Open the registration form</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/account">Back to account</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  const signatureEmailsEnabled = await isSignatureEmailsEnabled()
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="mx-auto max-w-3xl space-y-6">
       <div className="space-y-2">
-        <h1 className="text-section-title">Express registration preview</h1>
+        <h1 className="text-section-title">Express registration</h1>
         <p className="text-lead text-muted-foreground">
-          Test saving 2027 lodging preferences before registration opens to the public.
+          Confirm what carried over from {prefill.sourceYear}, change anything that&apos;s different, and sign.
         </p>
       </div>
 
       <ExpressRegistrationClient
-        familyLastName={family.family_last_name}
-        familyEmail={family.email || userEmail || ""}
-        suggestedLodging={expressData?.lodgingType ?? null}
+        prefill={prefill.data}
+        sourceYear={prefill.sourceYear}
+        signatureEmailsEnabled={signatureEmailsEnabled}
       />
     </div>
   )

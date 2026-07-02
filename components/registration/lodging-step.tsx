@@ -4,6 +4,7 @@ import { useEffect } from "react"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Calculator, Home, Tent, Caravan } from "lucide-react"
+import { calculateLodgingCost } from "@/lib/lodging-cost"
 import type { RegistrationData, LodgingType } from "@/types/registration"
 
 type Props = {
@@ -12,63 +13,12 @@ type Props = {
 }
 
 export function LodgingStep({ data, updateData }: Props) {
-  // Calculate lodging costs using the same logic as the calculator
-  const calculateLodgingCost = () => {
-    const familyMembers = data.familyMembers.filter((m) => m.age >= 0)
-    const payingMembers = familyMembers.filter((m) => m.age >= 6)
-    const payingCount = payingMembers.length
-
-    let total = 0
-    const updatedMembers = familyMembers.map((member) => {
-      let cost = 0
-
-      if (data.lodgingType.startsWith("motel")) {
-        if (member.age <= 5) {
-          cost = 0
-        } else if (member.age >= 6 && member.age <= 11) {
-          cost = 190
-        } else if (member.age >= 12 && member.age <= 17) {
-          cost = 235
-        } else {
-          if (payingCount === 1) {
-            cost = 515
-          } else if (payingCount === 2) {
-            cost = 350
-          } else if (payingCount === 3) {
-            cost = 315
-          } else {
-            cost = 300
-          }
-        }
-      } else {
-        if (member.age <= 5) {
-          cost = 0
-        } else if (member.age >= 6 && member.age <= 11) {
-          cost = 75
-        } else {
-          cost = 155
-        }
-      }
-
-      total += cost
-      return { ...member, personCost: cost }
-    })
-
-    if (data.lodgingType === "rv") {
-      total += 120
-    } else if (data.lodgingType === "tent") {
-      total += 80
-    }
-
-    return { total, updatedMembers }
-  }
-
   useEffect(() => {
-    const { total, updatedMembers } = calculateLodgingCost()
+    const { total, updatedMembers } = calculateLodgingCost(data.lodgingType, data.familyMembers)
     updateData({ lodgingTotal: total, familyMembers: updatedMembers })
   }, [data.lodgingType, data.familyMembers.map((m) => m.age).join(",")])
 
-  const { total } = calculateLodgingCost()
+  const { total } = calculateLodgingCost(data.lodgingType, data.familyMembers)
 
   return (
     <div className="space-y-6">

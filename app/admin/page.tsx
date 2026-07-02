@@ -131,9 +131,10 @@ export default async function AdminDashboard() {
       LEFT JOIN family_members_v2 fm ON f.id = fm.family_id
     `
 
-    // Express registration count for 2027
+    // Registrations submitted through the express review-and-confirm flow
     const [expressStats] = await sql`
-      SELECT COUNT(*)::int as count FROM express_registration_2027
+      SELECT COUNT(*) as count FROM registrations
+      WHERE payment_notes = 'EXPRESS_TEST' AND event_year = 2027
     `
 
     // Pending changes
@@ -274,9 +275,9 @@ export default async function AdminDashboard() {
               hint={`${stats2027.registeredAttendees} total attendees`}
             />
             <AdminStatItem
-              label="Express pre-registrations"
+              label="Express registrations"
               value={stats2027.expressRegistrations}
-              hint="Families planning to attend"
+              hint="Returning families via express flow"
             />
             <AdminStatItem
               label="Total revenue"
@@ -458,9 +459,9 @@ export default async function AdminDashboard() {
                 </div>
                 <div className="border-t pt-4">
                   <p className="text-sm text-muted-foreground">
-                    {stats2027.expressRegistrations > 0 
-                      ? `${stats2027.expressRegistrations} families have saved their preferences for express registration.`
-                      : "No express registrations yet. Share the calculator to let families plan ahead!"}
+                    {stats2027.expressRegistrations > 0
+                      ? `${stats2027.expressRegistrations} returning families have registered through the express flow.`
+                      : "No express registrations yet. Returning families can review and confirm last year's info in minutes."}
                   </p>
                 </div>
               </CardContent>
