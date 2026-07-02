@@ -25,6 +25,8 @@ type Volunteer = {
   lesson_title: string | null
   scripture_reading: string | null
   family_last_name: string | null
+  claimed_lesson_id: number | null
+  claimed_lesson_title: string | null
 }
 
 /** The 9 worship services rendered on /schedule (Mon evening through Fri morning). */
@@ -294,7 +296,13 @@ export function VolunteerScheduleManager({ canManage }: Props) {
                         })}
                       </SelectContent>
                     </Select>
-                    {slot.lesson && occupant && draft && (
+                    {slot.lesson && occupant && occupant.claimed_lesson_title && (
+                      <p className="rounded-md bg-muted/60 px-2 py-1.5 text-xs text-muted-foreground">
+                        Awarded topic: <span className="font-medium text-foreground">{occupant.claimed_lesson_title}</span>{" "}
+                        (from the Lesson bids tab — shown on the schedule automatically)
+                      </p>
+                    )}
+                    {slot.lesson && occupant && !occupant.claimed_lesson_title && draft && (
                       <div className="grid gap-2 pt-1">
                         <Input
                           value={draft.title}

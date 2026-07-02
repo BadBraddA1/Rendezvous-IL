@@ -3,6 +3,8 @@ import { redirect } from "next/navigation"
 import Link from "next/link"
 import { AdminNav } from "@/components/admin/admin-nav"
 import { VolunteerScheduleManager } from "@/components/admin/volunteer-schedule-manager"
+import { LessonBidManager } from "@/components/admin/lesson-bid-manager"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ShieldAlert, LogIn, Home } from "lucide-react"
@@ -94,11 +96,22 @@ export default async function AdminVolunteersPage() {
           <div>
             <h1 className="text-page-title">Worship Service Volunteers</h1>
             <p className="text-muted-foreground">
-              Assign registered volunteers to morning and evening devotions. Changes show up on the
-              public schedule right away.
+              Assign registered volunteers to morning and evening devotions, and run the lesson
+              topic bidding. Changes show up on the public schedule right away.
             </p>
           </div>
-          <VolunteerScheduleManager canManage={canManage} />
+          <Tabs defaultValue="schedule">
+            <TabsList>
+              <TabsTrigger value="schedule">Schedule</TabsTrigger>
+              <TabsTrigger value="lesson-bids">Lesson bids</TabsTrigger>
+            </TabsList>
+            <TabsContent value="schedule" className="mt-4">
+              <VolunteerScheduleManager canManage={canManage} />
+            </TabsContent>
+            <TabsContent value="lesson-bids" className="mt-4">
+              <LessonBidManager canManage={canManage} />
+            </TabsContent>
+          </Tabs>
         </div>
       </main>
     </div>
