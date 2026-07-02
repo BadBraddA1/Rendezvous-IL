@@ -19,10 +19,14 @@ import {
   ArrowLeft,
   AlertCircle,
   Calendar,
+  CheckCircle2,
   History,
   Loader2,
   Clock,
   LogIn,
+  Plus,
+  Save,
+  Trash2,
   UserPlus,
   type LucideIcon,
 } from "lucide-react"
@@ -40,6 +44,27 @@ import {
 } from "@/lib/rate-display"
 import { FamilyEstimatePanel } from "@/components/calculator/family-estimate"
 import type { CalculatorFamilySeed } from "@/lib/calculator-family-seed"
+import { CustomDateSelector } from "@/components/registration/custom-date-selector"
+
+type CalcMember = {
+  id: string
+  firstName: string
+  dateOfBirth: string
+  isOver18: boolean
+}
+
+function ageOnEventDate(dob: string, eventYear: number): number | null {
+  if (!dob) return null
+  const birthDate = new Date(dob)
+  if (Number.isNaN(birthDate.getTime())) return null
+  const eventDate = new Date(`${eventYear}-05-03`)
+  let age = eventDate.getFullYear() - birthDate.getFullYear()
+  const monthDiff = eventDate.getMonth() - birthDate.getMonth()
+  if (monthDiff < 0 || (monthDiff === 0 && eventDate.getDate() < birthDate.getDate())) {
+    age--
+  }
+  return Math.max(0, age)
+}
 
 interface Rate {
   id: number
@@ -137,13 +162,82 @@ export function CalculatorClient({ ratesData, initialEnabled }: CalculatorClient
     !familySeed &&
     (familyLoading || Boolean(familyData?.priorRegistration))
 
-  const [adults, setAdults] = useState(2)
-  const [youth, setYouth] = useState(0)
-  const [children, setChildren] = useState(0)
-  const [infants, setInfants] = useState(0)
+  const [members, setMembers] = useState<CalcMember[]>([
+    { id: "1", firstName: "", dateOfBirth: "", isOver18: true },
+    { id: "2", firstName: "", dateOfBirth: "", isOver18: true },
+  ])
   const [lodgingType, setLodgingType] = useState<LodgingType>("motel")
+  const [savingPrefill, setSavingPrefill] = useState(false)
+  const [prefillSaved, setPrefillSaved] = useState(false)
+  const [prefillError, setPrefillError] = useState<string | null>(null)
 
   const numNights = 4
+
+  const eventYear = ratesData?.year ?? 2027
+
+  // Bucket each person by their age on the event date, like the registration
+  // form does. Rows without a birth date count as adults.
+  const { adults, youth, children, infants } = useMemo(() => {
+    let adults = 0
+    let youth = 0
+    let children = 0
+    let infants = 0
+    for (const member of members) {
+      const age = member.isOver18 ? 18 : ageOnEventDate(member.dateOfBirth, eventYear)
+      if (age === null || age >= 18) adults++
+      else if (age >= 12) youth++
+      else if (age >= 6) children++
+      else infants++
+    }
+    return { adults, youth, children, infants }
+  }, [members, eventYear])
+
+  const updateMember = (id: string, updates: Partial<CalcMember>) => {
+    setPrefillSaved(false)
+    setMembers((prev) => prev.map((m) => (m.id === id ? { ...m, ...updates } : m)))
+  }
+
+  const addMember = () => {
+    setPrefillSaved(false)
+    setMembers((prev) => [
+      ...prev,
+      { id: String(Date.now()), firstName: "", dateOfBirth: "", isOver18: false },
+    ])
+  }
+
+  const removeMember = (id: string) => {
+    setPrefillSaved(false)
+    setMembers((prev) => (prev.length > 1 ? prev.filter((m) => m.id !== id) : prev))
+  }
+
+  const savePrefill = async () => {
+    setSavingPrefill(true)
+    setPrefillError(null)
+    try {
+      const res = await fetch("/api/calculator/prefill", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          year: eventYear,
+          prefill: {
+            members: members.map((m) => ({
+              firstName: m.firstName,
+              dateOfBirth: m.dateOfBirth,
+              isOver18: m.isOver18,
+            })),
+            lodgingType,
+          },
+        }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || "Could not save")
+      setPrefillSaved(true)
+    } catch (error) {
+      setPrefillError(error instanceof Error ? error.message : "Could not save. Try again.")
+    } finally {
+      setSavingPrefill(false)
+    }
+  }
 
   const payingCount = countPayingAttendees({ adults, youth, children })
 
@@ -479,28 +573,69 @@ export function CalculatorClient({ ratesData, initialEnabled }: CalculatorClient
                 <Users className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
                 Family members
               </CardTitle>
-              <CardDescription>Enter the number of people in each age group</CardDescription>
+              <CardDescription>
+                Add each person like on the registration form — names are optional here, but if
+                you save at the end they'll pre-fill your registration.
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <NumberField
-                  id="adults"
-                  label="Adults (18+)"
-                  value={adults}
-                  onChange={setAdults}
-                />
-                <NumberField id="youth" label="Youth (12–17)" value={youth} onChange={setYouth} />
-                <NumberField id="children" label="Children (6–11)" value={children} onChange={setChildren} />
-                <div className="space-y-2">
-                  <Label htmlFor="infants">Infants (0–5)</Label>
-                  <div className="flex items-center gap-2">
-                    <NumberField id="infants" label="Infants (0–5)" value={infants} onChange={setInfants} hideLabel />
-                    <Badge variant="secondary" className="shrink-0">
-                      Free
-                    </Badge>
+            <CardContent className="space-y-3">
+              {members.map((member, index) => {
+                const age = member.isOver18 ? null : ageOnEventDate(member.dateOfBirth, eventYear)
+                return (
+                  <div key={member.id} className="flex items-start gap-3 rounded-lg border border-border/60 p-3">
+                    <div className="flex-1 space-y-3">
+                      <div>
+                        <Label htmlFor={`calc-name-${member.id}`}>First name (optional)</Label>
+                        <Input
+                          id={`calc-name-${member.id}`}
+                          value={member.firstName}
+                          placeholder={`Person ${index + 1}`}
+                          onChange={(e) => updateMember(member.id, { firstName: e.target.value })}
+                        />
+                      </div>
+                      <CustomDateSelector
+                        id={`calc-dob-${member.id}`}
+                        label="Date of birth (anyone under 18)"
+                        value={member.dateOfBirth}
+                        onChange={(date) =>
+                          updateMember(member.id, { dateOfBirth: date, isOver18: false })
+                        }
+                        isOver18={member.isOver18}
+                        onOver18Change={(isOver18) =>
+                          updateMember(member.id, { isOver18, dateOfBirth: "" })
+                        }
+                      />
+                      {age !== null && member.dateOfBirth && (
+                        <p className="text-sm text-muted-foreground">
+                          Age on May 3, {eventYear}: {age} {age === 1 ? "year" : "years"} old
+                          {age <= 5 && (
+                            <Badge variant="secondary" className="ml-2">
+                              Free
+                            </Badge>
+                          )}
+                        </p>
+                      )}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeMember(member.id)}
+                      disabled={members.length === 1}
+                      aria-label={`Remove ${member.firstName || `person ${index + 1}`}`}
+                    >
+                      <Trash2 className="h-4 w-4" aria-hidden="true" />
+                    </Button>
                   </div>
-                </div>
-              </div>
+                )
+              })}
+              <Button onClick={addMember} variant="outline" className="w-full bg-transparent">
+                <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
+                Add family member
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                Pricing groups: adults (18+), youth (12–17), children (6–11); infants and children
+                5 and under are free.
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -569,6 +704,48 @@ export function CalculatorClient({ ratesData, initialEnabled }: CalculatorClient
               <p className="text-xs leading-relaxed text-muted-foreground">
                 This is an estimate. Final pricing may vary based on registration options.
               </p>
+
+              <div className="border-t border-primary/15 pt-4">
+                {authLoaded && isSignedIn ? (
+                  <div className="space-y-2">
+                    <Button
+                      onClick={savePrefill}
+                      disabled={savingPrefill}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      {savingPrefill ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+                      ) : (
+                        <Save className="mr-2 h-4 w-4" aria-hidden="true" />
+                      )}
+                      Save for registration
+                    </Button>
+                    {prefillSaved && (
+                      <p className="flex items-start gap-1.5 text-xs text-muted-foreground" role="status">
+                        <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-green-600" aria-hidden="true" />
+                        Saved! Your family members and lodging will pre-fill the {eventYear}{" "}
+                        registration form.
+                      </p>
+                    )}
+                    {prefillError && (
+                      <p className="text-xs text-destructive" role="alert">
+                        {prefillError}
+                      </p>
+                    )}
+                  </div>
+                ) : authLoaded ? (
+                  <p className="text-xs leading-relaxed text-muted-foreground">
+                    <Link
+                      href={`/sign-in?redirect_url=${encodeURIComponent(calculatorRedirect)}`}
+                      className="text-primary hover:underline"
+                    >
+                      Sign in
+                    </Link>{" "}
+                    to save this info — we&apos;ll pre-fill your registration form with it.
+                  </p>
+                ) : null}
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -609,32 +786,3 @@ function LodgingOption({
   )
 }
 
-function NumberField({
-  id,
-  label,
-  value,
-  onChange,
-  hideLabel = false,
-}: {
-  id: string
-  label: string
-  value: number
-  onChange: (value: number) => void
-  hideLabel?: boolean
-}) {
-  return (
-    <div className={hideLabel ? "flex-1" : "space-y-2"}>
-      {!hideLabel && <Label htmlFor={id}>{label}</Label>}
-      <Input
-        id={id}
-        type="number"
-        min={0}
-        inputMode="numeric"
-        value={value}
-        onChange={(e) => onChange(Math.max(0, parseInt(e.target.value, 10) || 0))}
-        className="h-11 tabular-nums"
-        aria-label={hideLabel ? label : undefined}
-      />
-    </div>
-  )
-}

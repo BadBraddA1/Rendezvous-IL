@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
+import { useUser } from "@clerk/nextjs"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -14,8 +15,9 @@ import { MerchandiseStep } from "@/components/registration/merchandise-step"
 import { AdditionalInfoStep } from "@/components/registration/additional-info-step"
 import { AgreementStep } from "@/components/registration/agreement-step"
 import { ConfirmationStep } from "@/components/registration/confirmation-step"
-import type { RegistrationData } from "@/types/registration"
+import type { FamilyMember, RegistrationData } from "@/types/registration"
 import { calculateRegistrationFee } from "@/utils/registration-fee"
+import type { CalculatorPrefill } from "@/lib/calculator-prefill"
 import {
   DEFAULT_ARRIVAL_DEPARTURE,
   validateArrivalDeparture,
@@ -92,6 +94,73 @@ export function RegistrationTest2026Client({
   const updateData = (updates: Partial<RegistrationData>) => {
     setRegistrationData((prev) => ({ ...prev, ...updates }))
   }
+
+  // Auto-populate family members (and rv/tent lodging) from info saved at the
+  // end of the cost calculator — only while the form is still untouched.
+  const { isSignedIn, isLoaded: authLoaded } = useUser()
+  const [prefillApplied, setPrefillApplied] = useState(false)
+  const prefillFetched = useRef(false)
+
+  useEffect(() => {
+    if (!authLoaded || !isSignedIn || prefillFetched.current) return
+    prefillFetched.current = true
+
+    const applyPrefill = async () => {
+      try {
+        const res = await fetch("/api/calculator/prefill?year=2027")
+        if (!res.ok) return
+        const data = await res.json()
+        const prefill = data.prefill as CalculatorPrefill | null
+        if (!prefill || prefill.members.length === 0) return
+
+        const ageOnEvent = (dob: string): number => {
+          const birthDate = new Date(dob)
+          if (Number.isNaN(birthDate.getTime())) return 0
+          const eventDate = new Date("2027-05-03")
+          let age = eventDate.getFullYear() - birthDate.getFullYear()
+          const monthDiff = eventDate.getMonth() - birthDate.getMonth()
+          if (monthDiff < 0 || (monthDiff === 0 && eventDate.getDate() < birthDate.getDate())) {
+            age--
+          }
+          return Math.max(0, age)
+        }
+
+        setRegistrationData((prev) => {
+          // Don't clobber anything the user already typed.
+          const untouched =
+            prev.familyMembers.length === 1 &&
+            !prev.familyMembers[0].firstName &&
+            !prev.familyMembers[0].dateOfBirth
+          if (!untouched) return prev
+
+          const familyMembers: FamilyMember[] = prefill.members.map((m, index) => ({
+            id: String(index + 1),
+            firstName: m.firstName,
+            dateOfBirth: m.dateOfBirth,
+            age: m.isOver18 ? 18 : ageOnEvent(m.dateOfBirth),
+            isBaptized: false,
+            personCost: 0,
+            isOver18: m.isOver18,
+            parentRole: null,
+          }))
+
+          setPrefillApplied(true)
+          return {
+            ...prev,
+            familyMembers,
+            lodgingType:
+              prefill.lodgingType === "rv" || prefill.lodgingType === "tent"
+                ? prefill.lodgingType
+                : prev.lodgingType,
+          }
+        })
+      } catch {
+        // Prefill is best-effort; the form works fine without it.
+      }
+    }
+
+    void applyPrefill()
+  }, [authLoaded, isSignedIn])
 
   const validateParentContacts = (): string | null => {
     const parents = registrationData.familyMembers.filter((m) => m.parentRole)
@@ -337,6 +406,19 @@ export function RegistrationTest2026Client({
               ))}
             </div>
           </div>
+
+          {prefillApplied && currentStep === 1 && (
+            <Alert className="mb-4">
+              <AlertDescription>
+                We pre-filled your family members{" "}
+                {registrationData.lodgingType === "rv" || registrationData.lodgingType === "tent"
+                  ? "and lodging "
+                  : ""}
+                from your saved cost calculator info — double-check birth dates and add anything
+                missing.
+              </AlertDescription>
+            </Alert>
+          )}
 
           <Card className="mb-8">
             <CardHeader>
