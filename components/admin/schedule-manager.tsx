@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { Fragment, useCallback, useEffect, useRef, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -99,14 +99,25 @@ export function ScheduleManager({ canManage, eventYear }: Props) {
   const [events, setEvents] = useState<ScheduleEvent[] | null>(null)
   const [fetchError, setFetchError] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<number | "new" | null>(null)
+  // Which day an in-progress "add" belongs to (null = the top-of-card add button).
+  const [newForDay, setNewForDay] = useState<string | null>(null)
   const [form, setForm] = useState<FormState>(EMPTY_FORM)
   const [busyId, setBusyId] = useState<string | null>(null)
   const { toast } = useToast()
+  const formRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     setEvents(null)
     setEditingId(null)
   }, [eventYear])
+
+  // The form renders inline (top of card for adds, under the row for edits) —
+  // make sure it's actually on screen when it opens.
+  useEffect(() => {
+    if (editingId !== null) {
+      formRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" })
+    }
+  }, [editingId, newForDay])
 
   const fetchEvents = useCallback(async () => {
     setFetchError(null)
@@ -158,6 +169,7 @@ export function ScheduleManager({ canManage, eventYear }: Props) {
 
   const startEdit = (event: ScheduleEvent | null, day?: string) => {
     setEditingId(event ? event.id : "new")
+    setNewForDay(event ? null : (day ?? null))
     setForm(
       event
         ? {
@@ -279,7 +291,10 @@ export function ScheduleManager({ canManage, eventYear }: Props) {
   }
 
   const editForm = (
-    <div className="space-y-3 rounded-lg border border-dashed p-4">
+    <div ref={formRef} className="space-y-3 rounded-lg border border-dashed bg-muted/30 p-4">
+      <p className="text-sm font-semibold">
+        {editingId === "new" ? "Add event" : "Edit event"}
+      </p>
       <div className="grid gap-3 md:grid-cols-2">
         <div>
           <Label htmlFor="se-day">Day *</Label>
@@ -473,7 +488,17 @@ export function ScheduleManager({ canManage, eventYear }: Props) {
             )}
           </div>
         ) : (
-          DAYS.map((day) => {
+          <>
+            {canManage &&
+              (editingId === "new" && newForDay === null ? (
+                editForm
+              ) : (
+                <Button variant="outline" size="sm" onClick={() => startEdit(null)}>
+                  <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
+                  Add event
+                </Button>
+              ))}
+            {DAYS.map((day) => {
             const dayEvents = events.filter((event) => event.day === day)
             return (
               <section key={day} className="space-y-2">
@@ -486,6 +511,7 @@ export function ScheduleManager({ canManage, eventYear }: Props) {
                     </Button>
                   )}
                 </div>
+                {canManage && editingId === "new" && newForDay === day && editForm}
                 {dayEvents.length === 0 ? (
                   <p className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
                     No events on {day}.
@@ -493,7 +519,8 @@ export function ScheduleManager({ canManage, eventYear }: Props) {
                 ) : (
                   <ul className="divide-y rounded-md border">
                     {dayEvents.map((event, index) => (
-                      <li key={event.id} className="flex items-start gap-3 p-3">
+                      <Fragment key={event.id}>
+                      <li className="flex items-start gap-3 p-3">
                         <span className="w-28 shrink-0 pt-0.5 text-sm font-medium text-primary md:w-36">
                           {event.time}
                         </span>
@@ -581,23 +608,17 @@ export function ScheduleManager({ canManage, eventYear }: Props) {
                           </div>
                         )}
                       </li>
+                      {canManage && editingId === event.id && (
+                        <li className="p-3">{editForm}</li>
+                      )}
+                      </Fragment>
                     ))}
                   </ul>
                 )}
               </section>
             )
-          })
-        )}
-
-        {canManage && events !== null && events.length > 0 && !fetchError && (
-          editingId !== null ? (
-            editForm
-          ) : (
-            <Button variant="outline" size="sm" onClick={() => startEdit(null)}>
-              <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
-              Add event
-            </Button>
-          )
+            })}
+          </>
         )}
       </CardContent>
     </Card>
