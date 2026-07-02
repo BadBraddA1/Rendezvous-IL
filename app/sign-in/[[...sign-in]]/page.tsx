@@ -1,37 +1,63 @@
+import { SignIn } from "@clerk/nextjs"
+import Image from "next/image"
 import Link from "next/link"
 import { MainContent } from "@/components/main-content"
-import { AuthFormShell } from "@/components/auth/auth-form-shell"
-import { CustomSignInForm } from "@/components/auth/custom-sign-in-form"
 
 export const metadata = {
   title: "Sign In - Rendezvous IL",
   description: "Sign in to your Rendezvous IL account to manage registrations and view your family dashboard.",
 }
 
-export default async function SignInPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ redirect_url?: string }>
-}) {
-  const params = await searchParams
-  const redirectUrl = params.redirect_url || "/account"
-
+export default function SignInPage() {
   return (
-    <MainContent className="flex min-h-[100dvh] flex-col items-center justify-center bg-background px-4 py-12 pb-[max(3rem,env(safe-area-inset-bottom))]">
-      <AuthFormShell
-        title="Welcome back"
-        description="Sign in to access your family dashboard and manage registrations."
-        footer={
-          <p className="text-center text-sm text-muted-foreground">
-            Don&apos;t have an account?{" "}
-            <Link href="/sign-up" className="font-medium text-primary hover:underline">
-              Sign up
-            </Link>
+    <MainContent className="min-h-screen flex flex-col items-center justify-center bg-background px-4 py-12">
+      <div className="w-full max-w-md space-y-8">
+        <div className="flex flex-col items-center">
+          <Link href="/">
+            <Image
+              src="/rendezvous-logo.png"
+              alt="Rendezvous"
+              width={180}
+              height={60}
+              className="h-14 w-auto mb-6"
+            />
+          </Link>
+          <h1 className="text-2xl font-bold text-foreground text-center">
+            Welcome Back
+          </h1>
+          <p className="text-muted-foreground text-center mt-2">
+            Sign in to access your family dashboard and manage registrations.
           </p>
-        }
-      >
-        <CustomSignInForm redirectUrl={redirectUrl} />
-      </AuthFormShell>
+        </div>
+
+        <div className="flex justify-center">
+          <SignIn
+            appearance={{
+              elements: {
+                rootBox: "w-full",
+                card: "shadow-none border border-border bg-card",
+                headerTitle: "hidden",
+                headerSubtitle: "hidden",
+                socialButtonsBlockButton: "border border-border bg-background hover:bg-secondary",
+                formButtonPrimary: "bg-primary hover:bg-primary/90 text-primary-foreground",
+                footerActionLink: "text-primary hover:text-primary/90",
+                formFieldInput: "border-border bg-background",
+                dividerLine: "bg-border",
+                dividerText: "text-muted-foreground",
+              },
+            }}
+            fallbackRedirectUrl="/account"
+            signUpUrl="/sign-up"
+          />
+        </div>
+
+        <p className="text-center text-sm text-muted-foreground">
+          Don&apos;t have an account?{" "}
+          <Link href="/sign-up" className="text-primary hover:underline font-medium">
+            Sign up
+          </Link>
+        </p>
+      </div>
     </MainContent>
   )
 }

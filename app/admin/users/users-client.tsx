@@ -609,9 +609,9 @@ export function UsersClient() {
               </p>
             )}
             <p className="text-xs text-muted-foreground">
-              Users can also reset their own password at{" "}
-              <a href="/sign-in/forgot-password" className="text-primary hover:underline">
-                /sign-in/forgot-password
+              Users can also reset their own password with the &quot;Forgot password?&quot; link on{" "}
+              <a href="/sign-in" className="text-primary hover:underline">
+                /sign-in
               </a>
               .
             </p>

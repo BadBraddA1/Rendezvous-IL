@@ -59,9 +59,8 @@ export async function POST(request: Request, context: RouteContext) {
       success: true,
       mode: "link",
       url: signInToken.url,
-      forgotPasswordUrl: targetEmail
-        ? `/sign-in/forgot-password?email=${encodeURIComponent(targetEmail)}`
-        : "/sign-in/forgot-password",
+      // Clerk's default <SignIn /> includes the forgot-password flow.
+      forgotPasswordUrl: "/sign-in",
     })
   } catch (error) {
     console.error("[Admin Users] Error resetting password:", error)
