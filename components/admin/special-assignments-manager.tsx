@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { AdminListSkeleton, AdminRetryButton } from "./admin-panel-states"
 import { useToast } from "@/hooks/use-toast"
-import { ClipboardList, Loader2, Pencil, Plus, Trash2 } from "lucide-react"
+import { ClipboardList, Download, Loader2, Pencil, Plus, Trash2 } from "lucide-react"
 
 type SpecialAssignment = {
   id: number
@@ -96,8 +96,34 @@ export function SpecialAssignmentsManager({ canManage, eventYear }: Props) {
     )
   }
 
+  const seed = async () => {
+    setBusyId("seed")
+    try {
+      const res = await fetch("/api/admin/special-assignments/seed", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ year: eventYear }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || "Could not load the starter list")
+      setAssignments(Array.isArray(data.assignments) ? data.assignments : assignments)
+      toast({
+        title: "Starter list loaded",
+        description: `${data.inserted} activity slots added — book people as they register.`,
+      })
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Could not load the starter list.",
+        variant: "destructive",
+      })
+    } finally {
+      setBusyId(null)
+    }
+  }
+
   const save = async () => {
-    if (!form.activityName.trim() || !form.assignedName.trim()) return
+    if (!form.activityName.trim()) return
     setBusyId("form")
     try {
       const isNew = editingId === "new"
@@ -123,7 +149,9 @@ export function SpecialAssignmentsManager({ canManage, eventYear }: Props) {
       setForm(EMPTY_FORM)
       toast({
         title: isNew ? "Assignment added" : "Assignment updated",
-        description: `${form.activityName} — ${form.assignedName}`,
+        description: form.assignedName.trim()
+          ? `${form.activityName} — ${form.assignedName}`
+          : `${form.activityName} (unassigned)`,
       })
     } catch (error) {
       toast({
@@ -137,7 +165,8 @@ export function SpecialAssignmentsManager({ canManage, eventYear }: Props) {
   }
 
   const remove = async (assignment: SpecialAssignment) => {
-    if (!window.confirm(`Delete "${assignment.activity_name}" (${assignment.assigned_name})?`)) return
+    const who = assignment.assigned_name ? ` (${assignment.assigned_name})` : ""
+    if (!window.confirm(`Delete "${assignment.activity_name}"${who}?`)) return
     setBusyId(`row-${assignment.id}`)
     try {
       const res = await fetch(
@@ -195,8 +224,24 @@ export function SpecialAssignmentsManager({ canManage, eventYear }: Props) {
                 <TableBody>
                   {assignments.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={canManage ? 4 : 3} className="text-center text-muted-foreground">
-                        No special assignments yet.
+                      <TableCell colSpan={canManage ? 4 : 3} className="py-6 text-center text-muted-foreground">
+                        <p>No special assignments yet.</p>
+                        {canManage && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="mt-3"
+                            disabled={busyId === "seed"}
+                            onClick={() => void seed()}
+                          >
+                            {busyId === "seed" ? (
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+                            ) : (
+                              <Download className="mr-2 h-4 w-4" aria-hidden="true" />
+                            )}
+                            Load last year&apos;s activity list
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -208,7 +253,15 @@ export function SpecialAssignmentsManager({ canManage, eventYear }: Props) {
                             <p className="text-xs font-normal text-muted-foreground">{assignment.notes}</p>
                           )}
                         </TableCell>
-                        <TableCell>{assignment.assigned_name}</TableCell>
+                        <TableCell>
+                          {assignment.assigned_name ? (
+                            assignment.assigned_name
+                          ) : (
+                            <Badge variant="outline" className="text-muted-foreground">
+                              Unassigned
+                            </Badge>
+                          )}
+                        </TableCell>
                         <TableCell>
                           {formatDate(assignment.assigned_date)}
                           {assignment.time_slot ? ` · ${assignment.time_slot}` : ""}
@@ -263,11 +316,11 @@ export function SpecialAssignmentsManager({ canManage, eventYear }: Props) {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="sa-person">Assigned to *</Label>
+                      <Label htmlFor="sa-person">Assigned to</Label>
                       <Input
                         id="sa-person"
                         value={form.assignedName}
-                        placeholder="Name"
+                        placeholder="Leave blank until someone is booked"
                         onChange={(e) => setForm((p) => ({ ...p, assignedName: e.target.value }))}
                       />
                     </div>
@@ -303,7 +356,7 @@ export function SpecialAssignmentsManager({ canManage, eventYear }: Props) {
                     <Button
                       size="sm"
                       onClick={() => void save()}
-                      disabled={!form.activityName.trim() || !form.assignedName.trim() || busyId === "form"}
+                      disabled={!form.activityName.trim() || busyId === "form"}
                     >
                       {busyId === "form" && (
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />

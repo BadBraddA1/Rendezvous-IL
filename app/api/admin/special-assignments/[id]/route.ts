@@ -28,8 +28,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const body = await req.json().catch(() => ({}))
     const activityName = typeof body.activityName === "string" ? body.activityName.trim() : ""
     const assignedName = typeof body.assignedName === "string" ? body.assignedName.trim() : ""
-    if (!activityName || !assignedName) {
-      return NextResponse.json({ error: "Activity and person are required" }, { status: 400 })
+    if (!activityName) {
+      return NextResponse.json({ error: "Activity is required" }, { status: 400 })
     }
 
     await updateSpecialAssignment(Number(id), {
