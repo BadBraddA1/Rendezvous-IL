@@ -10,7 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { LayoutDashboard, Users, Settings, FileText, MapPin, MessageSquare, Utensils, Eye, ClipboardCheck, User, Home, Shield, DollarSign, ScanLine, UserCheck, QrCode, Megaphone, Star, Calculator, ChevronDown, Monitor, Church } from "lucide-react"
+import { LayoutDashboard, Users, Settings, FileText, MapPin, MessageSquare, Utensils, Eye, ClipboardCheck, User, Home, Shield, DollarSign, ScanLine, UserCheck, QrCode, Megaphone, Star, Calculator, ChevronDown, Monitor, Church, BookOpen, ClipboardList, HeartHandshake } from "lucide-react"
 import type { AdminRole } from "@/lib/admin-permissions"
 import { getAdminPermissions } from "@/lib/admin-permissions"
 
@@ -127,17 +127,37 @@ export function AdminNav({ currentPage, admin }: AdminNavProps) {
           show: (role) => getAdminPermissions(role).canViewRegistrations,
         },
         {
-          href: "/admin/volunteers",
-          label: "Volunteers",
-          icon: Church,
-          page: "volunteers",
-          show: (role) => getAdminPermissions(role).canViewRegistrations,
-        },
-        {
           href: "/admin/map",
           label: "Map",
           icon: MapPin,
           page: "map",
+          show: (role) => getAdminPermissions(role).canViewRegistrations,
+        },
+      ],
+    },
+    {
+      label: "Volunteers",
+      icon: HeartHandshake,
+      items: [
+        {
+          href: "/admin/volunteers",
+          label: "Worship Service",
+          icon: Church,
+          page: "volunteers-worship",
+          show: (role) => getAdminPermissions(role).canViewRegistrations,
+        },
+        {
+          href: "/admin/volunteers/lesson-bids",
+          label: "Lesson Bids",
+          icon: BookOpen,
+          page: "volunteers-lesson-bids",
+          show: (role) => getAdminPermissions(role).canViewRegistrations,
+        },
+        {
+          href: "/admin/volunteers/special-assignments",
+          label: "Special Assignments",
+          icon: ClipboardList,
+          page: "volunteers-special",
           show: (role) => getAdminPermissions(role).canViewRegistrations,
         },
       ],

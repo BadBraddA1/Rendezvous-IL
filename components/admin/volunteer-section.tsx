@@ -1,12 +1,12 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { VolunteerScheduleManager } from "./volunteer-schedule-manager"
 import { LessonBidManager } from "./lesson-bid-manager"
+import { SpecialAssignmentsManager } from "./special-assignments-manager"
 import {
   DEFAULT_REGISTRATION_EVENT_YEAR,
   REGISTRATION_EVENT_YEARS,
@@ -23,11 +23,13 @@ function readStoredEventYear(): RegistrationEventYear {
 
 type Props = {
   canManage: boolean
+  section: "worship" | "lesson-bids" | "special"
 }
 
-/** Year picker + Schedule / Lesson bids tabs — same year selection UX as Registration Management. */
-export function VolunteersTabs({ canManage }: Props) {
+/** Event-year picker + the requested volunteers section — same year UX as Registration Management. */
+export function VolunteerSection({ canManage, section }: Props) {
   const router = useRouter()
+  const pathname = usePathname()
   const searchParams = useSearchParams()
   const [eventYear, setEventYear] = useState<RegistrationEventYear>(DEFAULT_REGISTRATION_EVENT_YEAR)
 
@@ -50,7 +52,7 @@ export function VolunteersTabs({ canManage }: Props) {
     setEventYear(year)
     const params = new URLSearchParams(searchParams.toString())
     params.set("year", String(year))
-    router.replace(`/admin/volunteers?${params.toString()}`)
+    router.replace(`${pathname}?${params.toString()}`)
   }
 
   return (
@@ -71,18 +73,9 @@ export function VolunteersTabs({ canManage }: Props) {
         </Select>
       </div>
 
-      <Tabs defaultValue="schedule">
-        <TabsList>
-          <TabsTrigger value="schedule">Schedule</TabsTrigger>
-          <TabsTrigger value="lesson-bids">Lesson bids</TabsTrigger>
-        </TabsList>
-        <TabsContent value="schedule" className="mt-4">
-          <VolunteerScheduleManager canManage={canManage} eventYear={eventYear} />
-        </TabsContent>
-        <TabsContent value="lesson-bids" className="mt-4">
-          <LessonBidManager canManage={canManage} eventYear={eventYear} />
-        </TabsContent>
-      </Tabs>
+      {section === "worship" && <VolunteerScheduleManager canManage={canManage} eventYear={eventYear} />}
+      {section === "lesson-bids" && <LessonBidManager canManage={canManage} eventYear={eventYear} />}
+      {section === "special" && <SpecialAssignmentsManager canManage={canManage} eventYear={eventYear} />}
     </div>
   )
 }
