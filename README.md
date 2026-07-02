@@ -61,6 +61,7 @@ pnpm db:verify
 - **`/admin/audit`** — expandable activity feed: search, date range, action filters, before/after field changes, and summary stats (`GET /api/admin/audit?action=&from=&limit=`).
 - **`/admin/displays`** — Raspberry Pi Live Updates fleet: last seen, current view, online/stale/offline (`live_updates_displays`, `POST /api/live-updates/heartbeat`, `GET /api/admin/displays`).
 - **Registration previews** (`/admin`) — toggles for admin test registration (`/registration-test2026`) and express registration preview (`/account/express-registration`); stored in `app_settings`.
+- **Registration member contacts** — each family member on the registration form has optional `email` / `phone` fields (stored on `family_members`; migration: `scripts/add-family-member-contact.sql`). Email is **required** for members with the Father or Mother role, and the two parents must use **different** email addresses (enforced inline in the form and again on the step-1 Next button). Phones are always optional and normalized on blur via `lib/phone-format.ts`.
 - **Rate calculator** (`/calculator`, `/admin/calculator`, `/admin/rates`) — lodging line items are **per person**; RV/tent **site fees** use one-tap night buttons (per site). Users pick **nights and meals** (custom schedule picker — no package dropdown); the server detects full week, 3/9, 2/6, or 1/3 packages and prices accordingly (`lib/calculator-schedule.ts`, `lib/calculator-estimate.ts`, `POST /api/calculator/estimate`). Admin calculator and signed-in family estimate share the same detection logic. **Guests** on `/calculator` see a sign-in / create-account prompt explaining that returning families get a pre-filled estimate. **Signed-in families** with a prior registration are **auto-loaded** from last year (`/api/calculator/family`, `lib/calculator-family-seed.ts`, `components/calculator/family-estimate.tsx`) — members, nights, meals, lodging, and a year-over-year total comparison — without a manual “load” step.
 - API: `GET/PUT /api/family/profile`, `POST/DELETE /api/family/members`
 
@@ -112,9 +113,9 @@ Native **SwiftUI** app in `ios/` (not a WebView shell):
 - **Updates** — now/next, weather, announcements
 - **More** — FAQ, About, Bible Bowl, cost calculator, family directory
 - **Staff** — Clerk sign-in for **admin dashboard** (Clerk `role` in public metadata) and **check-in station**
-- **App icon** — bundled in `ios/RendezvousIL/Resources/Assets.xcassets` (synced from `public/rendezvous-favicon.jpg` via `ios/scripts/sync-app-icon.sh`)
+- **App icon** — bundled in `ios/RendezvousIL/Resources/Assets.xcassets` (synced from `public/rendezvous-logo.png` via `ios/scripts/sync-app-icon.sh`)
 
-Setup: copy `ios/Config.xcconfig.example` → `Config.xcconfig` with your Clerk publishable key, then `cd ios && xcodegen generate && open RendezvousIL.xcodeproj` — see [ios/README.md](ios/README.md).
+Setup: `cd ios && bash scripts/setup-xcode.sh && open RendezvousIL.xcodeproj` — see [ios/README.md](ios/README.md). For staff sign-in, add your Clerk key to `ios/Config.local.xcconfig`.
 
 Native admin APIs: `GET /api/admin/me`, `GET /api/admin/mobile/dashboard` (Bearer Clerk session token).
 

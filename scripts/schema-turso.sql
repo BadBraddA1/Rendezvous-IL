@@ -158,7 +158,9 @@ CREATE TABLE IF NOT EXISTS family_members (
   friday_breakfast INTEGER DEFAULT 1,
   friday_lunch INTEGER DEFAULT 1,
   rate_key TEXT,
-  is_adult_override INTEGER
+  is_adult_override INTEGER,
+  email TEXT,
+  phone TEXT
 );
 
 CREATE TABLE IF NOT EXISTS family_members_v2 (

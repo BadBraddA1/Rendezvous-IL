@@ -22,16 +22,39 @@ Native SwiftUI companion for [rendezvousil.com](https://rendezvousil.com).
 
 ## Setup
 
+After cloning (or if Xcode shows **No such module 'Clerk'**):
+
 ```bash
 cd ios
-cp Config.xcconfig.example Config.xcconfig   # paste NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY from repo .env.local
-xcodegen generate
+bash scripts/setup-xcode.sh
 open RendezvousIL.xcodeproj
 ```
 
-1. **Signing** — select your Team on **RendezvousIL** and **RendezvousILWidgets** targets.
+That runs XcodeGen (adds Clerk + all Swift sources to the project), resolves Swift packages, and opens the **RendezvousIL** scheme.
+
+For staff sign-in, put your real Clerk key in `Config.local.xcconfig` (gitignored):
+
+```bash
+cp Config.xcconfig.example Config.local.xcconfig
+# edit CLERK_PUBLISHABLE_KEY = pk_live_… from .env.local
+```
+
+Simulator builds work without a real key; admin/check-in need a valid key.
+
+### Troubleshooting
+
+| Symptom | Fix |
+|--------|-----|
+| `No such module 'Clerk'` | `bash scripts/setup-xcode.sh` — the committed `.xcodeproj` can lag behind `project.yml` |
+| Missing `.swiftmodule` / `.abi.json` errors | Same — cascading from Clerk; regenerate then **Product → Clean Build Folder** |
+| `Could not resolve package dependencies` | `RESET_SPM=1 bash scripts/setup-xcode.sh`, quit Xcode, reopen |
+| No **RendezvousIL** scheme | `xcodegen generate` (included in setup script) |
+
+Then in Xcode:
+
+1. **Signing** — select your Team on **RendezvousIL** and **RendezvousILWidgets** targets (simulator does not need a team).
 2. **Capabilities** — entitlements include Push Notifications + App Group `group.com.rendezvousil.app`.
-3. **App icon** — `AppIcon.appiconset` includes `AppIcon-1024.png` (from `public/rendezvous-favicon.jpg`). To refresh after a favicon change: `bash ios/scripts/sync-app-icon.sh`.
+3. **App icon** — `AppIcon.appiconset` includes `AppIcon-1024.png` (from `public/rendezvous-logo.png`, same as the site header). To refresh after a logo change: `bash ios/scripts/sync-app-icon.sh`.
 4. Run on device (⌘R).
 
 ## Admin access (Clerk)

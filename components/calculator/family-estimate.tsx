@@ -169,7 +169,8 @@ export function FamilyEstimatePanel({ seed, ratesData, onReset }: Props) {
                 Loaded from {seed.familyLastName} family · Rendezvous {seed.sourceYear}
               </p>
               <p className="text-sm text-muted-foreground">
-                Ages updated for {ratesData.year}. Adjust nights, meals, or lodging to see your new estimate.
+                Youth and children are aged forward for {ratesData.year}. Adjust nights, meals, or
+                lodging to see your new estimate.
               </p>
             </div>
             {onReset && (

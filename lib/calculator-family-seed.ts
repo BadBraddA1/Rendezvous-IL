@@ -6,7 +6,7 @@ import {
 import type { MemberAttendance } from "@/lib/calculator-schedule"
 import type { RateRow } from "@/lib/rate-lookup"
 import {
-  ageAtEventDate,
+  ageForCalculatorFromPriorRegistration,
   matchRegistrationMember,
   normalizeRegistrationLodgingType,
   registrationMemberToAttendance,
@@ -224,7 +224,7 @@ export async function buildCalculatorFamilySeed(input: {
     if (!person.registrationRow) continue
 
     const id = String(person.profileId)
-    const age = ageAtEventDate(
+    const age = ageForCalculatorFromPriorRegistration(
       person.dateOfBirth ?? (person.registrationRow.date_of_birth as string | null),
       person.registrationRow.age as number | null,
       input.targetYear,

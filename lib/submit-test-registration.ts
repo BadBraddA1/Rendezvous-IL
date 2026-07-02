@@ -1,8 +1,33 @@
 import { sql } from "@/lib/db"
 import { formatPhoneForStorage } from "@/lib/phone-format"
+import { formatArrivalDepartureNotes } from "@/lib/registration-arrival-departure"
 import type { RegistrationData } from "@/types/registration"
 
+let contactColumnsEnsured = false
+
+/**
+ * The deployed Turso DB may predate the email/phone columns
+ * (scripts/add-family-member-contact.sql). Local envs have no Turso
+ * credentials, so apply the migration lazily on first submission.
+ */
+async function ensureContactColumns() {
+  if (contactColumnsEnsured) return
+  const rows = await sql.query("PRAGMA table_info(family_members)")
+  const cols = new Set(rows.map((r) => r.name))
+  if (!cols.has("email")) await sql.query("ALTER TABLE family_members ADD COLUMN email TEXT")
+  if (!cols.has("phone")) await sql.query("ALTER TABLE family_members ADD COLUMN phone TEXT")
+  contactColumnsEnsured = true
+}
+
 export async function submitTestRegistration(data: RegistrationData) {
+  await ensureContactColumns()
+
+  const arrivalNotes = formatArrivalDepartureNotes(
+    data.arrivalDeparture,
+    data.familyMembers,
+    data.familyLastName,
+  )
+
   const [registration] = await sql`
     INSERT INTO registrations (
       family_last_name, email, husband_phone, wife_phone, address, city, state, zip,
@@ -26,7 +51,7 @@ export async function submitTestRegistration(data: RegistrationData) {
       ${data.timesAttended ?? 0},
       ${data.yearsHomeschooling ?? null},
       ${data.currentlyHomeschooling ? 1 : 0},
-      ${data.arrivalNotes || null},
+      ${arrivalNotes},
       ${data.lodgingType},
       ${data.lodgingTotal ?? 0},
       ${data.tshirtTotal ?? 0},
@@ -56,7 +81,8 @@ export async function submitTestRegistration(data: RegistrationData) {
 
     await sql`
       INSERT INTO family_members (
-        registration_id, first_name, last_name, date_of_birth, age, is_baptized, person_cost
+        registration_id, first_name, last_name, date_of_birth, age, is_baptized, person_cost,
+        email, phone
       ) VALUES (
         ${registrationId},
         ${member.firstName},
@@ -64,7 +90,9 @@ export async function submitTestRegistration(data: RegistrationData) {
         ${member.dateOfBirth || null},
         ${member.age ?? null},
         ${member.isBaptized ? 1 : 0},
-        ${member.personCost ?? 0}
+        ${member.personCost ?? 0},
+        ${member.email?.trim() || null},
+        ${member.phone ? formatPhoneForStorage(member.phone) : null}
       )
     `
   }

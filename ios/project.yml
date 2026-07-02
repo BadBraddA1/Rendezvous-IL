@@ -68,3 +68,13 @@ targets:
         GENERATE_INFOPLIST_FILE: YES
         CODE_SIGN_ENTITLEMENTS: RendezvousILWidgets/RendezvousILWidgets.entitlements
         SKIP_INSTALL: YES
+schemes:
+  RendezvousIL:
+    build:
+      targets:
+        RendezvousIL: all
+        RendezvousILWidgets: all
+    run:
+      config: Debug
+    archive:
+      config: Release

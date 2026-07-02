@@ -64,6 +64,25 @@ export function ageAtEventDate(
   return 18
 }
 
+const ADULT_MIN_AGE = 18
+
+/**
+ * When seeding the public calculator from a prior registration, keep adults at their
+ * prior-year age (same bracket, cleaner display). Youth and children still age forward.
+ */
+export function ageForCalculatorFromPriorRegistration(
+  dateOfBirth: string | null | undefined,
+  storedAge: number | null | undefined,
+  targetYear: number,
+  sourceYear: number,
+): number {
+  const priorAge = ageAtEventDate(dateOfBirth, storedAge, sourceYear)
+  if (priorAge >= ADULT_MIN_AGE) {
+    return priorAge
+  }
+  return ageAtEventDate(dateOfBirth, storedAge, targetYear, sourceYear)
+}
+
 export function registrationMemberToAttendance(row: RegistrationMemberRow): MemberAttendance {
   const meals: Record<string, string[]> = {}
 

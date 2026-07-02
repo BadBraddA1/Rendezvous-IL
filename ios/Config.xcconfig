@@ -1,0 +1,4 @@
+// Default Clerk key for simulator builds. Override in Config.local.xcconfig (gitignored).
+CLERK_PUBLISHABLE_KEY = pk_test_REPLACE_ME
+
+#include? "Config.local.xcconfig"

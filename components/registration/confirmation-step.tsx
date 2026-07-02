@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { CheckCircle2, Loader2, Mail, Download, AlertCircle, Pencil } from "lucide-react"
 import { getRegistrationSubmitErrorMessage } from "@/lib/registration-submit-error"
+import { arrivalDepartureSummaryLines } from "@/lib/registration-arrival-departure"
 import type { RegistrationData } from "@/types/registration"
 
 type Props = {
@@ -273,6 +274,13 @@ export function ConfirmationStep({ data, onBack, onEditStep, backLabel = "Go bac
                     {member.isBaptized && " • Baptized"}
                     {member.gender && ` • ${member.gender === "male" ? "Male" : "Female"}`}
                   </p>
+                  {(member.email || member.phone) && (
+                    <p className="break-words text-sm text-muted-foreground">
+                      {member.email}
+                      {member.email && member.phone && " • "}
+                      {member.phone}
+                    </p>
+                  )}
                 </div>
               </div>
             ))}
@@ -295,12 +303,20 @@ export function ConfirmationStep({ data, onBack, onEditStep, backLabel = "Go bac
             <p className="font-medium">Lodging Type</p>
             <p className="text-muted-foreground capitalize">{data.lodgingType.replace(/-/g, " ")}</p>
           </div>
-          {data.arrivalNotes && (
-            <div className="min-w-0">
-              <p className="font-medium">Arrival/Departure Notes</p>
-              <p className="break-words text-muted-foreground">{data.arrivalNotes}</p>
-            </div>
-          )}
+          <div>
+            <p className="font-medium">Arrival &amp; Departure</p>
+            <ul className="mt-1 list-none space-y-0.5 text-muted-foreground">
+              {arrivalDepartureSummaryLines(
+                data.arrivalDeparture,
+                data.familyMembers,
+                data.familyLastName,
+              ).map((line) => (
+                <li key={line} className="break-words">
+                  {line}
+                </li>
+              ))}
+            </ul>
+          </div>
           {!data.scholarshipRequested && (
             <div className="space-y-3">
               <div className="rounded-lg bg-surface-highlight p-4 border-2 border-success/30">

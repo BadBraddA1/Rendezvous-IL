@@ -4,6 +4,7 @@ import { useState } from "react"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { ChevronLeft, ChevronRight, TestTube2, Send } from "lucide-react"
@@ -15,6 +16,10 @@ import { AgreementStep } from "@/components/registration/agreement-step"
 import { ConfirmationStep } from "@/components/registration/confirmation-step"
 import type { RegistrationData } from "@/types/registration"
 import { calculateRegistrationFee } from "@/utils/registration-fee"
+import {
+  DEFAULT_ARRIVAL_DEPARTURE,
+  validateArrivalDeparture,
+} from "@/lib/registration-arrival-departure"
 
 const STEPS = [
   { id: 1, title: "Family Info", description: "Contact & family details" },
@@ -25,10 +30,15 @@ const STEPS = [
   { id: 6, title: "Confirmation", description: "Complete registration" },
 ]
 
-export function RegistrationTest2026Client() {
+type Props = {
+  localDevBypass?: boolean
+}
+
+export function RegistrationTest2026Client({ localDevBypass = false }: Props) {
   const [currentStep, setCurrentStep] = useState(1)
   const [debugLoading, setDebugLoading] = useState(false)
-  const [debugResponse, setDebugResponse] = useState<any>(null)
+  const [debugResponse, setDebugResponse] = useState<unknown>(null)
+  const [stepError, setStepError] = useState<string | null>(null)
   const [registrationData, setRegistrationData] = useState<RegistrationData>({
     familyLastName: "",
     email: "",
@@ -43,7 +53,7 @@ export function RegistrationTest2026Client() {
     timesAttended: 0,
     yearsHomeschooling: 0,
     currentlyHomeschooling: true,
-    arrivalNotes: "",
+    arrivalDeparture: { ...DEFAULT_ARRIVAL_DEPARTURE },
     familyMembers: [
       {
         id: "1",
@@ -79,7 +89,38 @@ export function RegistrationTest2026Client() {
     setRegistrationData((prev) => ({ ...prev, ...updates }))
   }
 
+  const validateParentContacts = (): string | null => {
+    const parents = registrationData.familyMembers.filter((m) => m.parentRole)
+    for (const parent of parents) {
+      if (!parent.email?.trim()) {
+        const role = parent.parentRole === "father" ? "father" : "mother"
+        return `An email address is required for the ${role} (${parent.firstName || "unnamed"}).`
+      }
+    }
+    const emails = parents.map((p) => p.email!.trim().toLowerCase())
+    if (new Set(emails).size !== emails.length) {
+      return "The father and mother must use different email addresses."
+    }
+    return null
+  }
+
   const validateCurrentStep = (): boolean => {
+    if (currentStep === 1) {
+      const arrivalError = validateArrivalDeparture(
+        registrationData.arrivalDeparture,
+        registrationData.familyMembers,
+      )
+      if (arrivalError) {
+        setStepError(arrivalError)
+        return false
+      }
+      const contactError = validateParentContacts()
+      if (contactError) {
+        setStepError(contactError)
+        return false
+      }
+    }
+    setStepError(null)
     return true
   }
 
@@ -121,7 +162,7 @@ export function RegistrationTest2026Client() {
       timesAttended: 0,
       yearsHomeschooling: 5,
       currentlyHomeschooling: true,
-      arrivalNotes: "Test arrival",
+      arrivalDeparture: { ...DEFAULT_ARRIVAL_DEPARTURE },
       familyMembers: [
         {
           id: "1",
@@ -199,7 +240,13 @@ export function RegistrationTest2026Client() {
                 <h3 className="font-semibold text-orange-900 dark:text-orange-100">Test Mode Active</h3>
                 <p className="text-sm text-orange-700 dark:text-orange-300">
                   This is a test registration page for admin testing. All submissions will be marked as test data.
-                  <strong className="ml-1">Validation is disabled - you can skip any fields.</strong>
+                  <strong className="ml-1">Validation is disabled — you can skip any fields.</strong>
+                  {localDevBypass && (
+                    <>
+                      {" "}
+                      <strong>Localhost dev:</strong> no Clerk sign-in or admin toggle required.
+                    </>
+                  )}
                 </p>
               </div>
             </div>
@@ -301,6 +348,12 @@ export function RegistrationTest2026Client() {
               {currentStep === 6 && <ConfirmationStep data={registrationData} />}
             </CardContent>
           </Card>
+
+          {stepError && currentStep === 1 && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertDescription>{stepError}</AlertDescription>
+            </Alert>
+          )}
 
           {currentStep < 6 && (
             <div className="flex items-center justify-between">

@@ -17,6 +17,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { ArrivalDepartureSection } from "@/components/registration/arrival-departure-section"
 import { CustomDateSelector } from "@/components/registration/custom-date-selector"
 import { Plus, Trash2, Star } from "lucide-react"
 import type { RegistrationData, FamilyMember } from "@/types/registration"
@@ -104,6 +105,15 @@ export function FamilyInfoStep({ data, updateData }: Props) {
 
   const isParentRoleTaken = (role: "father" | "mother", currentMemberId: string) => {
     return data.familyMembers.some((m) => m.id !== currentMemberId && m.parentRole === role)
+  }
+
+  const hasDuplicateParentEmail = (member: FamilyMember) => {
+    if (!member.parentRole || !member.email?.trim()) return false
+    const email = member.email.trim().toLowerCase()
+    return data.familyMembers.some(
+      (m) =>
+        m.id !== member.id && m.parentRole && m.email?.trim().toLowerCase() === email,
+    )
   }
 
   return (
@@ -439,6 +449,42 @@ export function FamilyInfoStep({ data, updateData }: Props) {
                     </Label>
                   </div>
                 </div>
+
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div>
+                    <Label htmlFor={`memberEmail-${member.id}`}>
+                      Email {member.parentRole ? "*" : "(optional)"}
+                    </Label>
+                    <Input
+                      id={`memberEmail-${member.id}`}
+                      type="email"
+                      placeholder="name@example.com"
+                      value={member.email || ""}
+                      onChange={(e) => updateFamilyMember(member.id, { email: e.target.value })}
+                      required={!!member.parentRole}
+                      aria-invalid={hasDuplicateParentEmail(member)}
+                    />
+                    {hasDuplicateParentEmail(member) && (
+                      <p className="mt-1 text-sm text-destructive">
+                        Father and mother must use different email addresses.
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <Label htmlFor={`memberPhone-${member.id}`}>Phone (optional)</Label>
+                    <Input
+                      id={`memberPhone-${member.id}`}
+                      type="tel"
+                      placeholder="(555) 555-5555"
+                      value={member.phone || ""}
+                      onChange={(e) => updateFamilyMember(member.id, { phone: e.target.value })}
+                      onBlur={(e) => {
+                        const formatted = formatPhoneOnBlur(e.target.value)
+                        if (formatted !== member.phone) updateFamilyMember(member.id, { phone: formatted })
+                      }}
+                    />
+                  </div>
+                </div>
               </div>
               <Button
                 variant="ghost"
@@ -458,20 +504,12 @@ export function FamilyInfoStep({ data, updateData }: Props) {
         </Button>
       </div>
 
-      {/* Arrival/Departure Notes */}
-      <div className="space-y-4">
-        <h3 className="font-semibold">Arrival & Departure</h3>
-        <p className="text-sm text-muted-foreground">
-          Standard attendance: Arrive before 5:15 PM Monday, depart after lunch Friday. If you will not be staying 4
-          nights and joining for all 12 meals, please specify your arrival & departure times:
-        </p>
-        <Textarea
-          placeholder="e.g., Arriving Tuesday morning, departing Thursday evening"
-          value={data.arrivalNotes}
-          onChange={(e) => updateData({ arrivalNotes: e.target.value })}
-          rows={3}
-        />
-      </div>
+      <ArrivalDepartureSection
+        plan={data.arrivalDeparture}
+        familyMembers={data.familyMembers}
+        familyLastName={data.familyLastName}
+        onChange={(arrivalDeparture) => updateData({ arrivalDeparture })}
+      />
 
       <AlertDialog
         open={memberPendingRemoval !== null}

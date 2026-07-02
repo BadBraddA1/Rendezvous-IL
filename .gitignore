@@ -18,8 +18,7 @@ yarn-error.log*
 
 # env files
 .env*
-ios/Config.xcconfig
-ios/Config.xcconfig
+ios/Config.local.xcconfig
 android/local.properties
 android/app/google-services.json
 

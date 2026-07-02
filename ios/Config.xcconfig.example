@@ -1,2 +1,4 @@
-// Copy to Config.xcconfig (gitignored) — paste NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY from .env.local
+// Copy to Config.local.xcconfig (gitignored) — paste NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY from .env.local
 CLERK_PUBLISHABLE_KEY = pk_test_REPLACE_ME
+
+#include? "Config.local.xcconfig"

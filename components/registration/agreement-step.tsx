@@ -3,9 +3,9 @@
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { CheckCircle2, AlertCircle } from "lucide-react"
+import { SignatureField } from "@/components/registration/signature-field"
 import type { RegistrationData } from "@/types/registration"
 import { calculateRegistrationFee, isDiscountedRegistration } from "@/utils/registration-fee"
 
@@ -114,29 +114,21 @@ export function AgreementStep({ data, updateData }: Props) {
           <AlertDescription>Both parents must sign, whether attending or not</AlertDescription>
         </Alert>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <div>
-            <Label htmlFor="fatherSignature">Father's Signature *</Label>
-            <Input
-              id="fatherSignature"
-              placeholder="Type full name to sign"
-              value={data.fatherSignature}
-              onChange={(e) => updateData({ fatherSignature: e.target.value })}
-              required
-            />
-            <p className="mt-1 text-xs text-muted-foreground">Type your full name as electronic signature</p>
-          </div>
-          <div>
-            <Label htmlFor="motherSignature">Mother's Signature *</Label>
-            <Input
-              id="motherSignature"
-              placeholder="Type full name to sign"
-              value={data.motherSignature}
-              onChange={(e) => updateData({ motherSignature: e.target.value })}
-              required
-            />
-            <p className="mt-1 text-xs text-muted-foreground">Type your full name as electronic signature</p>
-          </div>
+        <div className="grid gap-6 md:grid-cols-2">
+          <SignatureField
+            id="fatherSignature"
+            label="Father's signature"
+            value={data.fatherSignature}
+            onChange={(fatherSignature) => updateData({ fatherSignature })}
+            required
+          />
+          <SignatureField
+            id="motherSignature"
+            label="Mother's signature"
+            value={data.motherSignature}
+            onChange={(motherSignature) => updateData({ motherSignature })}
+            required
+          />
         </div>
       </div>
 

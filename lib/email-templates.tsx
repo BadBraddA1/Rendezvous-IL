@@ -1,4 +1,5 @@
 import type { RegistrationData } from "@/types/registration"
+import { formatArrivalDepartureNotes } from "@/lib/registration-arrival-departure"
 
 /** sRGB approximations of site OKLCH tokens (DESIGN.md) for email clients. */
 export const EMAIL_BRAND = {
@@ -291,6 +292,11 @@ export function generateAdminNotificationEmail(data: RegistrationData, registrat
   const registrationFee = data.registrationFee || 0
   const scholarshipDonation = data.scholarshipDonation || 0
   const grandTotal = registrationFee + lodgingCost + tshirtCost + climbingTowerCost + scholarshipDonation
+  const arrivalNotes = formatArrivalDepartureNotes(
+    data.arrivalDeparture,
+    data.familyMembers,
+    data.familyLastName,
+  )
 
   return `
 <!DOCTYPE html>
@@ -409,12 +415,11 @@ export function generateAdminNotificationEmail(data: RegistrationData, registrat
     </table>
 
     ${
-      data.arrivalNotes
+      arrivalNotes
         ? `
-    <h2 style="color: ${EMAIL_BRAND.primaryDark}; font-size: 20px; margin-top: 25px; border-bottom: 2px solid ${EMAIL_BRAND.border}; padding-bottom: 8px;">Special Notes</h2>
+    <h2 style="color: ${EMAIL_BRAND.primaryDark}; font-size: 20px; margin-top: 25px; border-bottom: 2px solid ${EMAIL_BRAND.border}; padding-bottom: 8px;">Arrival &amp; Departure</h2>
     <div style="background: ${EMAIL_BRAND.warningBg}; padding: 15px; border-radius: 6px; margin: 15px 0; border: 2px solid ${EMAIL_BRAND.warningBorder};">
-      <p style="margin: 0;"><strong>Arrival/Departure Notes:</strong></p>
-      <p style="margin: 8px 0 0 0;">${data.arrivalNotes}</p>
+      <p style="margin: 0; white-space: pre-line;">${arrivalNotes}</p>
     </div>
     `
         : ""
