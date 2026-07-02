@@ -1,6 +1,5 @@
 import { headers } from "next/headers"
 import { getCurrentAdmin } from "@/lib/clerk-auth"
-import { getCurrentFamily } from "@/lib/family-auth"
 import { isLocalhostHost } from "@/lib/page-tour"
 import {
   isExpressRegistrationPreviewEnabled,
@@ -24,13 +23,13 @@ export async function canAccessRegistrationTest(): Promise<boolean> {
   return isRegistrationTestEnabled()
 }
 
-/** Signed-in admin with a linked family can save express registration prefs. */
+/**
+ * Toggle on + signed-in admin. Deliberately does NOT require a linked family:
+ * the page auto-links the family by email after this gate, and the API routes
+ * check for a family themselves — requiring one here made the page claim the
+ * preview was off for admins who simply hadn't been linked yet.
+ */
 export async function canAccessExpressRegistrationPreview(): Promise<boolean> {
   if (!(await isExpressRegistrationPreviewEnabled())) return false
-
-  const admin = await getCurrentAdmin()
-  if (!admin) return false
-
-  const family = await getCurrentFamily()
-  return !!family
+  return !!(await getCurrentAdmin())
 }
