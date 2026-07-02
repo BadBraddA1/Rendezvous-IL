@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -20,8 +20,10 @@ import {
   Camera,
   ExternalLink,
   EyeOff,
+  ListChecks,
   Loader2,
   Pencil,
+  Save,
   Trash2,
   Users,
   X,
@@ -84,12 +86,50 @@ function memberToForm(member: AdminDirectoryMember): MemberForm {
   }
 }
 
+function familyFormToPayload(form: FamilyForm): Record<string, unknown> {
+  return {
+    family_last_name: form.family_last_name,
+    husband_first_name: form.husband_first_name,
+    wife_first_name: form.wife_first_name,
+    home_congregation: form.home_congregation,
+    address: form.address,
+    city: form.city,
+    state: form.state,
+    zip: form.zip,
+    directory_blurb: form.directory_blurb,
+    directory_opt_in: form.directory_opt_in,
+  }
+}
+
+function memberFormToPayload(form: MemberForm): Record<string, unknown> {
+  return {
+    first_name: form.first_name,
+    last_name: form.last_name,
+    age: form.age === "" ? null : Number(form.age),
+    parent_role: form.parent_role === "none" ? null : form.parent_role,
+    email: form.email,
+    phone: form.phone,
+    share_contact_directory: form.share_contact_directory,
+  }
+}
+
+/** Fields in `draft` that differ from `original` (shallow compare on form values). */
+function diffForm<T extends Record<string, unknown>>(original: T, draft: T): Partial<T> {
+  const changed: Partial<T> = {}
+  for (const key of Object.keys(draft) as (keyof T)[]) {
+    if (draft[key] !== original[key]) changed[key] = draft[key]
+  }
+  return changed
+}
+
 export function DirectoryManager({ canManage, eventYear }: Props) {
   const [families, setFamilies] = useState<AdminDirectoryFamily[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
   const [search, setSearch] = useState("")
 
+  // Single-card edit state
   const [editingId, setEditingId] = useState<number | null>(null)
   const [form, setForm] = useState<FamilyForm | null>(null)
   const [memberEditId, setMemberEditId] = useState<number | null>(null)
@@ -97,6 +137,11 @@ export function DirectoryManager({ canManage, eventYear }: Props) {
   const [saving, setSaving] = useState(false)
   const photoInputRef = useRef<HTMLInputElement>(null)
   const [photoBusy, setPhotoBusy] = useState(false)
+
+  // Bulk edit state: drafts for every family/member, saved in one request.
+  const [bulkMode, setBulkMode] = useState(false)
+  const [bulkFamilies, setBulkFamilies] = useState<Record<number, FamilyForm>>({})
+  const [bulkMembers, setBulkMembers] = useState<Record<number, MemberForm>>({})
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -116,14 +161,134 @@ export function DirectoryManager({ canManage, eventYear }: Props) {
   useEffect(() => {
     setEditingId(null)
     setMemberEditId(null)
+    setBulkMode(false)
     void load()
   }, [load])
+
+  // Original (server) forms, for computing what changed in bulk mode.
+  const originals = useMemo(() => {
+    const familyForms: Record<number, FamilyForm> = {}
+    const memberForms: Record<number, MemberForm> = {}
+    for (const family of families) {
+      familyForms[family.id] = familyToForm(family)
+      for (const member of family.members) {
+        memberForms[member.id] = memberToForm(member)
+      }
+    }
+    return { familyForms, memberForms }
+  }, [families])
+
+  const bulkChanges = useMemo(() => {
+    if (!bulkMode) return { familyIds: [] as number[], memberIds: [] as number[] }
+    const familyIds = Object.keys(bulkFamilies)
+      .map(Number)
+      .filter((id) => {
+        const original = originals.familyForms[id]
+        return original && Object.keys(diffForm(original, bulkFamilies[id])).length > 0
+      })
+    const memberIds = Object.keys(bulkMembers)
+      .map(Number)
+      .filter((id) => {
+        const original = originals.memberForms[id]
+        return original && Object.keys(diffForm(original, bulkMembers[id])).length > 0
+      })
+    return { familyIds, memberIds }
+  }, [bulkMode, bulkFamilies, bulkMembers, originals])
+
+  const bulkDirtyCount = bulkChanges.familyIds.length + bulkChanges.memberIds.length
+
+  const enterBulkMode = () => {
+    const familyDrafts: Record<number, FamilyForm> = {}
+    const memberDrafts: Record<number, MemberForm> = {}
+    for (const family of families) {
+      familyDrafts[family.id] = familyToForm(family)
+      for (const member of family.members) {
+        memberDrafts[member.id] = memberToForm(member)
+      }
+    }
+    setBulkFamilies(familyDrafts)
+    setBulkMembers(memberDrafts)
+    setBulkMode(true)
+    setEditingId(null)
+    setForm(null)
+    setMemberEditId(null)
+    setMemberForm(null)
+    setError(null)
+    setNotice(null)
+  }
+
+  const exitBulkMode = () => {
+    setBulkMode(false)
+    setBulkFamilies({})
+    setBulkMembers({})
+  }
+
+  const saveAllBulk = async () => {
+    if (bulkDirtyCount === 0) return
+    setSaving(true)
+    setError(null)
+    setNotice(null)
+    try {
+      const familiesPayload = bulkChanges.familyIds.map((id) => ({
+        id,
+        ...diffForm(originals.familyForms[id], bulkFamilies[id]) as Partial<FamilyForm>,
+      }))
+      const membersPayload = bulkChanges.memberIds.map((id) => ({
+        id,
+        ...diffForm(originals.memberForms[id], bulkMembers[id]) as Partial<MemberForm>,
+      }))
+
+      // Convert form values to API values for only the changed fields.
+      const familiesBody = familiesPayload.map(({ id, ...changed }) => {
+        const full = familyFormToPayload(bulkFamilies[id])
+        const body: Record<string, unknown> = { id }
+        for (const key of Object.keys(changed)) body[key] = full[key]
+        return body
+      })
+      const membersBody = membersPayload.map(({ id, ...changed }) => {
+        const full = memberFormToPayload(bulkMembers[id])
+        const body: Record<string, unknown> = { id }
+        for (const key of Object.keys(changed)) body[key] = full[key]
+        return body
+      })
+
+      const res = await fetch("/api/admin/directory/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ families: familiesBody, members: membersBody }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Failed to save changes")
+
+      if (Array.isArray(data.failures) && data.failures.length > 0) {
+        setError(`Saved with ${data.failures.length} problem(s): ${data.failures.join("; ")}`)
+      } else {
+        setNotice(
+          `Saved ${data.familiesUpdated} family${data.familiesUpdated === 1 ? "" : "ies"} and ${data.membersUpdated} member${data.membersUpdated === 1 ? "" : "s"}.`,
+        )
+      }
+      exitBulkMode()
+      await load()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save changes")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const updateBulkFamily = (id: number, updates: Partial<FamilyForm>) => {
+    setBulkFamilies((prev) => ({ ...prev, [id]: { ...prev[id], ...updates } }))
+  }
+  const updateBulkMember = (id: number, updates: Partial<MemberForm>) => {
+    setBulkMembers((prev) => ({ ...prev, [id]: { ...prev[id], ...updates } }))
+  }
 
   const startEdit = (family: AdminDirectoryFamily) => {
     setEditingId(family.id)
     setForm(familyToForm(family))
     setMemberEditId(null)
     setError(null)
+    setNotice(null)
   }
 
   const cancelEdit = () => {
@@ -140,18 +305,7 @@ export function DirectoryManager({ canManage, eventYear }: Props) {
       const res = await fetch(`/api/admin/directory/families/${editingId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          family_last_name: form.family_last_name,
-          husband_first_name: form.husband_first_name,
-          wife_first_name: form.wife_first_name,
-          home_congregation: form.home_congregation,
-          address: form.address,
-          city: form.city,
-          state: form.state,
-          zip: form.zip,
-          directory_blurb: form.directory_blurb,
-          directory_opt_in: form.directory_opt_in,
-        }),
+        body: JSON.stringify(familyFormToPayload(form)),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || "Failed to save family")
@@ -172,15 +326,7 @@ export function DirectoryManager({ canManage, eventYear }: Props) {
       const res = await fetch(`/api/admin/directory/members/${memberEditId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          first_name: memberForm.first_name,
-          last_name: memberForm.last_name,
-          age: memberForm.age === "" ? null : Number(memberForm.age),
-          parent_role: memberForm.parent_role === "none" ? null : memberForm.parent_role,
-          email: memberForm.email,
-          phone: memberForm.phone,
-          share_contact_directory: memberForm.share_contact_directory,
-        }),
+        body: JSON.stringify(memberFormToPayload(memberForm)),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || "Failed to save member")
@@ -258,7 +404,7 @@ export function DirectoryManager({ canManage, eventYear }: Props) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className={`space-y-4 ${bulkMode ? "pb-24" : ""}`}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Input
           value={search}
@@ -266,10 +412,16 @@ export function DirectoryManager({ canManage, eventYear }: Props) {
           placeholder="Search families, members, congregations…"
           className="sm:max-w-sm"
         />
-        <div className="flex items-center gap-3 text-sm text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
           <span>
             {filtered.length} of {families.length} families
           </span>
+          {canManage && !bulkMode && (
+            <Button variant="default" size="sm" onClick={enterBulkMode}>
+              <ListChecks className="mr-2 h-4 w-4" aria-hidden="true" />
+              Bulk edit
+            </Button>
+          )}
           <Button asChild variant="outline" size="sm">
             <Link href="/directory" target="_blank">
               <ExternalLink className="mr-2 h-4 w-4" aria-hidden="true" />
@@ -279,9 +431,22 @@ export function DirectoryManager({ canManage, eventYear }: Props) {
         </div>
       </div>
 
+      {bulkMode && (
+        <p className="rounded-lg border border-primary/25 bg-primary/5 p-3 text-sm">
+          <strong>Bulk edit is on.</strong> Every field below is editable — change as much as you
+          want, then hit <strong>Save all</strong> in the bar at the bottom. Nothing is saved until
+          then. (Photos still upload immediately.)
+        </p>
+      )}
+
       {error && (
         <p className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive" role="alert">
           {error}
+        </p>
+      )}
+      {notice && (
+        <p className="rounded-lg border border-success/30 bg-success/5 p-3 text-sm" role="status">
+          {notice}
         </p>
       )}
 
@@ -292,9 +457,17 @@ export function DirectoryManager({ canManage, eventYear }: Props) {
       )}
 
       {filtered.map((family) => {
-        const isEditing = editingId === family.id && form
+        const isEditing = !bulkMode && editingId === family.id && form
+        const bulkForm = bulkMode ? bulkFamilies[family.id] : null
+        const familyDirty = bulkMode && bulkChanges.familyIds.includes(family.id)
+        const activeForm = bulkMode ? bulkForm : isEditing ? form : null
+        const setActiveForm = (updates: Partial<FamilyForm>) => {
+          if (bulkMode) updateBulkFamily(family.id, updates)
+          else if (form) setForm({ ...form, ...updates })
+        }
+
         return (
-          <Card key={family.id}>
+          <Card key={family.id} className={familyDirty ? "border-primary/60" : undefined}>
             <CardContent className="pt-6">
               <div className="flex flex-col gap-4">
                 <div className="flex items-start justify-between gap-3">
@@ -314,6 +487,9 @@ export function DirectoryManager({ canManage, eventYear }: Props) {
                     <div className="min-w-0">
                       <p className="break-words font-semibold">
                         {family.family_last_name} family
+                        {familyDirty && (
+                          <Badge className="ml-2 align-middle">Edited</Badge>
+                        )}
                         {!family.directory_opt_in && (
                           <Badge variant="outline" className="ml-2 align-middle">
                             <EyeOff className="mr-1 h-3 w-3" aria-hidden="true" />
@@ -321,21 +497,28 @@ export function DirectoryManager({ canManage, eventYear }: Props) {
                           </Badge>
                         )}
                       </p>
-                      <p className="break-words text-sm text-muted-foreground">
-                        {[family.husband_first_name, family.wife_first_name]
-                          .filter(Boolean)
-                          .join(" & ") || "Parents not listed"}
-                        {family.home_congregation ? ` • ${family.home_congregation}` : ""}
-                      </p>
-                      <p className="break-all text-sm text-muted-foreground">{family.email}</p>
-                      {family.directory_blurb && !isEditing && (
-                        <p className="mt-1 break-words text-sm italic text-muted-foreground">
-                          &ldquo;{family.directory_blurb}&rdquo;
-                        </p>
+                      {!activeForm && (
+                        <>
+                          <p className="break-words text-sm text-muted-foreground">
+                            {[family.husband_first_name, family.wife_first_name]
+                              .filter(Boolean)
+                              .join(" & ") || "Parents not listed"}
+                            {family.home_congregation ? ` • ${family.home_congregation}` : ""}
+                          </p>
+                          <p className="break-all text-sm text-muted-foreground">{family.email}</p>
+                          {family.directory_blurb && (
+                            <p className="mt-1 break-words text-sm italic text-muted-foreground">
+                              &ldquo;{family.directory_blurb}&rdquo;
+                            </p>
+                          )}
+                        </>
+                      )}
+                      {bulkMode && (
+                        <p className="break-all text-sm text-muted-foreground">{family.email}</p>
                       )}
                     </div>
                   </div>
-                  {canManage && !isEditing && (
+                  {canManage && !bulkMode && !isEditing && (
                     <Button variant="outline" size="sm" onClick={() => startEdit(family)}>
                       <Pencil className="mr-2 h-4 w-4" aria-hidden="true" />
                       Edit
@@ -343,55 +526,59 @@ export function DirectoryManager({ canManage, eventYear }: Props) {
                   )}
                 </div>
 
-                {isEditing && form && (
-                  <div className="space-y-4 rounded-lg border border-dashed bg-muted/30 p-4">
+                {activeForm && (
+                  <div
+                    className={`space-y-4 rounded-lg border p-4 ${
+                      bulkMode ? "bg-background" : "border-dashed bg-muted/30"
+                    }`}
+                  >
                     <div className="grid gap-3 md:grid-cols-2">
                       <div>
                         <Label htmlFor={`last-${family.id}`}>Family last name</Label>
                         <Input
                           id={`last-${family.id}`}
-                          value={form.family_last_name}
-                          onChange={(e) => setForm({ ...form, family_last_name: e.target.value })}
+                          value={activeForm.family_last_name}
+                          onChange={(e) => setActiveForm({ family_last_name: e.target.value })}
                         />
                       </div>
                       <div>
                         <Label htmlFor={`cong-${family.id}`}>Home congregation</Label>
                         <Input
                           id={`cong-${family.id}`}
-                          value={form.home_congregation}
-                          onChange={(e) => setForm({ ...form, home_congregation: e.target.value })}
+                          value={activeForm.home_congregation}
+                          onChange={(e) => setActiveForm({ home_congregation: e.target.value })}
                         />
                       </div>
                       <div>
                         <Label htmlFor={`hf-${family.id}`}>Husband first name</Label>
                         <Input
                           id={`hf-${family.id}`}
-                          value={form.husband_first_name}
-                          onChange={(e) => setForm({ ...form, husband_first_name: e.target.value })}
+                          value={activeForm.husband_first_name}
+                          onChange={(e) => setActiveForm({ husband_first_name: e.target.value })}
                         />
                       </div>
                       <div>
                         <Label htmlFor={`wf-${family.id}`}>Wife first name</Label>
                         <Input
                           id={`wf-${family.id}`}
-                          value={form.wife_first_name}
-                          onChange={(e) => setForm({ ...form, wife_first_name: e.target.value })}
+                          value={activeForm.wife_first_name}
+                          onChange={(e) => setActiveForm({ wife_first_name: e.target.value })}
                         />
                       </div>
                       <div className="md:col-span-2">
                         <Label htmlFor={`addr-${family.id}`}>Street address</Label>
                         <Input
                           id={`addr-${family.id}`}
-                          value={form.address}
-                          onChange={(e) => setForm({ ...form, address: e.target.value })}
+                          value={activeForm.address}
+                          onChange={(e) => setActiveForm({ address: e.target.value })}
                         />
                       </div>
                       <div>
                         <Label htmlFor={`city-${family.id}`}>City</Label>
                         <Input
                           id={`city-${family.id}`}
-                          value={form.city}
-                          onChange={(e) => setForm({ ...form, city: e.target.value })}
+                          value={activeForm.city}
+                          onChange={(e) => setActiveForm({ city: e.target.value })}
                         />
                       </div>
                       <div className="grid grid-cols-2 gap-3">
@@ -399,16 +586,16 @@ export function DirectoryManager({ canManage, eventYear }: Props) {
                           <Label htmlFor={`state-${family.id}`}>State</Label>
                           <Input
                             id={`state-${family.id}`}
-                            value={form.state}
-                            onChange={(e) => setForm({ ...form, state: e.target.value })}
+                            value={activeForm.state}
+                            onChange={(e) => setActiveForm({ state: e.target.value })}
                           />
                         </div>
                         <div>
                           <Label htmlFor={`zip-${family.id}`}>Zip</Label>
                           <Input
                             id={`zip-${family.id}`}
-                            value={form.zip}
-                            onChange={(e) => setForm({ ...form, zip: e.target.value })}
+                            value={activeForm.zip}
+                            onChange={(e) => setActiveForm({ zip: e.target.value })}
                           />
                         </div>
                       </div>
@@ -416,10 +603,10 @@ export function DirectoryManager({ canManage, eventYear }: Props) {
                         <Label htmlFor={`blurb-${family.id}`}>Directory blurb (280 chars)</Label>
                         <Textarea
                           id={`blurb-${family.id}`}
-                          value={form.directory_blurb}
+                          value={activeForm.directory_blurb}
                           maxLength={280}
                           rows={2}
-                          onChange={(e) => setForm({ ...form, directory_blurb: e.target.value })}
+                          onChange={(e) => setActiveForm({ directory_blurb: e.target.value })}
                         />
                       </div>
                     </div>
@@ -427,60 +614,64 @@ export function DirectoryManager({ canManage, eventYear }: Props) {
                     <div className="flex flex-wrap items-center gap-4">
                       <label className="flex cursor-pointer items-center gap-2 text-sm">
                         <Checkbox
-                          checked={form.directory_opt_in}
+                          checked={activeForm.directory_opt_in}
                           onCheckedChange={(checked) =>
-                            setForm({ ...form, directory_opt_in: checked === true })
+                            setActiveForm({ directory_opt_in: checked === true })
                           }
                         />
                         Listed in the public directory
                       </label>
-                      <div className="flex items-center gap-2">
-                        <input
-                          ref={photoInputRef}
-                          type="file"
-                          accept="image/jpeg,image/png,image/webp"
-                          className="hidden"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0]
-                            if (file) void uploadPhoto(family.id, file)
-                            e.target.value = ""
-                          }}
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          disabled={photoBusy}
-                          onClick={() => photoInputRef.current?.click()}
-                        >
-                          <Camera className="mr-2 h-4 w-4" aria-hidden="true" />
-                          {photoBusy ? "Working…" : family.photo_url ? "Replace photo" : "Upload photo"}
-                        </Button>
-                        {family.photo_url && (
+                      {!bulkMode && (
+                        <div className="flex items-center gap-2">
+                          <input
+                            ref={photoInputRef}
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0]
+                              if (file) void uploadPhoto(family.id, file)
+                              e.target.value = ""
+                            }}
+                          />
                           <Button
                             type="button"
-                            variant="ghost"
+                            variant="outline"
                             size="sm"
                             disabled={photoBusy}
-                            onClick={() => void removePhoto(family.id)}
+                            onClick={() => photoInputRef.current?.click()}
                           >
-                            <Trash2 className="mr-2 h-4 w-4" aria-hidden="true" />
-                            Remove photo
+                            <Camera className="mr-2 h-4 w-4" aria-hidden="true" />
+                            {photoBusy ? "Working…" : family.photo_url ? "Replace photo" : "Upload photo"}
                           </Button>
-                        )}
-                      </div>
+                          {family.photo_url && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              disabled={photoBusy}
+                              onClick={() => void removePhoto(family.id)}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" aria-hidden="true" />
+                              Remove photo
+                            </Button>
+                          )}
+                        </div>
+                      )}
                     </div>
 
-                    <div className="flex gap-2">
-                      <Button onClick={() => void saveFamily()} disabled={saving}>
-                        {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
-                        Save family
-                      </Button>
-                      <Button variant="outline" onClick={cancelEdit} disabled={saving}>
-                        <X className="mr-2 h-4 w-4" aria-hidden="true" />
-                        Cancel
-                      </Button>
-                    </div>
+                    {!bulkMode && (
+                      <div className="flex gap-2">
+                        <Button onClick={() => void saveFamily()} disabled={saving}>
+                          {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
+                          Save family
+                        </Button>
+                        <Button variant="outline" onClick={cancelEdit} disabled={saving}>
+                          <X className="mr-2 h-4 w-4" aria-hidden="true" />
+                          Cancel
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -495,57 +686,76 @@ export function DirectoryManager({ canManage, eventYear }: Props) {
                   ) : (
                     <div className="space-y-2">
                       {family.members.map((member) => {
-                        const isMemberEditing = memberEditId === member.id && memberForm
+                        const isMemberEditing =
+                          !bulkMode && memberEditId === member.id && memberForm
+                        const bulkMemberForm = bulkMode ? bulkMembers[member.id] : null
+                        const memberDirty = bulkMode && bulkChanges.memberIds.includes(member.id)
+                        const activeMemberForm = bulkMode
+                          ? bulkMemberForm
+                          : isMemberEditing
+                            ? memberForm
+                            : null
+                        const setActiveMemberForm = (updates: Partial<MemberForm>) => {
+                          if (bulkMode) updateBulkMember(member.id, updates)
+                          else if (memberForm) setMemberForm({ ...memberForm, ...updates })
+                        }
+
                         return (
-                          <div key={member.id} className="rounded-lg border p-3">
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="min-w-0 text-sm">
-                                <p className="break-words font-medium">
-                                  {member.first_name} {member.last_name}
-                                  {member.parent_role && (
-                                    <Badge variant="secondary" className="ml-2 align-middle capitalize">
-                                      {member.parent_role}
-                                    </Badge>
-                                  )}
-                                </p>
-                                <p className="text-muted-foreground">
-                                  {member.age != null ? `Age ${member.age}` : "Age unknown"}
-                                  {" • "}
-                                  {member.share_contact_directory
-                                    ? "Sharing contact info"
-                                    : "Contact info hidden"}
-                                </p>
-                                {(member.email || member.phone) && (
-                                  <p className="break-all text-muted-foreground">
-                                    {[member.email, member.phone].filter(Boolean).join(" • ")}
+                          <div
+                            key={member.id}
+                            className={`rounded-lg border p-3 ${memberDirty ? "border-primary/60" : ""}`}
+                          >
+                            {!activeMemberForm && (
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0 text-sm">
+                                  <p className="break-words font-medium">
+                                    {member.first_name} {member.last_name}
+                                    {member.parent_role && (
+                                      <Badge variant="secondary" className="ml-2 align-middle capitalize">
+                                        {member.parent_role}
+                                      </Badge>
+                                    )}
                                   </p>
+                                  <p className="text-muted-foreground">
+                                    {member.age != null ? `Age ${member.age}` : "Age unknown"}
+                                    {" • "}
+                                    {member.share_contact_directory
+                                      ? "Sharing contact info"
+                                      : "Contact info hidden"}
+                                  </p>
+                                  {(member.email || member.phone) && (
+                                    <p className="break-all text-muted-foreground">
+                                      {[member.email, member.phone].filter(Boolean).join(" • ")}
+                                    </p>
+                                  )}
+                                </div>
+                                {canManage && !bulkMode && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      setMemberEditId(member.id)
+                                      setMemberForm(memberToForm(member))
+                                    }}
+                                  >
+                                    <Pencil className="h-4 w-4" aria-hidden="true" />
+                                    <span className="sr-only">Edit member</span>
+                                  </Button>
                                 )}
                               </div>
-                              {canManage && !isMemberEditing && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => {
-                                    setMemberEditId(member.id)
-                                    setMemberForm(memberToForm(member))
-                                  }}
-                                >
-                                  <Pencil className="h-4 w-4" aria-hidden="true" />
-                                  <span className="sr-only">Edit member</span>
-                                </Button>
-                              )}
-                            </div>
+                            )}
 
-                            {isMemberEditing && memberForm && (
-                              <div className="mt-3 space-y-3 border-t pt-3">
+                            {activeMemberForm && (
+                              <div className="space-y-3">
+                                {memberDirty && <Badge>Edited</Badge>}
                                 <div className="grid gap-3 md:grid-cols-3">
                                   <div>
                                     <Label htmlFor={`mfn-${member.id}`}>First name</Label>
                                     <Input
                                       id={`mfn-${member.id}`}
-                                      value={memberForm.first_name}
+                                      value={activeMemberForm.first_name}
                                       onChange={(e) =>
-                                        setMemberForm({ ...memberForm, first_name: e.target.value })
+                                        setActiveMemberForm({ first_name: e.target.value })
                                       }
                                     />
                                   </div>
@@ -553,9 +763,9 @@ export function DirectoryManager({ canManage, eventYear }: Props) {
                                     <Label htmlFor={`mln-${member.id}`}>Last name</Label>
                                     <Input
                                       id={`mln-${member.id}`}
-                                      value={memberForm.last_name}
+                                      value={activeMemberForm.last_name}
                                       onChange={(e) =>
-                                        setMemberForm({ ...memberForm, last_name: e.target.value })
+                                        setActiveMemberForm({ last_name: e.target.value })
                                       }
                                     />
                                   </div>
@@ -565,19 +775,18 @@ export function DirectoryManager({ canManage, eventYear }: Props) {
                                       id={`mage-${member.id}`}
                                       type="number"
                                       min="0"
-                                      value={memberForm.age}
+                                      value={activeMemberForm.age}
                                       onChange={(e) =>
-                                        setMemberForm({ ...memberForm, age: e.target.value })
+                                        setActiveMemberForm({ age: e.target.value })
                                       }
                                     />
                                   </div>
                                   <div>
                                     <Label htmlFor={`mrole-${member.id}`}>Role</Label>
                                     <Select
-                                      value={memberForm.parent_role}
+                                      value={activeMemberForm.parent_role}
                                       onValueChange={(value) =>
-                                        setMemberForm({
-                                          ...memberForm,
+                                        setActiveMemberForm({
                                           parent_role: value as MemberForm["parent_role"],
                                         })
                                       }
@@ -597,9 +806,9 @@ export function DirectoryManager({ canManage, eventYear }: Props) {
                                     <Input
                                       id={`memail-${member.id}`}
                                       type="email"
-                                      value={memberForm.email}
+                                      value={activeMemberForm.email}
                                       onChange={(e) =>
-                                        setMemberForm({ ...memberForm, email: e.target.value })
+                                        setActiveMemberForm({ email: e.target.value })
                                       }
                                     />
                                   </div>
@@ -608,44 +817,45 @@ export function DirectoryManager({ canManage, eventYear }: Props) {
                                     <Input
                                       id={`mphone-${member.id}`}
                                       type="tel"
-                                      value={memberForm.phone}
+                                      value={activeMemberForm.phone}
                                       onChange={(e) =>
-                                        setMemberForm({ ...memberForm, phone: e.target.value })
+                                        setActiveMemberForm({ phone: e.target.value })
                                       }
                                     />
                                   </div>
                                 </div>
                                 <label className="flex cursor-pointer items-center gap-2 text-sm">
                                   <Checkbox
-                                    checked={memberForm.share_contact_directory}
+                                    checked={activeMemberForm.share_contact_directory}
                                     onCheckedChange={(checked) =>
-                                      setMemberForm({
-                                        ...memberForm,
+                                      setActiveMemberForm({
                                         share_contact_directory: checked === true,
                                       })
                                     }
                                   />
                                   Show this member&apos;s email/phone in the public directory
                                 </label>
-                                <div className="flex gap-2">
-                                  <Button size="sm" onClick={() => void saveMember()} disabled={saving}>
-                                    {saving && (
-                                      <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
-                                    )}
-                                    Save member
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    disabled={saving}
-                                    onClick={() => {
-                                      setMemberEditId(null)
-                                      setMemberForm(null)
-                                    }}
-                                  >
-                                    Cancel
-                                  </Button>
-                                </div>
+                                {!bulkMode && (
+                                  <div className="flex gap-2">
+                                    <Button size="sm" onClick={() => void saveMember()} disabled={saving}>
+                                      {saving && (
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+                                      )}
+                                      Save member
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      disabled={saving}
+                                      onClick={() => {
+                                        setMemberEditId(null)
+                                        setMemberForm(null)
+                                      }}
+                                    >
+                                      Cancel
+                                    </Button>
+                                  </div>
+                                )}
                               </div>
                             )}
                           </div>
@@ -659,6 +869,42 @@ export function DirectoryManager({ canManage, eventYear }: Props) {
           </Card>
         )
       })}
+
+      {bulkMode && (
+        <div className="fixed inset-x-0 bottom-0 z-50 border-t bg-background/95 p-3 shadow-lg backdrop-blur">
+          <div className="mx-auto flex max-w-5xl flex-col items-center justify-between gap-3 sm:flex-row">
+            <p className="text-sm">
+              {bulkDirtyCount === 0 ? (
+                <span className="text-muted-foreground">
+                  Bulk edit — no changes yet. Edit any field above.
+                </span>
+              ) : (
+                <>
+                  <strong>{bulkDirtyCount}</strong> unsaved change
+                  {bulkDirtyCount === 1 ? "" : "s"} ({bulkChanges.familyIds.length} famil
+                  {bulkChanges.familyIds.length === 1 ? "y" : "ies"},{" "}
+                  {bulkChanges.memberIds.length} member
+                  {bulkChanges.memberIds.length === 1 ? "" : "s"})
+                </>
+              )}
+            </p>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={exitBulkMode} disabled={saving}>
+                <X className="mr-2 h-4 w-4" aria-hidden="true" />
+                {bulkDirtyCount > 0 ? "Discard changes" : "Exit bulk edit"}
+              </Button>
+              <Button onClick={() => void saveAllBulk()} disabled={saving || bulkDirtyCount === 0}>
+                {saving ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+                ) : (
+                  <Save className="mr-2 h-4 w-4" aria-hidden="true" />
+                )}
+                Save all
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
