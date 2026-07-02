@@ -101,8 +101,8 @@ export async function fetchNextVolunteerScheduleForLiveUpdates(): Promise<Volunt
       vs.volunteer_type,
       vs.prayer_type,
       r.family_last_name,
-      COALESCE(lt.title, vs.lesson_title) as lesson_title,
-      COALESCE(lt.description, vs.scripture_reading) as lesson_scripture
+      COALESCE(NULLIF(vs.lesson_title, ''), lt.title) as lesson_title,
+      COALESCE(NULLIF(vs.scripture_reading, ''), lt.description) as lesson_scripture
     FROM volunteer_signups vs
     LEFT JOIN registrations r ON vs.registration_id = r.id
     LEFT JOIN lesson_topics lt ON vs.claimed_lesson_id = lt.id

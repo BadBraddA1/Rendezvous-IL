@@ -229,7 +229,13 @@ export async function sendBidInvite(volunteerId: number, baseUrl: string): Promi
 
 export type BidContext = {
   bid: LessonBid
-  volunteer: { id: number; volunteer_name: string; claimed_lesson_id: number | null } | null
+  volunteer: {
+    id: number
+    volunteer_name: string
+    claimed_lesson_id: number | null
+    lesson_title: string | null
+    scripture_reading: string | null
+  } | null
   familyLastName: string
   topics: LessonTopic[]
   claimedTopic: LessonTopic | null
@@ -241,8 +247,8 @@ export async function getBidByToken(token: string): Promise<BidContext | null> {
   if (!bid) return null
 
   const [volunteer] = await sql`
-    SELECT vs.id, vs.volunteer_name, vs.claimed_lesson_id, r.family_last_name,
-      COALESCE(r.event_year, 2026) as event_year
+    SELECT vs.id, vs.volunteer_name, vs.claimed_lesson_id, vs.lesson_title, vs.scripture_reading,
+      r.family_last_name, COALESCE(r.event_year, 2026) as event_year
     FROM volunteer_signups vs
     LEFT JOIN registrations r ON vs.registration_id = r.id
     WHERE vs.lesson_bid_token = ${token}
@@ -265,12 +271,40 @@ export async function getBidByToken(token: string): Promise<BidContext | null> {
           claimed_lesson_id: volunteer.claimed_lesson_id
             ? Number(volunteer.claimed_lesson_id)
             : null,
+          lesson_title: volunteer.lesson_title ? String(volunteer.lesson_title) : null,
+          scripture_reading: volunteer.scripture_reading
+            ? String(volunteer.scripture_reading)
+            : null,
         }
       : null,
     familyLastName: String(volunteer?.family_last_name ?? ""),
     topics,
     claimedTopic,
   }
+}
+
+export type LessonDetailsResult = { ok: true } | { ok: false; reason: string }
+
+/** Presenter-provided lesson title/scripture, editable via the bid link once a topic is awarded. */
+export async function updateBidLessonDetails(
+  token: string,
+  lessonTitle: string,
+  scriptureReading: string,
+): Promise<LessonDetailsResult> {
+  await ensureLessonTables()
+  const [volunteer] = await sql`
+    SELECT id, claimed_lesson_id FROM volunteer_signups WHERE lesson_bid_token = ${token}
+  `
+  if (!volunteer) return { ok: false, reason: "Invalid link" }
+  if (!volunteer.claimed_lesson_id) {
+    return { ok: false, reason: "Lesson details can be added once a topic is assigned to you" }
+  }
+  await sql`
+    UPDATE volunteer_signups
+    SET lesson_title = ${lessonTitle || null}, scripture_reading = ${scriptureReading || null}
+    WHERE id = ${volunteer.id}
+  `
+  return { ok: true }
 }
 
 export type SubmitPicksResult = { ok: true } | { ok: false; reason: string }

@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { checkAdminAuth, getAdminPermissions, logAuditAction } from "@/lib/admin-auth"
 import { getRequestAuditMeta } from "@/lib/audit-log"
 import { sql } from "@/lib/db"
+import { findAssignmentConflict } from "@/lib/volunteer-scheduling"
 
 export const dynamic = "force-dynamic"
 
@@ -29,6 +30,21 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const assigning = Boolean(body.assigned_date && body.time_slot && body.prayer_type)
 
     if (assigning) {
+      const isMove =
+        existing.assigned_date !== body.assigned_date ||
+        existing.time_slot !== body.time_slot ||
+        existing.prayer_type !== body.prayer_type
+      if (isMove) {
+        const conflict = await findAssignmentConflict(
+          existing,
+          String(body.assigned_date),
+          String(body.time_slot),
+          String(body.prayer_type),
+        )
+        if (conflict) {
+          return NextResponse.json({ error: conflict }, { status: 409 })
+        }
+      }
       await sql`
         UPDATE volunteer_signups
         SET

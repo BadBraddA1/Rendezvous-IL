@@ -11,7 +11,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { AdminListSkeleton, AdminRetryButton } from "./admin-panel-states"
 import { useToast } from "@/hooks/use-toast"
-import { CalendarDays, Loader2, Search, Users } from "lucide-react"
+import { CalendarDays, GripVertical, Loader2, Search, Sparkles, Users } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 type Volunteer = {
   id: number
@@ -83,6 +84,27 @@ function serviceLabelFrom(
   return null
 }
 
+/** Same human = same registration + same name (one signup row per role). */
+function personKey(v: Pick<Volunteer, "registration_id" | "volunteer_name">): string {
+  return `${v.registration_id ?? "x"}|${v.volunteer_name.trim().toLowerCase()}`
+}
+
+/** MIME type used for drag-and-drop; encodes the role so slots only accept matches. */
+function dragMime(volunteerType: string): string {
+  return `application/x-volunteer-${volunteerType.toLowerCase().replace(/[^a-z]+/g, "-")}`
+}
+
+type DraftAssignment = {
+  volunteerId: number
+  name: string
+  family: string | null
+  date: string
+  timeSlot: string
+  prayerType: string
+  slotLabel: string
+  serviceLabel: string
+}
+
 type Props = {
   canManage: boolean
   eventYear: number
@@ -97,6 +119,9 @@ export function VolunteerScheduleManager({ canManage, eventYear }: Props) {
   const [rosterSearch, setRosterSearch] = useState("")
   const [rosterType, setRosterType] = useState("all")
   const [lessonDrafts, setLessonDrafts] = useState<Record<number, { title: string; scripture: string }>>({})
+  const [autoDraft, setAutoDraft] = useState<DraftAssignment[] | null>(null)
+  const [applyingDraft, setApplyingDraft] = useState(false)
+  const [dragOverSlot, setDragOverSlot] = useState<string | null>(null)
   const { toast } = useToast()
 
   const serviceLabel = useCallback(
@@ -110,6 +135,7 @@ export function VolunteerScheduleManager({ canManage, eventYear }: Props) {
 
   useEffect(() => {
     setVolunteers(null)
+    setAutoDraft(null)
   }, [eventYear])
 
   const fetchVolunteers = useCallback(async () => {
@@ -215,6 +241,136 @@ export function VolunteerScheduleManager({ canManage, eventYear }: Props) {
         v.prayer_type === slot.prayerType,
     )
 
+  /** True when the same person is already booked that day via a different signup row. */
+  const isBookedOnDate = useCallback(
+    (candidate: Volunteer, date: string) =>
+      (volunteers ?? []).some(
+        (v) =>
+          v.id !== candidate.id &&
+          v.assigned_date === date &&
+          personKey(v) === personKey(candidate),
+      ),
+    [volunteers],
+  )
+
+  /**
+   * Auto-fill: greedily fills every empty slot across the whole week,
+   * spreading assignments so nobody is booked twice in a day and each
+   * signup (person + role) is used at most once. Nothing is saved until
+   * the admin approves the draft.
+   */
+  const generateAutoFill = () => {
+    if (!volunteers) return
+    const usedSignups = new Set(volunteers.filter((v) => v.assigned_date).map((v) => v.id))
+    const bookedDays = new Map<string, Set<string>>() // personKey -> dates
+    const assignmentCounts = new Map<string, number>() // personKey -> total bookings
+    for (const v of volunteers) {
+      if (!v.assigned_date) continue
+      const key = personKey(v)
+      if (!bookedDays.has(key)) bookedDays.set(key, new Set())
+      bookedDays.get(key)!.add(v.assigned_date)
+      assignmentCounts.set(key, (assignmentCounts.get(key) ?? 0) + 1)
+    }
+
+    const draft: DraftAssignment[] = []
+    for (const service of services) {
+      for (const slot of SLOTS) {
+        const occupied = volunteers.some(
+          (v) =>
+            v.volunteer_type === slot.type &&
+            v.assigned_date === service.date &&
+            v.time_slot === service.timeSlot &&
+            v.prayer_type === slot.prayerType,
+        )
+        if (occupied) continue
+
+        const candidates = volunteers
+          .filter(
+            (v) =>
+              v.volunteer_type === slot.type &&
+              !usedSignups.has(v.id) &&
+              !bookedDays.get(personKey(v))?.has(service.date),
+          )
+          .sort((a, b) => {
+            const loadDiff =
+              (assignmentCounts.get(personKey(a)) ?? 0) - (assignmentCounts.get(personKey(b)) ?? 0)
+            if (loadDiff !== 0) return loadDiff
+            // Presenters who already won a lesson topic get lesson slots first.
+            if (slot.lesson) {
+              const claimDiff = Number(Boolean(b.claimed_lesson_id)) - Number(Boolean(a.claimed_lesson_id))
+              if (claimDiff !== 0) return claimDiff
+            }
+            return a.volunteer_name.localeCompare(b.volunteer_name)
+          })
+
+        const pick = candidates[0]
+        if (!pick) continue
+
+        const key = personKey(pick)
+        usedSignups.add(pick.id)
+        if (!bookedDays.has(key)) bookedDays.set(key, new Set())
+        bookedDays.get(key)!.add(service.date)
+        assignmentCounts.set(key, (assignmentCounts.get(key) ?? 0) + 1)
+        draft.push({
+          volunteerId: pick.id,
+          name: pick.volunteer_name,
+          family: pick.family_last_name,
+          date: service.date,
+          timeSlot: service.timeSlot,
+          prayerType: slot.prayerType,
+          slotLabel: slot.label,
+          serviceLabel: service.label,
+        })
+      }
+    }
+
+    if (draft.length === 0) {
+      toast({
+        title: "Nothing to fill",
+        description: "Every slot is either filled or has no available volunteers.",
+      })
+      return
+    }
+    setAutoDraft(draft)
+  }
+
+  const applyAutoDraft = async () => {
+    if (!autoDraft) return
+    setApplyingDraft(true)
+    try {
+      const res = await fetch("/api/admin/volunteers/bulk-assign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          assignments: autoDraft.map((d) => ({
+            id: d.volunteerId,
+            assigned_date: d.date,
+            time_slot: d.timeSlot,
+            prayer_type: d.prayerType,
+          })),
+        }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || "Could not apply the schedule")
+      setAutoDraft(null)
+      await fetchVolunteers()
+      toast({
+        title: "Schedule applied",
+        description: `${data.applied} assignment${data.applied === 1 ? "" : "s"} saved${
+          data.skipped?.length ? `, ${data.skipped.length} skipped` : ""
+        }.`,
+      })
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Could not apply the schedule.",
+        variant: "destructive",
+      })
+    } finally {
+      setApplyingDraft(false)
+    }
+  }
+
   const rosterRows = useMemo(() => {
     if (!volunteers) return []
     const search = rosterSearch.trim().toLowerCase()
@@ -245,24 +401,123 @@ export function VolunteerScheduleManager({ canManage, eventYear }: Props) {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="max-w-xs">
-            <Label htmlFor="service-picker">Service</Label>
-            <Select value={serviceKey} onValueChange={setServiceKey}>
-              <SelectTrigger id="service-picker" className="min-h-11">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {services.map((service) => (
-                  <SelectItem
-                    key={`${service.date}|${service.timeSlot}`}
-                    value={`${service.date}|${service.timeSlot}`}
-                  >
-                    {service.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="w-full max-w-xs">
+              <Label htmlFor="service-picker">Service</Label>
+              <Select value={serviceKey} onValueChange={setServiceKey}>
+                <SelectTrigger id="service-picker" className="min-h-11">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {services.map((service) => (
+                    <SelectItem
+                      key={`${service.date}|${service.timeSlot}`}
+                      value={`${service.date}|${service.timeSlot}`}
+                    >
+                      {service.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {canManage && (
+              <Button
+                variant="outline"
+                className="min-h-11"
+                disabled={volunteers === null || autoDraft !== null}
+                onClick={generateAutoFill}
+              >
+                <Sparkles className="mr-2 h-4 w-4" aria-hidden="true" />
+                Auto-fill week
+              </Button>
+            )}
           </div>
+
+          {autoDraft && (
+            <div className="space-y-3 rounded-lg border border-primary/40 bg-primary/5 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="font-medium">
+                  Proposed schedule — {autoDraft.length} assignment{autoDraft.length === 1 ? "" : "s"}
+                </p>
+                <div className="flex gap-2">
+                  <Button size="sm" disabled={applyingDraft} onClick={() => void applyAutoDraft()}>
+                    {applyingDraft && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+                    )}
+                    Approve &amp; apply
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    disabled={applyingDraft}
+                    onClick={() => setAutoDraft(null)}
+                  >
+                    Discard
+                  </Button>
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Nothing is saved until you approve. Everyone is limited to one booking per day and
+                one slot per role.
+              </p>
+              <div className="grid gap-2 md:grid-cols-2">
+                {services
+                  .filter((s) => autoDraft.some((d) => d.serviceLabel === s.label))
+                  .map((service) => (
+                    <div key={service.label} className="rounded-md border bg-background p-3">
+                      <p className="mb-1 text-sm font-medium">{service.label}</p>
+                      <ul className="space-y-0.5 text-sm text-muted-foreground">
+                        {autoDraft
+                          .filter((d) => d.serviceLabel === service.label)
+                          .map((d) => (
+                            <li key={`${d.volunteerId}`}>
+                              {d.slotLabel}: <span className="text-foreground">{d.name}</span>
+                              {d.family ? ` (${d.family})` : ""}
+                            </li>
+                          ))}
+                      </ul>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+
+          {canManage && volunteers !== null && !fetchError && (
+            <div className="rounded-lg border border-dashed p-3">
+              <p className="mb-2 text-sm font-medium">
+                Available for {serviceLabel(selectedDate, selectedTimeSlot)}
+                <span className="ml-2 font-normal text-muted-foreground">
+                  drag a name onto a slot below
+                </span>
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {volunteers
+                  .filter((v) => !v.assigned_date && !isBookedOnDate(v, selectedDate))
+                  .map((v) => (
+                    <span
+                      key={v.id}
+                      draggable
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData(dragMime(v.volunteer_type), String(v.id))
+                        e.dataTransfer.effectAllowed = "move"
+                      }}
+                      className="inline-flex cursor-grab items-center gap-1 rounded-full border bg-background px-2.5 py-1 text-xs active:cursor-grabbing"
+                      title={`${v.volunteer_name} — ${v.volunteer_type}`}
+                    >
+                      <GripVertical className="h-3 w-3 text-muted-foreground" aria-hidden="true" />
+                      {v.volunteer_name}
+                      <span className="text-muted-foreground">· {v.volunteer_type}</span>
+                    </span>
+                  ))}
+                {volunteers.filter((v) => !v.assigned_date && !isBookedOnDate(v, selectedDate))
+                  .length === 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    No unbooked volunteers left for this day.
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
 
           {volunteers === null ? (
             <AdminListSkeleton rows={4} label="Loading volunteers" />
@@ -285,7 +540,29 @@ export function VolunteerScheduleManager({ canManage, eventYear }: Props) {
                   : null
 
                 return (
-                  <div key={slotId} className="space-y-2 rounded-lg border p-4">
+                  <div
+                    key={slotId}
+                    className={cn(
+                      "space-y-2 rounded-lg border p-4 transition-colors",
+                      dragOverSlot === slotId && "border-primary bg-primary/5",
+                    )}
+                    onDragOver={(e) => {
+                      if (!canManage) return
+                      if (e.dataTransfer.types.includes(dragMime(slot.type))) {
+                        e.preventDefault()
+                        e.dataTransfer.dropEffect = "move"
+                        setDragOverSlot(slotId)
+                      }
+                    }}
+                    onDragLeave={() => setDragOverSlot((prev) => (prev === slotId ? null : prev))}
+                    onDrop={(e) => {
+                      setDragOverSlot(null)
+                      const id = e.dataTransfer.getData(dragMime(slot.type))
+                      if (!id) return
+                      e.preventDefault()
+                      void assignSlot(slot, id, occupant)
+                    }}
+                  >
                     <div className="flex items-center justify-between gap-2">
                       <p className="text-sm font-medium">{slot.label}</p>
                       {busySlot === slotId && (
@@ -308,6 +585,8 @@ export function VolunteerScheduleManager({ canManage, eventYear }: Props) {
                           </SelectItem>
                         )}
                         {candidates.map((candidate) => {
+                          const isOccupant = occupant?.id === candidate.id
+                          const bookedToday = !isOccupant && isBookedOnDate(candidate, selectedDate)
                           const elsewhere =
                             candidate.assigned_date &&
                             !(
@@ -316,12 +595,18 @@ export function VolunteerScheduleManager({ canManage, eventYear }: Props) {
                               candidate.prayer_type === slot.prayerType
                             )
                           return (
-                            <SelectItem key={candidate.id} value={String(candidate.id)}>
+                            <SelectItem
+                              key={candidate.id}
+                              value={String(candidate.id)}
+                              disabled={bookedToday}
+                            >
                               {candidate.volunteer_name}
                               {candidate.family_last_name ? ` (${candidate.family_last_name})` : ""}
-                              {elsewhere
-                                ? ` — currently ${serviceLabel(candidate.assigned_date, candidate.time_slot)}`
-                                : ""}
+                              {bookedToday
+                                ? " — already booked this day"
+                                : elsewhere
+                                  ? ` — currently ${serviceLabel(candidate.assigned_date, candidate.time_slot)}`
+                                  : ""}
                             </SelectItem>
                           )
                         })}
@@ -330,14 +615,15 @@ export function VolunteerScheduleManager({ canManage, eventYear }: Props) {
                     {slot.lesson && occupant && occupant.claimed_lesson_title && (
                       <p className="rounded-md bg-muted/60 px-2 py-1.5 text-xs text-muted-foreground">
                         Awarded topic: <span className="font-medium text-foreground">{occupant.claimed_lesson_title}</span>{" "}
-                        (from the Lesson bids tab — shown on the schedule automatically)
+                        — the fields below (filled by the presenter via their bid link, or by you)
+                        override it on the schedule.
                       </p>
                     )}
-                    {slot.lesson && occupant && !occupant.claimed_lesson_title && draft && (
+                    {slot.lesson && occupant && draft && (
                       <div className="grid gap-2 pt-1">
                         <Input
                           value={draft.title}
-                          placeholder="Lesson title"
+                          placeholder={occupant.claimed_lesson_title || "Lesson title"}
                           aria-label={`Lesson title for ${slot.label}`}
                           disabled={!canManage}
                           onChange={(e) =>

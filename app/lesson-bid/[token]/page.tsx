@@ -37,7 +37,7 @@ export default async function LessonBidPage({ params }: { params: Promise<{ toke
     )
   }
 
-  const { bid, familyLastName, topics, claimedTopic } = context
+  const { bid, volunteer, familyLastName, topics, claimedTopic } = context
 
   return (
     <div className="min-h-screen bg-background">
@@ -56,6 +56,8 @@ export default async function LessonBidPage({ params }: { params: Promise<{ toke
           initialPicks={[bid.pick_1, bid.pick_2, bid.pick_3].filter((p): p is number => p !== null)}
           alreadySubmitted={Boolean(bid.submitted_at)}
           claimedTopicTitle={claimedTopic?.title ?? null}
+          initialLessonTitle={volunteer?.lesson_title ?? ""}
+          initialScripture={volunteer?.scripture_reading ?? ""}
         />
       </main>
       <SiteFooter />

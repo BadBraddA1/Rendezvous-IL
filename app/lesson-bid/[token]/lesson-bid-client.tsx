@@ -4,6 +4,8 @@ import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { BookOpen, CheckCircle2, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -23,6 +25,8 @@ type Props = {
   initialPicks: number[]
   alreadySubmitted: boolean
   claimedTopicTitle: string | null
+  initialLessonTitle: string
+  initialScripture: string
 }
 
 const RANK_LABELS = ["1st choice", "2nd choice", "3rd choice"]
@@ -35,11 +39,42 @@ export function LessonBidClient({
   initialPicks,
   alreadySubmitted,
   claimedTopicTitle,
+  initialLessonTitle,
+  initialScripture,
 }: Props) {
   const [picks, setPicks] = useState<number[]>(initialPicks)
   const [submitted, setSubmitted] = useState(alreadySubmitted)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Post-award lesson details form
+  const [lessonTitle, setLessonTitle] = useState(initialLessonTitle)
+  const [scripture, setScripture] = useState(initialScripture)
+  const [detailsSaved, setDetailsSaved] = useState(false)
+  const [savingDetails, setSavingDetails] = useState(false)
+
+  const saveDetails = async () => {
+    setSavingDetails(true)
+    setError(null)
+    setDetailsSaved(false)
+    try {
+      const res = await fetch(`/api/lesson-bid/${token}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "details", lessonTitle, scriptureReading: scripture }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setError(data.error || "Something went wrong. Please try again.")
+        return
+      }
+      setDetailsSaved(true)
+    } catch {
+      setError("Something went wrong. Please try again.")
+    } finally {
+      setSavingDetails(false)
+    }
+  }
 
   const togglePick = (topicId: number) => {
     setSubmitted(false)
@@ -73,7 +108,8 @@ export function LessonBidClient({
     }
   }
 
-  // Topic already awarded — read-only confirmation.
+  // Topic awarded — the link stays live so the presenter can add their
+  // lesson title and scripture reading for the printed/public schedule.
   if (claimedTopicTitle) {
     return (
       <div className="mx-auto max-w-2xl">
@@ -86,9 +122,66 @@ export function LessonBidClient({
               Rendezvous!
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <div className="rounded-lg border bg-muted/50 p-4 text-center">
               <p className="text-lg font-semibold">{claimedTopicTitle}</p>
+            </div>
+
+            <div className="space-y-3 rounded-lg border p-4">
+              <div>
+                <p className="font-medium">Your lesson details</p>
+                <p className="text-sm text-muted-foreground">
+                  Add the title you'll present under and the scripture you'll read from — these
+                  show on the public schedule. You can come back and update them any time.
+                </p>
+              </div>
+              <div>
+                <Label htmlFor="lesson-title">Lesson title (optional)</Label>
+                <Input
+                  id="lesson-title"
+                  value={lessonTitle}
+                  placeholder={claimedTopicTitle}
+                  onChange={(e) => {
+                    setLessonTitle(e.target.value)
+                    setDetailsSaved(false)
+                  }}
+                />
+              </div>
+              <div>
+                <Label htmlFor="lesson-scripture">Scripture reading</Label>
+                <Input
+                  id="lesson-scripture"
+                  value={scripture}
+                  placeholder="e.g., John 3:16-21"
+                  onChange={(e) => {
+                    setScripture(e.target.value)
+                    setDetailsSaved(false)
+                  }}
+                />
+              </div>
+
+              {error && (
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+              {detailsSaved && (
+                <Alert className="border-green-600/50 bg-green-50 text-green-900 dark:bg-green-950 dark:text-green-100">
+                  <CheckCircle2 className="h-4 w-4 text-green-600" aria-hidden="true" />
+                  <AlertDescription>Saved! Your details are on the schedule.</AlertDescription>
+                </Alert>
+              )}
+
+              <Button onClick={saveDetails} disabled={savingDetails} className="w-full">
+                {savingDetails ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+                    Saving…
+                  </>
+                ) : (
+                  "Save lesson details"
+                )}
+              </Button>
             </div>
           </CardContent>
         </Card>
