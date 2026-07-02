@@ -38,6 +38,7 @@ type Presenter = {
 
 type Props = {
   canManage: boolean
+  eventYear: number
 }
 
 function formatDate(value: string | null): string {
@@ -47,7 +48,7 @@ function formatDate(value: string | null): string {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
 }
 
-export function LessonBidManager({ canManage }: Props) {
+export function LessonBidManager({ canManage, eventYear }: Props) {
   const [topics, setTopics] = useState<Topic[] | null>(null)
   const [presenters, setPresenters] = useState<Presenter[] | null>(null)
   const [fetchError, setFetchError] = useState<string | null>(null)
@@ -59,12 +60,17 @@ export function LessonBidManager({ canManage }: Props) {
   const [topicTitle, setTopicTitle] = useState("")
   const [topicDescription, setTopicDescription] = useState("")
 
+  useEffect(() => {
+    setTopics(null)
+    setPresenters(null)
+  }, [eventYear])
+
   const fetchAll = useCallback(async () => {
     setFetchError(null)
     try {
       const [topicsRes, volunteersRes] = await Promise.all([
-        fetch("/api/admin/lesson-topics"),
-        fetch("/api/admin/volunteers"),
+        fetch(`/api/admin/lesson-topics?year=${eventYear}`),
+        fetch(`/api/admin/volunteers?year=${eventYear}`),
       ])
       if (!topicsRes.ok) throw new Error(`Could not load topics (${topicsRes.status})`)
       if (!volunteersRes.ok) throw new Error(`Could not load volunteers (${volunteersRes.status})`)
@@ -79,7 +85,7 @@ export function LessonBidManager({ canManage }: Props) {
       setPresenters([])
       setFetchError(error instanceof Error ? error.message : "Could not load lesson bid data")
     }
-  }, [])
+  }, [eventYear])
 
   useEffect(() => {
     void fetchAll()
@@ -113,7 +119,11 @@ export function LessonBidManager({ canManage }: Props) {
         {
           method: isNew ? "POST" : "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title: topicTitle.trim(), description: topicDescription.trim() }),
+          body: JSON.stringify({
+            title: topicTitle.trim(),
+            description: topicDescription.trim(),
+            year: eventYear,
+          }),
         },
       )
       const data = await res.json().catch(() => ({}))
@@ -136,7 +146,9 @@ export function LessonBidManager({ canManage }: Props) {
     if (!window.confirm(`Delete topic "${topic.title}"?`)) return
     setBusyId(`topic-${topic.id}`)
     try {
-      const res = await fetch(`/api/admin/lesson-topics/${topic.id}`, { method: "DELETE" })
+      const res = await fetch(`/api/admin/lesson-topics/${topic.id}?year=${eventYear}`, {
+        method: "DELETE",
+      })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(data.error || "Could not delete the topic")
       setTopics(Array.isArray(data.topics) ? data.topics : topics)

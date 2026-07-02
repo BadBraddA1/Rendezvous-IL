@@ -244,7 +244,8 @@ CREATE TABLE IF NOT EXISTS lesson_topics (
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   claimed_by_bid_id INTEGER,
   claimed_at TEXT,
-  claimed_by_volunteer_id INTEGER
+  claimed_by_volunteer_id INTEGER,
+  event_year INTEGER  -- NULL treated as 2027 (added lazily by lib/lesson-bids.ts)
 );
 
 CREATE TABLE IF NOT EXISTS meals (

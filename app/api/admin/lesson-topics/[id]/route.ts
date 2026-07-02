@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { checkAdminAuth, getAdminPermissions, logAuditAction } from "@/lib/admin-auth"
 import { getRequestAuditMeta } from "@/lib/audit-log"
 import { deleteTopic, listTopics, updateTopic } from "@/lib/lesson-bids"
+import { parseRegistrationEventYear } from "@/lib/registration-event-years"
 
 export const dynamic = "force-dynamic"
 
@@ -40,7 +41,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       ipAddress,
       userAgent,
     )
-    return NextResponse.json({ success: true, topics: await listTopics() })
+    return NextResponse.json({
+      success: true,
+      topics: await listTopics(parseRegistrationEventYear(body.year)),
+    })
   } catch (error) {
     console.error("[admin/lesson-topics] PATCH error:", error)
     return NextResponse.json({ error: "Failed to update lesson topic" }, { status: 500 })
@@ -71,7 +75,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
       ipAddress,
       userAgent,
     )
-    return NextResponse.json({ success: true, topics: await listTopics() })
+    const year = parseRegistrationEventYear(req.nextUrl.searchParams.get("year"))
+    return NextResponse.json({ success: true, topics: await listTopics(year) })
   } catch (error) {
     console.error("[admin/lesson-topics] DELETE error:", error)
     return NextResponse.json({ error: "Failed to delete lesson topic" }, { status: 500 })

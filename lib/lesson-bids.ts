@@ -8,11 +8,14 @@ export type LessonTopic = {
   title: string
   description: string | null
   sort_order: number
+  event_year: number
   claimed_by_volunteer_id: number | null
   claimed_at: string | null
   /** Presenter name, denormalized for display. */
   assigned_presenter_name: string | null
 }
+
+export const DEFAULT_LESSON_EVENT_YEAR = 2027
 
 export type LessonBid = {
   id: number
@@ -47,9 +50,15 @@ export async function ensureLessonTables(): Promise<void> {
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       claimed_by_bid_id INTEGER,
       claimed_at TEXT,
-      claimed_by_volunteer_id INTEGER
+      claimed_by_volunteer_id INTEGER,
+      event_year INTEGER
     )
   `)
+  // Production may have the table from the old dash without event_year.
+  const topicCols = await sql.query("PRAGMA table_info(lesson_topics)")
+  if (!topicCols.some((c) => c.name === "event_year")) {
+    await sql.query("ALTER TABLE lesson_topics ADD COLUMN event_year INTEGER")
+  }
   await sql.query(`
     CREATE TABLE IF NOT EXISTS lesson_bids (
       id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -71,23 +80,33 @@ export async function ensureLessonTables(): Promise<void> {
 
 // ---------- Topics ----------
 
-export async function listTopics(): Promise<LessonTopic[]> {
+export async function listTopics(
+  year: number = DEFAULT_LESSON_EVENT_YEAR,
+): Promise<LessonTopic[]> {
   await ensureLessonTables()
   const rows = await sql`
-    SELECT id, title, description, sort_order, claimed_by_volunteer_id, claimed_at, assigned_presenter_name
+    SELECT id, title, description, sort_order,
+      COALESCE(event_year, ${DEFAULT_LESSON_EVENT_YEAR}) as event_year,
+      claimed_by_volunteer_id, claimed_at, assigned_presenter_name
     FROM lesson_topics
+    WHERE COALESCE(event_year, ${DEFAULT_LESSON_EVENT_YEAR}) = ${year}
     ORDER BY sort_order, id
   `
   return rows as unknown as LessonTopic[]
 }
 
-export async function createTopic(title: string, description: string | null): Promise<void> {
+export async function createTopic(
+  title: string,
+  description: string | null,
+  year: number = DEFAULT_LESSON_EVENT_YEAR,
+): Promise<void> {
   await ensureLessonTables()
   await sql`
-    INSERT INTO lesson_topics (title, description, sort_order)
+    INSERT INTO lesson_topics (title, description, event_year, sort_order)
     VALUES (
       ${title},
       ${description},
+      ${year},
       (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM lesson_topics)
     )
   `
@@ -151,12 +170,13 @@ export async function sendBidInvite(volunteerId: number, baseUrl: string): Promi
   await ensureLessonTables()
 
   const [volunteer] = await sql`
-    SELECT vs.*, r.family_last_name
+    SELECT vs.*, r.family_last_name, COALESCE(r.event_year, 2026) as event_year
     FROM volunteer_signups vs
     LEFT JOIN registrations r ON vs.registration_id = r.id
     WHERE vs.id = ${volunteerId}
   `
   if (!volunteer) return { ok: false, reason: "Volunteer not found" }
+  const eventYear = volunteer.event_year ? Number(volunteer.event_year) : DEFAULT_LESSON_EVENT_YEAR
 
   const email = await resolveVolunteerEmail(volunteer)
   if (!email) {
@@ -180,7 +200,7 @@ export async function sendBidInvite(volunteerId: number, baseUrl: string): Promi
     `
   }
 
-  const openTopics = (await listTopics()).filter((t) => !t.claimed_by_volunteer_id)
+  const openTopics = (await listTopics(eventYear)).filter((t) => !t.claimed_by_volunteer_id)
 
   try {
     await resend.emails.send({
@@ -221,13 +241,17 @@ export async function getBidByToken(token: string): Promise<BidContext | null> {
   if (!bid) return null
 
   const [volunteer] = await sql`
-    SELECT vs.id, vs.volunteer_name, vs.claimed_lesson_id, r.family_last_name
+    SELECT vs.id, vs.volunteer_name, vs.claimed_lesson_id, r.family_last_name,
+      COALESCE(r.event_year, 2026) as event_year
     FROM volunteer_signups vs
     LEFT JOIN registrations r ON vs.registration_id = r.id
     WHERE vs.lesson_bid_token = ${token}
   `
 
-  const topics = await listTopics()
+  const eventYear = volunteer?.event_year
+    ? Number(volunteer.event_year)
+    : DEFAULT_LESSON_EVENT_YEAR
+  const topics = await listTopics(eventYear)
   const claimedTopic = volunteer?.claimed_lesson_id
     ? (topics.find((t) => t.id === Number(volunteer.claimed_lesson_id)) ?? null)
     : null

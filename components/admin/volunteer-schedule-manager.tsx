@@ -29,17 +29,29 @@ type Volunteer = {
   claimed_lesson_title: string | null
 }
 
-/** The 9 worship services rendered on /schedule (Mon evening through Fri morning). */
-const SERVICES = [
-  { date: "2027-05-03", timeSlot: "Evening Devotion", label: "Mon 5/3 Evening" },
-  { date: "2027-05-04", timeSlot: "Morning Devotion", label: "Tue 5/4 Morning" },
-  { date: "2027-05-04", timeSlot: "Evening Devotion", label: "Tue 5/4 Evening" },
-  { date: "2027-05-05", timeSlot: "Morning Devotion", label: "Wed 5/5 Morning" },
-  { date: "2027-05-05", timeSlot: "Evening Devotion", label: "Wed 5/5 Evening" },
-  { date: "2027-05-06", timeSlot: "Morning Devotion", label: "Thu 5/6 Morning" },
-  { date: "2027-05-06", timeSlot: "Evening Devotion", label: "Thu 5/6 Evening" },
-  { date: "2027-05-07", timeSlot: "Morning Devotion", label: "Fri 5/7 Morning" },
-] as const
+type Service = { date: string; timeSlot: string; label: string }
+
+/** Monday of the event week for each supported year. */
+const EVENT_MONDAY: Record<number, string> = {
+  2027: "2027-05-03",
+  2026: "2026-05-04",
+}
+
+/** The 8 worship services (Mon evening through Fri morning) for a given event year. */
+function buildServices(eventYear: number): Service[] {
+  const monday = EVENT_MONDAY[eventYear] ?? EVENT_MONDAY[2027]
+  const [y, m, d] = monday.split("-").map(Number)
+  const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri"]
+  const services: Service[] = []
+  for (let i = 0; i < 5; i++) {
+    const date = new Date(y, m - 1, d + i)
+    const iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+    const dayLabel = `${dayNames[i]} ${date.getMonth() + 1}/${date.getDate()}`
+    if (i > 0) services.push({ date: iso, timeSlot: "Morning Devotion", label: `${dayLabel} Morning` })
+    if (i < 4) services.push({ date: iso, timeSlot: "Evening Devotion", label: `${dayLabel} Evening` })
+  }
+  return services
+}
 
 /** Slot layout matching what /api/volunteer-schedule and the public schedule expect. */
 const SLOTS = [
@@ -60,8 +72,12 @@ const VOLUNTEER_TYPES = [
   "Presenting a lesson",
 ] as const
 
-function serviceLabel(date: string | null, timeSlot: string | null): string | null {
-  const service = SERVICES.find((s) => s.date === date && s.timeSlot === timeSlot)
+function serviceLabelFrom(
+  services: Service[],
+  date: string | null,
+  timeSlot: string | null,
+): string | null {
+  const service = services.find((s) => s.date === date && s.timeSlot === timeSlot)
   if (service) return service.label
   if (date && timeSlot) return `${date} ${timeSlot}`
   return null
@@ -69,22 +85,37 @@ function serviceLabel(date: string | null, timeSlot: string | null): string | nu
 
 type Props = {
   canManage: boolean
+  eventYear: number
 }
 
-export function VolunteerScheduleManager({ canManage }: Props) {
+export function VolunteerScheduleManager({ canManage, eventYear }: Props) {
+  const services = useMemo(() => buildServices(eventYear), [eventYear])
   const [volunteers, setVolunteers] = useState<Volunteer[] | null>(null)
   const [fetchError, setFetchError] = useState<string | null>(null)
-  const [serviceKey, setServiceKey] = useState(`${SERVICES[0].date}|${SERVICES[0].timeSlot}`)
+  const [serviceKey, setServiceKey] = useState(`${services[0].date}|${services[0].timeSlot}`)
   const [busySlot, setBusySlot] = useState<string | null>(null)
   const [rosterSearch, setRosterSearch] = useState("")
   const [rosterType, setRosterType] = useState("all")
   const [lessonDrafts, setLessonDrafts] = useState<Record<number, { title: string; scripture: string }>>({})
   const { toast } = useToast()
 
+  const serviceLabel = useCallback(
+    (date: string | null, timeSlot: string | null) => serviceLabelFrom(services, date, timeSlot),
+    [services],
+  )
+
+  useEffect(() => {
+    setServiceKey(`${services[0].date}|${services[0].timeSlot}`)
+  }, [services])
+
+  useEffect(() => {
+    setVolunteers(null)
+  }, [eventYear])
+
   const fetchVolunteers = useCallback(async () => {
     setFetchError(null)
     try {
-      const res = await fetch("/api/admin/volunteers")
+      const res = await fetch(`/api/admin/volunteers?year=${eventYear}`)
       if (!res.ok) throw new Error(`Could not load volunteers (${res.status})`)
       const data = await res.json()
       setVolunteers(Array.isArray(data.volunteers) ? data.volunteers : [])
@@ -93,7 +124,7 @@ export function VolunteerScheduleManager({ canManage }: Props) {
       setVolunteers([])
       setFetchError(error instanceof Error ? error.message : "Could not load volunteers")
     }
-  }, [])
+  }, [eventYear])
 
   useEffect(() => {
     void fetchVolunteers()
@@ -221,7 +252,7 @@ export function VolunteerScheduleManager({ canManage }: Props) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {SERVICES.map((service) => (
+                {services.map((service) => (
                   <SelectItem
                     key={`${service.date}|${service.timeSlot}`}
                     value={`${service.date}|${service.timeSlot}`}

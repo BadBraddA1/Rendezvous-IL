@@ -1,17 +1,19 @@
-import { NextResponse } from "next/server"
+import { type NextRequest, NextResponse } from "next/server"
 import { checkAdminAuth } from "@/lib/admin-auth"
 import { sql } from "@/lib/db"
 import { ensureLessonTables } from "@/lib/lesson-bids"
+import { parseRegistrationEventYear } from "@/lib/registration-event-years"
 
 export const dynamic = "force-dynamic"
 
-/** All worship-service volunteer signups across registrations, with assignment + lesson bid state. */
-export async function GET() {
+/** Worship-service volunteer signups for one event year, with assignment + lesson bid state. */
+export async function GET(req: NextRequest) {
   const admin = await checkAdminAuth()
   if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   try {
     await ensureLessonTables()
+    const year = parseRegistrationEventYear(req.nextUrl.searchParams.get("year"))
     const volunteers = await sql`
       SELECT
         vs.id,
@@ -38,6 +40,7 @@ export async function GET() {
       LEFT JOIN registrations r ON vs.registration_id = r.id
       LEFT JOIN lesson_topics lt ON vs.claimed_lesson_id = lt.id
       LEFT JOIN lesson_bids lb ON vs.lesson_bid_token = lb.token
+      WHERE COALESCE(r.event_year, 2026) = ${year}
       ORDER BY vs.volunteer_type, vs.volunteer_name
     `
     return NextResponse.json({ volunteers })

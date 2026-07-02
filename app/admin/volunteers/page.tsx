@@ -1,10 +1,9 @@
 import { auth, currentUser } from "@clerk/nextjs/server"
 import { redirect } from "next/navigation"
 import Link from "next/link"
+import { Suspense } from "react"
 import { AdminNav } from "@/components/admin/admin-nav"
-import { VolunteerScheduleManager } from "@/components/admin/volunteer-schedule-manager"
-import { LessonBidManager } from "@/components/admin/lesson-bid-manager"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { VolunteersTabs } from "@/components/admin/volunteers-tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ShieldAlert, LogIn, Home } from "lucide-react"
@@ -100,18 +99,9 @@ export default async function AdminVolunteersPage() {
               topic bidding. Changes show up on the public schedule right away.
             </p>
           </div>
-          <Tabs defaultValue="schedule">
-            <TabsList>
-              <TabsTrigger value="schedule">Schedule</TabsTrigger>
-              <TabsTrigger value="lesson-bids">Lesson bids</TabsTrigger>
-            </TabsList>
-            <TabsContent value="schedule" className="mt-4">
-              <VolunteerScheduleManager canManage={canManage} />
-            </TabsContent>
-            <TabsContent value="lesson-bids" className="mt-4">
-              <LessonBidManager canManage={canManage} />
-            </TabsContent>
-          </Tabs>
+          <Suspense fallback={<p className="text-muted-foreground">Loading volunteers...</p>}>
+            <VolunteersTabs canManage={canManage} />
+          </Suspense>
         </div>
       </main>
     </div>
