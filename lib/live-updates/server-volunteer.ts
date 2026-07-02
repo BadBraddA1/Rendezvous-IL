@@ -1,8 +1,9 @@
 import { sql } from "@/lib/db"
 import { ensureLessonTables } from "@/lib/lesson-bids"
 import { LIVE_UPDATE_SCHEDULE } from "@/lib/live-updates/schedule"
+import { buildLuItems, getPublicSchedule } from "@/lib/event-schedule"
 import { getChicagoWallClock } from "@/lib/live-updates/chicago-time"
-import type { VolunteerSchedule } from "@/lib/live-updates/types"
+import type { ScheduleItem, VolunteerSchedule } from "@/lib/live-updates/types"
 
 type VolunteerRow = {
   volunteer_name: string | null
@@ -80,7 +81,16 @@ function buildScheduleFromRows(rows: VolunteerRow[]): VolunteerSchedule {
 export async function fetchNextVolunteerScheduleForLiveUpdates(): Promise<VolunteerSchedule | null> {
   const centralNow = getChicagoWallClock()
 
-  const nextAssembly = LIVE_UPDATE_SCHEDULE.find((item) => {
+  // Prefer the admin-edited schedule; fall back to the static one on error.
+  let scheduleItems: ScheduleItem[] = LIVE_UPDATE_SCHEDULE
+  try {
+    const { days } = await getPublicSchedule(2027)
+    scheduleItems = buildLuItems(days) as ScheduleItem[]
+  } catch {
+    // static fallback already assigned
+  }
+
+  const nextAssembly = scheduleItems.find((item) => {
     if (!/assembly/i.test(item.title)) return false
     const [y, m, d] = item.date.split("-").map(Number)
     const endH = item.endHour ?? item.startHour + 1

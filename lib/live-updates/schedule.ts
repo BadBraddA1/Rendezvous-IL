@@ -4,9 +4,10 @@ import type { ScheduleItem, ScheduleSnapshot } from "@/lib/live-updates/types"
 
 export const LIVE_UPDATE_SCHEDULE: ScheduleItem[] = LU_SCHEDULE_ITEMS as ScheduleItem[]
 
-const SCHEDULE_ITEMS = LIVE_UPDATE_SCHEDULE
-
-export function computeScheduleSnapshot(at: Date = getCentralTime()): ScheduleSnapshot {
+export function computeScheduleSnapshot(
+  at: Date = getCentralTime(),
+  SCHEDULE_ITEMS: ScheduleItem[] = LIVE_UPDATE_SCHEDULE,
+): ScheduleSnapshot {
   const centralHour = at.getHours()
   const centralMinute = at.getMinutes()
   const year = at.getFullYear()

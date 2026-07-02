@@ -1,8 +1,12 @@
 import { Download } from "lucide-react"
-import { scheduleData } from "@/lib/schedule-data"
+import { getPublicSchedule } from "@/lib/event-schedule"
 import { MainContent } from "@/components/main-content"
 
-export default function PrintableSchedulePage() {
+export const dynamic = "force-dynamic"
+
+export default async function PrintableSchedulePage() {
+  const { days } = await getPublicSchedule(2027)
+
   return (
     <MainContent className="min-h-screen bg-background text-foreground">
       {/* Print button - hidden when printing */}
@@ -38,7 +42,7 @@ export default function PrintableSchedulePage() {
         </header>
 
         <div className="space-y-8 print:space-y-4">
-          {scheduleData.map((day) => (
+          {days.map((day) => (
             <section key={day.day} className="print:break-inside-avoid-page">
               <div className="mb-4 flex items-center gap-3 border-b border-border pb-2 print:mb-2">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-foreground text-lg font-bold text-background print:h-8 print:w-8 print:text-base">
@@ -46,7 +50,7 @@ export default function PrintableSchedulePage() {
                 </div>
                 <div>
                   <h2 className="text-day-title print:text-lg">
-                    {day.date} ({day.day})
+                    {day.dateLabel} ({day.day})
                   </h2>
                 </div>
               </div>

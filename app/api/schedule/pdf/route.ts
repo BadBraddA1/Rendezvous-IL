@@ -1,7 +1,10 @@
 import { jsPDF } from "jspdf"
-import { scheduleData } from "@/lib/schedule-data"
+import { getPublicSchedule } from "@/lib/event-schedule"
+
+export const dynamic = "force-dynamic"
 
 export async function GET() {
+  const { days } = await getPublicSchedule(2027)
   const doc = new jsPDF({ unit: "mm", format: "letter" })
 
   // Page geometry
@@ -49,13 +52,13 @@ export async function GET() {
   yPos += 8
 
   // === Schedule by day ===
-  scheduleData.forEach((day) => {
+  days.forEach((day) => {
     checkPageBreak(20)
 
     // Day header
     doc.setFont("helvetica", "bold")
     doc.setFontSize(14)
-    doc.text(`${day.date} (${day.day})`, margin, yPos)
+    doc.text(`${day.dateLabel} (${day.day})`, margin, yPos)
     yPos += 2
     doc.setLineWidth(0.2)
     doc.line(margin, yPos, pageWidth - margin, yPos)

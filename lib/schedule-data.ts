@@ -247,7 +247,7 @@ const DAY_TO_DATE: Record<string, string> = {
 }
 
 /** Parse a single time chunk like "5:30 PM", "10", "10:00 AM". */
-function parseClockChunk(
+export function parseClockChunk(
   raw: string,
   fallbackAmPm?: "AM" | "PM",
 ): { hour: number; minute: number; amPm: "AM" | "PM" } {
@@ -262,7 +262,7 @@ function parseClockChunk(
 }
 
 /** Parse a schedule time string like "5:30 PM", "1:00 – 5:15 PM", "10:00 – 11:30 AM". */
-function parseTimeString(time: string): {
+export function parseTimeString(time: string): {
   startHour: number
   startMinute: number
   endHour?: number
@@ -286,11 +286,11 @@ function parseTimeString(time: string): {
   return { startHour: single.hour, startMinute: single.minute }
 }
 
-function detectIsMeal(title: string): boolean {
+export function detectIsMeal(title: string): boolean {
   return /\b(breakfast|lunch|dinner|cookout)\b/i.test(title)
 }
 
-function formatTimeForDisplay(hour: number, minute: number): string {
+export function formatTimeForDisplay(hour: number, minute: number): string {
   const ampm = hour >= 12 ? "PM" : "AM"
   const displayH = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour
   const mm = String(minute).padStart(2, "0")

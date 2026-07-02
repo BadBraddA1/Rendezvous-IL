@@ -43,6 +43,7 @@ import type {
   VolunteerSchedule,
   MealData,
   ViewType,
+  ScheduleItem,
 } from "@/lib/live-updates/types"
 
 const VALID_VIEWS: ViewType[] = [
@@ -132,6 +133,33 @@ export function LiveUpdatesShell() {
     toScheduleMinuteKey(),
   )
 
+  // Schedule items: start with the built-in list, then swap in the
+  // admin-edited schedule from /api/schedule (refreshed every 10 minutes so
+  // mid-event edits reach the TVs without a redeploy).
+  const [luItems, setLuItems] = useState<ScheduleItem[]>(LIVE_UPDATE_SCHEDULE)
+  useEffect(() => {
+    let cancelled = false
+    const fetchScheduleItems = async () => {
+      try {
+        const data = await fetchJsonCached<{ luItems?: ScheduleItem[] }>(
+          "/api/schedule",
+          5 * 60_000,
+        )
+        if (!cancelled && Array.isArray(data.luItems) && data.luItems.length > 0) {
+          setLuItems(data.luItems)
+        }
+      } catch {
+        // keep whatever we have (static fallback) — TVs must never blank out
+      }
+    }
+    fetchScheduleItems()
+    const interval = setInterval(fetchScheduleItems, 10 * 60_000)
+    return () => {
+      cancelled = true
+      clearInterval(interval)
+    }
+  }, [])
+
   // Data states
   const [weather, setWeather] = useState<WeatherData | null>(null)
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
@@ -159,8 +187,8 @@ export function LiveUpdatesShell() {
   }, [])
 
   const { nowItem, nextItem, prevItem, nextMeal, upcomingToday, upcomingAll } = useMemo(
-    () => computeScheduleSnapshot(getCentralTime()),
-    [scheduleMinuteBucket],
+    () => computeScheduleSnapshot(getCentralTime(), luItems),
+    [scheduleMinuteBucket, luItems],
   )
 
   // Check if volunteer schedule has data
@@ -459,7 +487,7 @@ export function LiveUpdatesShell() {
         const centralNow = getCentralTime()
 
         // Find the next assembly item that hasn't ended yet.
-        const nextAssembly = LIVE_UPDATE_SCHEDULE.find((item) => {
+        const nextAssembly = luItems.find((item) => {
           if (!/assembly/i.test(item.title)) return false
           const [y, m, d] = item.date.split("-").map(Number)
           // Use end time when available, else assume the assembly runs ~1hr.
@@ -503,7 +531,7 @@ export function LiveUpdatesShell() {
     fetchVolunteerSchedule()
     const interval = setInterval(fetchVolunteerSchedule, 60 * 1000)
     return () => clearInterval(interval)
-  }, [scheduleMinuteBucket])
+  }, [scheduleMinuteBucket, luItems])
 
   // Prefetch view chunks after first paint for smooth auto-rotate on TVs.
   useEffect(() => {
