@@ -120,19 +120,19 @@ export function generateLessonBidEmail(params: {
     <p>
       Thank you for volunteering to <strong>present a lesson</strong> at Rendezvous 2027!
       ${openTopicCount > 0 ? `There are currently <strong>${openTopicCount}</strong> lesson topics open.` : ""}
-      Use your personal link below to look over the topics and rank your top three choices.
-      We'll assign topics based on preferences and let you know what you'll be presenting.
+      Topics are <strong>first come, first served</strong> — use your personal link below to look
+      over the open topics and claim the one you want before it's taken. After claiming, the same
+      page lets you enter your lesson title and scripture reading.
     </p>
     <div style="margin: 24px 0; text-align: center;">
       <a href="${bidUrl}" style="background: ${EMAIL_BRAND.primary}; color: ${EMAIL_BRAND.onPrimary}; padding: 14px 28px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: bold;">
-        Pick My Lesson Topics
+        Claim My Lesson Topic
       </a>
     </div>
     <p style="color: ${EMAIL_BRAND.muted}; font-size: 14px;">Or copy and paste this link:</p>
     <p style="background: ${EMAIL_BRAND.surface}; padding: 12px; border-radius: 6px; border: 1px solid ${EMAIL_BRAND.border}; word-break: break-all; font-size: 12px;">${bidUrl}</p>
     <p style="color: ${EMAIL_BRAND.muted}; font-size: 14px;">
-      You can change your picks any time until a topic is assigned. This link is personal —
-      please don't forward it.
+      This link is personal — please don't forward it.
     </p>
   `
   return emailShell(body, "Lesson Topics", "Rendezvous 2027")

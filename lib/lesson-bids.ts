@@ -215,7 +215,7 @@ export async function sendBidInvite(volunteerId: number, baseUrl: string): Promi
     await resend.emails.send({
       from: "Rendezvous IL <noreply@rendezvousil.com>",
       to: email,
-      subject: "Pick your lesson topics — Rendezvous 2027",
+      subject: "Claim your lesson topic — Rendezvous 2027",
       html: generateLessonBidEmail({
         presenterName: String(volunteer.volunteer_name ?? ""),
         familyLastName: String(volunteer.family_last_name ?? ""),
@@ -306,7 +306,7 @@ export async function updateBidLessonDetails(
   `
   if (!volunteer) return { ok: false, reason: "Invalid link" }
   if (!volunteer.claimed_lesson_id) {
-    return { ok: false, reason: "Lesson details can be added once a topic is assigned to you" }
+    return { ok: false, reason: "Claim a topic first, then add your lesson details" }
   }
   await sql`
     UPDATE volunteer_signups
@@ -316,36 +316,73 @@ export async function updateBidLessonDetails(
   return { ok: true }
 }
 
-export type SubmitPicksResult = { ok: true } | { ok: false; reason: string }
+export type ClaimResult =
+  | { ok: true; topicTitle: string }
+  | { ok: false; reason: string; taken?: boolean }
 
-/** Save ranked topic picks. Allowed to resubmit until a topic is awarded. */
-export async function submitBidPicks(token: string, picks: number[]): Promise<SubmitPicksResult> {
+/**
+ * First come, first served: a presenter claims one open topic via their bid
+ * link. The guarded UPDATE (`WHERE claimed_by_volunteer_id IS NULL`) is
+ * atomic, so two presenters racing for the same topic can't both win.
+ */
+export async function claimTopicByToken(token: string, topicId: number): Promise<ClaimResult> {
   await ensureLessonTables()
-  const context = await getBidByToken(token)
-  if (!context) return { ok: false, reason: "Invalid link" }
-  if (context.volunteer?.claimed_lesson_id) {
-    return { ok: false, reason: "A topic has already been assigned to you" }
+
+  const [volunteer] = await sql`
+    SELECT vs.*, COALESCE(r.event_year, ${LEGACY_LESSON_EVENT_YEAR}) as event_year
+    FROM volunteer_signups vs
+    LEFT JOIN registrations r ON vs.registration_id = r.id
+    WHERE vs.lesson_bid_token = ${token}
+  `
+  if (!volunteer) return { ok: false, reason: "Invalid link" }
+  if (volunteer.claimed_lesson_id) {
+    return { ok: false, reason: "You already have a topic — contact the Rendezvous team if you need to change it" }
   }
 
-  const validIds = new Set(context.topics.map((t) => t.id))
-  const unique = [...new Set(picks)].filter((id) => validIds.has(id)).slice(0, 3)
-  if (unique.length === 0) {
-    return { ok: false, reason: "Pick at least one topic" }
+  const volunteerId = Number(volunteer.id)
+  const [topic] = await sql`
+    SELECT id, title, claimed_by_volunteer_id, COALESCE(event_year, ${LEGACY_LESSON_EVENT_YEAR}) as event_year
+    FROM lesson_topics WHERE id = ${topicId}
+  `
+  if (!topic || Number(topic.event_year) !== Number(volunteer.event_year)) {
+    return { ok: false, reason: "Topic not found" }
+  }
+
+  const [bid] = await sql`SELECT id FROM lesson_bids WHERE token = ${token}`
+
+  await sql`
+    UPDATE lesson_topics
+    SET
+      claimed_by_volunteer_id = ${volunteerId},
+      claimed_by_bid_id = ${bid?.id ?? null},
+      claimed_at = CURRENT_TIMESTAMP,
+      assigned_presenter_name = ${volunteer.volunteer_name},
+      assigned_registration_id = ${volunteer.registration_id},
+      updated_at = CURRENT_TIMESTAMP
+    WHERE id = ${topicId} AND claimed_by_volunteer_id IS NULL
+  `
+  const [after] = await sql`SELECT claimed_by_volunteer_id FROM lesson_topics WHERE id = ${topicId}`
+  if (Number(after?.claimed_by_volunteer_id) !== volunteerId) {
+    return { ok: false, reason: "Someone else just claimed that topic — pick another one", taken: true }
   }
 
   await sql`
-    UPDATE lesson_bids
-    SET
-      pick_1 = ${unique[0] ?? null},
-      pick_2 = ${unique[1] ?? null},
-      pick_3 = ${unique[2] ?? null},
-      submitted_at = CURRENT_TIMESTAMP
-    WHERE token = ${token}
+    UPDATE volunteer_signups
+    SET claimed_lesson_id = ${topicId}, claimed_lesson_at = CURRENT_TIMESTAMP
+    WHERE id = ${volunteerId}
   `
-  return { ok: true }
+  if (bid?.id) {
+    await sql`
+      UPDATE lesson_bids SET claimed_topic_id = ${topicId}, submitted_at = CURRENT_TIMESTAMP
+      WHERE id = ${bid.id}
+    `
+  }
+  return { ok: true, topicTitle: String(topic.title) }
 }
 
-// ---------- Awarding ----------
+// ---------- Admin overrides ----------
+// Topics are claimed first-come-first-served by presenters, but admins can
+// still assign one manually (e.g. someone without email) or release a claim.
 
 export type AwardResult = { ok: true } | { ok: false; reason: string }
 

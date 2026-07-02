@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -30,11 +30,7 @@ type Presenter = {
   lesson_bid_sent_at: string | null
   claimed_lesson_id: number | null
   claimed_lesson_title: string | null
-  bid_submitted_at: string | null
   bid_email: string | null
-  pick_1: number | null
-  pick_2: number | null
-  pick_3: number | null
 }
 
 type Props = {
@@ -92,12 +88,6 @@ export function LessonBidManager({ canManage, eventYear }: Props) {
   useEffect(() => {
     void fetchAll()
   }, [fetchAll])
-
-  const topicById = useMemo(() => {
-    const map = new Map<number, Topic>()
-    for (const topic of topics ?? []) map.set(topic.id, topic)
-    return map
-  }, [topics])
 
   const startEdit = (topic: Topic | null) => {
     setEditingTopicId(topic ? topic.id : "new")
@@ -189,8 +179,8 @@ export function LessonBidManager({ canManage, eventYear }: Props) {
           action === "invite"
             ? `Invite sent to ${data.email}`
             : action === "award"
-              ? "Topic awarded"
-              : "Topic un-awarded",
+              ? "Topic assigned"
+              : "Topic released",
         description: presenter.volunteer_name,
       })
     } catch (error) {
@@ -221,7 +211,8 @@ export function LessonBidManager({ canManage, eventYear }: Props) {
             )}
           </CardTitle>
           <CardDescription>
-            The list presenters pick from. Claimed topics can't be deleted until un-awarded.
+            The list presenters claim from — first come, first served. Claimed topics can't be
+            deleted until released.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -349,13 +340,14 @@ export function LessonBidManager({ canManage, eventYear }: Props) {
             Presenters
             {presenters !== null && (
               <Badge variant="secondary">
-                {presenters.filter((p) => p.claimed_lesson_id).length}/{presenters.length} awarded
+                {presenters.filter((p) => p.claimed_lesson_id).length}/{presenters.length} claimed
               </Badge>
             )}
           </CardTitle>
           <CardDescription>
-            Everyone who volunteered to present a lesson. Send them a bid invite, review their
-            ranked picks, then award a topic — the schedule updates instantly.
+            Everyone who volunteered to present a lesson. Send them an invite and they claim a
+            topic themselves, first come first served — or assign one manually. The schedule
+            updates instantly.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -368,10 +360,6 @@ export function LessonBidManager({ canManage, eventYear }: Props) {
           ) : (
             presenters.map((presenter) => {
               const busy = busyId === `presenter-${presenter.id}`
-              const picks = [presenter.pick_1, presenter.pick_2, presenter.pick_3].filter(
-                (p): p is number => p !== null,
-              )
-              const pickIds = new Set(picks)
               const awardChoices = (topics ?? []).filter(
                 (t) => !t.claimed_by_volunteer_id || t.claimed_by_volunteer_id === presenter.id,
               )
@@ -405,30 +393,16 @@ export function LessonBidManager({ canManage, eventYear }: Props) {
                     </div>
                     <div className="flex flex-wrap items-center gap-1.5">
                       {presenter.claimed_lesson_id ? (
-                        <Badge>Awarded: {presenter.claimed_lesson_title || "topic"}</Badge>
-                      ) : presenter.bid_submitted_at ? (
-                        <Badge variant="secondary">
-                          Bid submitted {formatDate(presenter.bid_submitted_at)}
-                        </Badge>
+                        <Badge>Claimed: {presenter.claimed_lesson_title || "topic"}</Badge>
                       ) : presenter.lesson_bid_sent_at ? (
                         <Badge variant="outline">
-                          Invited {formatDate(presenter.lesson_bid_sent_at)}
+                          Invited {formatDate(presenter.lesson_bid_sent_at)} — waiting to claim
                         </Badge>
                       ) : (
                         <Badge variant="outline">Not invited</Badge>
                       )}
                     </div>
                   </div>
-
-                  {picks.length > 0 && !presenter.claimed_lesson_id && (
-                    <div className="flex flex-wrap gap-1.5">
-                      {picks.map((pickId, index) => (
-                        <Badge key={pickId} variant="secondary" className="font-normal">
-                          #{index + 1}: {topicById.get(pickId)?.title ?? `Topic ${pickId}`}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
 
                   {canManage && (
                     <div className="flex flex-wrap items-center gap-2">
@@ -454,7 +428,7 @@ export function LessonBidManager({ canManage, eventYear }: Props) {
                           onClick={() => void bidAction(presenter, "unaward")}
                         >
                           <X className="mr-2 h-4 w-4" aria-hidden="true" />
-                          Un-award topic
+                          Release topic
                         </Button>
                       ) : (
                         awardChoices.length > 0 && (
@@ -467,20 +441,16 @@ export function LessonBidManager({ canManage, eventYear }: Props) {
                           >
                             <SelectTrigger
                               className="h-9 w-[240px]"
-                              aria-label={`Award topic to ${presenter.volunteer_name}`}
+                              aria-label={`Assign topic to ${presenter.volunteer_name}`}
                             >
-                              <SelectValue placeholder="Award a topic..." />
+                              <SelectValue placeholder="Assign a topic manually..." />
                             </SelectTrigger>
                             <SelectContent>
-                              {awardChoices.map((topic) => {
-                                const rank = picks.indexOf(topic.id)
-                                return (
-                                  <SelectItem key={topic.id} value={String(topic.id)}>
-                                    {pickIds.has(topic.id) ? `★ #${rank + 1} — ` : ""}
-                                    {topic.title}
-                                  </SelectItem>
-                                )
-                              })}
+                              {awardChoices.map((topic) => (
+                                <SelectItem key={topic.id} value={String(topic.id)}>
+                                  {topic.title}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                         )

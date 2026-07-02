@@ -8,7 +8,7 @@ import { LessonBidClient } from "./lesson-bid-client"
 export const dynamic = "force-dynamic"
 
 export const metadata = {
-  title: "Pick Your Lesson Topics",
+  title: "Claim Your Lesson Topic",
   robots: { index: false, follow: false },
 }
 
@@ -54,8 +54,6 @@ export default async function LessonBidPage({ params }: { params: Promise<{ toke
               [t.lesson_title, t.scripture].filter(Boolean).join(" — ") || t.description,
             claimed: Boolean(t.claimed_by_volunteer_id),
           }))}
-          initialPicks={[bid.pick_1, bid.pick_2, bid.pick_3].filter((p): p is number => p !== null)}
-          alreadySubmitted={Boolean(bid.submitted_at)}
           claimedTopicTitle={claimedTopic?.title ?? null}
           initialLessonTitle={volunteer?.lesson_title ?? ""}
           initialScripture={volunteer?.scripture_reading ?? ""}

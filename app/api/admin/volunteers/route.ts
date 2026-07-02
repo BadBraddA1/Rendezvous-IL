@@ -34,11 +34,7 @@ export async function GET(req: NextRequest) {
         vs.volunteer_email,
         r.family_last_name,
         lt.title as claimed_lesson_title,
-        lb.submitted_at as bid_submitted_at,
-        lb.invitee_email as bid_email,
-        lb.pick_1,
-        lb.pick_2,
-        lb.pick_3
+        lb.invitee_email as bid_email
       FROM volunteer_signups vs
       LEFT JOIN registrations r ON vs.registration_id = r.id
       LEFT JOIN lesson_topics lt ON vs.claimed_lesson_id = lt.id

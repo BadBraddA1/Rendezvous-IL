@@ -22,36 +22,61 @@ type Props = {
   presenterName: string
   familyLastName: string
   topics: TopicOption[]
-  initialPicks: number[]
-  alreadySubmitted: boolean
   claimedTopicTitle: string | null
   initialLessonTitle: string
   initialScripture: string
 }
 
-const RANK_LABELS = ["1st choice", "2nd choice", "3rd choice"]
-
 export function LessonBidClient({
   token,
   presenterName,
   familyLastName,
-  topics,
-  initialPicks,
-  alreadySubmitted,
+  topics: initialTopics,
   claimedTopicTitle,
   initialLessonTitle,
   initialScripture,
 }: Props) {
-  const [picks, setPicks] = useState<number[]>(initialPicks)
-  const [submitted, setSubmitted] = useState(alreadySubmitted)
-  const [submitting, setSubmitting] = useState(false)
+  const [topics, setTopics] = useState(initialTopics)
+  const [selectedId, setSelectedId] = useState<number | null>(null)
+  const [claimedTitle, setClaimedTitle] = useState(claimedTopicTitle)
+  const [claiming, setClaiming] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Post-award lesson details form
+  // Post-claim lesson details form
   const [lessonTitle, setLessonTitle] = useState(initialLessonTitle)
   const [scripture, setScripture] = useState(initialScripture)
   const [detailsSaved, setDetailsSaved] = useState(false)
   const [savingDetails, setSavingDetails] = useState(false)
+
+  const claim = async () => {
+    if (selectedId === null) return
+    setClaiming(true)
+    setError(null)
+    try {
+      const res = await fetch(`/api/lesson-bid/${token}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topicId: selectedId }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setError(data.error || "Something went wrong. Please try again.")
+        if (data.taken) {
+          // Someone beat them to it — grey the topic out and let them re-pick.
+          setTopics((prev) =>
+            prev.map((t) => (t.id === selectedId ? { ...t, claimed: true } : t)),
+          )
+          setSelectedId(null)
+        }
+        return
+      }
+      setClaimedTitle(String(data.topicTitle ?? ""))
+    } catch {
+      setError("Something went wrong. Please try again.")
+    } finally {
+      setClaiming(false)
+    }
+  }
 
   const saveDetails = async () => {
     setSavingDetails(true)
@@ -76,41 +101,9 @@ export function LessonBidClient({
     }
   }
 
-  const togglePick = (topicId: number) => {
-    setSubmitted(false)
-    setError(null)
-    setPicks((prev) => {
-      if (prev.includes(topicId)) return prev.filter((id) => id !== topicId)
-      if (prev.length >= 3) return prev
-      return [...prev, topicId]
-    })
-  }
-
-  const submit = async () => {
-    setSubmitting(true)
-    setError(null)
-    try {
-      const res = await fetch(`/api/lesson-bid/${token}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ picks }),
-      })
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok) {
-        setError(data.error || "Something went wrong. Please try again.")
-        return
-      }
-      setSubmitted(true)
-    } catch {
-      setError("Something went wrong. Please try again.")
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  // Topic awarded — the link stays live so the presenter can add their
+  // Topic claimed — the link stays live so the presenter can add their
   // lesson title and scripture reading for the printed/public schedule.
-  if (claimedTopicTitle) {
+  if (claimedTitle) {
     return (
       <div className="mx-auto max-w-2xl">
         <Card>
@@ -118,13 +111,12 @@ export function LessonBidClient({
             <CheckCircle2 className="mx-auto mb-2 h-10 w-10 text-green-600" aria-hidden="true" />
             <CardTitle>You're all set, {presenterName}!</CardTitle>
             <CardDescription>
-              You've been assigned the lesson topic below. Thank you for volunteering to present at
-              Rendezvous!
+              This topic is yours. Thank you for volunteering to present at Rendezvous!
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="rounded-lg border bg-muted/50 p-4 text-center">
-              <p className="text-lg font-semibold">{claimedTopicTitle}</p>
+              <p className="text-lg font-semibold">{claimedTitle}</p>
             </div>
 
             <div className="space-y-3 rounded-lg border p-4">
@@ -140,7 +132,7 @@ export function LessonBidClient({
                 <Input
                   id="lesson-title"
                   value={lessonTitle}
-                  placeholder={claimedTopicTitle}
+                  placeholder={claimedTitle}
                   onChange={(e) => {
                     setLessonTitle(e.target.value)
                     setDetailsSaved(false)
@@ -190,6 +182,7 @@ export function LessonBidClient({
   }
 
   const openTopics = topics.filter((t) => !t.claimed)
+  const selectedTopic = topics.find((t) => t.id === selectedId)
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -197,43 +190,46 @@ export function LessonBidClient({
         <CardHeader>
           <div className="flex items-center gap-2">
             <BookOpen className="h-5 w-5 text-primary" aria-hidden="true" />
-            <CardTitle>Pick your lesson topics</CardTitle>
+            <CardTitle>Claim your lesson topic</CardTitle>
           </div>
           <CardDescription>
             Hi {presenterName}
             {familyLastName ? ` (${familyLastName} family)` : ""} — thank you for volunteering to
-            present a lesson! Choose up to 3 topics in order of preference. We'll assign topics
-            based on everyone's picks and email you the result. You can come back and change your
-            picks any time until a topic is assigned.
+            present a lesson! Topics are <strong>first come, first served</strong>: pick the one
+            you want and claim it. Once it's yours, you'll add your lesson title and scripture
+            reading on this same page.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           {openTopics.length === 0 ? (
             <Alert>
               <AlertDescription>
-                All lesson topics have been claimed. Check back later or contact the Rendezvous
-                team.
+                All lesson topics have been claimed. Contact the Rendezvous team if you'd still
+                like to present.
               </AlertDescription>
             </Alert>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-2" role="radiogroup" aria-label="Open lesson topics">
               {topics.map((topic) => {
-                const rank = picks.indexOf(topic.id)
-                const isPicked = rank !== -1
-                const disabled = topic.claimed || (!isPicked && picks.length >= 3)
+                const isSelected = selectedId === topic.id
                 return (
                   <button
                     key={topic.id}
                     type="button"
-                    onClick={() => !topic.claimed && togglePick(topic.id)}
-                    disabled={disabled && !isPicked}
+                    role="radio"
+                    aria-checked={isSelected}
+                    onClick={() => {
+                      if (topic.claimed) return
+                      setError(null)
+                      setSelectedId(isSelected ? null : topic.id)
+                    }}
+                    disabled={topic.claimed}
                     className={cn(
                       "w-full rounded-lg border p-3 text-left transition-colors",
                       topic.claimed && "cursor-not-allowed opacity-50",
-                      isPicked
+                      isSelected
                         ? "border-primary bg-primary/5"
                         : !topic.claimed && "hover:border-primary/50",
-                      disabled && !isPicked && !topic.claimed && "opacity-60",
                     )}
                   >
                     <div className="flex items-start justify-between gap-3">
@@ -247,8 +243,8 @@ export function LessonBidClient({
                         <Badge variant="secondary" className="shrink-0">
                           Taken
                         </Badge>
-                      ) : isPicked ? (
-                        <Badge className="shrink-0">{RANK_LABELS[rank]}</Badge>
+                      ) : isSelected ? (
+                        <Badge className="shrink-0">Your pick</Badge>
                       ) : null}
                     </div>
                   </button>
@@ -263,29 +259,24 @@ export function LessonBidClient({
             </Alert>
           )}
 
-          {submitted && (
-            <Alert className="border-green-600/50 bg-green-50 text-green-900 dark:bg-green-950 dark:text-green-100">
-              <CheckCircle2 className="h-4 w-4 text-green-600" aria-hidden="true" />
-              <AlertDescription>
-                Your picks are saved! We'll email you once a topic is assigned. Feel free to close
-                this page — or change your picks below.
-              </AlertDescription>
-            </Alert>
-          )}
-
           {openTopics.length > 0 && (
-            <Button onClick={submit} disabled={submitting || picks.length === 0} className="w-full">
-              {submitting ? (
+            <Button onClick={claim} disabled={claiming || selectedId === null} className="w-full">
+              {claiming ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
-                  Saving…
+                  Claiming…
                 </>
-              ) : submitted ? (
-                "Update my picks"
+              ) : selectedTopic ? (
+                `Claim "${selectedTopic.title}"`
               ) : (
-                `Submit ${picks.length || ""} pick${picks.length === 1 ? "" : "s"}`
+                "Select a topic to claim"
               )}
             </Button>
+          )}
+          {selectedTopic && (
+            <p className="text-center text-xs text-muted-foreground">
+              Claiming is final — contact the Rendezvous team if you need to change it later.
+            </p>
           )}
         </CardContent>
       </Card>
