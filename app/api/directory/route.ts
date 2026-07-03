@@ -1,16 +1,15 @@
 import { NextResponse } from "next/server"
-import { currentUser } from "@clerk/nextjs/server"
 import { fetchDirectoryEntries, ensureFamilyDirectorySchema, userHasRegistrationForYear } from "@/lib/family-directory"
 import { isDirectoryYearEnabled } from "@/lib/directory-settings"
-import { authUserId, getCurrentAdmin } from "@/lib/clerk-auth"
+import { authUserContext, getCurrentAdmin } from "@/lib/clerk-auth"
 import { parseRegistrationEventYear } from "@/lib/registration-event-years"
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const year = parseRegistrationEventYear(searchParams.get("year"))
 
-  const userId = await authUserId()
-  if (!userId) {
+  const ctx = await authUserContext()
+  if (!ctx) {
     return NextResponse.json({ error: "Sign in required" }, { status: 401 })
   }
 
@@ -29,11 +28,9 @@ export async function GET(request: Request) {
       )
     }
 
-    const user = await currentUser()
-    const email = user?.emailAddresses?.[0]?.emailAddress
-    const hasAccess = await userHasRegistrationForYear(userId, email, year)
+    const hasAccess = await userHasRegistrationForYear(ctx.userId, ctx.email, year)
 
-    if (!hasAccess) {
+    if (!hasAccess && !admin) {
       return NextResponse.json(
         {
           error: `Family directory is for registered ${year} families.`,

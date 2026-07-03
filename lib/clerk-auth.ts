@@ -1,13 +1,4 @@
-import { auth, currentUser } from "@clerk/nextjs/server"
-
-/**
- * Auth that accepts both browser cookies and native Bearer session tokens (iOS/Android).
- * Use this in any API route the mobile apps call.
- */
-export async function authUserId(): Promise<string | null> {
-  const { userId } = await auth({ acceptsToken: "session_token" })
-  return userId
-}
+import { auth, clerkClient, currentUser, type User } from "@clerk/nextjs/server"
 import {
   type AdminRole,
   type AdminPermissions,
@@ -23,18 +14,65 @@ export type { AdminRole, AdminPermissions, AdminUser }
 
 export { ADMIN_ROLES, canCheckIn, canEdit, getAdminPermissions, isAdminRole, isFullAdmin } from "@/lib/admin-permissions"
 
+export type AuthUserContext = {
+  userId: string
+  email: string | undefined
+  user: User
+}
+
+/**
+ * Auth that accepts both browser cookies and native Bearer session tokens (iOS/Android).
+ * Use this in any API route the mobile apps call.
+ */
+export async function authUserId(): Promise<string | null> {
+  const { userId } = await auth({ acceptsToken: "session_token" })
+  return userId
+}
+
+/**
+ * Load the Clerk user for an authenticated request.
+ * `currentUser()` works for browser cookies but often returns null for mobile Bearer
+ * session tokens — fall back to the Backend API in that case.
+ */
+export async function resolveClerkUser(userId: string): Promise<User | null> {
+  const fromSession = await currentUser()
+  if (fromSession && fromSession.id === userId) {
+    return fromSession
+  }
+
+  try {
+    const clerk = await clerkClient()
+    return await clerk.users.getUser(userId)
+  } catch (error) {
+    console.error("[clerk-auth] resolveClerkUser failed:", error)
+    return null
+  }
+}
+
+/** Signed-in user id + email for member APIs (chat, directory, family). */
+export async function authUserContext(): Promise<AuthUserContext | null> {
+  const userId = await authUserId()
+  if (!userId) return null
+
+  const user = await resolveClerkUser(userId)
+  if (!user) return null
+
+  return {
+    userId,
+    email: user.emailAddresses[0]?.emailAddress,
+    user,
+  }
+}
+
 /**
  * Get the current user's admin role from Clerk metadata
  * Returns null if user is not an admin
  */
 export async function getAdminRole(): Promise<AdminRole | null> {
-  const user = await currentUser()
+  const ctx = await authUserContext()
+  if (!ctx) return null
 
-  if (!user) {
-    return null
-  }
-
-  const publicMetadata = user.publicMetadata as { role?: string } | undefined
+  const publicMetadata = ctx.user.publicMetadata as { role?: string } | undefined
   const role = publicMetadata?.role
 
   if (!isAdminRole(role)) {
@@ -49,18 +87,10 @@ export async function getAdminRole(): Promise<AdminRole | null> {
  * Returns null if not authenticated or not an admin
  */
 export async function getCurrentAdmin(): Promise<AdminUser | null> {
-  const { userId } = await auth({ acceptsToken: "session_token" })
-  if (!userId) {
-    return null
-  }
+  const ctx = await authUserContext()
+  if (!ctx) return null
 
-  const user = await currentUser()
-
-  if (!user) {
-    return null
-  }
-
-  const publicMetadata = user.publicMetadata as { role?: string } | undefined
+  const publicMetadata = ctx.user.publicMetadata as { role?: string } | undefined
   const role = publicMetadata?.role
 
   if (!isAdminRole(role)) {
@@ -68,9 +98,9 @@ export async function getCurrentAdmin(): Promise<AdminUser | null> {
   }
 
   return {
-    id: user.id,
-    email: user.emailAddresses[0]?.emailAddress || "",
-    fullName: `${user.firstName || ""} ${user.lastName || ""}`.trim(),
+    id: ctx.userId,
+    email: ctx.email || "",
+    fullName: `${ctx.user.firstName || ""} ${ctx.user.lastName || ""}`.trim(),
     role,
   }
 }
@@ -79,7 +109,7 @@ export async function getCurrentAdmin(): Promise<AdminUser | null> {
  * Check if current user is authenticated (but may not be admin)
  */
 export async function isAuthenticated(): Promise<boolean> {
-  const { userId } = await auth({ acceptsToken: "session_token" })
+  const userId = await authUserId()
   return !!userId
 }
 

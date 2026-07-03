@@ -1,14 +1,13 @@
 import { NextResponse } from "next/server"
-import { currentUser } from "@clerk/nextjs/server"
 import { listChannelMessages, sendChannelMessage, clerkDisplayName } from "@/lib/chat/messages"
-import { authUserId, getCurrentAdmin } from "@/lib/clerk-auth"
+import { authUserContext, getCurrentAdmin } from "@/lib/clerk-auth"
 
 type Params = { params: Promise<{ id: string }> }
 
 export async function GET(request: Request, { params }: Params) {
   const { id: channelId } = await params
-  const userId = await authUserId()
-  if (!userId) {
+  const ctx = await authUserContext()
+  if (!ctx) {
     return NextResponse.json({ error: "Sign in required" }, { status: 401 })
   }
 
@@ -17,13 +16,11 @@ export async function GET(request: Request, { params }: Params) {
   const limit = Number(searchParams.get("limit") ?? 50)
 
   try {
-    const user = await currentUser()
-    const email = user?.emailAddresses?.[0]?.emailAddress
     const admin = await getCurrentAdmin()
 
     const result = await listChannelMessages(channelId, {
-      clerkUserId: userId,
-      email,
+      clerkUserId: ctx.userId,
+      email: ctx.email,
       isAdmin: Boolean(admin),
       cursor,
       limit,
@@ -40,8 +37,8 @@ export async function GET(request: Request, { params }: Params) {
 
 export async function POST(request: Request, { params }: Params) {
   const { id: channelId } = await params
-  const userId = await authUserId()
-  if (!userId) {
+  const ctx = await authUserContext()
+  if (!ctx) {
     return NextResponse.json({ error: "Sign in required" }, { status: 401 })
   }
 
@@ -49,11 +46,6 @@ export async function POST(request: Request, { params }: Params) {
     const body = await request.json()
     const text = typeof body.body === "string" ? body.body : ""
     const isAnnouncement = Boolean(body.is_announcement)
-
-    const user = await currentUser()
-    if (!user) {
-      return NextResponse.json({ error: "Sign in required" }, { status: 401 })
-    }
 
     const admin = await getCurrentAdmin()
     if (isAnnouncement && !admin) {
@@ -63,11 +55,11 @@ export async function POST(request: Request, { params }: Params) {
     const message = await sendChannelMessage({
       channelId,
       body: text,
-      clerkUserId: userId,
-      email: user.emailAddresses?.[0]?.emailAddress,
+      clerkUserId: ctx.userId,
+      email: ctx.email,
       isAdmin: Boolean(admin),
-      displayName: clerkDisplayName(user),
-      avatarUrl: user.imageUrl,
+      displayName: clerkDisplayName(ctx.user),
+      avatarUrl: ctx.user.imageUrl,
       isAnnouncement,
     })
 

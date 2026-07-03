@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server"
-import { currentUser } from "@clerk/nextjs/server"
 import { sql } from "@/lib/db"
-import { authUserId } from "@/lib/clerk-auth"
+import { authUserContext } from "@/lib/clerk-auth"
 import { resolveFamilyForUser } from "@/lib/family-auth"
 import {
   ageGroupForMemberType,
@@ -40,40 +39,32 @@ function normalizeMemberPayload(memberData: Record<string, unknown>) {
 // POST - Add or update a family member (submitted for approval)
 export async function POST(request: Request) {
   try {
-    const userId = await authUserId()
-    if (!userId) {
+    const ctx = await authUserContext()
+    if (!ctx) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const user = await currentUser()
-    
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    const userEmail = user.emailAddresses[0]?.emailAddress
     const memberData = normalizeMemberPayload(await request.json())
-    const family = await resolveFamilyForUser(userId, userEmail)
+    const family = await resolveFamilyForUser(ctx.userId, ctx.email)
 
     if (!family) {
       return NextResponse.json({ error: "Family not found" }, { status: 404 })
     }
-    const changeType = memberData.id ? 'update_member' : 'add_member'
+    const changeType = memberData.id ? "update_member" : "add_member"
 
-    // Create pending change for member
     await sql`
       INSERT INTO pending_family_changes 
         (family_id, clerk_user_id, change_type, member_id, member_data)
       VALUES 
-        (${family.id}, ${user.id}, ${changeType}, 
+        (${family.id}, ${ctx.userId}, ${changeType}, 
          ${memberData.id || null}, ${JSON.stringify(memberData)})
     `
 
-    return NextResponse.json({ 
-      success: true, 
-      message: memberData.id 
-        ? "Member update submitted for approval" 
-        : "New member submitted for approval"
+    return NextResponse.json({
+      success: true,
+      message: memberData.id
+        ? "Member update submitted for approval"
+        : "New member submitted for approval",
     })
   } catch (error) {
     console.error("Error submitting member changes:", error)
@@ -84,26 +75,18 @@ export async function POST(request: Request) {
 // DELETE - Remove a family member (submitted for approval)
 export async function DELETE(request: Request) {
   try {
-    const userId = await authUserId()
-    if (!userId) {
+    const ctx = await authUserContext()
+    if (!ctx) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const user = await currentUser()
-    
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    const userEmail = user.emailAddresses[0]?.emailAddress
     const { memberId } = await request.json()
-    const family = await resolveFamilyForUser(userId, userEmail)
+    const family = await resolveFamilyForUser(ctx.userId, ctx.email)
 
     if (!family) {
       return NextResponse.json({ error: "Family not found" }, { status: 404 })
     }
 
-    // Get current member data for the change record
     const members = await sql`
       SELECT * FROM family_members_v2
       WHERE id = ${memberId} AND family_id = ${family.id}
@@ -113,18 +96,17 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "Member not found" }, { status: 404 })
     }
 
-    // Create pending change for member removal
     await sql`
       INSERT INTO pending_family_changes 
         (family_id, clerk_user_id, change_type, member_id, member_data)
       VALUES 
-        (${family.id}, ${user.id}, 'remove_member', 
+        (${family.id}, ${ctx.userId}, 'remove_member', 
          ${memberId}, ${JSON.stringify(members[0])})
     `
 
-    return NextResponse.json({ 
-      success: true, 
-      message: "Member removal submitted for approval"
+    return NextResponse.json({
+      success: true,
+      message: "Member removal submitted for approval",
     })
   } catch (error) {
     console.error("Error submitting member removal:", error)

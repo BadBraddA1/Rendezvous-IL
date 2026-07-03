@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server"
-import { currentUser } from "@clerk/nextjs/server"
 import { sql } from "@/lib/db"
-import { authUserId } from "@/lib/clerk-auth"
+import { authUserContext } from "@/lib/clerk-auth"
 import {
   getFamilyMembersV2,
   getRegistrationBirthdayHints,
@@ -52,19 +51,12 @@ function normalizeProfileUpdates(updates: Record<string, unknown>) {
 // GET - Fetch family profile for the current user
 export async function GET() {
   try {
-    const userId = await authUserId()
-    if (!userId) {
+    const ctx = await authUserContext()
+    if (!ctx) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const user = await currentUser()
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    const userEmail = user.emailAddresses[0]?.emailAddress
-    const family = await resolveFamilyForUser(userId, userEmail)
+    const family = await resolveFamilyForUser(ctx.userId, ctx.email)
 
     if (!family) {
       return NextResponse.json({ family: null, pendingChanges: [] })
@@ -103,20 +95,13 @@ export async function GET() {
 // PUT - Submit profile changes for approval
 export async function PUT(request: Request) {
   try {
-    const userId = await authUserId()
-    if (!userId) {
+    const ctx = await authUserContext()
+    if (!ctx) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const user = await currentUser()
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    const userEmail = user.emailAddresses[0]?.emailAddress
     const updates = normalizeProfileUpdates(await request.json())
-    const family = await resolveFamilyForUser(userId, userEmail)
+    const family = await resolveFamilyForUser(ctx.userId, ctx.email)
 
     if (!family) {
       return NextResponse.json({ error: "Family not found" }, { status: 404 })
@@ -140,7 +125,7 @@ export async function PUT(request: Request) {
       if (newValue !== oldValue) {
         changes.push({
           family_id: family.id,
-          clerk_user_id: user.id,
+          clerk_user_id: ctx.userId,
           change_type: "update_field",
           field_name: field,
           old_value: oldValue,

@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server"
-import { currentUser } from "@clerk/nextjs/server"
-import { authUserId } from "@/lib/clerk-auth"
+import { authUserContext } from "@/lib/clerk-auth"
 import { resolveFamilyForUser } from "@/lib/family-auth"
 import {
   getFamilyDirectorySettings,
@@ -11,20 +10,22 @@ import {
 import { deleteFamilyPhotoIfStored, uploadFamilyPhoto } from "@/lib/family-photo-storage"
 
 async function requireFamily() {
-  const userId = await authUserId()
-  if (!userId) {
+  const ctx = await authUserContext()
+  if (!ctx) {
     return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) }
   }
 
-  const user = await currentUser()
-  if (!user) {
-    return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) }
-  }
-
-  const email = user.emailAddresses[0]?.emailAddress
-  const family = await resolveFamilyForUser(userId, email)
+  const family = await resolveFamilyForUser(ctx.userId, ctx.email)
   if (!family) {
-    return { error: NextResponse.json({ error: "Family not found" }, { status: 404 }) }
+    return {
+      error: NextResponse.json(
+        {
+          error:
+            "No family profile found for this account. Open Family account on the website once to link your registration.",
+        },
+        { status: 404 },
+      ),
+    }
   }
 
   return { family }

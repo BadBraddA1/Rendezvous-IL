@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { auth, currentUser } from "@clerk/nextjs/server"
+import { authUserContext } from "@/lib/clerk-auth"
 import {
   detectPlatformFromUserAgent,
   normalizeUserPlatform,
@@ -10,8 +10,8 @@ export const dynamic = "force-dynamic"
 
 /** Record last-seen + platform for signed-in users (web + native apps). */
 export async function POST(request: Request) {
-  const { userId } = await auth({ acceptsToken: "session_token" })
-  if (!userId) {
+  const ctx = await authUserContext()
+  if (!ctx) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
@@ -32,11 +32,10 @@ export async function POST(request: Request) {
     // empty body is fine for web pings
   }
 
-  const user = await currentUser()
-  const email = user?.emailAddresses[0]?.emailAddress ?? null
+  const email = ctx.email ?? null
 
   await recordUserActivity({
-    clerkUserId: userId,
+    clerkUserId: ctx.userId,
     email,
     platform,
     appVersion,
