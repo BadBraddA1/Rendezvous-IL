@@ -63,6 +63,16 @@ Then in Xcode:
 3. **App icon** — `AppIcon.appiconset` includes `AppIcon-1024.png` (from `public/rendezvous-logo.png`, same as the site header). To refresh after a logo change: `bash ios/scripts/sync-app-icon.sh`.
 4. Run on device (⌘R).
 
+## TestFlight
+
+From `ios/`:
+
+```bash
+bash scripts/ship-testflight.sh
+```
+
+Archives Release, verifies Clerk key in the IPA, and uploads to App Store Connect. Current rebuild ship: **v1.2.0 (build 13)**. After processing, run the checklist in [TESTFLIGHT_SMOKE.md](TESTFLIGHT_SMOKE.md) on a physical device.
+
 ## Admin access (Clerk)
 
 Assign a role in **Clerk → Users → Public metadata**:

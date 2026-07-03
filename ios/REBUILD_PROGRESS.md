@@ -1,6 +1,6 @@
 # Rebuild progress
 
-**Current phase:** 9 — TestFlight ship  
+**Current phase:** Complete — rebuild shipped to TestFlight (build 13)
 
 ## Phase status
 
@@ -13,7 +13,7 @@
 - [x] **6** Account + More (profile header, account links, FAQ search, notification UX)
 - [x] **7** Staff admin (dashboard/users/check-in timeouts, role gates, native check-in)
 - [x] **8** Polish (deep links, push/widgets, Live Activity)
-- [ ] **9** TestFlight ship
+- [x] **9** TestFlight ship (build 13, v1.2.0 uploaded 2026-07-03)
 
 ## Notes
 
@@ -22,3 +22,4 @@
 - 2026-07-03: Phase 6 — More profile header, Account web links + refresh, FAQ search, notification permission flow, cost calculator in More.
 - 2026-07-03: Phase 7 — admin dashboard/users/check-in API timeouts, retry UX, native check-in from dashboard, clear-station flow.
 - 2026-07-03: Phase 8 — `rendezvousil://` + universal links, in-app notification routing, widget reload, Live Activity lifecycle, APNs bundle id fix.
+- 2026-07-03: Phase 9 — `bash ios/scripts/ship-testflight.sh` uploaded **v1.2.0 (13)** to App Store Connect. Smoke checklist: `ios/TESTFLIGHT_SMOKE.md`.
