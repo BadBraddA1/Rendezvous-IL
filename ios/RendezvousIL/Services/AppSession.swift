@@ -27,6 +27,12 @@ final class AppSession {
         return user.primaryEmailAddress?.emailAddress
     }
 
+    /// Primary email for account screen. Nil until Clerk has finished loading.
+    var userEmail: String? {
+        guard Clerk.shared.isLoaded else { return nil }
+        return Clerk.shared.user?.primaryEmailAddress?.emailAddress
+    }
+
     private(set) var apiClient: APIClient?
     private var activityPingTask: Task<Void, Never>?
 

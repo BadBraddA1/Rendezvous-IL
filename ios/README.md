@@ -7,6 +7,7 @@ Native SwiftUI **attendee community hub** for [rendezvousil.com](https://rendezv
 | Area | Details |
 |------|---------|
 | **Sign-in gate** | Welcome screen → Clerk sheet → full app (Pew Packers pattern) |
+| **Account** | Profile card, web dashboard / registration / password links, directory + notification shortcuts |
 | **Home** | Greeting, now/next during retreat week, shortcuts to schedule / updates / chat / directory |
 | **Schedule** | Native week view, meals, worship leaders, **per-event reminder** (bell icon) |
 | **Updates** | Now/next, weather, announcements |

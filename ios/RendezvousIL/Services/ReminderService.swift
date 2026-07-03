@@ -81,4 +81,9 @@ final class ReminderService {
         guard let data = try? JSONEncoder().encode(prefs) else { return }
         UserDefaults.standard.set(data, forKey: storageKey)
     }
+
+    /// Number of events with a saved reminder preference.
+    var savedReminderCount: Int {
+        load().count
+    }
 }

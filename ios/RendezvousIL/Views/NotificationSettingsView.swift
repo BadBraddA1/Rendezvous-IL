@@ -3,7 +3,11 @@ import SwiftUI
 struct NotificationSettingsView: View {
     @Environment(RendezvousRepository.self) private var repository
 
+    @State private var isRescheduling = false
+    @State private var rescheduleMessage: String?
+
     private var notifications: NotificationService { NotificationService.shared }
+    private var reminderCount: Int { ReminderService.shared.savedReminderCount }
 
     var body: some View {
         Form {
@@ -17,7 +21,7 @@ struct NotificationSettingsView: View {
                     }
                 } else if notifications.authorizationStatus == .notDetermined {
                     Button("Enable notifications") {
-                        Task { _ = await notifications.requestPermissions() }
+                        Task { await requestAndRegister() }
                     }
                 }
             } footer: {
@@ -30,14 +34,36 @@ struct NotificationSettingsView: View {
             }
 
             Section("Event reminders") {
+                if reminderCount > 0 {
+                    LabeledContent("Saved reminders", value: "\(reminderCount)")
+                } else {
+                    Text("No event reminders yet.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+
                 Text("Open any event on the Schedule tab and tap the bell to set a reminder (5 min, 15 min, 1 hour before, or at start).")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
 
-                Button("Reschedule saved reminders") {
-                    Task {
-                        await ReminderService.shared.rescheduleAll(items: repository.schedule?.luItems)
+                Button {
+                    Task { await rescheduleReminders() }
+                } label: {
+                    if isRescheduling {
+                        HStack {
+                            ProgressView()
+                            Text("Rescheduling…")
+                        }
+                    } else {
+                        Text("Reschedule saved reminders")
                     }
+                }
+                .disabled(isRescheduling)
+
+                if let rescheduleMessage {
+                    Text(rescheduleMessage)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
                 }
             }
 
@@ -51,6 +77,9 @@ struct NotificationSettingsView: View {
         .task {
             await notifications.refreshAuthorizationStatus()
         }
+        .onAppear {
+            rescheduleMessage = nil
+        }
     }
 
     private var broadcastBinding: Binding<Bool> {
@@ -59,7 +88,7 @@ struct NotificationSettingsView: View {
             set: { newValue in
                 notifications.broadcastAlertsEnabled = newValue
                 if newValue {
-                    Task { await notifications.registerForRemoteIfAuthorized() }
+                    Task { await requestAndRegister() }
                 }
             }
         )
@@ -81,6 +110,30 @@ struct NotificationSettingsView: View {
         case .notDetermined: return "Not asked"
         @unknown default: return "Unknown"
         }
+    }
+
+    private func requestAndRegister() async {
+        await notifications.refreshAuthorizationStatus()
+        if notifications.authorizationStatus == .notDetermined {
+            let granted = await notifications.requestPermissions()
+            if !granted {
+                notifications.broadcastAlertsEnabled = false
+            }
+        } else {
+            await notifications.registerForRemoteIfAuthorized()
+        }
+    }
+
+    private func rescheduleReminders() async {
+        isRescheduling = true
+        rescheduleMessage = nil
+        defer { isRescheduling = false }
+
+        await ReminderService.shared.rescheduleAll(items: repository.schedule?.luItems)
+        let count = ReminderService.shared.savedReminderCount
+        rescheduleMessage = count > 0
+            ? "Scheduled \(count) reminder\(count == 1 ? "" : "s")."
+            : "No upcoming reminders to schedule."
     }
 }
 

@@ -58,6 +58,14 @@ struct AboutView: View {
                 }
 
                 contactSection
+
+                Link(destination: AppConfig.baseURL) {
+                    Label("Visit rendezvousil.com", systemImage: "safari")
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(BrandColors.lake, in: RoundedRectangle(cornerRadius: 12))
+                        .foregroundStyle(.white)
+                }
             }
             .padding()
         }

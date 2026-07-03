@@ -1,4 +1,3 @@
-import Clerk
 import SwiftUI
 
 struct AccountView: View {
@@ -7,10 +6,7 @@ struct AccountView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                if let name = session.adminName ?? session.userDisplayName {
-                    Text("Signed in as \(name)")
-                        .font(.headline)
-                }
+                profileCard
 
                 VStack(alignment: .leading, spacing: 12) {
                     infoRow(icon: "calendar", title: "Event dates", value: AppConfig.eventDates)
@@ -20,40 +16,43 @@ struct AccountView: View {
                 .padding()
                 .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
 
-                Link(destination: AppConfig.url(for: "/account")) {
-                    Label("Family dashboard on web", systemImage: "safari")
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(BrandColors.lake, in: RoundedRectangle(cornerRadius: 12))
-                        .foregroundStyle(.white)
+                VStack(spacing: 12) {
+                    accountLink(
+                        title: "Family dashboard on web",
+                        icon: "safari",
+                        url: AppConfig.url(for: "/account"),
+                        prominent: true
+                    )
+                    accountLink(
+                        title: "Manage registration",
+                        icon: "doc.text",
+                        url: AppConfig.url(for: "/register")
+                    )
+                    accountLink(
+                        title: "Change password on web",
+                        icon: "key",
+                        url: AppConfig.url(for: "/account/settings")
+                    )
                 }
 
-                Link(destination: AppConfig.url(for: "/account/settings")) {
-                    Label("Change password on web", systemImage: "key")
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
-                        .foregroundStyle(BrandColors.lake)
-                }
+                VStack(spacing: 12) {
+                    NavigationLink {
+                        FamilyDirectoryManageView()
+                    } label: {
+                        inAppLinkLabel(title: "Upload directory photo", icon: "camera.fill")
+                    }
 
-                NavigationLink {
-                    FamilyDirectoryManageView()
-                } label: {
-                    Label("Upload directory photo", systemImage: "camera.fill")
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
-                        .foregroundStyle(BrandColors.lake)
-                }
+                    NavigationLink {
+                        DirectoryView()
+                    } label: {
+                        inAppLinkLabel(title: "Browse family directory", icon: "person.3.fill")
+                    }
 
-                NavigationLink {
-                    DirectoryView()
-                } label: {
-                    Label("Browse family directory", systemImage: "person.3.fill")
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
-                        .foregroundStyle(BrandColors.lake)
+                    NavigationLink {
+                        NotificationSettingsView()
+                    } label: {
+                        inAppLinkLabel(title: "Notifications & widgets", icon: "bell.badge")
+                    }
                 }
 
                 contactBlock
@@ -61,6 +60,33 @@ struct AccountView: View {
             .padding()
         }
         .navigationTitle("Account")
+        .refreshable {
+            await session.refreshAdminStatus()
+        }
+    }
+
+    private var profileCard: some View {
+        HStack(spacing: 16) {
+            ProfileAvatarLabel(name: session.userDisplayName ?? session.userEmail)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(session.userDisplayName ?? "Signed in")
+                    .font(.title3.weight(.semibold))
+                if let email = session.userEmail {
+                    Text(email)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                if session.isAdmin, let role = session.adminRole {
+                    Label("Staff: \(role.capitalized)", systemImage: "person.badge.key")
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(BrandColors.coralInk)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
+        .background(BrandColors.lakeLight.opacity(0.6), in: RoundedRectangle(cornerRadius: 14))
     }
 
     private func infoRow(icon: String, title: String, value: String) -> some View {
@@ -76,6 +102,30 @@ struct AccountView: View {
                     .font(.subheadline)
             }
         }
+    }
+
+    private func accountLink(title: String, icon: String, url: URL, prominent: Bool = false) -> some View {
+        Link(destination: url) {
+            Group {
+                if prominent {
+                    Label(title, systemImage: icon)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(BrandColors.lake, in: RoundedRectangle(cornerRadius: 12))
+                        .foregroundStyle(.white)
+                } else {
+                    inAppLinkLabel(title: title, icon: icon)
+                }
+            }
+        }
+    }
+
+    private func inAppLinkLabel(title: String, icon: String) -> some View {
+        Label(title, systemImage: icon)
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
+            .foregroundStyle(BrandColors.lake)
     }
 
     private var contactBlock: some View {
