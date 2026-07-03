@@ -82,7 +82,7 @@ struct ChatThreadView: View {
                     }
                     Text(message.sender_display_name)
                         .font(.caption.weight(.semibold))
-                    Text(message.created_at.formatted(date: .omitted, time: .shortened))
+                    Text(formatMessageTime(message.created_at))
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
@@ -141,6 +141,18 @@ struct ChatThreadView: View {
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    private func formatMessageTime(_ iso: String) -> String {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        var date = formatter.date(from: iso)
+        if date == nil {
+            formatter.formatOptions = [.withInternetDateTime]
+            date = formatter.date(from: iso)
+        }
+        guard let date else { return iso }
+        return date.formatted(date: .abbreviated, time: .shortened)
     }
 
     private func sendMessage() async {
