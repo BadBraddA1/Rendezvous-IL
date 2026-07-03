@@ -61,25 +61,7 @@ struct HomeView: View {
     }
 
     private var countdownCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label("Registration opens \(AppConfig.registrationOpens)", systemImage: "bell.badge")
-                .font(.headline)
-                .foregroundStyle(BrandColors.lake)
-
-            Text("Plan ahead for \(AppConfig.eventYear). Theme: \(AppConfig.theme) (Bible Bowl).")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(BrandColors.warmSurface)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(BrandColors.coral.opacity(0.25), lineWidth: 1)
-        )
+        RegistrationCountdownView()
     }
 
     private var quickActions: some View {

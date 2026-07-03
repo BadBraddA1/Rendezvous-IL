@@ -59,7 +59,7 @@ struct DirectoryView: View {
                 .font(.title3.weight(.semibold))
             Text("Registered Rendezvous families can share a photo and short note so other attendees can get to know them.")
                 .foregroundStyle(.secondary)
-            AuthView()
+            ClerkAuthPanel(mode: .signIn)
                 .frame(minHeight: 360)
         }
         .padding()

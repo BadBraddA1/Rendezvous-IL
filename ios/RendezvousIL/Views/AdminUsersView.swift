@@ -79,7 +79,7 @@ struct AdminUsersView: View {
                     .font(.title2.weight(.semibold))
                 Text("Sign in with a full admin account to manage users.")
                     .foregroundStyle(.secondary)
-                AuthView()
+                ClerkAuthPanel(mode: .signIn)
                     .frame(minHeight: 360)
             }
             .padding(20)

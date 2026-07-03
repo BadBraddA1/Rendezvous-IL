@@ -27,6 +27,8 @@ targets:
     configFiles:
       Debug: Config.xcconfig
       Release: Config.xcconfig
+    capabilities:
+      pushNotifications: true
     dependencies:
       - package: Clerk
         product: Clerk
@@ -37,8 +39,9 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.rendezvousil.app
         PRODUCT_NAME: Rendezvous IL
         MARKETING_VERSION: "1.2.0"
-        CURRENT_PROJECT_VERSION: "4"
+        CURRENT_PROJECT_VERSION: "6"
         INFOPLIST_KEY_CFBundleDisplayName: Rendezvous IL
+        INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: false
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.lifestyle
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_NSSupportsLiveActivities: YES
@@ -61,7 +64,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.rendezvousil.app.widgets
         PRODUCT_NAME: RendezvousILWidgets
         MARKETING_VERSION: "1.2.0"
-        CURRENT_PROJECT_VERSION: "4"
+        CURRENT_PROJECT_VERSION: "6"
         INFOPLIST_KEY_CFBundleDisplayName: Rendezvous Widgets
         INFOPLIST_KEY_NSSupportsLiveActivities: YES
         GENERATE_INFOPLIST_FILE: YES

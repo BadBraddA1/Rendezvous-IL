@@ -3,6 +3,7 @@ import SwiftUI
 
 struct AccountView: View {
     @Environment(AppSession.self) private var session
+    @Environment(Clerk.self) private var clerk
 
     var body: some View {
         Group {
@@ -15,6 +16,10 @@ struct AccountView: View {
         .navigationTitle("Account")
         .task {
             await session.refreshAuth()
+        }
+        .onChange(of: clerk.session?.id) { _, sessionId in
+            guard sessionId != nil else { return }
+            Task { await session.refreshAuth() }
         }
     }
 
@@ -32,8 +37,7 @@ struct AccountView: View {
                     .font(.body)
                     .foregroundStyle(.secondary)
 
-                AuthView()
-                    .frame(minHeight: 360)
+                ClerkAuthPanel()
 
                 Link(destination: AppConfig.url(for: "/sign-in/forgot-password")) {
                     Label("Forgot password?", systemImage: "key")

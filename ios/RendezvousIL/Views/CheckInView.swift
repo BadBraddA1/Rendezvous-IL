@@ -39,7 +39,7 @@ struct CheckInView: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
-            AuthView()
+            ClerkAuthPanel(mode: .signIn)
                 .frame(minHeight: 360)
 
             Link(destination: AppConfig.url(for: "/admin/checkin")) {

@@ -23,6 +23,11 @@ struct RendezvousILApp: App {
                     await NotificationService.shared.refreshAuthorizationStatus()
                     await NotificationService.shared.registerForRemoteIfAuthorized()
                 }
+                .onChange(of: Clerk.shared.session?.id) { _, sessionId in
+                    if sessionId != nil {
+                        Task { await session.refreshAuth() }
+                    }
+                }
                 .onChange(of: scenePhase) { _, phase in
                     guard phase == .active else { return }
                     Task { await session.recordActivityIfSignedIn() }

@@ -50,7 +50,7 @@ struct AdminDashboardView: View {
                     subtitle: "Sign in with your Rendezvous admin account. Your Clerk user needs an admin role (admin, editor, viewer, or check-in)."
                 )
 
-                AuthView()
+                ClerkAuthPanel(mode: .signIn)
                     .frame(minHeight: 360)
 
                 Link(destination: AppConfig.url(for: "/admin")) {

@@ -25,7 +25,7 @@ struct FamilyDirectoryManageView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     Text("Sign in to manage your directory photo")
                         .font(.title3.weight(.semibold))
-                    AuthView()
+                    ClerkAuthPanel(mode: .signIn)
                         .frame(minHeight: 360)
                 }
                 .padding()
