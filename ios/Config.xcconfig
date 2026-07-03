@@ -1,4 +1,5 @@
-// Default Clerk key for simulator builds. Override in Config.local.xcconfig (gitignored).
-CLERK_PUBLISHABLE_KEY = pk_test_REPLACE_ME
+// Publishable key is safe to commit (same as NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY on web).
+// Override in Config.local.xcconfig for local dev with a test key if needed.
+CLERK_PUBLISHABLE_KEY = pk_live_Y2xlcmsucmVuZGV6dm91c2lsLmNvbSQ
 
 #include? "Config.local.xcconfig"

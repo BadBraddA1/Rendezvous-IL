@@ -32,14 +32,14 @@ open RendezvousIL.xcodeproj
 
 That runs XcodeGen (adds Clerk + all Swift sources to the project), resolves Swift packages, and opens the **RendezvousIL** scheme.
 
-For staff sign-in, put your real Clerk key in `Config.local.xcconfig` (gitignored):
+For staff sign-in, the **live** Clerk publishable key is in `Config.xcconfig` (same as the website). Local overrides go in `Config.local.xcconfig` (gitignored):
 
 ```bash
 cp Config.xcconfig.example Config.local.xcconfig
-# edit CLERK_PUBLISHABLE_KEY = pk_live_… from .env.local
+# optional: pk_test_… for sandbox-only local builds
 ```
 
-Simulator builds work without a real key; admin/check-in need a valid key.
+App Store builds use `Config.xcconfig` — no extra setup on device.
 
 ### Troubleshooting
 
