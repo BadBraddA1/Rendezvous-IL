@@ -36,7 +36,7 @@ targets:
         embed: true
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.rendezvousil.app
+        PRODUCT_BUNDLE_IDENTIFIER: com.rendezvousil.braddcorp.app
         PRODUCT_NAME: Rendezvous IL
         MARKETING_VERSION: "1.2.0"
         CURRENT_PROJECT_VERSION: "6"
@@ -61,7 +61,7 @@ targets:
       path: RendezvousILWidgets/RendezvousILWidgets.entitlements
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.rendezvousil.app.widgets
+        PRODUCT_BUNDLE_IDENTIFIER: com.rendezvousil.braddcorp.app.widgets
         PRODUCT_NAME: RendezvousILWidgets
         MARKETING_VERSION: "1.2.0"
         CURRENT_PROJECT_VERSION: "6"
