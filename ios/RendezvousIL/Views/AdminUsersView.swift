@@ -51,7 +51,7 @@ struct AdminUsersView: View {
             await loadUsers(force: true)
         }
         .task {
-            await session.refreshAuth()
+            await session.refreshAdminStatus()
             await loadUsers(force: false)
         }
         .sheet(item: $selectedUser) { user in
@@ -87,20 +87,34 @@ struct AdminUsersView: View {
         List {
             if let errorMessage {
                 Section {
-                    Text(errorMessage)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(errorMessage)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                        Button("Try again") {
+                            Task { await loadUsers(force: true) }
+                        }
+                        .buttonStyle(.bordered)
+                    }
                 }
             }
 
-            Section("All users (\(filteredUsers.count))") {
-                ForEach(filteredUsers) { user in
-                    Button {
-                        selectedUser = user
-                    } label: {
-                        AdminUserRow(user: user)
+            if filteredUsers.isEmpty && !isLoading && errorMessage == nil {
+                ContentUnavailableView(
+                    searchText.isEmpty ? "No users yet" : "No matches",
+                    systemImage: "person.2",
+                    description: Text(searchText.isEmpty ? "Users from Clerk will appear here." : "Try a different search.")
+                )
+            } else {
+                Section("All users (\(filteredUsers.count))") {
+                    ForEach(filteredUsers) { user in
+                        Button {
+                            selectedUser = user
+                        } label: {
+                            AdminUserRow(user: user)
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
                 }
             }
         }
@@ -108,6 +122,7 @@ struct AdminUsersView: View {
     }
 
     private func loadUsers(force: Bool) async {
+        guard session.canManageUsers else { return }
         if isLoading && !force { return }
         isLoading = true
         errorMessage = nil
@@ -119,8 +134,14 @@ struct AdminUsersView: View {
         }
 
         do {
-            let response = try await client.getAdminUsers()
-            users = response.users
+            let response = try await RepositoryFetch.withTimeout {
+                try await client.getAdminUsers()
+            }
+            users = response.users.sorted {
+                $0.displayName.localizedCaseInsensitiveCompare($1.displayName) == .orderedAscending
+            }
+        } catch APIError.unauthorized {
+            errorMessage = "Session expired. Sign out and sign in again."
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -322,14 +343,16 @@ private struct AdminUserDetailSheet: View {
         defer { isSaving = false }
 
         do {
-            let response = try await client.updateAdminUserRole(
-                AdminUserRolePatchBody(
-                    userId: currentUser.id,
-                    role: role.apiValue,
-                    firstName: firstName.trimmingCharacters(in: .whitespacesAndNewlines),
-                    lastName: lastName.trimmingCharacters(in: .whitespacesAndNewlines)
+            let response = try await RepositoryFetch.withTimeout {
+                try await client.updateAdminUserRole(
+                    AdminUserRolePatchBody(
+                        userId: currentUser.id,
+                        role: role.apiValue,
+                        firstName: firstName.trimmingCharacters(in: .whitespacesAndNewlines),
+                        lastName: lastName.trimmingCharacters(in: .whitespacesAndNewlines)
+                    )
                 )
-            )
+            }
             currentUser = response.user
             onUpdate(response.user)
             message = "User updated."
@@ -346,9 +369,11 @@ private struct AdminUserDetailSheet: View {
         defer { isSaving = false }
 
         do {
-            let response = try await client.updateAdminUserBan(
-                AdminUserBanPatchBody(userId: currentUser.id, banned: !currentUser.banned)
-            )
+            let response = try await RepositoryFetch.withTimeout {
+                try await client.updateAdminUserBan(
+                    AdminUserBanPatchBody(userId: currentUser.id, banned: !currentUser.banned)
+                )
+            }
             currentUser = response.user
             onUpdate(response.user)
             message = currentUser.banned ? "User banned." : "User unbanned."
@@ -365,7 +390,9 @@ private struct AdminUserDetailSheet: View {
         defer { isSaving = false }
 
         do {
-            _ = try await client.resetAdminUserPassword(userId: currentUser.id, mode: "set", password: tempPassword)
+            _ = try await RepositoryFetch.withTimeout {
+                try await client.resetAdminUserPassword(userId: currentUser.id, mode: "set", password: tempPassword)
+            }
             tempPassword = ""
             message = "Password updated."
         } catch {
@@ -381,7 +408,9 @@ private struct AdminUserDetailSheet: View {
         defer { isSaving = false }
 
         do {
-            let response = try await client.resetAdminUserPassword(userId: currentUser.id, mode: "link", password: nil)
+            let response = try await RepositoryFetch.withTimeout {
+                try await client.resetAdminUserPassword(userId: currentUser.id, mode: "link", password: nil)
+            }
             if let url = response.url {
                 signInLink = url
                 UIPasteboard.general.string = url
@@ -399,7 +428,9 @@ private struct AdminUserDetailSheet: View {
         defer { isSaving = false }
 
         do {
-            _ = try await client.deleteAdminUser(id: currentUser.id)
+            _ = try await RepositoryFetch.withTimeout {
+                try await client.deleteAdminUser(id: currentUser.id)
+            }
             onDelete(currentUser.id)
             dismiss()
         } catch {
@@ -469,13 +500,15 @@ private struct AdminUserCreateSheet: View {
         defer { isSaving = false }
 
         do {
-            let response = try await client.createAdminUser(
-                email: email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased(),
-                firstName: firstName.trimmingCharacters(in: .whitespacesAndNewlines),
-                lastName: lastName.trimmingCharacters(in: .whitespacesAndNewlines),
-                role: role.apiValue,
-                password: password.isEmpty ? nil : password
-            )
+            let response = try await RepositoryFetch.withTimeout {
+                try await client.createAdminUser(
+                    email: email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased(),
+                    firstName: firstName.trimmingCharacters(in: .whitespacesAndNewlines),
+                    lastName: lastName.trimmingCharacters(in: .whitespacesAndNewlines),
+                    role: role.apiValue,
+                    password: password.isEmpty ? nil : password
+                )
+            }
             onCreate(response.user)
             dismiss()
         } catch {

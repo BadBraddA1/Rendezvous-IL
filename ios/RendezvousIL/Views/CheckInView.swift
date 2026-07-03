@@ -1,5 +1,4 @@
 import SwiftUI
-import Clerk
 
 struct CheckInView: View {
     @Environment(AppSession.self) private var session
@@ -24,7 +23,7 @@ struct CheckInView: View {
         }
         .navigationTitle("Check-In")
         .task {
-            await session.refreshAuth()
+            await session.refreshAdminStatus()
         }
     }
 
@@ -54,8 +53,8 @@ struct CheckInView: View {
     private var checkInStation: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                if let name = session.adminName {
-                    Text("Signed in as \(name)")
+                if let name = session.adminName ?? session.userDisplayName {
+                    Text("Staff: \(name)")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
@@ -65,6 +64,12 @@ struct CheckInView: View {
 
                 if let lookup {
                     resultSection(lookup)
+
+                    Button("Clear and start over") {
+                        resetStation()
+                    }
+                    .font(.subheadline)
+                    .frame(maxWidth: .infinity)
                 }
 
                 if let errorMessage {
@@ -81,6 +86,17 @@ struct CheckInView: View {
             }
             .padding()
         }
+        .overlay {
+            if isLoading {
+                ZStack {
+                    Color.black.opacity(0.08).ignoresSafeArea()
+                    ProgressView()
+                        .padding(20)
+                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+                }
+            }
+        }
+        .allowsHitTesting(!isLoading)
     }
 
     private var lookupSection: some View {
@@ -93,6 +109,10 @@ struct CheckInView: View {
                     .textInputAutocapitalization(.characters)
                     .autocorrectionDisabled()
                     .textFieldStyle(.roundedBorder)
+                    .submitLabel(.search)
+                    .onSubmit {
+                        Task { await lookupByCode() }
+                    }
 
                 Button("Look up") {
                     Task { await lookupByCode() }
@@ -112,6 +132,10 @@ struct CheckInView: View {
             HStack {
                 TextField("Smith", text: $searchQuery)
                     .textFieldStyle(.roundedBorder)
+                    .submitLabel(.search)
+                    .onSubmit {
+                        Task { await searchFamilies() }
+                    }
 
                 Button("Search") {
                     Task { await searchFamilies() }
@@ -149,6 +173,10 @@ struct CheckInView: View {
                         .buttonStyle(.plain)
                     }
                 }
+            } else if !searchQuery.isEmpty && !isLoading && lookup == nil && errorMessage == nil {
+                Text("No families match that search.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
             }
         }
     }
@@ -212,6 +240,17 @@ struct CheckInView: View {
         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
     }
 
+    private func resetStation() {
+        lookup = nil
+        code = ""
+        searchQuery = ""
+        searchResults = []
+        roomKeys = ""
+        tshirtsDistributed = false
+        errorMessage = nil
+        successMessage = nil
+    }
+
     private func lookupByCode() async {
         guard let client = session.apiClient else { return }
         isLoading = true
@@ -220,7 +259,9 @@ struct CheckInView: View {
         defer { isLoading = false }
 
         do {
-            let response = try await client.lookupCheckIn(code: code.trimmingCharacters(in: .whitespacesAndNewlines))
+            let response = try await RepositoryFetch.withTimeout {
+                try await client.lookupCheckIn(code: code.trimmingCharacters(in: .whitespacesAndNewlines))
+            }
             lookup = response
             roomKeys = (response.registration.pre_assigned_keys ?? []).joined(separator: ", ")
             tshirtsDistributed = response.registration.tshirts_distributed ?? false
@@ -235,10 +276,13 @@ struct CheckInView: View {
         guard let client = session.apiClient else { return }
         isLoading = true
         errorMessage = nil
+        successMessage = nil
         defer { isLoading = false }
 
         do {
-            searchResults = try await client.searchCheckIn(query: searchQuery.trimmingCharacters(in: .whitespacesAndNewlines))
+            searchResults = try await RepositoryFetch.withTimeout {
+                try await client.searchCheckIn(query: searchQuery.trimmingCharacters(in: .whitespacesAndNewlines))
+            }
             lookup = nil
         } catch {
             searchResults = []
@@ -250,14 +294,18 @@ struct CheckInView: View {
         guard let client = session.apiClient else { return }
         isLoading = true
         errorMessage = nil
+        successMessage = nil
         defer { isLoading = false }
 
         do {
-            let response = try await client.loadCheckInDetails(id: result.id)
+            let response = try await RepositoryFetch.withTimeout {
+                try await client.loadCheckInDetails(id: result.id)
+            }
             lookup = response
             roomKeys = (response.registration.pre_assigned_keys ?? []).joined(separator: ", ")
             tshirtsDistributed = response.registration.tshirts_distributed ?? false
             searchResults = []
+            code = ""
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -276,11 +324,13 @@ struct CheckInView: View {
             .filter { !$0.isEmpty }
 
         do {
-            let response = try await client.submitCheckIn(
-                id: registration.id,
-                roomKeys: keys,
-                tshirtsDistributed: tshirtsDistributed
-            )
+            let response = try await RepositoryFetch.withTimeout(seconds: 20) {
+                try await client.submitCheckIn(
+                    id: registration.id,
+                    roomKeys: keys,
+                    tshirtsDistributed: tshirtsDistributed
+                )
+            }
             if let updated = response.registration {
                 lookup = CheckInLookupResponse(
                     registration: updated,
@@ -302,11 +352,15 @@ struct CheckInView: View {
         defer { isLoading = false }
 
         do {
-            _ = try await client.undoCheckIn(id: registration.id)
-            let refreshed = try await client.loadCheckInDetails(id: registration.id)
+            _ = try await RepositoryFetch.withTimeout {
+                try await client.undoCheckIn(id: registration.id)
+            }
+            let refreshed = try await RepositoryFetch.withTimeout {
+                try await client.loadCheckInDetails(id: registration.id)
+            }
             lookup = refreshed
-            roomKeys = ""
-            tshirtsDistributed = false
+            roomKeys = (refreshed.registration.pre_assigned_keys ?? []).joined(separator: ", ")
+            tshirtsDistributed = refreshed.registration.tshirts_distributed ?? false
             successMessage = "Check-in undone."
         } catch {
             errorMessage = error.localizedDescription

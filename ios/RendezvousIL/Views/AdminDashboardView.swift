@@ -35,7 +35,7 @@ struct AdminDashboardView: View {
             await loadDashboard(force: true)
         }
         .task {
-            await session.refreshAuth()
+            await session.refreshAdminStatus()
             await loadDashboard(force: false)
         }
     }
@@ -264,8 +264,13 @@ struct AdminDashboardView: View {
                 }
             }
             if session.canCheckIn {
+                NavigationLink {
+                    CheckInView()
+                } label: {
+                    linkRow(title: "Check-in station (app)", icon: "person.badge.key")
+                }
                 Link(destination: AppConfig.url(for: "/admin/checkin")) {
-                    linkRow(title: "Check-in station", icon: "person.badge.key")
+                    linkRow(title: "Check-in on web", icon: "safari")
                 }
             }
         }
@@ -429,7 +434,13 @@ struct AdminDashboardView: View {
         defer { isLoading = false }
 
         do {
-            dashboard = try await client.getAdminDashboard()
+            dashboard = try await RepositoryFetch.withTimeout {
+                try await client.getAdminDashboard()
+            }
+        } catch APIError.unauthorized {
+            if dashboard == nil {
+                errorMessage = "Session expired. Sign out and sign in again."
+            }
         } catch {
             if dashboard == nil {
                 errorMessage = error.localizedDescription
