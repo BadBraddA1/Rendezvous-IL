@@ -1,15 +1,15 @@
 import { NextResponse } from "next/server"
-import { auth, currentUser } from "@clerk/nextjs/server"
+import { currentUser } from "@clerk/nextjs/server"
 import { fetchDirectoryEntries, ensureFamilyDirectorySchema, userHasRegistrationForYear } from "@/lib/family-directory"
 import { isDirectoryYearEnabled } from "@/lib/directory-settings"
-import { getCurrentAdmin } from "@/lib/clerk-auth"
+import { authUserId, getCurrentAdmin } from "@/lib/clerk-auth"
 import { parseRegistrationEventYear } from "@/lib/registration-event-years"
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const year = parseRegistrationEventYear(searchParams.get("year"))
 
-  const { userId } = await auth()
+  const userId = await authUserId()
   if (!userId) {
     return NextResponse.json({ error: "Sign in required" }, { status: 401 })
   }

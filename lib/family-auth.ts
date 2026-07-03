@@ -180,7 +180,7 @@ export async function getRegistrationBirthdayHints(
  * Returns null if user is not signed in or not linked to a family
  */
 export async function getCurrentFamily(): Promise<Family | null> {
-  const { userId } = await auth()
+  const { userId } = await auth({ acceptsToken: "session_token" })
 
   if (!userId) {
     return null

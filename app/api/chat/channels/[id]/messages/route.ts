@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server"
-import { auth, currentUser } from "@clerk/nextjs/server"
+import { currentUser } from "@clerk/nextjs/server"
 import { listChannelMessages, sendChannelMessage, clerkDisplayName } from "@/lib/chat/messages"
-import { getCurrentAdmin } from "@/lib/clerk-auth"
+import { authUserId, getCurrentAdmin } from "@/lib/clerk-auth"
 
 type Params = { params: Promise<{ id: string }> }
 
 export async function GET(request: Request, { params }: Params) {
   const { id: channelId } = await params
-  const { userId } = await auth()
+  const userId = await authUserId()
   if (!userId) {
     return NextResponse.json({ error: "Sign in required" }, { status: 401 })
   }
@@ -40,7 +40,7 @@ export async function GET(request: Request, { params }: Params) {
 
 export async function POST(request: Request, { params }: Params) {
   const { id: channelId } = await params
-  const { userId } = await auth()
+  const userId = await authUserId()
   if (!userId) {
     return NextResponse.json({ error: "Sign in required" }, { status: 401 })
   }

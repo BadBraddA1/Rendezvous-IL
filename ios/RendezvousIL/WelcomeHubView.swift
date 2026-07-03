@@ -42,7 +42,7 @@ struct WelcomeHubView: View {
 
     private var hero: some View {
         VStack(spacing: 12) {
-            Text("Rendezvous \(AppConfig.eventYear)")
+            Text("Rendezvous \(AppConfig.eventYearLabel)")
                 .font(.system(.largeTitle, design: .serif))
                 .fontWeight(.semibold)
                 .foregroundStyle(BrandColors.lake)

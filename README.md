@@ -136,7 +136,7 @@ Native **SwiftUI** attendee hub in `ios/` (not a WebView shell). **Sign-in requi
 
 Setup: `cd ios && bash scripts/setup-xcode.sh && open RendezvousIL.xcodeproj` — see [ios/README.md](ios/README.md). For staff sign-in, add your Clerk key to `ios/Config.local.xcconfig`.
 
-**TestFlight:** `cd ios && bash scripts/ship-testflight.sh` — latest rebuild **v1.2.0 (build 13)** uploaded 2026-07-03. Device smoke checklist: [ios/TESTFLIGHT_SMOKE.md](ios/TESTFLIGHT_SMOKE.md).
+**TestFlight:** `cd ios && bash scripts/ship-testflight.sh` — latest **v1.2.0 (build 14)**. Device smoke checklist: [ios/TESTFLIGHT_SMOKE.md](ios/TESTFLIGHT_SMOKE.md).
 
 Native admin APIs: `GET /api/admin/me`, `GET /api/admin/mobile/dashboard` (Bearer Clerk session token).
 

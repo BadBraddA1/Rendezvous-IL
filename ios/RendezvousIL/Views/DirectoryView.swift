@@ -77,7 +77,7 @@ struct DirectoryView: View {
                 if enabledYears.count > 1 {
                     Picker("Event year", selection: $year) {
                         ForEach(enabledYears, id: \.self) { enabledYear in
-                            Text("Rendezvous \(enabledYear)").tag(enabledYear)
+                            Text("Rendezvous \(String(enabledYear))").tag(enabledYear)
                         }
                     }
                     .pickerStyle(.segmented)
@@ -109,7 +109,7 @@ struct DirectoryView: View {
                         }
                         .buttonStyle(.bordered)
                         if let alternateYear = enabledYears.first(where: { $0 != year }) {
-                            Button("Try Rendezvous \(alternateYear)") {
+                            Button("Try Rendezvous \(String(alternateYear))") {
                                 year = alternateYear
                                 Task { await loadDirectory() }
                             }
@@ -129,7 +129,7 @@ struct DirectoryView: View {
                         Image(systemName: "person.3.fill")
                             .font(.largeTitle)
                             .foregroundStyle(.secondary)
-                        Text(search.isEmpty ? "No families listed for \(year) yet." : "No families match your search.")
+                        Text(search.isEmpty ? "No families listed for \(String(year)) yet." : "No families match your search.")
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
                         NavigationLink("Add your family photo") {
@@ -191,7 +191,7 @@ struct DirectoryView: View {
             families = response.families
         } catch APIError.unauthorized {
             families = []
-            errorMessage = "You need a registration for Rendezvous \(year) to view the directory."
+            errorMessage = "You need a registration for Rendezvous \(String(year)) to view the directory."
         } catch {
             families = []
             errorMessage = error.localizedDescription

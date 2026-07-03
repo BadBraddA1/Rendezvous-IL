@@ -44,7 +44,7 @@ struct AboutView: View {
                         .font(.headline)
                     ForEach(BundledContent.attendanceHistory, id: \.year) { row in
                         HStack {
-                            Text(String(row.year))
+                            Text(verbatim: String(row.year))
                                 .font(.subheadline.weight(.medium))
                                 .frame(width: 48, alignment: .leading)
                             Text(row.attendees)

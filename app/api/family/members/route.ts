@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { currentUser } from "@clerk/nextjs/server"
 import { sql } from "@/lib/db"
+import { authUserId } from "@/lib/clerk-auth"
 import { resolveFamilyForUser } from "@/lib/family-auth"
 import {
   ageGroupForMemberType,
@@ -39,6 +40,11 @@ function normalizeMemberPayload(memberData: Record<string, unknown>) {
 // POST - Add or update a family member (submitted for approval)
 export async function POST(request: Request) {
   try {
+    const userId = await authUserId()
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     const user = await currentUser()
     
     if (!user) {
@@ -47,7 +53,7 @@ export async function POST(request: Request) {
 
     const userEmail = user.emailAddresses[0]?.emailAddress
     const memberData = normalizeMemberPayload(await request.json())
-    const family = await resolveFamilyForUser(user.id, userEmail)
+    const family = await resolveFamilyForUser(userId, userEmail)
 
     if (!family) {
       return NextResponse.json({ error: "Family not found" }, { status: 404 })
@@ -78,6 +84,11 @@ export async function POST(request: Request) {
 // DELETE - Remove a family member (submitted for approval)
 export async function DELETE(request: Request) {
   try {
+    const userId = await authUserId()
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     const user = await currentUser()
     
     if (!user) {
@@ -86,7 +97,7 @@ export async function DELETE(request: Request) {
 
     const userEmail = user.emailAddresses[0]?.emailAddress
     const { memberId } = await request.json()
-    const family = await resolveFamilyForUser(user.id, userEmail)
+    const family = await resolveFamilyForUser(userId, userEmail)
 
     if (!family) {
       return NextResponse.json({ error: "Family not found" }, { status: 404 })

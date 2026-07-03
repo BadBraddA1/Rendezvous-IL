@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server"
-import { auth, currentUser } from "@clerk/nextjs/server"
+import { currentUser } from "@clerk/nextjs/server"
 import { createChatAblyTokenRequest } from "@/lib/ably"
 import { listMemberChatChannels } from "@/lib/chat/channels"
-import { getCurrentAdmin } from "@/lib/clerk-auth"
+import { authUserId, getCurrentAdmin } from "@/lib/clerk-auth"
 
 export async function POST() {
-  const { userId } = await auth()
+  const userId = await authUserId()
   if (!userId) {
     return NextResponse.json({ error: "Sign in required" }, { status: 401 })
   }

@@ -33,7 +33,7 @@ struct UpdatesView: View {
 
             RetreatNowNextSection(
                 result: repository.nowNext(),
-                emptyMessage: "Rendezvous \(AppConfig.eventYear) · \(AppConfig.eventDates). Live now/next during retreat week (Central Time)."
+                emptyMessage: "Rendezvous \(AppConfig.eventYearLabel) · \(AppConfig.eventDates). Live now/next during retreat week (Central Time)."
             )
         }
     }

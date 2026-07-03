@@ -36,8 +36,16 @@ enum AppConfig {
         return key.hasPrefix("pk_live_") || key.hasPrefix("pk_test_")
     }
 
+    /// Build an API URL. Paths may include a query string (`/api/directory?year=2027`).
+    /// Do not use `URL.appending(path:)` for query strings — it percent-encodes `?` and breaks routes.
     static func url(for path: String) -> URL {
         let normalized = path.hasPrefix("/") ? path : "/\(path)"
-        return baseURL.appending(path: normalized)
+        guard let url = URL(string: normalized, relativeTo: baseURL)?.absoluteURL else {
+            return baseURL.appendingPathComponent(normalized.trimmingCharacters(in: CharacterSet(charactersIn: "/")))
+        }
+        return url
     }
+
+    /// Year as plain digits (avoids SwiftUI `Text("\(2027)")` → "2,207").
+    static var eventYearLabel: String { String(eventYear) }
 }

@@ -15,7 +15,7 @@ struct BibleBowlView: View {
 
                 Group {
                     Text("Bible Bowl is open to anyone who wants to participate, from toddlers through adults.")
-                    Text("For \(AppConfig.eventYear), lessons and memory work will be from the book of ")
+                    Text("For \(AppConfig.eventYearLabel), lessons and memory work will be from the book of ")
                     + Text(AppConfig.theme).fontWeight(.semibold).foregroundStyle(BrandColors.coralInk)
                     + Text(".")
                     Text("Three levels of the test are available:")

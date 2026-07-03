@@ -195,6 +195,28 @@ enum ScheduleNowNext {
         components.second = 0
         return calendar.date(from: components)
     }
+
+    static func eventEndDate(for item: LUScheduleItem) -> Date? {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = chicago
+        let parts = item.date.split(separator: "-").compactMap { Int($0) }
+        guard parts.count == 3 else { return nil }
+        var components = DateComponents()
+        components.year = parts[0]
+        components.month = parts[1]
+        components.day = parts[2]
+        if let endHour = item.endHour, let endMinute = item.endMinute {
+            components.hour = endHour
+            components.minute = endMinute
+        } else {
+            components.hour = item.startHour
+            components.minute = item.startMinute
+            guard let start = calendar.date(from: components) else { return nil }
+            return start.addingTimeInterval(3600)
+        }
+        components.second = 0
+        return calendar.date(from: components)
+    }
 }
 
 enum MealMatcher {

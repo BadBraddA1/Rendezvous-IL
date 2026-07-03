@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { currentUser } from "@clerk/nextjs/server"
+import { authUserId } from "@/lib/clerk-auth"
 import { resolveFamilyForUser } from "@/lib/family-auth"
 import {
   getFamilyDirectorySettings,
@@ -9,20 +10,32 @@ import {
 } from "@/lib/family-directory"
 import { deleteFamilyPhotoIfStored, uploadFamilyPhoto } from "@/lib/family-photo-storage"
 
+async function requireFamily() {
+  const userId = await authUserId()
+  if (!userId) {
+    return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) }
+  }
+
+  const user = await currentUser()
+  if (!user) {
+    return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) }
+  }
+
+  const email = user.emailAddresses[0]?.emailAddress
+  const family = await resolveFamilyForUser(userId, email)
+  if (!family) {
+    return { error: NextResponse.json({ error: "Family not found" }, { status: 404 }) }
+  }
+
+  return { family }
+}
+
 export async function GET() {
   try {
-    const user = await currentUser()
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
+    const result = await requireFamily()
+    if ("error" in result && result.error) return result.error
 
-    const email = user.emailAddresses[0]?.emailAddress
-    const family = await resolveFamilyForUser(user.id, email)
-    if (!family) {
-      return NextResponse.json({ error: "Family not found" }, { status: 404 })
-    }
-
-    const settings = await getFamilyDirectorySettings(family.id)
+    const settings = await getFamilyDirectorySettings(result.family!.id)
     return NextResponse.json({ settings })
   } catch (error) {
     console.error("[family-directory] GET error:", error)
@@ -32,16 +45,9 @@ export async function GET() {
 
 export async function PATCH(request: Request) {
   try {
-    const user = await currentUser()
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    const email = user.emailAddresses[0]?.emailAddress
-    const family = await resolveFamilyForUser(user.id, email)
-    if (!family) {
-      return NextResponse.json({ error: "Family not found" }, { status: 404 })
-    }
+    const result = await requireFamily()
+    if ("error" in result && result.error) return result.error
+    const family = result.family!
 
     const body = await request.json()
     const directory_opt_in =
@@ -68,16 +74,9 @@ export async function PATCH(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const user = await currentUser()
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    const email = user.emailAddresses[0]?.emailAddress
-    const family = await resolveFamilyForUser(user.id, email)
-    if (!family) {
-      return NextResponse.json({ error: "Family not found" }, { status: 404 })
-    }
+    const result = await requireFamily()
+    if ("error" in result && result.error) return result.error
+    const family = result.family!
 
     const formData = await request.formData()
     const file = formData.get("photo")
@@ -107,16 +106,9 @@ export async function POST(request: Request) {
 
 export async function DELETE() {
   try {
-    const user = await currentUser()
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    const email = user.emailAddresses[0]?.emailAddress
-    const family = await resolveFamilyForUser(user.id, email)
-    if (!family) {
-      return NextResponse.json({ error: "Family not found" }, { status: 404 })
-    }
+    const result = await requireFamily()
+    if ("error" in result && result.error) return result.error
+    const family = result.family!
 
     const current = await getFamilyDirectorySettings(family.id)
     await setFamilyPhotoUrl(family.id, null)

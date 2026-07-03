@@ -95,7 +95,7 @@ struct NextEventWidgetView: View {
             }
         default:
             VStack(alignment: .leading, spacing: 6) {
-                Text("Rendezvous \(entry.snapshot?.eventYear ?? 2027)")
+                Text("Rendezvous \(String(entry.snapshot?.eventYear ?? 2027))")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(BrandWidgetColors.lake)
                 Text(primaryTitle)
@@ -201,14 +201,16 @@ struct RendezvousLiveActivityWidget: Widget {
                         .lineLimit(1)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    Text(context.state.nextTime ?? "")
+                    Text(context.state.countdownLabel ?? context.state.nextTime ?? "")
                         .font(.caption2)
+                        .lineLimit(1)
                 }
             } compactLeading: {
                 Image(systemName: "calendar")
             } compactTrailing: {
-                Text(context.state.nextTime ?? "•••")
+                Text(context.state.countdownLabel ?? context.state.nextTime ?? "•••")
                     .font(.caption2)
+                    .lineLimit(1)
             } minimal: {
                 Image(systemName: "calendar")
             }
@@ -222,9 +224,17 @@ struct LiveActivityLockView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Rendezvous \(context.attributes.eventYear)")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(BrandWidgetColors.lake)
+            HStack {
+                Text("Rendezvous \(context.attributes.eventYearLabel)")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(BrandWidgetColors.lake)
+                Spacer()
+                if let countdown = context.state.countdownLabel {
+                    Text(countdown)
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(BrandWidgetColors.coral)
+                }
+            }
             if let current = context.state.currentTitle {
                 Text("Now: \(current)")
                     .font(.headline)
@@ -233,13 +243,17 @@ struct LiveActivityLockView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-            }
-            if let next = context.state.nextTitle {
-                Text("Next: \(next)")
-                    .font(.subheadline.weight(.medium))
+            } else if let next = context.state.nextTitle {
+                Text("Up next: \(next)")
+                    .font(.headline)
                 if let time = context.state.nextTime {
                     Text(time)
                         .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                if let location = context.state.nextLocation, !location.isEmpty {
+                    Text(location)
+                        .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
             }

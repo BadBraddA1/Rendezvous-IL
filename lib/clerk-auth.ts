@@ -1,4 +1,13 @@
 import { auth, currentUser } from "@clerk/nextjs/server"
+
+/**
+ * Auth that accepts both browser cookies and native Bearer session tokens (iOS/Android).
+ * Use this in any API route the mobile apps call.
+ */
+export async function authUserId(): Promise<string | null> {
+  const { userId } = await auth({ acceptsToken: "session_token" })
+  return userId
+}
 import {
   type AdminRole,
   type AdminPermissions,

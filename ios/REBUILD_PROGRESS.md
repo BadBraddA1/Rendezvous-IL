@@ -23,3 +23,4 @@
 - 2026-07-03: Phase 7 — admin dashboard/users/check-in API timeouts, retry UX, native check-in from dashboard, clear-station flow.
 - 2026-07-03: Phase 8 — `rendezvousil://` + universal links, in-app notification routing, widget reload, Live Activity lifecycle, APNs bundle id fix.
 - 2026-07-03: Phase 9 — `bash ios/scripts/ship-testflight.sh` uploaded **v1.2.0 (13)** to App Store Connect. Smoke checklist: `ios/TESTFLIGHT_SMOKE.md`.
+- 2026-07-03: Bugfix — URL query encoding (directory 404), Clerk Bearer auth for chat/directory/family, year "2,207" formatting, Live Activity 12h window + countdown, APNs status.

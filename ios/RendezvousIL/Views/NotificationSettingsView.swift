@@ -16,7 +16,7 @@ struct NotificationSettingsView: View {
         Form {
             Section {
                 LabeledContent("Permission", value: statusLabel)
-                LabeledContent("APNs device", value: apnsRegistrationLabel)
+                LabeledContent("APNs device", value: pushService.statusSummary)
                 if notifications.authorizationStatus == .denied {
                     Button("Open Settings") {
                         if let url = URL(string: UIApplication.openSettingsURLString) {
@@ -29,7 +29,7 @@ struct NotificationSettingsView: View {
                     }
                 } else if notifications.broadcastAlertsEnabled {
                     Button("Re-register for alerts") {
-                        Task { await notifications.registerForRemoteIfAuthorized() }
+                        Task { await pushService.retryPendingRegistration() }
                     }
                 }
             } footer: {
@@ -138,13 +138,6 @@ struct NotificationSettingsView: View {
         case .notDetermined: return "Not asked"
         @unknown default: return "Unknown"
         }
-    }
-
-    private var apnsRegistrationLabel: String {
-        if pushService.lastRegisteredHex != nil { return "Registered" }
-        if let error = pushService.lastRegistrationError { return "Failed — \(error)" }
-        if notifications.broadcastAlertsEnabled { return "Pending" }
-        return "Off"
     }
 
     private var liveActivityAuthLabel: String {

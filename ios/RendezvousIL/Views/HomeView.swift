@@ -37,7 +37,7 @@ struct HomeView: View {
                     .font(.title2.weight(.semibold))
             }
 
-            Text("Rendezvous \(AppConfig.eventYear) · \(AppConfig.eventDates)")
+            Text("Rendezvous \(AppConfig.eventYearLabel) · \(AppConfig.eventDates)")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 

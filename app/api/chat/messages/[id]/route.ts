@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server"
-import { auth } from "@clerk/nextjs/server"
 import { deleteChannelMessage } from "@/lib/chat/messages"
-import { getCurrentAdmin } from "@/lib/clerk-auth"
+import { authUserId, getCurrentAdmin } from "@/lib/clerk-auth"
 
 type Params = { params: Promise<{ id: string }> }
 
 export async function DELETE(_request: Request, { params }: Params) {
   const { id: messageId } = await params
-  const { userId } = await auth()
+  const userId = await authUserId()
   if (!userId) {
     return NextResponse.json({ error: "Sign in required" }, { status: 401 })
   }

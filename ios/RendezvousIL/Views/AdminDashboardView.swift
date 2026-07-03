@@ -100,7 +100,7 @@ struct AdminDashboardView: View {
     private func hero(_ payload: AdminDashboardResponse) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("Rendezvous \(payload.summary.eventYear)")
+                Text("Rendezvous \(String(payload.summary.eventYear))")
                     .font(.system(.title, design: .serif))
                     .fontWeight(.semibold)
                     .foregroundStyle(BrandColors.lake)

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { currentUser } from "@clerk/nextjs/server"
 import { sql } from "@/lib/db"
+import { authUserId } from "@/lib/clerk-auth"
 import {
   getFamilyMembersV2,
   getRegistrationBirthdayHints,
@@ -51,6 +52,11 @@ function normalizeProfileUpdates(updates: Record<string, unknown>) {
 // GET - Fetch family profile for the current user
 export async function GET() {
   try {
+    const userId = await authUserId()
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     const user = await currentUser()
 
     if (!user) {
@@ -58,7 +64,7 @@ export async function GET() {
     }
 
     const userEmail = user.emailAddresses[0]?.emailAddress
-    const family = await resolveFamilyForUser(user.id, userEmail)
+    const family = await resolveFamilyForUser(userId, userEmail)
 
     if (!family) {
       return NextResponse.json({ family: null, pendingChanges: [] })
@@ -97,6 +103,11 @@ export async function GET() {
 // PUT - Submit profile changes for approval
 export async function PUT(request: Request) {
   try {
+    const userId = await authUserId()
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     const user = await currentUser()
 
     if (!user) {
@@ -105,7 +116,7 @@ export async function PUT(request: Request) {
 
     const userEmail = user.emailAddresses[0]?.emailAddress
     const updates = normalizeProfileUpdates(await request.json())
-    const family = await resolveFamilyForUser(user.id, userEmail)
+    const family = await resolveFamilyForUser(userId, userEmail)
 
     if (!family) {
       return NextResponse.json({ error: "Family not found" }, { status: 404 })

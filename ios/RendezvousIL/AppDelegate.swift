@@ -26,6 +26,9 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         didFailToRegisterForRemoteNotificationsWithError error: Error
     ) {
         print("[APNs] registration failed: \(error.localizedDescription)")
+        Task { @MainActor in
+            PushRegistrationService.shared.recordRegistrationFailure(error)
+        }
     }
 
     nonisolated func userNotificationCenter(

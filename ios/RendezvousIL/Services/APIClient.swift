@@ -4,6 +4,7 @@ enum APIError: LocalizedError {
     case invalidURL
     case unauthorized
     case badStatus(Int)
+    case serverMessage(String, Int)
     case decoding(Error)
 
     var errorDescription: String? {
@@ -14,6 +15,8 @@ enum APIError: LocalizedError {
             return "Sign in required"
         case .badStatus(let code):
             return "Server returned \(code)"
+        case .serverMessage(let message, _):
+            return message
         case .decoding(let error):
             return "Could not read response: \(error.localizedDescription)"
         }
@@ -242,13 +245,7 @@ actor APIClient {
         request.httpBody = body
 
         let (data, response) = try await session.data(for: request)
-        guard let http = response as? HTTPURLResponse else {
-            throw APIError.badStatus(-1)
-        }
-        if http.statusCode == 401 { throw APIError.unauthorized }
-        guard (200 ... 299).contains(http.statusCode) else {
-            throw APIError.badStatus(http.statusCode)
-        }
+        try Self.throwIfFailed(response: response, data: data)
         return try decoder.decode(T.self, from: data)
     }
 
@@ -272,6 +269,15 @@ actor APIClient {
         request.httpBody = body
 
         let (data, response) = try await session.data(for: request)
+        try Self.throwIfFailed(response: response, data: data)
+        do {
+            return try decoder.decode(T.self, from: data)
+        } catch {
+            throw APIError.decoding(error)
+        }
+    }
+
+    private static func throwIfFailed(response: URLResponse, data: Data) throws {
         guard let http = response as? HTTPURLResponse else {
             throw APIError.badStatus(-1)
         }
@@ -279,12 +285,12 @@ actor APIClient {
             throw APIError.unauthorized
         }
         guard (200 ... 299).contains(http.statusCode) else {
+            if let payload = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let message = payload["error"] as? String,
+               !message.isEmpty {
+                throw APIError.serverMessage(message, http.statusCode)
+            }
             throw APIError.badStatus(http.statusCode)
-        }
-        do {
-            return try decoder.decode(T.self, from: data)
-        } catch {
-            throw APIError.decoding(error)
         }
     }
 }
