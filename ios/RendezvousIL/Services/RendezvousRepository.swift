@@ -81,7 +81,10 @@ final class RendezvousRepository {
     func syncSharedSnapshot() async {
         let result = nowNext()
         SharedScheduleStore.publish(schedule: schedule, nowNext: result)
-        await LiveActivityManager.shared.refresh(schedule: schedule, nowNext: result)
+        guard NotificationService.shared.liveActivityEnabled else { return }
+        Task(priority: .utility) {
+            await LiveActivityManager.shared.refresh(schedule: schedule, nowNext: result)
+        }
     }
 
     private func fetchMeals() async {

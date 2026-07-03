@@ -15,8 +15,9 @@ final class AppSession {
     var authError: String?
     var clerkSetupError: String?
 
-    /// Display name from Clerk (family account holder).
+    /// Display name from Clerk (family account holder). Nil until Clerk has finished loading.
     var userDisplayName: String? {
+        guard Clerk.shared.isLoaded else { return nil }
         guard let user = Clerk.shared.user else { return nil }
         let name = [user.firstName, user.lastName]
             .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
@@ -45,7 +46,10 @@ final class AppSession {
         defer { isLoading = false }
 
         do {
-            try await Clerk.shared.load()
+            try await loadClerkIfNeeded()
+        } catch is ClerkLoadTimeout {
+            clerkSetupError = "Sign-in timed out. Check your connection and try again."
+            return
         } catch {
             clerkSetupError = error.localizedDescription
             return
@@ -53,6 +57,21 @@ final class AppSession {
 
         await refreshAuth(suppressLoadingUI: true)
     }
+
+    /// `Clerk.shared.load()` can hang without Associated Domains / network — cap wait time.
+    private func loadClerkIfNeeded() async throws {
+        try await withThrowingTaskGroup(of: Void.self) { group in
+            group.addTask { try await Clerk.shared.load() }
+            group.addTask {
+                try await Task.sleep(for: .seconds(20))
+                throw ClerkLoadTimeout()
+            }
+            _ = try await group.next()
+            group.cancelAll()
+        }
+    }
+
+    private struct ClerkLoadTimeout: Error {}
 
     func refreshAuth(suppressLoadingUI: Bool = false) async {
         if !suppressLoadingUI { isLoading = true }

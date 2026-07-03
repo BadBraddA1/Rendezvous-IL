@@ -37,8 +37,6 @@ struct MainTabView: View {
             }
         }
         .task {
-            await repository.loadScheduleBundle()
-            await repository.loadScheduleExtras()
             await repository.loadUpdates()
         }
     }
