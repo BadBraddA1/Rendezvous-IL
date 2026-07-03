@@ -5,8 +5,12 @@ import SwiftUI
 struct RootView: View {
     @Environment(AppSession.self) private var session
     @Environment(RendezvousRepository.self) private var repository
+    @Environment(\.scenePhase) private var scenePhase
     @State private var splashFinished = false
-    @State private var bootstrapFailed = false
+
+    private var bootstrapState: AppBootstrapState {
+        AppBootstrapState.resolve(session: session, splashFinished: splashFinished)
+    }
 
     var body: some View {
         ZStack {
@@ -28,34 +32,40 @@ struct RootView: View {
                 Task { await session.refreshAuth() }
             }
         }
+        .onChange(of: scenePhase) { _, phase in
+            guard phase == .active else { return }
+            Task { await session.recordActivityIfSignedIn() }
+        }
     }
 
     @ViewBuilder
     private var mainContent: some View {
-        if bootstrapFailed {
-            bootstrapErrorView
-        } else if session.isSignedIn {
-            MainTabView()
-        } else if session.isLoading {
+        switch bootstrapState {
+        case .splash:
+            launchSplash
+        case .connecting:
             connectingView
-        } else {
+        case .signedIn:
+            MainTabView()
+        case .welcome:
             WelcomeHubView()
+        case .misconfigured(let message):
+            bootstrapErrorView(message: message)
         }
     }
 
-    private var bootstrapErrorView: some View {
+    private func bootstrapErrorView(message: String) -> some View {
         VStack(spacing: 16) {
             Image(systemName: "exclamationmark.triangle")
                 .font(.largeTitle)
                 .foregroundStyle(.orange)
             Text("Could not start the app")
                 .font(.headline)
-            Text(session.clerkSetupError ?? "Something went wrong during startup.")
+            Text(message)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
             Button("Try again") {
-                bootstrapFailed = false
                 Task { await runBootstrap() }
             }
             .buttonStyle(.borderedProminent)
@@ -67,17 +77,14 @@ struct RootView: View {
     }
 
     private func runBootstrap() async {
+        AppLog.bootstrap("start")
         async let bootstrap: Void = session.bootstrapAuthIfNeeded()
         async let minimumSplash: Void = {
             try? await Task.sleep(for: .milliseconds(900))
         }()
         _ = await (bootstrap, minimumSplash)
-
-        if session.clerkSetupError != nil, !AppConfig.hasValidClerkKey {
-            bootstrapFailed = true
-        }
-
         splashFinished = true
+        AppLog.bootstrap("splash done signedIn=\(session.isSignedIn)")
 
         Task(priority: .utility) {
             await repository.loadScheduleBundle()

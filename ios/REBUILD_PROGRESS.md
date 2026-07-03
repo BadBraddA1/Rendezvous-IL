@@ -1,12 +1,12 @@
 # Rebuild progress
 
-**Current phase:** 0 — Stop the bleeding  
-**Loop:** active (dynamic wake)
+**Current phase:** 1 — Foundation shell  
+**Loop:** active — **30s** ticks (PID in `ios/.rebuild-loop.pid`)
 
 ## Phase status
 
 - [x] **0** Launch crash fix (Clerk timeout, deferred Live Activity, safe bootstrap)
-- [ ] **1** Foundation shell
+- [x] **1** Foundation shell (`AppShell`, `AppBootstrapState`, debug logging)
 - [ ] **2** Auth gate
 - [ ] **3** Data layer
 - [ ] **4** Schedule + Updates
