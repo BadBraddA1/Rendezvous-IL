@@ -9,6 +9,7 @@ export function buildAppleAppSiteAssociation() {
     "/account*",
     "/check-in*",
     "/live-updates*",
+    "/chat*",
     "/registration*",
     "/open/*",
   ];

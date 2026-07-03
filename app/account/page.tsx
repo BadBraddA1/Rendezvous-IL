@@ -27,6 +27,7 @@ import {
   History,
   Map,
   Camera,
+  MessageSquare,
 } from "lucide-react"
 
 export default async function AccountPage() {
@@ -148,6 +149,28 @@ export default async function AccountPage() {
                 <Button variant="outline" asChild className="w-full bg-transparent">
                   <Link href="/directory">
                     Browse directory
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {family && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-widget-heading">
+                  <MessageSquare className="h-5 w-5" />
+                  Rendezvous Chat
+                </CardTitle>
+                <CardDescription>
+                  Message families from each year you&apos;ve registered for
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button asChild className="w-full">
+                  <Link href="/chat">
+                    Open chat
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>

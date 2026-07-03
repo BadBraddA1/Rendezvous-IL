@@ -187,6 +187,25 @@ actor APIClient {
         try await delete("/api/family/directory")
     }
 
+    func getChatChannels() async throws -> ChatChannelsResponse {
+        try await get("/api/chat/channels")
+    }
+
+    func getChatMessages(channelId: String, limit: Int = 80) async throws -> ChatMessagesResponse {
+        try await get("/api/chat/channels/\(channelId)/messages?limit=\(limit)")
+    }
+
+    func sendChatMessage(channelId: String, body: String, isAnnouncement: Bool = false) async throws -> ChatMessageResponse {
+        try await post(
+            "/api/chat/channels/\(channelId)/messages",
+            body: ChatSendMessageBody(body: body, is_announcement: isAnnouncement)
+        )
+    }
+
+    func getAblyToken() async throws -> AblyTokenResponse {
+        try await post("/api/ably/token", body: EmptyBody())
+    }
+
     func patch<T: Decodable, Body: Encodable>(
         _ path: String,
         body: Body,
@@ -475,3 +494,5 @@ struct FamilyDirectorySettingsBody: Encodable {
     let directory_opt_in: Bool
     let directory_blurb: String?
 }
+
+private struct EmptyBody: Encodable {}

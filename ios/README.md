@@ -12,6 +12,7 @@ Native SwiftUI companion for [rendezvousil.com](https://rendezvousil.com).
 | **Live Activity** | Lock Screen / Dynamic Island now & next during retreat week |
 | **Staff check-in** | Check-In role on web (`/admin/checkin`) and in-app (More → Staff check-in) with Clerk sign-in |
 | **Admin dashboard** | Clerk admin roles see More → **Admin dashboard** — native stats hub backed by `GET /api/admin/mobile/dashboard` |
+| **Year chat** | **Chat** tab — year cohort channels (Ably realtime), same access rules as web `/chat` |
 
 ## Requirements
 

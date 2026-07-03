@@ -3,7 +3,7 @@
 import Link from "next/link"
 import Image from "next/image"
 import { useState, useEffect } from "react"
-import { Menu, User, LogOut } from "lucide-react"
+import { Menu, User, LogOut, MessageSquare } from "lucide-react"
 import { Show, SignOutButton } from "@clerk/nextjs"
 import { Button } from "@/components/ui/button"
 import { UserMenuButton } from "@/components/user-menu-button"
@@ -62,6 +62,17 @@ function MobileNav({
         <div className="mt-6 border-t border-border pt-6">
           <Show when="signed-in">
             <div className="space-y-2 px-4 py-3">
+              <Link
+                href="/chat"
+                className="focus-ring flex min-h-11 items-center gap-3 rounded-lg p-3 transition-colors hover:bg-secondary/50 active:bg-secondary/50"
+                onClick={() => onOpenChange(false)}
+              >
+                <MessageSquare className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="text-sm font-medium">Chat</p>
+                  <p className="text-xs text-muted-foreground">Message your event years</p>
+                </div>
+              </Link>
               <Link
                 href="/account"
                 className="focus-ring flex min-h-11 items-center gap-3 rounded-lg p-3 transition-colors hover:bg-secondary/50 active:bg-secondary/50"

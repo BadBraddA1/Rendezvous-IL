@@ -11,6 +11,7 @@ enum DeepLinkRouter {
         if path.hasPrefix("/directory") { return .more }
         if path.hasPrefix("/account") { return .more }
         if path.hasPrefix("/live-updates") || path.hasPrefix("/updates") { return .updates }
+        if path.hasPrefix("/chat") { return .chat }
         if path.hasPrefix("/registration") || path.hasPrefix("/check-in") { return .home }
         return nil
     }

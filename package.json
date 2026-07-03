@@ -37,6 +37,7 @@
     "@types/bcryptjs": "^2.4.6",
     "@vercel/analytics": "^1.5.0",
     "@vercel/blob": "^2.5.0",
+    "ably": "^2.23.0",
     "bcryptjs": "^2.4.3",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",

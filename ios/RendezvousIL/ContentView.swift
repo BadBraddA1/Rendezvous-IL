@@ -22,6 +22,10 @@ struct ContentView: View {
                 .tabItem { Label("Updates", systemImage: "bell.badge") }
                 .tag(AppTab.updates)
 
+            ChatListView()
+                .tabItem { Label("Chat", systemImage: "bubble.left.and.bubble.right.fill") }
+                .tag(AppTab.chat)
+
             MoreView()
                 .tabItem { Label("More", systemImage: "ellipsis.circle.fill") }
                 .tag(AppTab.more)
@@ -40,7 +44,7 @@ struct ContentView: View {
 }
 
 enum AppTab: Hashable {
-    case home, schedule, updates, more
+    case home, schedule, updates, chat, more
 }
 
 #Preview {

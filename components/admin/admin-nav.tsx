@@ -114,6 +114,13 @@ export function AdminNav({ currentPage, admin }: AdminNavProps) {
           show: (role) => getAdminPermissions(role).canViewRegistrations,
         },
         {
+          href: "/admin/chat",
+          label: "Year Chat",
+          icon: MessageSquare,
+          page: "chat",
+          show: (role) => getAdminPermissions(role).canViewRegistrations,
+        },
+        {
           href: "/admin/feedback",
           label: "Feedback",
           icon: Star,

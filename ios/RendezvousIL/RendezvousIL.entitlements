@@ -11,9 +11,5 @@
 		<string>webcredentials:rendezvousil.com</string>
 		<string>applinks:rendezvousil.com</string>
 	</array>
-	<key>com.apple.security.application-groups</key>
-	<array>
-		<string>group.com.rendezvousil.app</string>
-	</array>
 </dict>
 </plist>
