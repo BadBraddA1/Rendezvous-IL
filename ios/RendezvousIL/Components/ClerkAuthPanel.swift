@@ -26,7 +26,7 @@ struct ClerkAuthPanel: View {
         VStack(alignment: .leading, spacing: 8) {
           Text("Sign-in unavailable")
             .font(.headline)
-          Text("Add CLERK_PUBLISHABLE_KEY to ios/Config.local.xcconfig, then rebuild.")
+          Text("Sign-in is not configured in this build. Update the app from TestFlight when a new build is available.")
             .font(.subheadline)
             .foregroundStyle(.secondary)
         }
