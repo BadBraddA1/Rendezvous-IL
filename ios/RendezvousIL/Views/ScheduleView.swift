@@ -20,61 +20,38 @@ struct ScheduleView: View {
                 }
             }
             .navigationTitle("Schedule")
+            .toolbar {
+                if repository.isRefreshingSchedule {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        ProgressView()
+                    }
+                }
+            }
             .refreshable {
                 await repository.loadScheduleBundle()
                 await repository.loadScheduleExtras()
             }
-            .overlay(alignment: .top) {
-                if repository.isUsingOfflineSchedule {
-                    offlineScheduleBanner
-                }
+            .onChange(of: repository.schedule?.year) { _, _ in
+                syncSelectedDay()
+            }
+            .onAppear {
+                syncSelectedDay()
             }
         }
-    }
-
-    private var offlineScheduleBanner: some View {
-        Text(repository.scheduleSource == .bundled ? "Offline draft schedule" : "Cached schedule — pull to refresh")
-            .font(.caption.weight(.medium))
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .background(.ultraThinMaterial, in: Capsule())
-            .padding(.top, 4)
     }
 
     @ViewBuilder
     private func scheduleContent(_ schedule: SchedulePayload) -> some View {
         VStack(spacing: 0) {
+            if repository.isUsingOfflineSchedule {
+                offlineScheduleBanner
+            }
+
             if !repository.scheduleAnnouncements.isEmpty {
                 announcementsBanner
             }
 
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(Array(schedule.days.enumerated()), id: \.offset) { index, day in
-                        Button {
-                            selectedDayIndex = index
-                        } label: {
-                            VStack(spacing: 4) {
-                                Text(String(day.day.prefix(1)))
-                                    .font(.headline.weight(.bold))
-                                Text(day.day)
-                                    .font(.caption2)
-                            }
-                            .frame(minWidth: 56, minHeight: 56)
-                            .padding(.horizontal, 4)
-                            .background(
-                                selectedDayIndex == index ? BrandColors.lake : Color(.secondarySystemGroupedBackground),
-                                in: RoundedRectangle(cornerRadius: 12)
-                            )
-                            .foregroundStyle(selectedDayIndex == index ? .white : .primary)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                .padding(.horizontal)
-            }
-            .padding(.vertical, 8)
+            dayPicker(schedule)
 
             if selectedDayIndex < schedule.days.count {
                 let day = schedule.days[selectedDayIndex]
@@ -84,19 +61,96 @@ struct ScheduleView: View {
                     VStack(alignment: .leading, spacing: 16) {
                         header(for: day, schedule: schedule)
 
-                        ForEach(day.events) { event in
-                            EventCard(
-                                event: event,
-                                isoDate: isoDate,
-                                luItem: matchingLUItem(event: event, isoDate: isoDate, items: schedule.luItems),
-                                meal: mealFor(event: event, isoDate: isoDate),
-                                volunteers: volunteersFor(event: event, isoDate: isoDate)
-                            )
+                        if day.events.isEmpty {
+                            Text("No events listed for this day.")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 24)
+                        } else {
+                            ForEach(day.events) { event in
+                                EventCard(
+                                    event: event,
+                                    isoDate: isoDate,
+                                    luItem: matchingLUItem(event: event, isoDate: isoDate, items: schedule.luItems),
+                                    meal: mealFor(event: event, isoDate: isoDate),
+                                    volunteers: volunteersFor(event: event, isoDate: isoDate)
+                                )
+                            }
                         }
                     }
                     .padding()
                 }
             }
+        }
+    }
+
+    private var offlineScheduleBanner: some View {
+        HStack {
+            Image(systemName: "wifi.slash")
+            Text(repository.scheduleSource == .bundled ? "Offline draft schedule" : "Cached schedule — pull to refresh")
+        }
+        .font(.caption.weight(.medium))
+        .foregroundStyle(.secondary)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
+        .background(BrandColors.warmSurface)
+    }
+
+    private func dayPicker(_ schedule: SchedulePayload) -> some View {
+        VStack(spacing: 8) {
+            if ScheduleNowNext.todayDayIndex(in: schedule) != nil {
+                HStack {
+                    Spacer()
+                    Button("Today") {
+                        if let index = ScheduleNowNext.todayDayIndex(in: schedule) {
+                            selectedDayIndex = index
+                        }
+                    }
+                    .font(.caption.weight(.semibold))
+                    .buttonStyle(.bordered)
+                    .tint(BrandColors.lake)
+                }
+                .padding(.horizontal)
+            }
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(Array(schedule.days.enumerated()), id: \.offset) { index, day in
+                        Button {
+                            selectedDayIndex = index
+                        } label: {
+                            VStack(spacing: 4) {
+                                Text(String(day.day.prefix(3)))
+                                    .font(.caption.weight(.bold))
+                                Text(day.date)
+                                    .font(.caption2)
+                                    .lineLimit(1)
+                            }
+                            .frame(minWidth: 64, minHeight: 56)
+                            .padding(.horizontal, 6)
+                            .background(
+                                selectedDayIndex == index ? BrandColors.lake : Color(.secondarySystemGroupedBackground),
+                                in: RoundedRectangle(cornerRadius: 12)
+                            )
+                            .foregroundStyle(selectedDayIndex == index ? .white : .primary)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("\(day.day), \(day.date)")
+                    }
+                }
+                .padding(.horizontal)
+            }
+        }
+        .padding(.vertical, 8)
+    }
+
+    private func syncSelectedDay() {
+        guard let schedule = repository.schedule else { return }
+        if let today = ScheduleNowNext.todayDayIndex(in: schedule) {
+            selectedDayIndex = today
+        } else {
+            selectedDayIndex = min(selectedDayIndex, max(0, schedule.days.count - 1))
         }
     }
 
@@ -119,12 +173,17 @@ struct ScheduleView: View {
 
     private func header(for day: ScheduleDay, schedule: SchedulePayload) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("\(day.date) (\(day.day))")
+            Text("\(day.date) · \(day.day)")
                 .font(.title2.weight(.semibold))
                 .foregroundStyle(BrandColors.lake)
-            Text(schedule.draftNotice)
-                .font(.caption)
+            Text(schedule.dateRange)
+                .font(.subheadline)
                 .foregroundStyle(.secondary)
+            if !schedule.draftNotice.isEmpty {
+                Text(schedule.draftNotice)
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

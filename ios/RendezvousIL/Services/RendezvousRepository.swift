@@ -13,6 +13,7 @@ final class RendezvousRepository {
 
     var isLoadingSchedule = false
     var isRefreshingSchedule = false
+    var isLoadingUpdates = false
     var scheduleError: String?
     var scheduleSource: ScheduleDataSource?
     var lastScheduleRefresh: Date?
@@ -85,6 +86,10 @@ final class RendezvousRepository {
     }
 
     func loadUpdates() async {
+        let showLoading = liveAnnouncements.isEmpty && weather == nil
+        if showLoading { isLoadingUpdates = true }
+        defer { isLoadingUpdates = false }
+
         async let announcementsTask: Void = fetchLiveAnnouncements()
         async let weatherTask: Void = fetchWeather()
         _ = await (announcementsTask, weatherTask)

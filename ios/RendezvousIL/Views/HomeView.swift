@@ -63,29 +63,9 @@ struct HomeView: View {
                 Text("During retreat")
                     .font(.headline)
 
-                if let current = result.current {
-                    hubStatusRow(
-                        label: "Now",
-                        title: current.title,
-                        detail: [current.time, current.location].compactMap { $0 }.joined(separator: " · "),
-                        tint: BrandColors.lake
-                    )
-                }
-
-                if let next = result.next {
-                    hubStatusRow(
-                        label: result.current == nil ? "Up next" : "Then",
-                        title: next.title,
-                        detail: [next.day, next.time, next.location].compactMap { $0 }.joined(separator: " · "),
-                        tint: BrandColors.coral
-                    )
-                }
-
-                Button("Open full schedule") {
+                RetreatNowNextSection(result: result) {
                     selectedTab = .schedule
                 }
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(BrandColors.lake)
             }
             .padding(16)
             .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14))
@@ -143,20 +123,6 @@ struct HomeView: View {
                     .font(.subheadline)
             }
         }
-    }
-
-    private func hubStatusRow(label: String, title: String, detail: String, tint: Color) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(label.uppercased())
-                .font(.caption2.weight(.bold))
-                .foregroundStyle(tint)
-            Text(title)
-                .font(.headline)
-            Text(detail)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 

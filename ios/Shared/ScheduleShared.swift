@@ -158,6 +158,23 @@ enum ScheduleNowNext {
         return NowNextResult(current: current, next: next)
     }
 
+    /// Index into `schedule.days` for today during event week (Chicago), if any.
+    static func todayDayIndex(in schedule: SchedulePayload, now: Date = Date()) -> Int? {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = chicago
+        let components = calendar.dateComponents([.year, .month, .day], from: now)
+        guard let year = components.year, let month = components.month, let day = components.day else {
+            return nil
+        }
+        let todayISO = String(format: "%04d-%02d-%02d", year, month, day)
+        for (index, scheduleDay) in schedule.days.enumerated() {
+            if schedule.dayDates[scheduleDay.day] == todayISO {
+                return index
+            }
+        }
+        return nil
+    }
+
     static func eventStartDate(for item: LUScheduleItem) -> Date? {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = chicago

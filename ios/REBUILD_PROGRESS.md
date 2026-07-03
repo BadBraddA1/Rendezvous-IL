@@ -1,6 +1,6 @@
 # Rebuild progress
 
-**Current phase:** 4 — Schedule + Updates  
+**Current phase:** 5 — Chat + Directory  
 
 ## Phase status
 
@@ -8,7 +8,7 @@
 - [x] **1** Foundation shell (`AppShell`, `AppBootstrapState`, debug logging)
 - [x] **2** Auth gate (`ClerkAuthSheet` at root only, `SignInPromptCard`, sign-out handling)
 - [x] **3** Data layer (offline-first schedule, disk cache, fetch timeouts, `bootstrap()`)
-- [ ] **4** Schedule + Updates
+- [x] **4** Schedule + Updates (today picker, shared now/next, reminders, loading states)
 - [ ] **5** Chat + Directory
 - [ ] **6** Account + More
 - [ ] **7** Staff admin
