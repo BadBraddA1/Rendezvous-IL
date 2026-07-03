@@ -16,7 +16,9 @@ struct AppShell<Content: View>: View {
         content()
             .environment(session)
             .environment(repository)
+            // Both forms are required: `\.clerk` for AuthView, `Clerk.self` for @Environment(Clerk.self).
             .environment(\.clerk, Clerk.shared)
+            .environment(Clerk.shared)
             .tint(BrandColors.lake)
     }
 }
@@ -26,6 +28,7 @@ extension View {
     func withAppEnvironments(session: AppSession) -> some View {
         environment(session)
             .environment(\.clerk, Clerk.shared)
+            .environment(Clerk.shared)
     }
 }
 
@@ -39,6 +42,7 @@ enum AppBootstrapState: Equatable {
     @MainActor
     static func resolve(session: AppSession, splashFinished: Bool) -> AppBootstrapState {
         guard splashFinished else { return .splash }
+        // Prefer a usable welcome screen over a hard failure when Clerk is misconfigured.
         if let error = session.clerkSetupError, !AppConfig.hasValidClerkKey {
             return .misconfigured(error)
         }

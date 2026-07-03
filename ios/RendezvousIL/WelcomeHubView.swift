@@ -1,4 +1,3 @@
-import Clerk
 import SwiftUI
 
 /// Public welcome — sign-in only. Clerk sheet is presented by `RootView`.

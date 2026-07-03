@@ -13,9 +13,9 @@ extension ClerkTheme {
 }
 
 /// Pew Packers–style copy + button. **No sheet** — parent presents `ClerkAuthSheet` at root only.
+/// Does not read `@Environment(Clerk.self)` so the welcome screen cannot crash if Clerk env is missing.
 struct SignInPromptCard: View {
     @Environment(AppSession.self) private var session
-    @Environment(Clerk.self) private var clerk
 
     var sectionTitle: String = "Sign in"
     var helperText: String = "Use the same email as rendezvousil.com."
@@ -96,28 +96,45 @@ struct SignInPromptCard: View {
 /// Clerk `AuthView` sheet — attach **only** from `RootView`.
 struct ClerkAuthSheet: View {
     @Environment(AppSession.self) private var session
-    @Environment(Clerk.self) private var clerk
     @Environment(\.dismiss) private var dismiss
 
     var mode: AuthView.Mode = .signInOrUp
 
     var body: some View {
         NavigationStack {
-            AuthView(mode: mode, isDismissable: true)
-                .environment(\.clerkTheme, .rendezvous)
-                .navigationTitle(mode == .signIn ? "Sign in" : "Account")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Close") { dismiss() }
-                    }
+            Group {
+                if session.isClerkReady {
+                    AuthView(mode: mode, isDismissable: true)
+                        .environment(\.clerkTheme, .rendezvous)
+                } else {
+                    ProgressView("Loading sign-in…")
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
+            }
+            .navigationTitle(mode == .signIn ? "Sign in" : "Account")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") { dismiss() }
+                }
+            }
         }
-        .onChange(of: clerk.session?.id) { _, sessionId in
-            guard session.isClerkReady, sessionId != nil else { return }
-            session.clerkSessionId = sessionId
+        .onChange(of: session.clerkSessionId) { _, sessionId in
+            guard sessionId != nil else { return }
             dismiss()
             Task { await session.refreshAuth() }
+        }
+        .task {
+            // Poll Clerk session into our mirror while the sheet is open.
+            while !Task.isCancelled {
+                if session.isClerkReady {
+                    let id = Clerk.shared.session?.id
+                    if id != session.clerkSessionId {
+                        session.clerkSessionId = id
+                    }
+                }
+                try? await Task.sleep(for: .milliseconds(400))
+            }
         }
     }
 }
