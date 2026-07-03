@@ -71,7 +71,7 @@ From `ios/`:
 bash scripts/ship-testflight.sh
 ```
 
-Archives Release, verifies Clerk key in the IPA, and uploads to App Store Connect. Current ship: **v1.2.0 (build 14)**. After processing, run the checklist in [TESTFLIGHT_SMOKE.md](TESTFLIGHT_SMOKE.md) on a physical device.
+Archives Release, verifies Clerk key in the IPA, and uploads to App Store Connect. Current ship: **v1.2.0 (build 15)**. After processing, run the checklist in [TESTFLIGHT_SMOKE.md](TESTFLIGHT_SMOKE.md) on a physical device.
 
 ## Admin access (Clerk)
 

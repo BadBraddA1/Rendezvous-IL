@@ -75,7 +75,8 @@ export function isApnsConfigured(): boolean {
 }
 
 export function defaultApnsTopic(): string {
-  return process.env.APNS_BUNDLE_ID || "com.rendezvousil.app"
+  // Must match the iOS app PRODUCT_BUNDLE_IDENTIFIER (TestFlight / App Store).
+  return process.env.APNS_BUNDLE_ID || "com.rendezvousil.braddcorp.app"
 }
 
 export function defaultApnsEnvironment(): ApnsEnvironment {

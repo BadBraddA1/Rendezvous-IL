@@ -5,7 +5,7 @@ The native iOS app registers device tokens at `POST /api/push/register`. Admin *
 ## 1. Apple Developer setup
 
 1. [Apple Developer](https://developer.apple.com) → **Certificates, Identifiers & Profiles**
-2. **Identifiers** → App ID `com.rendezvousil.app`
+2. **Identifiers** → App ID `com.rendezvousil.braddcorp.app`
    - Enable **Push Notifications**
    - Enable **App Groups** → `group.com.rendezvousil.app`
 3. Create an **APNs Auth Key** (.p8) — note **Key ID** and **Team ID**
@@ -29,7 +29,7 @@ Add to project `v0-ren`:
 | `APNS_KEY_ID` | `AB12CD34EF` | Auth Key ID |
 | `APNS_TEAM_ID` | `XXXXXXXXXX` | Apple Team ID |
 | `APNS_AUTH_KEY` | `-----BEGIN PRIVATE KEY-----\n...` | Full .p8 contents (use `\n` for newlines in Vercel) |
-| `APNS_BUNDLE_ID` | `com.rendezvousil.app` | Optional, default shown |
+| `APNS_BUNDLE_ID` | `com.rendezvousil.braddcorp.app` | Must match the iOS app bundle id |
 | `APNS_ENVIRONMENT` | `production` or `sandbox` | Must match build (TestFlight/App Store = `production`) |
 
 Alternative: `APNS_KEY_PATH` for local dev only (path to .p8 file).

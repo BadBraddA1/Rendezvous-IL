@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { sql } from "@/lib/db"
+import { ensurePushSchema } from "@/lib/push-schema"
 
 export const dynamic = "force-dynamic"
 
@@ -12,10 +13,12 @@ function parsePlatform(value: unknown): PushPlatform {
 /** Register a device token for push broadcast alerts (iOS APNs or Android FCM). */
 export async function POST(request: Request) {
   try {
+    await ensurePushSchema()
     const body = await request.json()
     const platform = parsePlatform(body.platform)
     const token = typeof body.token === "string" ? body.token.trim() : ""
-    const bundleId = typeof body.bundleId === "string" ? body.bundleId.trim() : "com.rendezvousil.app"
+    const bundleId =
+      typeof body.bundleId === "string" ? body.bundleId.trim() : "com.rendezvousil.braddcorp.app"
 
     if (platform === "android") {
       if (!token || token.length < 20) {
@@ -60,6 +63,7 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
+    await ensurePushSchema()
     const body = await request.json()
     const platform = parsePlatform(body.platform)
     const token = typeof body.token === "string" ? body.token.trim() : ""

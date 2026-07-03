@@ -312,6 +312,57 @@ export async function setChatChannelMembers(
   }
 }
 
+export async function listChatChannelMemberIds(channelId: string): Promise<string[]> {
+  await ensureChatSchema()
+  const rows = await sql`
+    SELECT clerk_user_id
+    FROM chat_channel_members
+    WHERE channel_id = ${channelId}
+    ORDER BY joined_at ASC
+  `
+  return rows.map((row) => String(row.clerk_user_id))
+}
+
+export async function addChatChannelMember(channelId: string, clerkUserId: string): Promise<void> {
+  await ensureChatSchema()
+  const id = clerkUserId.trim()
+  if (!id) throw new Error("Member id is required")
+
+  const [existing] = await sql`
+    SELECT channel_type FROM chat_channels WHERE id = ${channelId} LIMIT 1
+  `
+  if (!existing) throw new Error("Channel not found")
+  if (String(existing.channel_type) === "year") {
+    throw new Error("Year channel membership is managed automatically from registrations")
+  }
+
+  await sql`
+    INSERT INTO chat_channel_members (channel_id, clerk_user_id)
+    VALUES (${channelId}, ${id})
+    ON CONFLICT (channel_id, clerk_user_id) DO NOTHING
+  `
+}
+
+export async function removeChatChannelMember(channelId: string, clerkUserId: string): Promise<void> {
+  await ensureChatSchema()
+  const id = clerkUserId.trim()
+  if (!id) throw new Error("Member id is required")
+
+  const [existing] = await sql`
+    SELECT channel_type FROM chat_channels WHERE id = ${channelId} LIMIT 1
+  `
+  if (!existing) throw new Error("Channel not found")
+  if (String(existing.channel_type) === "year") {
+    throw new Error("Year channel membership is managed automatically from registrations")
+  }
+
+  await sql`
+    DELETE FROM chat_channel_members
+    WHERE channel_id = ${channelId}
+      AND clerk_user_id = ${id}
+  `
+}
+
 export function defaultYearChannelName(year: RegistrationEventYear): string {
   return `${registrationYearLabel(year)} Chat`
 }

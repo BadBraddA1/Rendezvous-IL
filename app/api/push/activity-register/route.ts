@@ -1,14 +1,17 @@
 import { NextResponse } from "next/server"
 import { sql } from "@/lib/db"
+import { ensurePushSchema } from "@/lib/push-schema"
 
 export const dynamic = "force-dynamic"
 
 /** Register a Live Activity push token for server-driven lock screen updates. */
 export async function POST(request: Request) {
   try {
+    await ensurePushSchema()
     const body = await request.json()
     const activityToken = typeof body.activityToken === "string" ? body.activityToken.trim() : ""
-    const bundleId = typeof body.bundleId === "string" ? body.bundleId.trim() : "com.rendezvousil.app"
+    const bundleId =
+      typeof body.bundleId === "string" ? body.bundleId.trim() : "com.rendezvousil.braddcorp.app"
     const environment =
       body.environment === "sandbox" || body.environment === "production"
         ? body.environment

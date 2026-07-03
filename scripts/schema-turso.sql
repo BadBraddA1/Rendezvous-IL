@@ -531,7 +531,7 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 CREATE TABLE IF NOT EXISTS ios_device_tokens (
   id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
   token TEXT NOT NULL UNIQUE,
-  bundle_id TEXT NOT NULL DEFAULT 'com.rendezvousil.app',
+  bundle_id TEXT NOT NULL DEFAULT 'com.rendezvousil.braddcorp.app',
   environment TEXT NOT NULL DEFAULT 'production',
   is_active INTEGER DEFAULT 1,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP,
@@ -541,7 +541,7 @@ CREATE TABLE IF NOT EXISTS ios_device_tokens (
 CREATE TABLE IF NOT EXISTS ios_activity_push_tokens (
   id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
   activity_token TEXT NOT NULL UNIQUE,
-  bundle_id TEXT NOT NULL DEFAULT 'com.rendezvousil.app',
+  bundle_id TEXT NOT NULL DEFAULT 'com.rendezvousil.braddcorp.app',
   environment TEXT NOT NULL DEFAULT 'production',
   is_active INTEGER DEFAULT 1,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP,
