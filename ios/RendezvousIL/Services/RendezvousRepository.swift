@@ -12,28 +12,68 @@ final class RendezvousRepository {
     var rates: RatesPayload?
 
     var isLoadingSchedule = false
+    var isRefreshingSchedule = false
     var scheduleError: String?
+    var scheduleSource: ScheduleDataSource?
+    var lastScheduleRefresh: Date?
+
+    /// True when showing bundled or cached schedule instead of a fresh network copy.
+    var isUsingOfflineSchedule: Bool {
+        guard schedule != nil else { return false }
+        return scheduleSource != .network
+    }
 
     private let weekFrom = "2027-05-03"
     private let weekTo = "2027-05-07"
 
+    init() {
+        applyOfflineScheduleIfNeeded()
+    }
+
+    /// Offline-first bootstrap — call once after sign-in.
+    func bootstrap() async {
+        applyOfflineScheduleIfNeeded()
+        async let scheduleTask: Void = loadScheduleBundle()
+        async let extrasTask: Void = loadScheduleExtras()
+        async let updatesTask: Void = loadUpdates()
+        _ = await (scheduleTask, extrasTask, updatesTask)
+    }
+
     func loadScheduleBundle() async {
-        isLoadingSchedule = true
+        applyOfflineScheduleIfNeeded()
+
+        if schedule == nil {
+            isLoadingSchedule = true
+        } else {
+            isRefreshingSchedule = true
+        }
         scheduleError = nil
-        defer { isLoadingSchedule = false }
+        defer {
+            isLoadingSchedule = false
+            isRefreshingSchedule = false
+        }
 
         do {
-            schedule = try await APIClient.shared.get("/api/schedule")
-            await syncSharedSnapshot()
-            await ReminderService.shared.rescheduleAll(items: schedule?.luItems)
-        } catch {
-            if let bundled = loadBundledSchedule() {
-                schedule = bundled
-                scheduleError = nil
-                await syncSharedSnapshot()
-            } else {
-                scheduleError = error.localizedDescription
+            let payload: SchedulePayload = try await RepositoryFetch.withTimeout {
+                try await APIClient.shared.get("/api/schedule")
             }
+            schedule = payload
+            scheduleSource = .network
+            lastScheduleRefresh = Date()
+            ScheduleDataStore.saveCached(payload)
+            await syncSharedSnapshot()
+            await ReminderService.shared.rescheduleAll(items: payload.luItems)
+        } catch {
+            if schedule == nil, let offline = ScheduleDataStore.bestOfflineSchedule() {
+                schedule = offline.schedule
+                scheduleSource = offline.source
+                await syncSharedSnapshot()
+            } else if schedule == nil {
+                scheduleError = "Could not load schedule. Pull to retry."
+            }
+            #if DEBUG
+            AppLog.bootstrap("schedule fetch failed: \(error.localizedDescription)")
+            #endif
         }
     }
 
@@ -57,7 +97,9 @@ final class RendezvousRepository {
 
     func loadRates() async {
         do {
-            rates = try await APIClient.shared.get("/api/rates?year=2027")
+            rates = try await RepositoryFetch.withTimeout {
+                try await APIClient.shared.get("/api/rates?year=2027")
+            }
         } catch {
             rates = nil
         }
@@ -87,9 +129,18 @@ final class RendezvousRepository {
         }
     }
 
+    private func applyOfflineScheduleIfNeeded() {
+        guard schedule == nil else { return }
+        guard let offline = ScheduleDataStore.bestOfflineSchedule() else { return }
+        schedule = offline.schedule
+        scheduleSource = offline.source
+    }
+
     private func fetchMeals() async {
         do {
-            let response: MealsResponse = try await APIClient.shared.get("/api/meals")
+            let response: MealsResponse = try await RepositoryFetch.withTimeout {
+                try await APIClient.shared.get("/api/meals")
+            }
             meals = response.meals ?? []
         } catch {
             meals = []
@@ -97,10 +148,14 @@ final class RendezvousRepository {
     }
 
     private func fetchVolunteers() async {
+        let from = weekFrom
+        let to = weekTo
         do {
-            let response: VolunteerWeekResponse = try await APIClient.shared.get(
-                "/api/volunteer-schedule?from=\(weekFrom)&to=\(weekTo)"
-            )
+            let response: VolunteerWeekResponse = try await RepositoryFetch.withTimeout {
+                try await APIClient.shared.get(
+                    "/api/volunteer-schedule?from=\(from)&to=\(to)"
+                )
+            }
             volunteerSchedules = response.schedules ?? [:]
         } catch {
             volunteerSchedules = [:]
@@ -109,7 +164,9 @@ final class RendezvousRepository {
 
     private func fetchLiveAnnouncements() async {
         do {
-            let response: AnnouncementsResponse = try await APIClient.shared.get("/api/announcements")
+            let response: AnnouncementsResponse = try await RepositoryFetch.withTimeout {
+                try await APIClient.shared.get("/api/announcements")
+            }
             liveAnnouncements = response.announcements ?? []
         } catch {
             liveAnnouncements = []
@@ -118,7 +175,9 @@ final class RendezvousRepository {
 
     private func fetchScheduleAnnouncements() async {
         do {
-            let response: ScheduleAnnouncementsResponse = try await APIClient.shared.get("/api/announcements/schedule")
+            let response: ScheduleAnnouncementsResponse = try await RepositoryFetch.withTimeout {
+                try await APIClient.shared.get("/api/announcements/schedule")
+            }
             scheduleAnnouncements = response.announcements ?? []
         } catch {
             scheduleAnnouncements = []
@@ -127,16 +186,11 @@ final class RendezvousRepository {
 
     private func fetchWeather() async {
         do {
-            weather = try await APIClient.shared.get("/api/weather")
+            weather = try await RepositoryFetch.withTimeout {
+                try await APIClient.shared.get("/api/weather")
+            }
         } catch {
             weather = nil
         }
-    }
-
-    private func loadBundledSchedule() -> SchedulePayload? {
-        guard let url = Bundle.main.url(forResource: "schedule-fallback", withExtension: "json"),
-              let data = try? Data(contentsOf: url)
-        else { return nil }
-        return try? JSONDecoder().decode(SchedulePayload.self, from: data)
     }
 }

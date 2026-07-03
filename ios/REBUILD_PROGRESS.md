@@ -1,13 +1,13 @@
 # Rebuild progress
 
-**Current phase:** 3 — Data layer  
+**Current phase:** 4 — Schedule + Updates  
 
 ## Phase status
 
 - [x] **0** Launch crash fix (Clerk timeout, deferred Live Activity, safe bootstrap)
 - [x] **1** Foundation shell (`AppShell`, `AppBootstrapState`, debug logging)
 - [x] **2** Auth gate (`ClerkAuthSheet` at root only, `SignInPromptCard`, sign-out handling)
-- [ ] **3** Data layer
+- [x] **3** Data layer (offline-first schedule, disk cache, fetch timeouts, `bootstrap()`)
 - [ ] **4** Schedule + Updates
 - [ ] **5** Chat + Directory
 - [ ] **6** Account + More

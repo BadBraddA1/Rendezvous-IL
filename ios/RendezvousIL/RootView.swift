@@ -96,11 +96,6 @@ struct RootView: View {
         _ = await (bootstrap, minimumSplash)
         splashFinished = true
         AppLog.bootstrap("splash done signedIn=\(session.isSignedIn)")
-
-        Task(priority: .utility) {
-            await repository.loadScheduleBundle()
-            await repository.loadScheduleExtras()
-        }
     }
 
     private var launchSplash: some View {

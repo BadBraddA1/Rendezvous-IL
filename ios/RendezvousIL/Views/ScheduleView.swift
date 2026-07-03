@@ -24,7 +24,22 @@ struct ScheduleView: View {
                 await repository.loadScheduleBundle()
                 await repository.loadScheduleExtras()
             }
+            .overlay(alignment: .top) {
+                if repository.isUsingOfflineSchedule {
+                    offlineScheduleBanner
+                }
+            }
         }
+    }
+
+    private var offlineScheduleBanner: some View {
+        Text(repository.scheduleSource == .bundled ? "Offline draft schedule" : "Cached schedule — pull to refresh")
+            .font(.caption.weight(.medium))
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(.ultraThinMaterial, in: Capsule())
+            .padding(.top, 4)
     }
 
     @ViewBuilder

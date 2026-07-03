@@ -10,6 +10,7 @@
 		001F6BE14BDAF1A0A6F00A2C /* MoreView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37B9B084751C0C1099D59FE7 /* MoreView.swift */; };
 		041325F9C6E45EDC4CD28A99 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7E5B9C3FB21EACB9FD34C8B /* RootView.swift */; };
 		080C996997D121C22C44D3F1 /* RendezvousActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = C081E03DADF196CFEE5740DD /* RendezvousActivityAttributes.swift */; };
+		0909D4F07BE927456A537630 /* ScheduleDataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 773D9EE7847452C39057563C /* ScheduleDataStore.swift */; };
 		240F2BD40FC6DF6BA76F1224 /* RendezvousILApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C5BE204DD92D7E4E4B07B02 /* RendezvousILApp.swift */; };
 		24929EF0C42582C37426D063 /* RegistrationCountdownView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10BA3D6FED0463578297010C /* RegistrationCountdownView.swift */; };
 		24E12CA3875598177849853F /* Ably in Frameworks */ = {isa = PBXBuildFile; productRef = 8BFDB483F89DC80A4A25F1E1 /* Ably */; };
@@ -114,6 +115,7 @@
 		613DC0E4AA30786A2A78BB63 /* ScheduleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleView.swift; sourceTree = "<group>"; };
 		61C09630FEAE09AF651F5F52 /* DeepLinkRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepLinkRouter.swift; sourceTree = "<group>"; };
 		690D7795EC8B080C69972765 /* CalculatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalculatorView.swift; sourceTree = "<group>"; };
+		773D9EE7847452C39057563C /* ScheduleDataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleDataStore.swift; sourceTree = "<group>"; };
 		77C4EF056AAA489147049142 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		7C4A6901F985DC2D62D1A98D /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7E803E192474632267A01C74 /* RendezvousILWidgets.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = RendezvousILWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -139,7 +141,7 @@
 		F7E5B9C3FB21EACB9FD34C8B /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		F93DC358023809E27C05FF3B /* AppEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironment.swift; sourceTree = "<group>"; };
 		FCDBD34429936681124138B5 /* schedule-fallback.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "schedule-fallback.json"; sourceTree = "<group>"; };
-		"TEMP_31722ECA-3AB9-4569-9F6C-63EFCC6A3456" /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
+		"TEMP_0CB45784-4771-47C7-93DD-B146A8CAD54D" /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -192,6 +194,7 @@
 				24CACB9C92690CC394EB341D /* PushRegistrationService.swift */,
 				925104CC717795170B3F3923 /* ReminderService.swift */,
 				07C50D82EE938B688ECCFCD4 /* RendezvousRepository.swift */,
+				773D9EE7847452C39057563C /* ScheduleDataStore.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -294,10 +297,10 @@
 			path = RendezvousIL;
 			sourceTree = "<group>";
 		};
-		"TEMP_862F8B42-92CF-4F56-98FA-985B818FA75E" /* ios */ = {
+		"TEMP_580AC723-507C-463C-8195-EC947F3425C3" /* ios */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_31722ECA-3AB9-4569-9F6C-63EFCC6A3456" /* Config.xcconfig */,
+				"TEMP_0CB45784-4771-47C7-93DD-B146A8CAD54D" /* Config.xcconfig */,
 			);
 			path = ios;
 			sourceTree = "<group>";
@@ -437,6 +440,7 @@
 				240F2BD40FC6DF6BA76F1224 /* RendezvousILApp.swift in Sources */,
 				8B4303C55E7D02D010F6E41B /* RendezvousRepository.swift in Sources */,
 				041325F9C6E45EDC4CD28A99 /* RootView.swift in Sources */,
+				0909D4F07BE927456A537630 /* ScheduleDataStore.swift in Sources */,
 				40D57A631FD567741CAF09D1 /* ScheduleShared.swift in Sources */,
 				AC921200D398D7BEA41C70E0 /* ScheduleView.swift in Sources */,
 				A6695420B13B1E422B58B7AA /* UpdatesView.swift in Sources */,
@@ -554,7 +558,7 @@
 		};
 		7ADBCEC1B448B95857681847 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_31722ECA-3AB9-4569-9F6C-63EFCC6A3456" /* Config.xcconfig */;
+			baseConfigurationReference = "TEMP_0CB45784-4771-47C7-93DD-B146A8CAD54D" /* Config.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = RendezvousIL/RendezvousIL.entitlements;
@@ -655,7 +659,7 @@
 		};
 		F8122583B54F4443475E1AD8 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_31722ECA-3AB9-4569-9F6C-63EFCC6A3456" /* Config.xcconfig */;
+			baseConfigurationReference = "TEMP_0CB45784-4771-47C7-93DD-B146A8CAD54D" /* Config.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = RendezvousIL/RendezvousIL.entitlements;

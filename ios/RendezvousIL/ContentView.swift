@@ -37,7 +37,7 @@ struct MainTabView: View {
             }
         }
         .task {
-            await repository.loadUpdates()
+            await repository.bootstrap()
         }
     }
 }
