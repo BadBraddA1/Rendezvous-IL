@@ -16,9 +16,7 @@ struct CheckInView: View {
 
     var body: some View {
         Group {
-            if !session.isSignedIn {
-                staffSignIn
-            } else if !session.canCheckIn {
+            if !session.canCheckIn {
                 accessDenied
             } else {
                 checkInStation
@@ -27,33 +25,6 @@ struct CheckInView: View {
         .navigationTitle("Check-In")
         .task {
             await session.refreshAuth()
-        }
-    }
-
-    private var staffSignIn: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Staff check-in")
-                        .font(.title2.weight(.semibold))
-                    Text("Sign in with the same Rendezvous admin account used on the website. You need the Check-In role (or higher).")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-
-                ClerkAuthPanel(
-                    mode: .signIn,
-                    sectionTitle: "Staff sign-in",
-                    helperText: "Use your admin email from rendezvousil.com.",
-                    buttonTitle: "Sign in"
-                )
-
-                Link(destination: AppConfig.url(for: "/admin/checkin")) {
-                    Label("Open web check-in station", systemImage: "safari")
-                }
-                .font(.subheadline)
-            }
-            .padding(20)
         }
     }
 
@@ -66,11 +37,16 @@ struct CheckInView: View {
                 .font(.title3.weight(.semibold))
             Text("Your account is signed in but does not have check-in permissions. Ask an admin to assign the Check-In role in Admin → Users.")
                 .foregroundStyle(.secondary)
-            if let name = session.adminName {
+            if let name = session.adminName ?? session.userDisplayName {
                 Text("Signed in as \(name)")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
+            Link(destination: AppConfig.url(for: "/admin/checkin")) {
+                Label("Open web check-in", systemImage: "safari")
+            }
+            .font(.subheadline)
+            .padding(.top, 4)
         }
         .padding()
     }

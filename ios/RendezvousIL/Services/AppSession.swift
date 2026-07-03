@@ -138,6 +138,11 @@ final class AppSession {
         clearSession()
     }
 
+    /// Clerk session cleared outside our sign-out button (e.g. token expiry).
+    func handleExternalSignOut() {
+        clearSession()
+    }
+
     private func startActivityPingLoop() {
         activityPingTask?.cancel()
         guard isSignedIn, apiClient != nil else { return }

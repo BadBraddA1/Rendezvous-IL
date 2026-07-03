@@ -1,13 +1,12 @@
 # Rebuild progress
 
-**Current phase:** 1 — Foundation shell  
-**Loop:** active — **30s** ticks (PID in `ios/.rebuild-loop.pid`)
+**Current phase:** 3 — Data layer  
 
 ## Phase status
 
 - [x] **0** Launch crash fix (Clerk timeout, deferred Live Activity, safe bootstrap)
 - [x] **1** Foundation shell (`AppShell`, `AppBootstrapState`, debug logging)
-- [ ] **2** Auth gate
+- [x] **2** Auth gate (`ClerkAuthSheet` at root only, `SignInPromptCard`, sign-out handling)
 - [ ] **3** Data layer
 - [ ] **4** Schedule + Updates
 - [ ] **5** Chat + Directory

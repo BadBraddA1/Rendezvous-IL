@@ -23,9 +23,7 @@ struct AdminUsersView: View {
 
     var body: some View {
         Group {
-            if !session.isSignedIn {
-                signInRequired
-            } else if !session.canManageUsers {
+            if !session.canManageUsers {
                 accessDenied
             } else if isLoading && users.isEmpty {
                 ProgressView("Loading users…")
@@ -69,24 +67,6 @@ struct AdminUsersView: View {
                 users.insert(created, at: 0)
             }
             .withAppEnvironments(session: session)
-        }
-    }
-
-    private var signInRequired: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Admin sign-in")
-                    .font(.title2.weight(.semibold))
-                Text("Sign in with a full admin account to manage users.")
-                    .foregroundStyle(.secondary)
-                ClerkAuthPanel(
-                    mode: .signIn,
-                    sectionTitle: "Admin sign-in",
-                    helperText: "Full admin access is required to manage Clerk users.",
-                    buttonTitle: "Sign in"
-                )
-            }
-            .padding(20)
         }
     }
 

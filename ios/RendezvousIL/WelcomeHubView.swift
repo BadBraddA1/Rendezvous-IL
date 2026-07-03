@@ -1,10 +1,9 @@
 import Clerk
 import SwiftUI
 
-/// Public welcome — sign-in only. No registration sales pitch.
+/// Public welcome — sign-in only. Clerk sheet is presented by `RootView`.
 struct WelcomeHubView: View {
-    @Environment(AppSession.self) private var session
-    @Environment(Clerk.self) private var clerk
+    var onSignIn: () -> Void
 
     var body: some View {
         NavigationStack {
@@ -12,10 +11,11 @@ struct WelcomeHubView: View {
                 VStack(spacing: 28) {
                     hero
 
-                    ClerkAuthPanel(
+                    SignInPromptCard(
                         sectionTitle: "Sign in",
-                        helperText: "Use the same email and password as rendezvousil.com. This app is for families who are registered for Rendezvous.",
-                        buttonTitle: "Sign in"
+                        helperText: "Use the same email and password as rendezvousil.com. This app is for families registered for Rendezvous.",
+                        buttonTitle: "Sign in",
+                        onSignIn: onSignIn
                     )
 
                     VStack(alignment: .leading, spacing: 10) {

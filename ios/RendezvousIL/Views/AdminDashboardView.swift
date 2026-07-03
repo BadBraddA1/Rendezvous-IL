@@ -17,9 +17,7 @@ struct AdminDashboardView: View {
 
     var body: some View {
         Group {
-            if !session.isSignedIn {
-                adminSignIn
-            } else if !session.canViewDashboard {
+            if !session.canViewDashboard {
                 accessDenied
             } else if let dashboard {
                 dashboardContent(dashboard)
@@ -42,30 +40,6 @@ struct AdminDashboardView: View {
         }
     }
 
-    private var adminSignIn: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                headerCard(
-                    title: "Admin sign-in",
-                    subtitle: "Sign in with your Rendezvous admin account. Your Clerk user needs an admin role (admin, editor, viewer, or check-in)."
-                )
-
-                ClerkAuthPanel(
-                    mode: .signIn,
-                    sectionTitle: "Admin sign-in",
-                    helperText: "Use your Rendezvous admin account from rendezvousil.com (admin, editor, viewer, or check-in role).",
-                    buttonTitle: "Sign in"
-                )
-
-                Link(destination: AppConfig.url(for: "/admin")) {
-                    Label("Open full admin on web", systemImage: "safari")
-                }
-                .font(.subheadline)
-            }
-            .padding(20)
-        }
-    }
-
     private var accessDenied: some View {
         VStack(alignment: .leading, spacing: 12) {
             Image(systemName: "lock.shield")
@@ -75,11 +49,16 @@ struct AdminDashboardView: View {
                 .font(.title3.weight(.semibold))
             Text("Your account is signed in but does not have dashboard permissions. Ask a full admin to assign a role in Admin → Users on the website.")
                 .foregroundStyle(.secondary)
-            if let name = session.adminName {
+            if let name = session.adminName ?? session.userDisplayName {
                 Text("Signed in as \(name)")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
+            Link(destination: AppConfig.url(for: "/admin")) {
+                Label("Open admin on web", systemImage: "safari")
+            }
+            .font(.subheadline)
+            .padding(.top, 4)
         }
         .padding(20)
     }

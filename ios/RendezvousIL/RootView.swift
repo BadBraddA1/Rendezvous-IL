@@ -7,6 +7,7 @@ struct RootView: View {
     @Environment(RendezvousRepository.self) private var repository
     @Environment(\.scenePhase) private var scenePhase
     @State private var splashFinished = false
+    @State private var showAuthSheet = false
 
     private var bootstrapState: AppBootstrapState {
         AppBootstrapState.resolve(session: session, splashFinished: splashFinished)
@@ -30,11 +31,19 @@ struct RootView: View {
         .onChange(of: Clerk.shared.session?.id) { _, sessionId in
             if sessionId != nil {
                 Task { await session.refreshAuth() }
+            } else {
+                session.handleExternalSignOut()
             }
         }
         .onChange(of: scenePhase) { _, phase in
             guard phase == .active else { return }
             Task { await session.recordActivityIfSignedIn() }
+        }
+        .sheet(isPresented: $showAuthSheet) {
+            ClerkAuthSheet(mode: .signIn)
+                .withAppEnvironments(session: session)
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
         }
     }
 
@@ -48,7 +57,9 @@ struct RootView: View {
         case .signedIn:
             MainTabView()
         case .welcome:
-            WelcomeHubView()
+            WelcomeHubView {
+                showAuthSheet = true
+            }
         case .misconfigured(let message):
             bootstrapErrorView(message: message)
         }

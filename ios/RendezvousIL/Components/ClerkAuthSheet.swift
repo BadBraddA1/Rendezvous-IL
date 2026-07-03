@@ -2,27 +2,25 @@ import Clerk
 import SwiftUI
 
 extension ClerkTheme {
-  /// Lake-teal Clerk UI that follows system light/dark mode.
-  @MainActor
-  static var rendezvous: ClerkTheme {
-    ClerkTheme(
-      colors: .init(primary: BrandColors.lake),
-      design: .init(borderRadius: 12)
-    )
-  }
+    /// Lake-teal Clerk UI that follows system light/dark mode.
+    @MainActor
+    static var rendezvous: ClerkTheme {
+        ClerkTheme(
+            colors: .init(primary: BrandColors.lake),
+            design: .init(borderRadius: 12)
+        )
+    }
 }
 
-/// Pew Packers–style sign-in: short copy + button, Clerk `AuthView` in a sheet (not embedded inline).
-struct ClerkAuthPanel: View {
+/// Pew Packers–style copy + button. **No sheet** — parent presents `ClerkAuthSheet` at root only.
+struct SignInPromptCard: View {
     @Environment(AppSession.self) private var session
     @Environment(Clerk.self) private var clerk
 
-    var mode: AuthView.Mode = .signInOrUp
-    var sectionTitle: String = "Get started"
-    var helperText: String = "Use the same email as rendezvousil.com — new here? Enter your email in the next step to create a free account."
-    var buttonTitle: String = "Sign in or create account"
-
-    @State private var authIsPresented = false
+    var sectionTitle: String = "Sign in"
+    var helperText: String = "Use the same email as rendezvousil.com."
+    var buttonTitle: String = "Sign in"
+    var onSignIn: () -> Void
 
     private var clerkIsReady: Bool {
         clerk.isLoaded && session.clerkSetupError == nil && AppConfig.hasValidClerkKey
@@ -45,7 +43,6 @@ struct ClerkAuthPanel: View {
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
             } else {
                 Text(helperText)
                     .font(.caption)
@@ -60,7 +57,7 @@ struct ClerkAuthPanel: View {
 
                 Button(buttonTitle) {
                     guard clerkIsReady else { return }
-                    authIsPresented = true
+                    onSignIn()
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(BrandColors.lake)
@@ -69,27 +66,6 @@ struct ClerkAuthPanel: View {
             }
         }
         .glassCard(cornerRadius: 22, padding: 22)
-        .sheet(isPresented: $authIsPresented) {
-            NavigationStack {
-                AuthView(mode: mode, isDismissable: true)
-                    .environment(\.clerkTheme, .rendezvous)
-                    .navigationTitle(mode == .signIn ? "Sign in" : "Account")
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .cancellationAction) {
-                            Button("Close") { authIsPresented = false }
-                        }
-                    }
-            }
-            .withAppEnvironments(session: session)
-            .presentationDetents([.large])
-            .presentationDragIndicator(.visible)
-        }
-        .onChange(of: clerk.session?.id) { _, sessionId in
-            guard sessionId != nil else { return }
-            authIsPresented = false
-            Task { await session.refreshAuth() }
-        }
     }
 
     @ViewBuilder
@@ -98,25 +74,49 @@ struct ClerkAuthPanel: View {
             Text(message)
                 .font(.subheadline)
                 .foregroundStyle(.red)
-
-            Text("Sign-in works once Clerk Native API is enabled for this app in the Clerk dashboard.")
+            Text("Enable Clerk Native API for this app in the Clerk dashboard.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
-
             Link("Open Clerk Native applications", destination: URL(string: "https://dashboard.clerk.com/last-active?path=native-applications")!)
                 .font(.caption.weight(.semibold))
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var missingConfigHelp: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Sign-in unavailable")
                 .font(.subheadline.weight(.semibold))
-            Text("This build is missing the Clerk key. Install the latest TestFlight update.")
+            Text("Install the latest TestFlight update.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+/// Clerk `AuthView` sheet — attach **only** from `RootView`.
+struct ClerkAuthSheet: View {
+    @Environment(AppSession.self) private var session
+    @Environment(Clerk.self) private var clerk
+    @Environment(\.dismiss) private var dismiss
+
+    var mode: AuthView.Mode = .signInOrUp
+
+    var body: some View {
+        NavigationStack {
+            AuthView(mode: mode, isDismissable: true)
+                .environment(\.clerkTheme, .rendezvous)
+                .navigationTitle(mode == .signIn ? "Sign in" : "Account")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Close") { dismiss() }
+                    }
+                }
+        }
+        .onChange(of: clerk.session?.id) { _, sessionId in
+            guard sessionId != nil else { return }
+            dismiss()
+            Task { await session.refreshAuth() }
+        }
     }
 }
