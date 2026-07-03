@@ -6,6 +6,7 @@ struct ChatListView: View {
     @State private var channels: [ChatChannelSummary] = []
     @State private var isLoading = true
     @State private var errorMessage: String?
+    @State private var statusHint: String?
 
     var body: some View {
         NavigationStack {
@@ -23,11 +24,17 @@ struct ChatListView: View {
                         .tint(BrandColors.lake)
                     }
                 } else if channels.isEmpty && !isLoading {
-                    ContentUnavailableView(
-                        "No chats yet",
-                        systemImage: "bubble.left.and.bubble.right",
-                        description: Text("Register for a Rendezvous year on rendezvousil.com to join that year's group chat.")
-                    )
+                    ContentUnavailableView {
+                        Label("No chats yet", systemImage: "bubble.left.and.bubble.right")
+                    } description: {
+                        Text(statusHint ?? "Register for a Rendezvous year on rendezvousil.com to join that year's group chat.")
+                    } actions: {
+                        Button("Refresh") {
+                            Task { await load(force: true) }
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(BrandColors.lake)
+                    }
                 } else {
                     channelList
                 }
@@ -93,6 +100,7 @@ struct ChatListView: View {
 
         if !force { isLoading = true }
         errorMessage = nil
+        statusHint = nil
         defer { isLoading = false }
 
         do {
@@ -100,11 +108,29 @@ struct ChatListView: View {
                 try await client.getChatChannels()
             }
             channels = response.channels.sortedForDisplay()
+            if channels.isEmpty {
+                statusHint = await emptyChatHint(using: client)
+            }
         } catch APIError.unauthorized {
             errorMessage = "Session expired. Sign out and sign in again."
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    private func emptyChatHint(using client: APIClient) async -> String {
+        guard let status = try? await client.fetchMobileStatus() else {
+            return "Register for a Rendezvous year on rendezvousil.com to join that year's group chat."
+        }
+        if status.isAdmin == true {
+            return "Signed in as admin, but no active channels were returned. Pull to refresh."
+        }
+        let years = status.attendedYears ?? []
+        if years.isEmpty {
+            let email = status.email ?? "your account"
+            return "No registration is linked to \(email) yet. Open the website while signed in, or ask an admin to add you to a chat."
+        }
+        return "Registration found for \(years.map(String.init).joined(separator: ", ")), but no channels yet. Pull to refresh."
     }
 }
 

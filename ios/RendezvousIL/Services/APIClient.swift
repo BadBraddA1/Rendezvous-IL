@@ -60,6 +60,10 @@ actor APIClient {
         try await get("/api/admin/me")
     }
 
+    func fetchMobileStatus() async throws -> MobileStatusResponse {
+        try await get("/api/me/mobile")
+    }
+
     func recordUserActivity() async throws -> UserActivityResponse {
         struct Body: Encodable {
             let platform: String
@@ -299,6 +303,19 @@ struct AdminMeResponse: Decodable {
     let authenticated: Bool
     let admin: AdminUserPayload?
     let permissions: AdminPermissionsPayload?
+}
+
+struct MobileStatusResponse: Decodable {
+    let authenticated: Bool
+    let hasBearer: Bool?
+    let email: String?
+    let isAdmin: Bool?
+    let attendedYears: [Int]?
+    let channelCount: Int?
+    let directoryYears: [Int]?
+    let directoryAccess: [String: Bool]?
+    let hasFamilyProfile: Bool?
+    let error: String?
 }
 
 struct UserActivityResponse: Decodable {

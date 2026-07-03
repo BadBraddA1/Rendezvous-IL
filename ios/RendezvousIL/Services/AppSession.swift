@@ -88,7 +88,9 @@ final class AppSession {
             return
         }
 
-        apiClient = APIClient(tokenProvider: { try await Self.sessionToken(forceRefresh: false) })
+        // Always mint a fresh session JWT — cached tokens are a common cause of
+        // "signed in" UI with 401/empty chat & directory on the API.
+        apiClient = APIClient(tokenProvider: { try await Self.sessionToken(forceRefresh: true) })
         isSignedIn = true
         authError = nil
         await refreshAdminStatus()

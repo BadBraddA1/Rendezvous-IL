@@ -3,14 +3,14 @@ import { createChatAblyTokenRequest } from "@/lib/ably"
 import { listMemberChatChannels } from "@/lib/chat/channels"
 import { authUserContext, getCurrentAdmin } from "@/lib/clerk-auth"
 
-export async function POST() {
-  const ctx = await authUserContext()
+export async function POST(request: Request) {
+  const ctx = await authUserContext(request)
   if (!ctx) {
     return NextResponse.json({ error: "Sign in required" }, { status: 401 })
   }
 
   try {
-    const admin = await getCurrentAdmin()
+    const admin = await getCurrentAdmin(request)
     const channels = await listMemberChatChannels(ctx.userId, ctx.email, Boolean(admin))
     const channelIds = channels.map((channel) => channel.id)
 

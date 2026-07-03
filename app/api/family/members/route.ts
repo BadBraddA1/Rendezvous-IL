@@ -39,7 +39,7 @@ function normalizeMemberPayload(memberData: Record<string, unknown>) {
 // POST - Add or update a family member (submitted for approval)
 export async function POST(request: Request) {
   try {
-    const ctx = await authUserContext()
+    const ctx = await authUserContext(request)
     if (!ctx) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
@@ -75,7 +75,7 @@ export async function POST(request: Request) {
 // DELETE - Remove a family member (submitted for approval)
 export async function DELETE(request: Request) {
   try {
-    const ctx = await authUserContext()
+    const ctx = await authUserContext(request)
     if (!ctx) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }

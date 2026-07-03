@@ -4,9 +4,9 @@ import { getCurrentAdmin, getAdminPermissions, isAuthenticated } from "@/lib/cle
 export const dynamic = "force-dynamic"
 
 /** Clerk session probe for native apps — requires Bearer session token. */
-export async function GET() {
-  const authenticated = await isAuthenticated()
-  const admin = await getCurrentAdmin()
+export async function GET(request: Request) {
+  const authenticated = await isAuthenticated(request)
+  const admin = await getCurrentAdmin(request)
 
   return NextResponse.json({
     authenticated,

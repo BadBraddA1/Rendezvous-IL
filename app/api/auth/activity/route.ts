@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic"
 
 /** Record last-seen + platform for signed-in users (web + native apps). */
 export async function POST(request: Request) {
-  const ctx = await authUserContext()
+  const ctx = await authUserContext(request)
   if (!ctx) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
@@ -32,11 +32,9 @@ export async function POST(request: Request) {
     // empty body is fine for web pings
   }
 
-  const email = ctx.email ?? null
-
   await recordUserActivity({
     clerkUserId: ctx.userId,
-    email,
+    email: ctx.email ?? null,
     platform,
     appVersion,
   })

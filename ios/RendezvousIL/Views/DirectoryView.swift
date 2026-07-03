@@ -191,10 +191,20 @@ struct DirectoryView: View {
             families = response.families
         } catch APIError.unauthorized {
             families = []
-            errorMessage = "You need a registration for Rendezvous \(String(year)) to view the directory."
+            errorMessage = "Session expired. Sign out and sign in again."
         } catch {
             families = []
             errorMessage = error.localizedDescription
+            if let status = try? await client.fetchMobileStatus() {
+                if status.hasFamilyProfile == false {
+                    errorMessage =
+                        "\(error.localizedDescription) Open Family account on the website once to link your registration."
+                } else if status.isAdmin != true,
+                          status.directoryAccess?[String(year)] == false {
+                    errorMessage =
+                        "No registration for Rendezvous \(String(year)) is linked to \(status.email ?? "this account")."
+                }
+            }
         }
     }
 }

@@ -9,8 +9,8 @@ import {
 } from "@/lib/family-directory"
 import { deleteFamilyPhotoIfStored, uploadFamilyPhoto } from "@/lib/family-photo-storage"
 
-async function requireFamily() {
-  const ctx = await authUserContext()
+async function requireFamily(request: Request) {
+  const ctx = await authUserContext(request)
   if (!ctx) {
     return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) }
   }
@@ -31,9 +31,9 @@ async function requireFamily() {
   return { family }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const result = await requireFamily()
+    const result = await requireFamily(request)
     if ("error" in result && result.error) return result.error
 
     const settings = await getFamilyDirectorySettings(result.family!.id)
@@ -46,7 +46,7 @@ export async function GET() {
 
 export async function PATCH(request: Request) {
   try {
-    const result = await requireFamily()
+    const result = await requireFamily(request)
     if ("error" in result && result.error) return result.error
     const family = result.family!
 
@@ -75,7 +75,7 @@ export async function PATCH(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const result = await requireFamily()
+    const result = await requireFamily(request)
     if ("error" in result && result.error) return result.error
     const family = result.family!
 
@@ -105,9 +105,9 @@ export async function POST(request: Request) {
   }
 }
 
-export async function DELETE() {
+export async function DELETE(request: Request) {
   try {
-    const result = await requireFamily()
+    const result = await requireFamily(request)
     if ("error" in result && result.error) return result.error
     const family = result.family!
 

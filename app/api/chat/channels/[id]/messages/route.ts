@@ -6,7 +6,7 @@ type Params = { params: Promise<{ id: string }> }
 
 export async function GET(request: Request, { params }: Params) {
   const { id: channelId } = await params
-  const ctx = await authUserContext()
+  const ctx = await authUserContext(request)
   if (!ctx) {
     return NextResponse.json({ error: "Sign in required" }, { status: 401 })
   }
@@ -16,7 +16,7 @@ export async function GET(request: Request, { params }: Params) {
   const limit = Number(searchParams.get("limit") ?? 50)
 
   try {
-    const admin = await getCurrentAdmin()
+    const admin = await getCurrentAdmin(request)
 
     const result = await listChannelMessages(channelId, {
       clerkUserId: ctx.userId,
@@ -37,7 +37,7 @@ export async function GET(request: Request, { params }: Params) {
 
 export async function POST(request: Request, { params }: Params) {
   const { id: channelId } = await params
-  const ctx = await authUserContext()
+  const ctx = await authUserContext(request)
   if (!ctx) {
     return NextResponse.json({ error: "Sign in required" }, { status: 401 })
   }
@@ -47,7 +47,7 @@ export async function POST(request: Request, { params }: Params) {
     const text = typeof body.body === "string" ? body.body : ""
     const isAnnouncement = Boolean(body.is_announcement)
 
-    const admin = await getCurrentAdmin()
+    const admin = await getCurrentAdmin(request)
     if (isAnnouncement && !admin) {
       return NextResponse.json({ error: "Admin required for announcements" }, { status: 403 })
     }

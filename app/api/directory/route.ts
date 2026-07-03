@@ -8,7 +8,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const year = parseRegistrationEventYear(searchParams.get("year"))
 
-  const ctx = await authUserContext()
+  const ctx = await authUserContext(request)
   if (!ctx) {
     return NextResponse.json({ error: "Sign in required" }, { status: 401 })
   }
@@ -17,7 +17,7 @@ export async function GET(request: Request) {
     await ensureFamilyDirectorySchema()
 
     const yearEnabled = await isDirectoryYearEnabled(year)
-    const admin = yearEnabled ? null : await getCurrentAdmin()
+    const admin = yearEnabled ? null : await getCurrentAdmin(request)
     if (!yearEnabled && !admin) {
       return NextResponse.json(
         {

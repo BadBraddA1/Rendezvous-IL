@@ -49,9 +49,9 @@ function normalizeProfileUpdates(updates: Record<string, unknown>) {
 }
 
 // GET - Fetch family profile for the current user
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const ctx = await authUserContext()
+    const ctx = await authUserContext(request)
     if (!ctx) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
@@ -95,7 +95,7 @@ export async function GET() {
 // PUT - Submit profile changes for approval
 export async function PUT(request: Request) {
   try {
-    const ctx = await authUserContext()
+    const ctx = await authUserContext(request)
     if (!ctx) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }

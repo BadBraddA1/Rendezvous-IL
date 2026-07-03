@@ -1,4 +1,10 @@
-import { auth, clerkClient, currentUser, type User } from "@clerk/nextjs/server"
+import {
+  auth,
+  clerkClient,
+  currentUser,
+  verifyToken,
+  type User,
+} from "@clerk/nextjs/server"
 import {
   type AdminRole,
   type AdminPermissions,
@@ -20,13 +26,56 @@ export type AuthUserContext = {
   user: User
 }
 
+function bearerTokenFromRequest(request?: Request): string | null {
+  if (!request) return null
+  const header = request.headers.get("authorization") || request.headers.get("Authorization")
+  if (!header) return null
+  const match = header.match(/^Bearer\s+(.+)$/i)
+  return match?.[1]?.trim() || null
+}
+
 /**
- * Auth that accepts both browser cookies and native Bearer session tokens (iOS/Android).
- * Use this in any API route the mobile apps call.
+ * Resolve Clerk user id from cookies and/or mobile Bearer session JWTs.
+ * Tries auth(), authenticateRequest(), then verifyToken() so native apps work
+ * even when Next.js auth() does not bind the Authorization header.
  */
-export async function authUserId(): Promise<string | null> {
-  const { userId } = await auth({ acceptsToken: "session_token" })
-  return userId
+export async function authUserId(request?: Request): Promise<string | null> {
+  try {
+    const session = await auth({ acceptsToken: "session_token" })
+    if (session.userId) return session.userId
+  } catch (error) {
+    console.error("[clerk-auth] auth() failed:", error)
+  }
+
+  if (request) {
+    try {
+      const clerk = await clerkClient()
+      const state = await clerk.authenticateRequest(request, {
+        acceptsToken: "session_token",
+      })
+      if (state.isAuthenticated) {
+        const authObject = state.toAuth()
+        if (authObject.userId) return authObject.userId
+      }
+    } catch (error) {
+      console.error("[clerk-auth] authenticateRequest failed:", error)
+    }
+
+    const token = bearerTokenFromRequest(request)
+    if (token && process.env.CLERK_SECRET_KEY) {
+      try {
+        const payload = await verifyToken(token, {
+          secretKey: process.env.CLERK_SECRET_KEY,
+        })
+        const sub = typeof payload.sub === "string" ? payload.sub : null
+        if (sub) return sub
+      } catch (error) {
+        console.error("[clerk-auth] verifyToken failed:", error)
+      }
+    }
+  }
+
+  return null
 }
 
 /**
@@ -35,9 +84,13 @@ export async function authUserId(): Promise<string | null> {
  * session tokens — fall back to the Backend API in that case.
  */
 export async function resolveClerkUser(userId: string): Promise<User | null> {
-  const fromSession = await currentUser()
-  if (fromSession && fromSession.id === userId) {
-    return fromSession
+  try {
+    const fromSession = await currentUser()
+    if (fromSession && fromSession.id === userId) {
+      return fromSession
+    }
+  } catch {
+    // ignore — mobile Bearer path usually has no session cookie
   }
 
   try {
@@ -50,8 +103,8 @@ export async function resolveClerkUser(userId: string): Promise<User | null> {
 }
 
 /** Signed-in user id + email for member APIs (chat, directory, family). */
-export async function authUserContext(): Promise<AuthUserContext | null> {
-  const userId = await authUserId()
+export async function authUserContext(request?: Request): Promise<AuthUserContext | null> {
+  const userId = await authUserId(request)
   if (!userId) return null
 
   const user = await resolveClerkUser(userId)
@@ -68,8 +121,8 @@ export async function authUserContext(): Promise<AuthUserContext | null> {
  * Get the current user's admin role from Clerk metadata
  * Returns null if user is not an admin
  */
-export async function getAdminRole(): Promise<AdminRole | null> {
-  const ctx = await authUserContext()
+export async function getAdminRole(request?: Request): Promise<AdminRole | null> {
+  const ctx = await authUserContext(request)
   if (!ctx) return null
 
   const publicMetadata = ctx.user.publicMetadata as { role?: string } | undefined
@@ -86,8 +139,8 @@ export async function getAdminRole(): Promise<AdminRole | null> {
  * Get current admin user details
  * Returns null if not authenticated or not an admin
  */
-export async function getCurrentAdmin(): Promise<AdminUser | null> {
-  const ctx = await authUserContext()
+export async function getCurrentAdmin(request?: Request): Promise<AdminUser | null> {
+  const ctx = await authUserContext(request)
   if (!ctx) return null
 
   const publicMetadata = ctx.user.publicMetadata as { role?: string } | undefined
@@ -108,8 +161,8 @@ export async function getCurrentAdmin(): Promise<AdminUser | null> {
 /**
  * Check if current user is authenticated (but may not be admin)
  */
-export async function isAuthenticated(): Promise<boolean> {
-  const userId = await authUserId()
+export async function isAuthenticated(request?: Request): Promise<boolean> {
+  const userId = await authUserId(request)
   return !!userId
 }
 
@@ -136,8 +189,8 @@ export async function requireFullAdmin(role: AdminRole) {
 /**
  * Require admin access for API routes
  */
-export async function requireAdminApi(): Promise<AdminUser> {
-  const admin = await getCurrentAdmin()
+export async function requireAdminApi(request?: Request): Promise<AdminUser> {
+  const admin = await getCurrentAdmin(request)
 
   if (!admin) {
     throw new Error("Unauthorized - admin access required")
@@ -149,8 +202,8 @@ export async function requireAdminApi(): Promise<AdminUser> {
 /**
  * Require full admin for user-management APIs
  */
-export async function requireFullAdminApi(): Promise<AdminUser> {
-  const admin = await requireAdminApi()
+export async function requireFullAdminApi(request?: Request): Promise<AdminUser> {
+  const admin = await requireAdminApi(request)
   if (!getAdminPermissions(admin.role).canManageUsers) {
     throw new Error("Unauthorized - full admin access required")
   }
@@ -160,8 +213,8 @@ export async function requireFullAdminApi(): Promise<AdminUser> {
 /**
  * Require check-in permission for station APIs
  */
-export async function requireCheckInApi(): Promise<AdminUser> {
-  const admin = await getCurrentAdmin()
+export async function requireCheckInApi(request?: Request): Promise<AdminUser> {
+  const admin = await getCurrentAdmin(request)
   if (!admin || !getAdminPermissions(admin.role).canCheckIn) {
     throw new Error("Unauthorized - check-in access required")
   }
@@ -178,7 +231,7 @@ export async function logAuditAction(
   details?: Record<string, unknown>,
   request?: Request,
 ) {
-  const admin = await getCurrentAdmin()
+  const admin = await getCurrentAdmin(request)
 
   if (!admin) {
     console.error("[Audit] Attempted to log action without admin context")
