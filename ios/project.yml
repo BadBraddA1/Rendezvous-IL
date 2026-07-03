@@ -24,6 +24,15 @@ targets:
       - path: RendezvousIL/Resources/schedule-fallback.json
     entitlements:
       path: RendezvousIL/RendezvousIL.entitlements
+      properties:
+        aps-environment: development
+        com.apple.developer.associated-domains:
+          - webcredentials:clerk.rendezvousil.com
+          - applinks:clerk.rendezvousil.com
+          - webcredentials:rendezvousil.com
+          - applinks:rendezvousil.com
+        com.apple.security.application-groups:
+          - group.com.rendezvousil.app
     configFiles:
       Debug: Config.xcconfig
       Release: Config.xcconfig

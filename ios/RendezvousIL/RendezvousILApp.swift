@@ -32,6 +32,16 @@ struct RendezvousILApp: App {
                     guard phase == .active else { return }
                     Task { await session.recordActivityIfSignedIn() }
                 }
+                .onOpenURL { url in
+                    if let tab = DeepLinkRouter.tab(for: url) {
+                        // Tab selection is owned by ContentView; post for it to pick up.
+                        NotificationCenter.default.post(
+                            name: .rendezvousDeepLink,
+                            object: nil,
+                            userInfo: ["tab": tab]
+                        )
+                    }
+                }
         }
     }
 }

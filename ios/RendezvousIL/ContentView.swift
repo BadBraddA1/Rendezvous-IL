@@ -1,5 +1,9 @@
 import SwiftUI
 
+extension Notification.Name {
+    static let rendezvousDeepLink = Notification.Name("rendezvousDeepLink")
+}
+
 struct ContentView: View {
     @State private var repository = RendezvousRepository()
     @State private var selectedTab: AppTab = .home
@@ -23,6 +27,11 @@ struct ContentView: View {
                 .tag(AppTab.more)
         }
         .environment(repository)
+        .onReceive(NotificationCenter.default.publisher(for: .rendezvousDeepLink)) { note in
+            if let tab = note.userInfo?["tab"] as? AppTab {
+                selectedTab = tab
+            }
+        }
         .task {
             await repository.loadScheduleBundle()
             await repository.loadScheduleExtras()
