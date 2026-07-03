@@ -21,7 +21,7 @@ struct ChatThreadView: View {
     }
 
     private var currentUserId: String {
-        guard Clerk.shared.isLoaded else { return "" }
+        guard session.isClerkReady else { return "" }
         return Clerk.shared.user?.id ?? ""
     }
 

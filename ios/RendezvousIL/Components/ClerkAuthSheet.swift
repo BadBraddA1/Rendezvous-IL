@@ -23,7 +23,7 @@ struct SignInPromptCard: View {
     var onSignIn: () -> Void
 
     private var clerkIsReady: Bool {
-        clerk.isLoaded && session.clerkSetupError == nil && AppConfig.hasValidClerkKey
+        session.isClerkReady && session.clerkSetupError == nil && AppConfig.hasValidClerkKey
     }
 
     var body: some View {
@@ -36,7 +36,7 @@ struct SignInPromptCard: View {
                 clerkSetupHelp(message: setupError)
             } else if !AppConfig.hasValidClerkKey {
                 missingConfigHelp
-            } else if !clerk.isLoaded {
+            } else if !session.isClerkReady {
                 HStack(spacing: 12) {
                     ProgressView()
                     Text("Loading sign-in…")
@@ -114,7 +114,8 @@ struct ClerkAuthSheet: View {
                 }
         }
         .onChange(of: clerk.session?.id) { _, sessionId in
-            guard sessionId != nil else { return }
+            guard session.isClerkReady, sessionId != nil else { return }
+            session.clerkSessionId = sessionId
             dismiss()
             Task { await session.refreshAuth() }
         }

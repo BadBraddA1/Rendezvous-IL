@@ -14,10 +14,14 @@ final class AppSession {
     var isLoading = false
     var authError: String?
     var clerkSetupError: String?
+    /// True only after `Clerk.shared.load()` succeeds. Never touch Clerk.session/user before this.
+    var isClerkReady = false
+    /// Mirrors Clerk session id for safe SwiftUI observation (avoid reading Clerk in view bodies).
+    var clerkSessionId: String?
 
     /// Display name from Clerk (family account holder). Nil until Clerk has finished loading.
     var userDisplayName: String? {
-        guard Clerk.shared.isLoaded else { return nil }
+        guard isClerkReady else { return nil }
         guard let user = Clerk.shared.user else { return nil }
         let name = [user.firstName, user.lastName]
             .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
@@ -29,7 +33,7 @@ final class AppSession {
 
     /// Primary email for account screen. Nil until Clerk has finished loading.
     var userEmail: String? {
-        guard Clerk.shared.isLoaded else { return nil }
+        guard isClerkReady else { return nil }
         return Clerk.shared.user?.primaryEmailAddress?.emailAddress
     }
 
@@ -43,21 +47,29 @@ final class AppSession {
     func bootstrapAuthIfNeeded() async {
         guard AppConfig.hasValidClerkKey else {
             clerkSetupError = "Add CLERK_PUBLISHABLE_KEY to ios/Config.xcconfig (copy from .env.local), then xcodegen generate."
+            isClerkReady = false
             return
         }
 
-        if Clerk.shared.session != nil {
-            isLoading = true
-        }
+        isLoading = true
         defer { isLoading = false }
 
         do {
             try await loadClerkIfNeeded()
+            isClerkReady = Clerk.shared.isLoaded
+            clerkSessionId = Clerk.shared.session?.id
+            clerkSetupError = nil
         } catch is ClerkLoadTimeout {
+            isClerkReady = false
+            clerkSessionId = nil
             clerkSetupError = "Sign-in timed out. Check your connection and try again."
+            clearSession()
             return
         } catch {
+            isClerkReady = false
+            clerkSessionId = nil
             clerkSetupError = error.localizedDescription
+            clearSession()
             return
         }
 
@@ -66,6 +78,7 @@ final class AppSession {
 
     /// `Clerk.shared.load()` can hang without Associated Domains / network — cap wait time.
     private func loadClerkIfNeeded() async throws {
+        if Clerk.shared.isLoaded { return }
         try await withThrowingTaskGroup(of: Void.self) { group in
             group.addTask { try await Clerk.shared.load() }
             group.addTask {
@@ -83,28 +96,40 @@ final class AppSession {
         if !suppressLoadingUI { isLoading = true }
         defer { if !suppressLoadingUI { isLoading = false } }
 
-        guard Clerk.shared.session != nil else {
+        guard isClerkReady, Clerk.shared.session != nil else {
             clearSession()
             return
         }
 
-        // Always mint a fresh session JWT — cached tokens are a common cause of
-        // "signed in" UI with 401/empty chat & directory on the API.
+        // Prove we can mint a token before flipping signed-in UI (avoids crash/loop on bad session).
+        let token: String
+        do {
+            token = try await Self.sessionToken(forceRefresh: true)
+        } catch {
+            AppLog.bootstrap("refreshAuth token failed: \(error.localizedDescription)")
+            clearSession()
+            return
+        }
+
         apiClient = APIClient(tokenProvider: { try await Self.sessionToken(forceRefresh: true) })
         isSignedIn = true
         authError = nil
+        clerkSessionId = Clerk.shared.session?.id
+        // Warm the client with a known-good token path (discarded; provider mints fresh ones).
+        _ = token
+
         await refreshAdminStatus()
         await recordActivityIfSignedIn()
         startActivityPingLoop()
     }
 
     func recordActivityIfSignedIn() async {
-        guard let client = apiClient else { return }
+        guard isSignedIn, let client = apiClient else { return }
         try? await client.recordUserActivity()
     }
 
     func refreshAdminStatus() async {
-        guard let client = apiClient else {
+        guard isSignedIn, let client = apiClient else {
             isAdmin = false
             canViewDashboard = false
             canCheckIn = false
@@ -142,13 +167,34 @@ final class AppSession {
     }
 
     func signOut() async {
-        try? await Clerk.shared.signOut()
+        // Clear app state first so UI never renders signed-in tabs against a dying Clerk session.
         clearSession()
+        guard isClerkReady else { return }
+        do {
+            try await Clerk.shared.signOut()
+        } catch {
+            AppLog.bootstrap("signOut error: \(error.localizedDescription)")
+        }
+        clerkSessionId = nil
     }
 
     /// Clerk session cleared outside our sign-out button (e.g. token expiry).
     func handleExternalSignOut() {
         clearSession()
+        clerkSessionId = nil
+    }
+
+    /// Call when Clerk reports a session change after load.
+    func handleClerkSessionChange() async {
+        guard isClerkReady else { return }
+        let newId = Clerk.shared.session?.id
+        guard newId != clerkSessionId else { return }
+        clerkSessionId = newId
+        if newId != nil {
+            await refreshAuth(suppressLoadingUI: true)
+        } else {
+            handleExternalSignOut()
+        }
     }
 
     private func startActivityPingLoop() {
@@ -175,14 +221,15 @@ final class AppSession {
         canManageUsers = false
         adminRole = nil
         adminName = nil
+        authError = nil
     }
 
     private static func sessionToken(forceRefresh: Bool) async throws -> String {
-        guard let session = Clerk.shared.session else {
+        guard Clerk.shared.isLoaded, let session = Clerk.shared.session else {
             throw APIError.unauthorized
         }
         let options = Session.GetTokenOptions(skipCache: forceRefresh)
-        guard let jwt = try await session.getToken(options)?.jwt else {
+        guard let jwt = try await session.getToken(options)?.jwt, !jwt.isEmpty else {
             throw APIError.unauthorized
         }
         return jwt

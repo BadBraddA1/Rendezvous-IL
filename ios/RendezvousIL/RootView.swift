@@ -28,10 +28,13 @@ struct RootView: View {
         .task {
             await runBootstrap()
         }
-        .onChange(of: Clerk.shared.session?.id) { _, sessionId in
-            if sessionId != nil {
-                Task { await session.refreshAuth() }
-            } else {
+        // Observe our mirror of the session id — never read Clerk.shared in the view graph
+        // before load completes (that path crashed after sign-out).
+        .onChange(of: session.clerkSessionId) { _, sessionId in
+            guard session.isClerkReady else { return }
+            if sessionId != nil, !session.isSignedIn {
+                Task { await session.refreshAuth(suppressLoadingUI: true) }
+            } else if sessionId == nil, session.isSignedIn {
                 session.handleExternalSignOut()
             }
         }
@@ -49,6 +52,9 @@ struct RootView: View {
         .onChange(of: scenePhase) { _, phase in
             guard phase == .active else { return }
             Task {
+                if session.isClerkReady {
+                    await session.handleClerkSessionChange()
+                }
                 await session.recordActivityIfSignedIn()
                 await NotificationService.shared.registerForRemoteIfAuthorized()
             }
@@ -109,7 +115,7 @@ struct RootView: View {
         }()
         _ = await (bootstrap, minimumSplash)
         splashFinished = true
-        AppLog.bootstrap("splash done signedIn=\(session.isSignedIn)")
+        AppLog.bootstrap("splash done signedIn=\(session.isSignedIn) clerkReady=\(session.isClerkReady)")
     }
 
     private var launchSplash: some View {
