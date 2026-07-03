@@ -54,15 +54,33 @@ struct DirectoryView: View {
     }
 
     private var signedOutState: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Sign in to browse the family directory")
-                .font(.title3.weight(.semibold))
-            Text("Registered Rendezvous families can share a photo and short note so other attendees can get to know them.")
-                .foregroundStyle(.secondary)
-            ClerkAuthPanel(mode: .signIn)
-                .frame(minHeight: 360)
+        ScrollView {
+            VStack(spacing: 24) {
+                VStack(spacing: 10) {
+                    Image(systemName: "person.3.fill")
+                        .font(.system(size: 44))
+                        .foregroundStyle(BrandColors.lake)
+
+                    Text("Family Directory")
+                        .font(.title2.weight(.semibold))
+
+                    Text("Registered Rendezvous families can share a photo and short note so other attendees can get to know them.")
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.top, 8)
+
+                ClerkAuthPanel(
+                    mode: .signIn,
+                    sectionTitle: "Sign in to browse",
+                    helperText: "Use the same account as rendezvousil.com. You need a registration for the event year to view the directory.",
+                    buttonTitle: "Sign in"
+                )
+            }
+            .padding(20)
         }
-        .padding()
     }
 
     private var emptyDirectoryState: some View {

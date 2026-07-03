@@ -50,8 +50,12 @@ struct AdminDashboardView: View {
                     subtitle: "Sign in with your Rendezvous admin account. Your Clerk user needs an admin role (admin, editor, viewer, or check-in)."
                 )
 
-                ClerkAuthPanel(mode: .signIn)
-                    .frame(minHeight: 360)
+                ClerkAuthPanel(
+                    mode: .signIn,
+                    sectionTitle: "Admin sign-in",
+                    helperText: "Use your Rendezvous admin account from rendezvousil.com (admin, editor, viewer, or check-in role).",
+                    buttonTitle: "Sign in"
+                )
 
                 Link(destination: AppConfig.url(for: "/admin")) {
                     Label("Open full admin on web", systemImage: "safari")

@@ -38,15 +38,32 @@ struct ChatListView: View {
     }
 
     private var signedOutState: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Sign in for Rendezvous chat")
-                .font(.title3.weight(.semibold))
-            Text("Each year you register for opens a group chat with other families. Past years stay available too.")
-                .foregroundStyle(.secondary)
-            ClerkAuthPanel(mode: .signIn)
-                .frame(minHeight: 360)
+        ScrollView {
+            VStack(spacing: 24) {
+                VStack(spacing: 10) {
+                    Image(systemName: "bubble.left.and.bubble.right.fill")
+                        .font(.system(size: 40))
+                        .foregroundStyle(BrandColors.lake)
+
+                    Text("Rendezvous Chat")
+                        .font(.title2.weight(.semibold))
+
+                    Text("Each year you register for opens a group chat with other families. Past years stay available too.")
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity)
+
+                ClerkAuthPanel(
+                    mode: .signIn,
+                    sectionTitle: "Sign in to chat",
+                    helperText: "Use your rendezvousil.com account. Year chats unlock after you register for that event year.",
+                    buttonTitle: "Sign in"
+                )
+            }
+            .padding(20)
         }
-        .padding()
     }
 
     private var channelList: some View {

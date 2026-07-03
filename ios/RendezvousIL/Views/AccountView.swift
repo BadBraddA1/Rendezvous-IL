@@ -25,28 +25,35 @@ struct AccountView: View {
 
     private var signedOutContent: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                Image(systemName: "person.3.fill")
-                    .font(.system(size: 36))
-                    .foregroundStyle(BrandColors.lake)
+            VStack(spacing: 24) {
+                VStack(spacing: 10) {
+                    Image(systemName: "person.crop.circle.fill")
+                        .font(.system(size: 44))
+                        .foregroundStyle(BrandColors.lake)
 
-                Text("Family account")
-                    .font(.title.weight(.semibold))
+                    Text("Family account")
+                        .font(.title2.weight(.semibold))
 
-                Text("Sign in with the same account you use on rendezvousil.com to manage your family profile, directory photo, and registration.")
-                    .font(.body)
-                    .foregroundStyle(.secondary)
+                    Text("Sign in with the same account you use on rendezvousil.com to manage your family profile, directory photo, and registration.")
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity)
 
-                ClerkAuthPanel()
+                ClerkAuthPanel(
+                    helperText: "New here? Enter your email in the next step to create a free account — or sign in if you already registered on the website."
+                )
 
                 Link(destination: AppConfig.url(for: "/sign-in/forgot-password")) {
                     Label("Forgot password?", systemImage: "key")
                         .font(.subheadline)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
 
                 contactBlock
             }
-            .padding()
+            .padding(20)
         }
     }
 

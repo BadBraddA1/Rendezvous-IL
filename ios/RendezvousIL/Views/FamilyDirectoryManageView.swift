@@ -22,13 +22,21 @@ struct FamilyDirectoryManageView: View {
     var body: some View {
         Group {
             if !session.isSignedIn {
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Sign in to manage your directory photo")
-                        .font(.title3.weight(.semibold))
-                    ClerkAuthPanel(mode: .signIn)
-                        .frame(minHeight: 360)
+                ScrollView {
+                    VStack(spacing: 20) {
+                        Text("Directory photo")
+                            .font(.title2.weight(.semibold))
+                        Text("Sign in to upload or update your family's directory photo.")
+                            .foregroundStyle(.secondary)
+
+                        ClerkAuthPanel(
+                            mode: .signIn,
+                            sectionTitle: "Sign in",
+                            buttonTitle: "Sign in"
+                        )
+                    }
+                    .padding(20)
                 }
-                .padding()
             } else {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {

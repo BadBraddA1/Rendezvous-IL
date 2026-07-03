@@ -33,7 +33,7 @@ open RendezvousIL.xcodeproj
 
 That runs XcodeGen (adds Clerk + all Swift sources to the project), resolves Swift packages, and opens the **RendezvousIL** scheme.
 
-For staff sign-in, the **live** Clerk publishable key is in `Config.xcconfig` (same as the website). It is copied into the app bundle via `RendezvousIL/Info.plist` (`CLERK_PUBLISHABLE_KEY = $(CLERK_PUBLISHABLE_KEY)`). Do not rely on `GENERATE_INFOPLIST_FILE` alone — custom keys are stripped. Local overrides go in `Config.local.xcconfig` (gitignored):
+- **Clerk sign-in** uses a Pew Packers–style flow: short copy + **Sign in or create account** button opens Clerk in a sheet (not a cramped inline form). Key is in `Config.xcconfig` → `RendezvousIL/Info.plist`.
 
 ```bash
 cp Config.xcconfig.example Config.local.xcconfig

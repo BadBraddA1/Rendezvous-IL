@@ -31,23 +31,30 @@ struct CheckInView: View {
     }
 
     private var staffSignIn: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Staff sign-in")
-                .font(.title2.weight(.semibold))
+        ScrollView {
+            VStack(spacing: 20) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Staff check-in")
+                        .font(.title2.weight(.semibold))
+                    Text("Sign in with the same Rendezvous admin account used on the website. You need the Check-In role (or higher).")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
 
-            Text("Sign in with the same Rendezvous admin account used on the website. You need the Check-In role (or higher).")
+                ClerkAuthPanel(
+                    mode: .signIn,
+                    sectionTitle: "Staff sign-in",
+                    helperText: "Use your admin email from rendezvousil.com.",
+                    buttonTitle: "Sign in"
+                )
+
+                Link(destination: AppConfig.url(for: "/admin/checkin")) {
+                    Label("Open web check-in station", systemImage: "safari")
+                }
                 .font(.subheadline)
-                .foregroundStyle(.secondary)
-
-            ClerkAuthPanel(mode: .signIn)
-                .frame(minHeight: 360)
-
-            Link(destination: AppConfig.url(for: "/admin/checkin")) {
-                Label("Open web check-in station", systemImage: "safari")
             }
-            .font(.subheadline)
+            .padding(20)
         }
-        .padding()
     }
 
     private var accessDenied: some View {
