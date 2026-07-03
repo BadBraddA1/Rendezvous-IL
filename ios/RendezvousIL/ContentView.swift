@@ -4,8 +4,9 @@ extension Notification.Name {
     static let rendezvousDeepLink = Notification.Name("rendezvousDeepLink")
 }
 
-struct ContentView: View {
-    @State private var repository = RendezvousRepository()
+/// Signed-in tab shell — schedule, chat, directory, and retreat tools.
+struct MainTabView: View {
+    @Environment(RendezvousRepository.self) private var repository
     @State private var selectedTab: AppTab = .home
 
     var body: some View {
@@ -30,7 +31,6 @@ struct ContentView: View {
                 .tabItem { Label("More", systemImage: "ellipsis.circle.fill") }
                 .tag(AppTab.more)
         }
-        .environment(repository)
         .onReceive(NotificationCenter.default.publisher(for: .rendezvousDeepLink)) { note in
             if let tab = note.userInfo?["tab"] as? AppTab {
                 selectedTab = tab
@@ -39,6 +39,7 @@ struct ContentView: View {
         .task {
             await repository.loadScheduleBundle()
             await repository.loadScheduleExtras()
+            await repository.loadUpdates()
         }
     }
 }
@@ -48,5 +49,7 @@ enum AppTab: Hashable {
 }
 
 #Preview {
-    ContentView()
+    MainTabView()
+        .environment(RendezvousRepository())
+        .environment(AppSession())
 }

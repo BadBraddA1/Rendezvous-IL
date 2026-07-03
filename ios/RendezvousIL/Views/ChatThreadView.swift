@@ -123,7 +123,10 @@ struct ChatThreadView: View {
     }
 
     private func setup() async {
-        guard let client = session.apiClient else { return }
+        guard let client = session.apiClient else {
+            errorMessage = "Sign in required"
+            return
+        }
         isLoading = true
         defer { isLoading = false }
 

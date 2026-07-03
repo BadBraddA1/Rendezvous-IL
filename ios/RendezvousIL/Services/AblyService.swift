@@ -13,18 +13,25 @@ final class AblyService {
         guard let jsonString = String(data: jsonData, encoding: .utf8) else {
             throw APIError.badStatus(-1)
         }
-        let request = try ARTTokenRequest.fromJson(jsonString as ARTJsonCompatible)
+
+        let request: ARTTokenRequest
+        do {
+            request = try ARTTokenRequest.fromJson(jsonString as ARTJsonCompatible)
+        } catch {
+            throw APIError.decoding(error)
+        }
 
         let options = ARTClientOptions()
         options.authCallback = { _, callback in
             callback(request, nil)
         }
+        options.autoConnect = true
 
         client = ARTRealtime(options: options)
         _ = client?.connection.on { _ in }
     }
 
-    func subscribe(channelId: String, onMessage: @escaping (ChatMessage) -> Void) {
+    func subscribe(channelId: String, onMessage: @escaping @MainActor (ChatMessage) -> Void) {
         guard let client else { return }
         let channelName = "rendezvous:channel:\(channelId)"
         if channels[channelName] != nil { return }
@@ -44,8 +51,11 @@ final class AblyService {
     }
 
     func disconnect() {
+        for channel in channels.values {
+            channel.unsubscribe()
+        }
+        channels.removeAll()
         client?.close()
         client = nil
-        channels.removeAll()
     }
 }

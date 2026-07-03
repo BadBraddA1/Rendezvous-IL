@@ -6,18 +6,30 @@ struct MoreView: View {
     var body: some View {
         NavigationStack {
             List {
-                Section("Plan your trip") {
-                    NavigationLink { CalculatorView() } label: {
-                        Label("Cost calculator", systemImage: "dollarsign.circle")
+                Section("Community") {
+                    NavigationLink { DirectoryView() } label: {
+                        Label("Family directory", systemImage: "person.3.fill")
                     }
+                    NavigationLink { FamilyDirectoryManageView() } label: {
+                        Label("Your directory photo", systemImage: "camera.fill")
+                    }
+                    NavigationLink { AccountView() } label: {
+                        Label("Family account", systemImage: "person.crop.circle")
+                    }
+                }
+
+                Section("Retreat resources") {
                     NavigationLink { BibleBowlView() } label: {
-                        Label("Bible Bowl", systemImage: "book.closed")
+                        Label("Bible Bowl (\(AppConfig.theme))", systemImage: "book.closed")
                     }
                     NavigationLink { FAQView() } label: {
                         Label("FAQ", systemImage: "questionmark.circle")
                     }
                     NavigationLink { AboutView() } label: {
                         Label("About Rendezvous", systemImage: "info.circle")
+                    }
+                    NavigationLink { NotificationSettingsView() } label: {
+                        Label("Notifications & widgets", systemImage: "bell.badge")
                     }
                 }
 
@@ -34,35 +46,31 @@ struct MoreView: View {
                     }
                 }
 
-                Section("Account") {
-                    if session.canCheckIn {
+                if session.canCheckIn {
+                    Section("Staff") {
                         NavigationLink { CheckInView() } label: {
-                            Label("Staff check-in", systemImage: "person.badge.key")
+                            Label("Check-in station", systemImage: "person.badge.key")
                         }
-                    }
-                    NavigationLink { DirectoryView() } label: {
-                        Label("Family directory", systemImage: "person.3.fill")
-                    }
-                    NavigationLink { FamilyDirectoryManageView() } label: {
-                        Label("Directory photo", systemImage: "camera.fill")
-                    }
-                    NavigationLink { AccountView() } label: {
-                        Label("Family account", systemImage: "person.crop.circle")
-                    }
-                    NavigationLink { NotificationSettingsView() } label: {
-                        Label("Notifications & widgets", systemImage: "bell.badge")
                     }
                 }
 
                 Section("Links") {
                     Link(destination: AppConfig.url(for: "/schedule/print")) {
-                        Label("Download schedule PDF", systemImage: "doc.richtext")
+                        Label("Schedule PDF", systemImage: "doc.richtext")
                     }
                     Link(destination: URL(string: "https://www.facebook.com/groups/RendezvousIL")!) {
                         Label("Facebook group", systemImage: "person.2")
                     }
                     Link(destination: AppConfig.baseURL) {
                         Label("rendezvousil.com", systemImage: "safari")
+                    }
+                }
+
+                Section {
+                    Button(role: .destructive) {
+                        Task { await session.signOut() }
+                    } label: {
+                        Label("Sign out", systemImage: "rectangle.portrait.and.arrow.right")
                     }
                 }
             }

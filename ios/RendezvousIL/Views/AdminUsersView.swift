@@ -62,13 +62,13 @@ struct AdminUsersView: View {
             } onDelete: { deletedId in
                 users.removeAll { $0.id == deletedId }
             }
-            .environment(session)
+            .withAppEnvironments(session: session)
         }
         .sheet(isPresented: $showCreateUser) {
             AdminUserCreateSheet { created in
                 users.insert(created, at: 0)
             }
-            .environment(session)
+            .withAppEnvironments(session: session)
         }
     }
 

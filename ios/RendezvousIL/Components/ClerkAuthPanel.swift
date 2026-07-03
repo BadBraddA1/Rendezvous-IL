@@ -59,6 +59,7 @@ struct ClerkAuthPanel: View {
                 }
 
                 Button(buttonTitle) {
+                    guard clerkIsReady else { return }
                     authIsPresented = true
                 }
                 .buttonStyle(.borderedProminent)
@@ -69,21 +70,20 @@ struct ClerkAuthPanel: View {
         }
         .glassCard(cornerRadius: 22, padding: 22)
         .sheet(isPresented: $authIsPresented) {
-            if clerkIsReady {
-                NavigationStack {
-                    AuthView(mode: mode, isDismissable: true)
-                        .environment(\.clerkTheme, .rendezvous)
-                        .navigationTitle(mode == .signIn ? "Sign in" : "Account")
-                        .navigationBarTitleDisplayMode(.inline)
-                        .toolbar {
-                            ToolbarItem(placement: .cancellationAction) {
-                                Button("Close") { authIsPresented = false }
-                            }
+            NavigationStack {
+                AuthView(mode: mode, isDismissable: true)
+                    .environment(\.clerkTheme, .rendezvous)
+                    .navigationTitle(mode == .signIn ? "Sign in" : "Account")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Close") { authIsPresented = false }
                         }
-                }
-                .presentationDetents([.large])
-                .presentationDragIndicator(.visible)
+                    }
             }
+            .withAppEnvironments(session: session)
+            .presentationDetents([.large])
+            .presentationDragIndicator(.visible)
         }
         .onChange(of: clerk.session?.id) { _, sessionId in
             guard sessionId != nil else { return }

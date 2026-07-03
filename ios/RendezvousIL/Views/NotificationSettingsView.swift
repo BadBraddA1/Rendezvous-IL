@@ -1,8 +1,9 @@
 import SwiftUI
 
 struct NotificationSettingsView: View {
-    @State private var notifications = NotificationService.shared
     @Environment(RendezvousRepository.self) private var repository
+
+    private var notifications: NotificationService { NotificationService.shared }
 
     var body: some View {
         Form {
@@ -24,13 +25,8 @@ struct NotificationSettingsView: View {
             }
 
             Section("Retreat alerts") {
-                Toggle("Organizer announcements (APNs)", isOn: $notifications.broadcastAlertsEnabled)
-                    .onChange(of: notifications.broadcastAlertsEnabled) { _, enabled in
-                        if enabled {
-                            Task { await notifications.registerForRemoteIfAuthorized() }
-                        }
-                    }
-                Toggle("Live Activity (Lock Screen / Dynamic Island)", isOn: $notifications.liveActivityEnabled)
+                Toggle("Organizer announcements (APNs)", isOn: broadcastBinding)
+                Toggle("Live Activity (Lock Screen / Dynamic Island)", isOn: liveActivityBinding)
             }
 
             Section("Event reminders") {
@@ -55,6 +51,25 @@ struct NotificationSettingsView: View {
         .task {
             await notifications.refreshAuthorizationStatus()
         }
+    }
+
+    private var broadcastBinding: Binding<Bool> {
+        Binding(
+            get: { notifications.broadcastAlertsEnabled },
+            set: { newValue in
+                notifications.broadcastAlertsEnabled = newValue
+                if newValue {
+                    Task { await notifications.registerForRemoteIfAuthorized() }
+                }
+            }
+        )
+    }
+
+    private var liveActivityBinding: Binding<Bool> {
+        Binding(
+            get: { notifications.liveActivityEnabled },
+            set: { notifications.liveActivityEnabled = $0 }
+        )
     }
 
     private var statusLabel: String {

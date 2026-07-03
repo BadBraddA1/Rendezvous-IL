@@ -6,6 +6,7 @@ struct RendezvousILApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @Environment(\.scenePhase) private var scenePhase
     @State private var session = AppSession()
+    @State private var repository = RendezvousRepository()
 
     init() {
         guard let key = AppConfig.clerkPublishableKey else { return }
@@ -14,19 +15,14 @@ struct RendezvousILApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            RootView()
                 .environment(session)
+                .environment(repository)
                 .environment(\.clerk, Clerk.shared)
                 .tint(BrandColors.lake)
                 .task {
-                    await session.bootstrapAuthIfNeeded()
                     await NotificationService.shared.refreshAuthorizationStatus()
                     await NotificationService.shared.registerForRemoteIfAuthorized()
-                }
-                .onChange(of: Clerk.shared.session?.id) { _, sessionId in
-                    if sessionId != nil {
-                        Task { await session.refreshAuth() }
-                    }
                 }
                 .onChange(of: scenePhase) { _, phase in
                     guard phase == .active else { return }
@@ -34,7 +30,6 @@ struct RendezvousILApp: App {
                 }
                 .onOpenURL { url in
                     if let tab = DeepLinkRouter.tab(for: url) {
-                        // Tab selection is owned by ContentView; post for it to pick up.
                         NotificationCenter.default.post(
                             name: .rendezvousDeepLink,
                             object: nil,

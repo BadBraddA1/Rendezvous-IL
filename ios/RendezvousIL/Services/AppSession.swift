@@ -15,6 +15,17 @@ final class AppSession {
     var authError: String?
     var clerkSetupError: String?
 
+    /// Display name from Clerk (family account holder).
+    var userDisplayName: String? {
+        guard let user = Clerk.shared.user else { return nil }
+        let name = [user.firstName, user.lastName]
+            .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
+        if !name.isEmpty { return name }
+        return user.primaryEmailAddress?.emailAddress
+    }
+
     private(set) var apiClient: APIClient?
     private var activityPingTask: Task<Void, Never>?
 

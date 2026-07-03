@@ -126,13 +126,13 @@ rendezvous-il/
 
 ## iOS app
 
-Native **SwiftUI** app in `ios/` (not a WebView shell):
+Native **SwiftUI** attendee hub in `ios/` (not a WebView shell). **Sign-in required** for almost everything — welcome screen, then Clerk, then tabs:
 
-- **Schedule** — week view, meals, worship leaders (from Turso-backed APIs)
+- **Home** — greeting, retreat shortcuts (schedule, updates, chat, directory)
+- **Schedule** — week view, meals, worship leaders, event reminders
 - **Updates** — now/next, weather, announcements
-- **More** — FAQ, About, Bible Bowl, cost calculator, family directory
-- **Staff** — Clerk sign-in for **admin dashboard** (Clerk `role` in public metadata) and **check-in station**
-- **App icon** — bundled in `ios/RendezvousIL/Resources/Assets.xcassets` (synced from `public/rendezvous-logo.png` via `ios/scripts/sync-app-icon.sh`)
+- **Chat** — year group chat (Ably)
+- **More** — directory, account, Bible Bowl, FAQ, notifications, admin/check-in for staff
 
 Setup: `cd ios && bash scripts/setup-xcode.sh && open RendezvousIL.xcodeproj` — see [ios/README.md](ios/README.md). For staff sign-in, add your Clerk key to `ios/Config.local.xcconfig`.
 

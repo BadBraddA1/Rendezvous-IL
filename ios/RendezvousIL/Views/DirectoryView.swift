@@ -1,4 +1,3 @@
-import Clerk
 import SwiftUI
 
 struct DirectoryView: View {
@@ -35,9 +34,7 @@ struct DirectoryView: View {
 
     var body: some View {
         Group {
-            if !session.isSignedIn {
-                signedOutState
-            } else if enabledYears.isEmpty {
+            if enabledYears.isEmpty {
                 emptyDirectoryState
             } else {
                 directoryContent
@@ -45,41 +42,10 @@ struct DirectoryView: View {
         }
         .navigationTitle("Family Directory")
         .task {
-            await session.refreshAuth()
             await loadEnabledYears()
-            if session.isSignedIn, !enabledYears.isEmpty {
+            if !enabledYears.isEmpty {
                 await loadDirectory()
             }
-        }
-    }
-
-    private var signedOutState: some View {
-        ScrollView {
-            VStack(spacing: 24) {
-                VStack(spacing: 10) {
-                    Image(systemName: "person.3.fill")
-                        .font(.system(size: 44))
-                        .foregroundStyle(BrandColors.lake)
-
-                    Text("Family Directory")
-                        .font(.title2.weight(.semibold))
-
-                    Text("Registered Rendezvous families can share a photo and short note so other attendees can get to know them.")
-                        .font(.body)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.top, 8)
-
-                ClerkAuthPanel(
-                    mode: .signIn,
-                    sectionTitle: "Sign in to browse",
-                    helperText: "Use the same account as rendezvousil.com. You need a registration for the event year to view the directory.",
-                    buttonTitle: "Sign in"
-                )
-            }
-            .padding(20)
         }
     }
 
@@ -257,13 +223,11 @@ private struct DirectoryFamilyCard: View {
                     .lineLimit(3)
             }
 
-            if let email = family.email, !email.isEmpty {
-                if let url = URL(string: "mailto:\(email)") {
-                    Link(destination: url) {
-                        Label(email, systemImage: "envelope")
-                            .font(.caption)
-                            .lineLimit(2)
-                    }
+            if let email = family.email, !email.isEmpty, let url = URL(string: "mailto:\(email)") {
+                Link(destination: url) {
+                    Label(email, systemImage: "envelope")
+                        .font(.caption)
+                        .lineLimit(2)
                 }
             }
 
@@ -275,7 +239,8 @@ private struct DirectoryFamilyCard: View {
             }
 
             ForEach(Array(family.contact_phones.enumerated()), id: \.offset) { _, contact in
-                if let url = URL(string: "tel:\(contact.phone.filter { $0.isNumber || $0 == "+" })") {
+                let digits = contact.phone.filter { $0.isNumber || $0 == "+" }
+                if !digits.isEmpty, let url = URL(string: "tel:\(digits)") {
                     Link(destination: url) {
                         Label(
                             contact.name.isEmpty ? contact.phone : "\(contact.name): \(contact.phone)",

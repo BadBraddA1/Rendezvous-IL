@@ -1,6 +1,5 @@
 import SwiftUI
 import PhotosUI
-import Clerk
 
 struct FamilyDirectoryManageView: View {
     @Environment(AppSession.self) private var session
@@ -20,99 +19,76 @@ struct FamilyDirectoryManageView: View {
     @State private var successMessage: String?
 
     var body: some View {
-        Group {
-            if !session.isSignedIn {
-                ScrollView {
-                    VStack(spacing: 20) {
-                        Text("Directory photo")
-                            .font(.title2.weight(.semibold))
-                        Text("Sign in to upload or update your family's directory photo.")
-                            .foregroundStyle(.secondary)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                Text("Registered families appear in the directory by default. Add phone numbers on each family member so the directory shows the right name with each number.")
+                    .foregroundStyle(.secondary)
 
-                        ClerkAuthPanel(
-                            mode: .signIn,
-                            sectionTitle: "Sign in",
-                            buttonTitle: "Sign in"
-                        )
-                    }
-                    .padding(20)
+                photoPreview
+
+                PhotosPicker(selection: $pickerItem, matching: .images) {
+                    Label(settings.photo_url == nil ? "Upload photo" : "Replace photo", systemImage: "camera.fill")
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(BrandColors.lake, in: RoundedRectangle(cornerRadius: 12))
+                        .foregroundStyle(.white)
                 }
-            } else {
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 20) {
-                        Text("Registered families appear in the directory by default. Add phone numbers on each family member so the directory shows the right name with each number.")
-                            .foregroundStyle(.secondary)
+                .disabled(isLoading)
 
-                        photoPreview
-
-                        PhotosPicker(selection: $pickerItem, matching: .images) {
-                            Label(settings.photo_url == nil ? "Upload photo" : "Replace photo", systemImage: "camera.fill")
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(BrandColors.lake, in: RoundedRectangle(cornerRadius: 12))
-                                .foregroundStyle(.white)
-                        }
-                        .disabled(isLoading)
-
-                        if settings.photo_url != nil {
-                            Button(role: .destructive) {
-                                Task { await removePhoto() }
-                            } label: {
-                                Label("Remove photo", systemImage: "trash")
-                                    .frame(maxWidth: .infinity)
-                            }
-                            .disabled(isLoading)
-                        }
-
-                        Toggle("Hide our family from the directory", isOn: Binding(
-                            get: { !optIn },
-                            set: { optIn = !$0 }
-                        ))
-
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Short note (optional)")
-                                .font(.headline)
-                            TextField("e.g. First time at Rendezvous!", text: $blurb, axis: .vertical)
-                                .lineLimit(3...5)
-                                .padding(12)
-                                .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
-                        }
-
-                        Button {
-                            Task { await saveSettings() }
-                        } label: {
-                            if isSaving {
-                                ProgressView()
-                                    .frame(maxWidth: .infinity)
-                            } else {
-                                Text("Save directory settings")
-                                    .frame(maxWidth: .infinity)
-                            }
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .disabled(isSaving)
-
-                        if let successMessage {
-                            Text(successMessage)
-                                .font(.footnote)
-                                .foregroundStyle(.green)
-                        }
-                        if let errorMessage {
-                            Text(errorMessage)
-                                .font(.footnote)
-                                .foregroundStyle(.red)
-                        }
+                if settings.photo_url != nil {
+                    Button(role: .destructive) {
+                        Task { await removePhoto() }
+                    } label: {
+                        Label("Remove photo", systemImage: "trash")
+                            .frame(maxWidth: .infinity)
                     }
-                    .padding()
+                    .disabled(isLoading)
+                }
+
+                Toggle("Hide our family from the directory", isOn: Binding(
+                    get: { !optIn },
+                    set: { optIn = !$0 }
+                ))
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Short note (optional)")
+                        .font(.headline)
+                    TextField("e.g. First time at Rendezvous!", text: $blurb, axis: .vertical)
+                        .lineLimit(3...5)
+                        .padding(12)
+                        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
+                }
+
+                Button {
+                    Task { await saveSettings() }
+                } label: {
+                    if isSaving {
+                        ProgressView()
+                            .frame(maxWidth: .infinity)
+                    } else {
+                        Text("Save directory settings")
+                            .frame(maxWidth: .infinity)
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(isSaving)
+
+                if let successMessage {
+                    Text(successMessage)
+                        .font(.footnote)
+                        .foregroundStyle(.green)
+                }
+                if let errorMessage {
+                    Text(errorMessage)
+                        .font(.footnote)
+                        .foregroundStyle(.red)
                 }
             }
+            .padding()
         }
         .navigationTitle("Directory Photo")
         .task {
-            await session.refreshAuth()
-            if session.isSignedIn {
-                await loadSettings()
-            }
+            await loadSettings()
         }
         .onChange(of: pickerItem) { _, newItem in
             guard let newItem else { return }

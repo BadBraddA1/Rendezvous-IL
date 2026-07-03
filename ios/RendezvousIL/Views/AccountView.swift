@@ -3,83 +3,19 @@ import SwiftUI
 
 struct AccountView: View {
     @Environment(AppSession.self) private var session
-    @Environment(Clerk.self) private var clerk
 
     var body: some View {
-        Group {
-            if session.isSignedIn {
-                signedInContent
-            } else {
-                signedOutContent
-            }
-        }
-        .navigationTitle("Account")
-        .task {
-            await session.refreshAuth()
-        }
-        .onChange(of: clerk.session?.id) { _, sessionId in
-            guard sessionId != nil else { return }
-            Task { await session.refreshAuth() }
-        }
-    }
-
-    private var signedOutContent: some View {
-        ScrollView {
-            VStack(spacing: 24) {
-                VStack(spacing: 10) {
-                    Image(systemName: "person.crop.circle.fill")
-                        .font(.system(size: 44))
-                        .foregroundStyle(BrandColors.lake)
-
-                    Text("Family account")
-                        .font(.title2.weight(.semibold))
-
-                    Text("Sign in with the same account you use on rendezvousil.com to manage your family profile, directory photo, and registration.")
-                        .font(.body)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                }
-                .frame(maxWidth: .infinity)
-
-                ClerkAuthPanel(
-                    helperText: "New here? Enter your email in the next step to create a free account — or sign in if you already registered on the website."
-                )
-
-                Link(destination: AppConfig.url(for: "/sign-in/forgot-password")) {
-                    Label("Forgot password?", systemImage: "key")
-                        .font(.subheadline)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-                contactBlock
-            }
-            .padding(20)
-        }
-    }
-
-    /// Clerk made `User.fullName` internal; build the display name from the
-    /// public first/last name fields instead.
-    private var clerkUserDisplayName: String? {
-        guard let user = Clerk.shared.user else { return nil }
-        let name = [user.firstName, user.lastName]
-            .compactMap { $0?.trimmingCharacters(in: .whitespaces) }
-            .filter { !$0.isEmpty }
-            .joined(separator: " ")
-        return name.isEmpty ? nil : name
-    }
-
-    private var signedInContent: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                if let name = session.adminName ?? clerkUserDisplayName {
+                if let name = session.adminName ?? session.userDisplayName {
                     Text("Signed in as \(name)")
                         .font(.headline)
                 }
 
                 VStack(alignment: .leading, spacing: 12) {
                     infoRow(icon: "calendar", title: "Event dates", value: AppConfig.eventDates)
-                    infoRow(icon: "bell", title: "Registration opens", value: AppConfig.registrationOpens)
                     infoRow(icon: "book.closed", title: "Bible Bowl", value: AppConfig.theme)
+                    infoRow(icon: "mappin.and.ellipse", title: "Location", value: AppConfig.location)
                 }
                 .padding()
                 .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
@@ -94,14 +30,6 @@ struct AccountView: View {
 
                 Link(destination: AppConfig.url(for: "/account/settings")) {
                     Label("Change password on web", systemImage: "key")
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
-                        .foregroundStyle(BrandColors.lake)
-                }
-
-                Link(destination: AppConfig.url(for: "/sign-in/forgot-password")) {
-                    Label("Reset password (email code)", systemImage: "envelope")
                         .frame(maxWidth: .infinity)
                         .padding()
                         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
@@ -128,18 +56,11 @@ struct AccountView: View {
                         .foregroundStyle(BrandColors.lake)
                 }
 
-                Button(role: .destructive) {
-                    Task { await session.signOut() }
-                } label: {
-                    Label("Sign out", systemImage: "rectangle.portrait.and.arrow.right")
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                }
-
                 contactBlock
             }
             .padding()
         }
+        .navigationTitle("Account")
     }
 
     private func infoRow(icon: String, title: String, value: String) -> some View {

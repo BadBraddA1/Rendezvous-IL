@@ -1,163 +1,166 @@
+import Clerk
 import SwiftUI
 
 struct HomeView: View {
+    @Environment(AppSession.self) private var session
+    @Environment(RendezvousRepository.self) private var repository
     @Binding var selectedTab: AppTab
-
-    private let facts: [(icon: String, title: String, detail: String)] = [
-        ("calendar", "5 days / 4 nights", "Fellowship, worship, recreation, and encouragement."),
-        ("mappin.and.ellipse", "Lake Williamson", "Lodging, dining, and recreation on site."),
-        ("person.3.fill", "All ages welcome", "A family retreat with activities for every age."),
-        ("fork.knife", "Meals included", "Buffet-style dining — no cooking or cleanup."),
-    ]
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
-                    hero
-                    countdownCard
-                    quickActions
-                    factsSection
-                    planningSection
+                    greetingCard
+                    nowNextCard
+                    hubGrid
+                    retreatInfo
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 32)
             }
             .background(Color(.systemGroupedBackground))
-            .navigationTitle("Rendezvous")
+            .navigationTitle("Home")
             .navigationBarTitleDisplayMode(.large)
+            .refreshable {
+                await repository.loadUpdates()
+            }
         }
     }
 
-    private var hero: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Rendezvous \(AppConfig.eventYear)")
-                .font(.system(.largeTitle, design: .serif))
-                .fontWeight(.semibold)
-                .foregroundStyle(BrandColors.lake)
+    private var greetingCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if let name = session.userDisplayName {
+                Text("Welcome, \(name)")
+                    .font(.title2.weight(.semibold))
+            } else {
+                Text("Welcome back")
+                    .font(.title2.weight(.semibold))
+            }
 
-            Text("Christian Homeschool Family Retreat")
-                .font(.title3)
+            Text("Rendezvous \(AppConfig.eventYear) · \(AppConfig.eventDates)")
+                .font(.subheadline)
                 .foregroundStyle(.secondary)
 
-            Text(AppConfig.eventDates)
-                .font(.headline)
-                .foregroundStyle(BrandColors.coralInk)
-
             Text(AppConfig.location)
-                .font(.subheadline)
+                .font(.footnote)
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(20)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(BrandColors.lakeLight)
-        )
+        .background(BrandColors.lakeLight, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .stroke(BrandColors.lake.opacity(0.2), lineWidth: 1)
         )
     }
 
-    private var countdownCard: some View {
-        RegistrationCountdownView()
+    @ViewBuilder
+    private var nowNextCard: some View {
+        let result = repository.nowNext()
+
+        if result.current != nil || result.next != nil {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("During retreat")
+                    .font(.headline)
+
+                if let current = result.current {
+                    hubStatusRow(
+                        label: "Now",
+                        title: current.title,
+                        detail: [current.time, current.location].compactMap { $0 }.joined(separator: " · "),
+                        tint: BrandColors.lake
+                    )
+                }
+
+                if let next = result.next {
+                    hubStatusRow(
+                        label: result.current == nil ? "Up next" : "Then",
+                        title: next.title,
+                        detail: [next.day, next.time, next.location].compactMap { $0 }.joined(separator: " · "),
+                        tint: BrandColors.coral
+                    )
+                }
+
+                Button("Open full schedule") {
+                    selectedTab = .schedule
+                }
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(BrandColors.lake)
+            }
+            .padding(16)
+            .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14))
+        }
     }
 
-    private var quickActions: some View {
+    private var hubGrid: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Quick links")
+            Text("Community")
                 .font(.headline)
 
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                QuickActionButton(title: "Schedule", icon: "calendar", color: BrandColors.lake) {
+                HubTile(title: "Schedule", icon: "calendar", color: BrandColors.lake) {
                     selectedTab = .schedule
                 }
-                QuickActionButton(title: "Updates", icon: "bell.badge", color: BrandColors.coral) {
+                HubTile(title: "Updates", icon: "bell.badge", color: BrandColors.coral) {
                     selectedTab = .updates
                 }
-                QuickActionButton(title: "FAQ", icon: "questionmark.circle", color: BrandColors.lake) {
-                    selectedTab = .more
+                HubTile(title: "Chat", icon: "bubble.left.and.bubble.right.fill", color: BrandColors.lake) {
+                    selectedTab = .chat
                 }
-                QuickActionButton(title: "Calculator", icon: "dollarsign.circle", color: BrandColors.coral) {
-                    selectedTab = .more
+                NavigationLink {
+                    DirectoryView()
+                } label: {
+                    HubTileLabel(title: "Directory", icon: "person.3.fill", color: BrandColors.coral)
                 }
+                .buttonStyle(.plain)
             }
         }
     }
 
-    private var factsSection: some View {
+    private var retreatInfo: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("What to expect")
+            Text("This year")
                 .font(.headline)
 
-            ForEach(facts, id: \.title) { fact in
-                HStack(alignment: .top, spacing: 14) {
-                    Image(systemName: fact.icon)
-                        .font(.title3)
-                        .foregroundStyle(BrandColors.lake)
-                        .frame(width: 28)
-
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(fact.title)
-                            .font(.subheadline.weight(.semibold))
-                        Text(fact.detail)
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                .padding(14)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(Color(.secondarySystemGroupedBackground))
-                )
-            }
+            infoRow(label: "Theme", value: AppConfig.theme, icon: "book.closed")
+            infoRow(label: "Dates", value: AppConfig.eventDates, icon: "calendar")
+            infoRow(label: "Place", value: "Lake Williamson, Carlinville, IL", icon: "mappin.and.ellipse")
         }
+        .padding(16)
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14))
     }
 
-    private var planningSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("2027 at a glance")
-                .font(.headline)
-
-            VStack(spacing: 0) {
-                planningRow(label: "Dates", value: AppConfig.eventDates)
-                Divider().padding(.leading, 16)
-                planningRow(label: "Registration", value: AppConfig.registrationOpens)
-                Divider().padding(.leading, 16)
-                planningRow(label: "Bible Bowl", value: AppConfig.theme)
-                Divider().padding(.leading, 16)
-                planningRow(label: "Location", value: "Lake Williamson, Carlinville, IL")
-            }
-            .background(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(Color(.secondarySystemGroupedBackground))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .stroke(BrandColors.cardBorder, lineWidth: 1)
-            )
-        }
-    }
-
-    private func planningRow(label: String, value: String) -> some View {
+    private func infoRow(label: String, value: String, icon: String) -> some View {
         HStack(alignment: .top, spacing: 12) {
-            Text(label)
-                .font(.subheadline.weight(.medium))
+            Image(systemName: icon)
                 .foregroundStyle(BrandColors.lake)
-                .frame(width: 100, alignment: .leading)
-            Text(value)
-                .font(.subheadline)
-                .foregroundStyle(.primary)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(width: 22)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(label)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                Text(value)
+                    .font(.subheadline)
+            }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+    }
+
+    private func hubStatusRow(label: String, title: String, detail: String, tint: Color) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(label.uppercased())
+                .font(.caption2.weight(.bold))
+                .foregroundStyle(tint)
+            Text(title)
+                .font(.headline)
+            Text(detail)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
-private struct QuickActionButton: View {
+private struct HubTile: View {
     let title: String
     let icon: String
     let color: Color
@@ -165,24 +168,32 @@ private struct QuickActionButton: View {
 
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 8) {
-                Image(systemName: icon)
-                    .font(.title2)
-                Text(title)
-                    .font(.caption.weight(.semibold))
-                    .multilineTextAlignment(.center)
-            }
-            .foregroundStyle(color)
-            .frame(maxWidth: .infinity, minHeight: 88)
-            .background(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(Color(.secondarySystemGroupedBackground))
-            )
+            HubTileLabel(title: title, icon: icon, color: color)
         }
         .buttonStyle(.plain)
     }
 }
 
+private struct HubTileLabel: View {
+    let title: String
+    let icon: String
+    let color: Color
+
+    var body: some View {
+        VStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.title2)
+            Text(title)
+                .font(.caption.weight(.semibold))
+        }
+        .foregroundStyle(color)
+        .frame(maxWidth: .infinity, minHeight: 88)
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
+    }
+}
+
 #Preview {
     HomeView(selectedTab: .constant(.home))
+        .environment(RendezvousRepository())
+        .environment(AppSession())
 }

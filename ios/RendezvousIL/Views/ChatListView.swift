@@ -1,4 +1,3 @@
-import Clerk
 import SwiftUI
 
 struct ChatListView: View {
@@ -11,15 +10,13 @@ struct ChatListView: View {
     var body: some View {
         NavigationStack {
             Group {
-                if !session.isSignedIn {
-                    signedOutState
-                } else if let errorMessage {
+                if let errorMessage {
                     ContentUnavailableView("Could not load chat", systemImage: "exclamationmark.triangle", description: Text(errorMessage))
                 } else if channels.isEmpty && !isLoading {
                     ContentUnavailableView(
                         "No chats yet",
                         systemImage: "bubble.left.and.bubble.right",
-                        description: Text("Register for a Rendezvous year to join that year's group chat.")
+                        description: Text("Register for a Rendezvous year on the website to join that year's group chat.")
                     )
                 } else {
                     channelList
@@ -27,42 +24,10 @@ struct ChatListView: View {
             }
             .navigationTitle("Chat")
             .refreshable { await load(force: true) }
-            .task {
-                await session.refreshAuth()
-                await load(force: false)
-            }
+            .task { await load(force: false) }
             .navigationDestination(for: ChatChannelSummary.self) { channel in
                 ChatThreadView(channel: channel)
             }
-        }
-    }
-
-    private var signedOutState: some View {
-        ScrollView {
-            VStack(spacing: 24) {
-                VStack(spacing: 10) {
-                    Image(systemName: "bubble.left.and.bubble.right.fill")
-                        .font(.system(size: 40))
-                        .foregroundStyle(BrandColors.lake)
-
-                    Text("Rendezvous Chat")
-                        .font(.title2.weight(.semibold))
-
-                    Text("Each year you register for opens a group chat with other families. Past years stay available too.")
-                        .font(.body)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                }
-                .frame(maxWidth: .infinity)
-
-                ClerkAuthPanel(
-                    mode: .signIn,
-                    sectionTitle: "Sign in to chat",
-                    helperText: "Use your rendezvousil.com account. Year chats unlock after you register for that event year.",
-                    buttonTitle: "Sign in"
-                )
-            }
-            .padding(20)
         }
     }
 
@@ -104,8 +69,9 @@ struct ChatListView: View {
     }
 
     private func load(force: Bool) async {
-        guard session.isSignedIn, let client = session.apiClient else {
+        guard let client = session.apiClient else {
             isLoading = false
+            errorMessage = "Sign in required"
             return
         }
 
