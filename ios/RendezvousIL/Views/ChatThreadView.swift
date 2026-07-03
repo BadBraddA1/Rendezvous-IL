@@ -11,14 +11,35 @@ struct ChatThreadView: View {
     @State private var isLoading = true
     @State private var isSending = false
     @State private var errorMessage: String?
+    @State private var realtimeStatus: RealtimeStatus = .connecting
     @State private var ablyService = AblyService()
 
+    private enum RealtimeStatus {
+        case connecting
+        case connected
+        case unavailable
+    }
+
     private var currentUserId: String {
-        Clerk.shared.user?.id ?? ""
+        guard Clerk.shared.isLoaded else { return "" }
+        return Clerk.shared.user?.id ?? ""
     }
 
     var body: some View {
         VStack(spacing: 0) {
+            if realtimeStatus == .unavailable {
+                HStack(spacing: 8) {
+                    Image(systemName: "wifi.slash")
+                    Text("Live updates unavailable — pull to refresh or send a message.")
+                        .font(.caption)
+                }
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal)
+                .padding(.vertical, 8)
+                .background(BrandColors.warmSurface)
+            }
+
             if let errorMessage {
                 Text(errorMessage)
                     .font(.footnote)
@@ -39,6 +60,7 @@ struct ChatThreadView: View {
                             Text("Start the conversation in \(channel.displayTitle).")
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.center)
                                 .frame(maxWidth: .infinity)
                                 .padding(.top, 40)
                         } else {
@@ -50,6 +72,7 @@ struct ChatThreadView: View {
                     }
                     .padding()
                 }
+                .refreshable { await reloadMessages() }
                 .onChange(of: messages.count) { _, _ in
                     if let last = messages.last {
                         withAnimation {
@@ -71,7 +94,7 @@ struct ChatThreadView: View {
 
     @ViewBuilder
     private func messageBubble(_ message: ChatMessage) -> some View {
-        let mine = message.sender_clerk_id == currentUserId
+        let mine = !currentUserId.isEmpty && message.sender_clerk_id == currentUserId
         HStack {
             if mine { Spacer(minLength: 40) }
             VStack(alignment: mine ? .trailing : .leading, spacing: 4) {
@@ -79,10 +102,11 @@ struct ChatThreadView: View {
                     if message.is_announcement {
                         Image(systemName: "megaphone.fill")
                             .font(.caption2)
+                            .foregroundStyle(.orange)
                     }
                     Text(message.sender_display_name)
                         .font(.caption.weight(.semibold))
-                    Text(formatMessageTime(message.created_at))
+                    Text(ChatMessageFormatting.relativeTime(message.created_at))
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
@@ -123,39 +147,50 @@ struct ChatThreadView: View {
     }
 
     private func setup() async {
+        await reloadMessages()
+        await connectRealtime()
+    }
+
+    private func reloadMessages() async {
         guard let client = session.apiClient else {
-            errorMessage = "Sign in required"
+            errorMessage = "Could not connect your account."
+            isLoading = false
             return
         }
-        isLoading = true
+        isLoading = messages.isEmpty
         defer { isLoading = false }
 
         do {
-            let response = try await client.getChatMessages(channelId: channel.id)
+            let response = try await RepositoryFetch.withTimeout {
+                try await client.getChatMessages(channelId: channel.id)
+            }
             messages = response.messages
+            errorMessage = nil
+        } catch {
+            if messages.isEmpty {
+                errorMessage = error.localizedDescription
+            }
+        }
+    }
 
-            let tokenResponse = try await client.getAblyToken()
+    private func connectRealtime() async {
+        guard let client = session.apiClient else { return }
+        realtimeStatus = .connecting
+
+        do {
+            let tokenResponse = try await RepositoryFetch.withTimeout(seconds: 10) {
+                try await client.getAblyToken()
+            }
             try await ablyService.connect(tokenRequest: tokenResponse.tokenRequest)
             ablyService.subscribe(channelId: channel.id) { message in
                 if !messages.contains(where: { $0.id == message.id }) {
                     messages.append(message)
                 }
             }
+            realtimeStatus = .connected
         } catch {
-            errorMessage = error.localizedDescription
+            realtimeStatus = .unavailable
         }
-    }
-
-    private func formatMessageTime(_ iso: String) -> String {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        var date = formatter.date(from: iso)
-        if date == nil {
-            formatter.formatOptions = [.withInternetDateTime]
-            date = formatter.date(from: iso)
-        }
-        guard let date else { return iso }
-        return date.formatted(date: .abbreviated, time: .shortened)
     }
 
     private func sendMessage() async {
@@ -167,7 +202,9 @@ struct ChatThreadView: View {
         defer { isSending = false }
 
         do {
-            let response = try await client.sendChatMessage(channelId: channel.id, body: body)
+            let response = try await RepositoryFetch.withTimeout {
+                try await client.sendChatMessage(channelId: channel.id, body: body)
+            }
             if !messages.contains(where: { $0.id == response.message.id }) {
                 messages.append(response.message)
             }

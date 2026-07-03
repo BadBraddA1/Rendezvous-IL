@@ -11,12 +11,22 @@ struct ChatListView: View {
         NavigationStack {
             Group {
                 if let errorMessage {
-                    ContentUnavailableView("Could not load chat", systemImage: "exclamationmark.triangle", description: Text(errorMessage))
+                    ContentUnavailableView {
+                        Label("Could not load chat", systemImage: "exclamationmark.triangle")
+                    } description: {
+                        Text(errorMessage)
+                    } actions: {
+                        Button("Try again") {
+                            Task { await load(force: true) }
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(BrandColors.lake)
+                    }
                 } else if channels.isEmpty && !isLoading {
                     ContentUnavailableView(
                         "No chats yet",
                         systemImage: "bubble.left.and.bubble.right",
-                        description: Text("Register for a Rendezvous year on the website to join that year's group chat.")
+                        description: Text("Register for a Rendezvous year on rendezvousil.com to join that year's group chat.")
                     )
                 } else {
                     channelList
@@ -34,7 +44,7 @@ struct ChatListView: View {
     private var channelList: some View {
         List(channels) { channel in
             NavigationLink(value: channel) {
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 6) {
                     HStack {
                         Text(channel.displayTitle)
                             .font(.headline)
@@ -46,6 +56,12 @@ struct ChatListView: View {
                                 .background(Color.secondary.opacity(0.15))
                                 .clipShape(Capsule())
                         }
+                        Spacer()
+                        if let at = channel.last_message_at, !at.isEmpty {
+                            Text(ChatMessageFormatting.relativeTime(at))
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
+                        }
                     }
                     if let preview = channel.last_message_preview, !preview.isEmpty {
                         Text(preview)
@@ -53,7 +69,7 @@ struct ChatListView: View {
                             .foregroundStyle(.secondary)
                             .lineLimit(2)
                     } else {
-                        Text("No messages yet")
+                        Text("No messages yet — say hello!")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
@@ -63,7 +79,7 @@ struct ChatListView: View {
         }
         .overlay {
             if isLoading && channels.isEmpty {
-                ProgressView()
+                ProgressView("Loading chats…")
             }
         }
     }
@@ -71,7 +87,7 @@ struct ChatListView: View {
     private func load(force: Bool) async {
         guard let client = session.apiClient else {
             isLoading = false
-            errorMessage = "Sign in required"
+            errorMessage = "Could not connect your account. Try signing out and back in."
             return
         }
 
@@ -80,8 +96,12 @@ struct ChatListView: View {
         defer { isLoading = false }
 
         do {
-            let response = try await client.getChatChannels()
-            channels = response.channels
+            let response = try await RepositoryFetch.withTimeout {
+                try await client.getChatChannels()
+            }
+            channels = response.channels.sortedForDisplay()
+        } catch APIError.unauthorized {
+            errorMessage = "Session expired. Sign out and sign in again."
         } catch {
             errorMessage = error.localizedDescription
         }

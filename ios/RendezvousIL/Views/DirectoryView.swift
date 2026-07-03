@@ -12,8 +12,9 @@ struct DirectoryView: View {
 
     private var filteredFamilies: [DirectoryFamily] {
         let query = search.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        guard !query.isEmpty else { return families }
-        return families.filter { family in
+        let base = families.sorted { $0.family_last_name.localizedCaseInsensitiveCompare($1.family_last_name) == .orderedAscending }
+        guard !query.isEmpty else { return base }
+        return base.filter { family in
             let haystack = [
                 family.family_last_name,
                 family.home_congregation,
@@ -41,6 +42,19 @@ struct DirectoryView: View {
             }
         }
         .navigationTitle("Family Directory")
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                NavigationLink {
+                    FamilyDirectoryManageView()
+                } label: {
+                    Label("Your photo", systemImage: "camera.fill")
+                }
+            }
+        }
+        .refreshable {
+            await loadEnabledYears()
+            await loadDirectory()
+        }
         .task {
             await loadEnabledYears()
             if !enabledYears.isEmpty {
@@ -50,13 +64,11 @@ struct DirectoryView: View {
     }
 
     private var emptyDirectoryState: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Directory not available")
-                .font(.title3.weight(.semibold))
-            Text("The family directory is not open for any event year yet.")
-                .foregroundStyle(.secondary)
+        ContentUnavailableView {
+            Label("Directory not open", systemImage: "person.3")
+        } description: {
+            Text("The family directory is not available for any event year yet.")
         }
-        .padding()
     }
 
     private var directoryContent: some View {
@@ -79,18 +91,23 @@ struct DirectoryView: View {
                         .foregroundStyle(.secondary)
                     TextField("Search families", text: $search)
                         .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
                 }
                 .padding(12)
                 .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
 
                 if isLoading {
-                    ProgressView("Loading directory...")
+                    ProgressView("Loading directory…")
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 40)
                 } else if let errorMessage {
                     VStack(alignment: .leading, spacing: 12) {
                         Text(errorMessage)
                             .foregroundStyle(.secondary)
+                        Button("Try again") {
+                            Task { await loadDirectory() }
+                        }
+                        .buttonStyle(.bordered)
                         if let alternateYear = enabledYears.first(where: { $0 != year }) {
                             Button("Try Rendezvous \(alternateYear)") {
                                 year = alternateYear
@@ -102,6 +119,7 @@ struct DirectoryView: View {
                             FamilyDirectoryManageView()
                         }
                         .buttonStyle(.borderedProminent)
+                        .tint(BrandColors.lake)
                     }
                     .padding()
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -111,12 +129,14 @@ struct DirectoryView: View {
                         Image(systemName: "person.3.fill")
                             .font(.largeTitle)
                             .foregroundStyle(.secondary)
-                        Text("No families listed for \(year) yet.")
+                        Text(search.isEmpty ? "No families listed for \(year) yet." : "No families match your search.")
                             .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
                         NavigationLink("Add your family photo") {
                             FamilyDirectoryManageView()
                         }
                         .buttonStyle(.borderedProminent)
+                        .tint(BrandColors.lake)
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 32)
@@ -138,21 +158,23 @@ struct DirectoryView: View {
 
     private func loadEnabledYears() async {
         guard let client = session.apiClient else {
-            enabledYears = [2026]
-            year = 2026
+            enabledYears = [AppConfig.eventYear]
+            year = AppConfig.eventYear
             return
         }
 
         do {
-            let response = try await client.getDirectoryYears()
-            let years = response.years.isEmpty ? [2026] : response.years
+            let response = try await RepositoryFetch.withTimeout {
+                try await client.getDirectoryYears()
+            }
+            let years = response.years.isEmpty ? [AppConfig.eventYear] : response.years
             enabledYears = years
             if !years.contains(year) {
                 year = years[0]
             }
         } catch {
-            enabledYears = [2026]
-            year = 2026
+            enabledYears = [AppConfig.eventYear]
+            year = AppConfig.eventYear
         }
     }
 
@@ -163,8 +185,13 @@ struct DirectoryView: View {
         defer { isLoading = false }
 
         do {
-            let response = try await client.getDirectory(year: year)
+            let response = try await RepositoryFetch.withTimeout {
+                try await client.getDirectory(year: year)
+            }
             families = response.families
+        } catch APIError.unauthorized {
+            families = []
+            errorMessage = "You need a registration for Rendezvous \(year) to view the directory."
         } catch {
             families = []
             errorMessage = error.localizedDescription

@@ -1,5 +1,6 @@
 import SwiftUI
 import PhotosUI
+import UIKit
 
 struct FamilyDirectoryManageView: View {
     @Environment(AppSession.self) private var session
@@ -21,7 +22,10 @@ struct FamilyDirectoryManageView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                Text("Registered families appear in the directory by default. Add phone numbers on each family member so the directory shows the right name with each number.")
+                statusBanner
+
+                Text("Registered families appear in the directory by default. Add phone numbers on each family member on the website so the directory shows the right name with each number.")
+                    .font(.subheadline)
                     .foregroundStyle(.secondary)
 
                 photoPreview
@@ -71,6 +75,7 @@ struct FamilyDirectoryManageView: View {
                     }
                 }
                 .buttonStyle(.borderedProminent)
+                .tint(BrandColors.lake)
                 .disabled(isSaving)
 
                 if let successMessage {
@@ -87,6 +92,12 @@ struct FamilyDirectoryManageView: View {
             .padding()
         }
         .navigationTitle("Directory Photo")
+        .refreshable { await loadSettings() }
+        .overlay {
+            if isLoading && settings.photo_url == nil && blurb.isEmpty {
+                ProgressView()
+            }
+        }
         .task {
             await loadSettings()
         }
@@ -94,6 +105,19 @@ struct FamilyDirectoryManageView: View {
             guard let newItem else { return }
             Task { await uploadPhoto(from: newItem) }
         }
+    }
+
+    @ViewBuilder
+    private var statusBanner: some View {
+        HStack(spacing: 8) {
+            Image(systemName: optIn ? "eye.fill" : "eye.slash.fill")
+            Text(optIn ? "Your family is visible in the directory" : "Your family is hidden from the directory")
+        }
+        .font(.caption.weight(.medium))
+        .foregroundStyle(optIn ? BrandColors.lake : .secondary)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(BrandColors.lakeLight.opacity(0.6), in: RoundedRectangle(cornerRadius: 10))
     }
 
     @ViewBuilder
@@ -131,8 +155,11 @@ struct FamilyDirectoryManageView: View {
         isLoading = true
         defer { isLoading = false }
         do {
-            let settings = try await client.getFamilyDirectorySettings()
+            let settings = try await RepositoryFetch.withTimeout {
+                try await client.getFamilyDirectorySettings()
+            }
             applySettings(settings)
+            errorMessage = nil
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -149,11 +176,14 @@ struct FamilyDirectoryManageView: View {
             guard let data = try await item.loadTransferable(type: Data.self) else {
                 throw APIError.badStatus(400)
             }
-            let response = try await client.uploadFamilyDirectoryPhoto(
-                imageData: data,
-                filename: "family-photo.jpg",
-                mimeType: "image/jpeg"
-            )
+            let prepared = DirectoryImageProcessor.prepareForUpload(data)
+            let response = try await RepositoryFetch.withTimeout(seconds: 30) {
+                try await client.uploadFamilyDirectoryPhoto(
+                    imageData: prepared,
+                    filename: "family-photo.jpg",
+                    mimeType: "image/jpeg"
+                )
+            }
             applySettings(response.settings)
             successMessage = "Photo uploaded"
         } catch {
@@ -167,7 +197,9 @@ struct FamilyDirectoryManageView: View {
         errorMessage = nil
         defer { isLoading = false }
         do {
-            let response = try await client.deleteFamilyDirectoryPhoto()
+            let response = try await RepositoryFetch.withTimeout {
+                try await client.deleteFamilyDirectoryPhoto()
+            }
             applySettings(response.settings)
             successMessage = "Photo removed"
         } catch {
@@ -182,10 +214,12 @@ struct FamilyDirectoryManageView: View {
         successMessage = nil
         defer { isSaving = false }
         do {
-            let response = try await client.updateFamilyDirectorySettings(
-                directoryOptIn: optIn,
-                directoryBlurb: blurb.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : blurb
-            )
+            let response = try await RepositoryFetch.withTimeout {
+                try await client.updateFamilyDirectorySettings(
+                    directoryOptIn: optIn,
+                    directoryBlurb: blurb.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : blurb
+                )
+            }
             applySettings(response.settings)
             successMessage = "Directory settings saved"
         } catch {
@@ -197,6 +231,24 @@ struct FamilyDirectoryManageView: View {
         settings = newSettings
         optIn = newSettings.directory_opt_in
         blurb = newSettings.directory_blurb ?? ""
+    }
+}
+
+enum DirectoryImageProcessor {
+    /// Downscale and JPEG-compress before upload (faster, fewer failures on cellular).
+    static func prepareForUpload(_ data: Data, maxDimension: CGFloat = 1600) -> Data {
+        guard let image = UIImage(data: data) else { return data }
+        let size = image.size
+        let scale = min(1, maxDimension / max(size.width, size.height))
+        guard scale < 1 else {
+            return image.jpegData(compressionQuality: 0.82) ?? data
+        }
+        let newSize = CGSize(width: size.width * scale, height: size.height * scale)
+        let renderer = UIGraphicsImageRenderer(size: newSize)
+        let resized = renderer.image { _ in
+            image.draw(in: CGRect(origin: .zero, size: newSize))
+        }
+        return resized.jpegData(compressionQuality: 0.82) ?? data
     }
 }
 

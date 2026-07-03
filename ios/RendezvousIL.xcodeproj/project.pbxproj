@@ -52,6 +52,7 @@
 		D7D9A0E82A4FB69953072D2D /* EventReminderSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9DDD133CDB46828BF6E765E /* EventReminderSheet.swift */; };
 		D86BEEC888D2FD2000B7CBCD /* schedule-fallback.json in Resources */ = {isa = PBXBuildFile; fileRef = FCDBD34429936681124138B5 /* schedule-fallback.json */; };
 		D946492B75289CE18C0C4AF7 /* CheckInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B27D1FB23F519523E3C7AE87 /* CheckInView.swift */; };
+		E684A3B3E7C19748BB83302B /* ChatFormatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA42AAF64E35D2BC5008BA39 /* ChatFormatting.swift */; };
 		E9A3538651056E006A467139 /* ChatThreadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33566839E96130B158BA3681 /* ChatThreadView.swift */; };
 		EB813C8733397959B05BC1E9 /* AdminUsersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D039A64635C0EF6FF3B6D3E3 /* AdminUsersView.swift */; };
 		F31031239434555D31490B94 /* LiveActivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1375EFD2C7FB2D5CFD77868 /* LiveActivityManager.swift */; };
@@ -136,6 +137,7 @@
 		E1375EFD2C7FB2D5CFD77868 /* LiveActivityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityManager.swift; sourceTree = "<group>"; };
 		E2B21229B8C516E3A062368E /* ChatListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatListView.swift; sourceTree = "<group>"; };
 		E7F9B13246D5236FF4963A58 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		EA42AAF64E35D2BC5008BA39 /* ChatFormatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatFormatting.swift; sourceTree = "<group>"; };
 		EC36F7ED80F15611CD11B94D /* RetreatNowNextSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RetreatNowNextSection.swift; sourceTree = "<group>"; };
 		ED599FD2D648050CE74D667A /* AppModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModels.swift; sourceTree = "<group>"; };
 		EE0D1FB46943E94BD0904482 /* RendezvousIL.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = RendezvousIL.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -143,7 +145,7 @@
 		F7E5B9C3FB21EACB9FD34C8B /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		F93DC358023809E27C05FF3B /* AppEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironment.swift; sourceTree = "<group>"; };
 		FCDBD34429936681124138B5 /* schedule-fallback.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "schedule-fallback.json"; sourceTree = "<group>"; };
-		"TEMP_BEDE82B6-9DFC-4B5A-B92C-734C71ADBE65" /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
+		"TEMP_8292BAE4-59F1-48AF-9559-68E8928B1C70" /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -275,6 +277,7 @@
 			isa = PBXGroup;
 			children = (
 				F93DC358023809E27C05FF3B /* AppEnvironment.swift */,
+				EA42AAF64E35D2BC5008BA39 /* ChatFormatting.swift */,
 				61C09630FEAE09AF651F5F52 /* DeepLinkRouter.swift */,
 			);
 			path = Utilities;
@@ -300,10 +303,10 @@
 			path = RendezvousIL;
 			sourceTree = "<group>";
 		};
-		"TEMP_8EFEB87E-02F4-4B90-AAED-BC5D024E7EC1" /* ios */ = {
+		"TEMP_E0B585E1-EF7A-4D03-9EF2-B5B3786E61D3" /* ios */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_BEDE82B6-9DFC-4B5A-B92C-734C71ADBE65" /* Config.xcconfig */,
+				"TEMP_8292BAE4-59F1-48AF-9559-68E8928B1C70" /* Config.xcconfig */,
 			);
 			path = ios;
 			sourceTree = "<group>";
@@ -419,6 +422,7 @@
 				82553140B28F7CC2EA40A2A2 /* BrandColors.swift in Sources */,
 				F763B88C4136397DCED07719 /* BundledContent.swift in Sources */,
 				3E7640855ECDE62A00948E3B /* CalculatorView.swift in Sources */,
+				E684A3B3E7C19748BB83302B /* ChatFormatting.swift in Sources */,
 				51ED2EABA9D44315EABB8AAA /* ChatListView.swift in Sources */,
 				F3C879A023201FC4FC71526E /* ChatModels.swift in Sources */,
 				E9A3538651056E006A467139 /* ChatThreadView.swift in Sources */,
@@ -562,7 +566,7 @@
 		};
 		7ADBCEC1B448B95857681847 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_BEDE82B6-9DFC-4B5A-B92C-734C71ADBE65" /* Config.xcconfig */;
+			baseConfigurationReference = "TEMP_8292BAE4-59F1-48AF-9559-68E8928B1C70" /* Config.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = RendezvousIL/RendezvousIL.entitlements;
@@ -663,7 +667,7 @@
 		};
 		F8122583B54F4443475E1AD8 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_BEDE82B6-9DFC-4B5A-B92C-734C71ADBE65" /* Config.xcconfig */;
+			baseConfigurationReference = "TEMP_8292BAE4-59F1-48AF-9559-68E8928B1C70" /* Config.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = RendezvousIL/RendezvousIL.entitlements;

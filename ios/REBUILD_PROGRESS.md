@@ -1,6 +1,6 @@
 # Rebuild progress
 
-**Current phase:** 5 — Chat + Directory  
+**Current phase:** 6 — Account + More  
 
 ## Phase status
 
@@ -9,7 +9,7 @@
 - [x] **2** Auth gate (`ClerkAuthSheet` at root only, `SignInPromptCard`, sign-out handling)
 - [x] **3** Data layer (offline-first schedule, disk cache, fetch timeouts, `bootstrap()`)
 - [x] **4** Schedule + Updates (today picker, shared now/next, reminders, loading states)
-- [ ] **5** Chat + Directory
+- [x] **5** Chat + Directory (Ably optional realtime, timeouts, directory refresh, photo compress)
 - [ ] **6** Account + More
 - [ ] **7** Staff admin
 - [ ] **8** Polish (push/widgets)
@@ -18,3 +18,4 @@
 ## Notes
 
 - 2026-07-03: User reports crash on every open (build 11). Phase 0 started.
+- 2026-07-03: Phase 5 — chat loads with retry/timeout; thread works without Ably (banner + pull refresh); directory pull-to-refresh, toolbar photo link, JPEG resize before upload.

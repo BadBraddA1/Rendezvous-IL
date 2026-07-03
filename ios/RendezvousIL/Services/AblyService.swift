@@ -34,7 +34,10 @@ final class AblyService {
     func subscribe(channelId: String, onMessage: @escaping @MainActor (ChatMessage) -> Void) {
         guard let client else { return }
         let channelName = "rendezvous:channel:\(channelId)"
-        if channels[channelName] != nil { return }
+        if let existing = channels[channelName] {
+            existing.unsubscribe()
+            channels.removeValue(forKey: channelName)
+        }
 
         let channel = client.channels.get(channelName)
         channels[channelName] = channel
@@ -51,8 +54,9 @@ final class AblyService {
     }
 
     func disconnect() {
-        for channel in channels.values {
+        for (name, channel) in channels {
             channel.unsubscribe()
+            channels.removeValue(forKey: name)
         }
         channels.removeAll()
         client?.close()
