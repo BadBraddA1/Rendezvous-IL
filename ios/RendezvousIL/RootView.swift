@@ -35,9 +35,23 @@ struct RootView: View {
                 session.handleExternalSignOut()
             }
         }
+        .onChange(of: session.isSignedIn) { _, signedIn in
+            if signedIn {
+                DeepLinkRouter.flushPending()
+            }
+        }
+        .onOpenURL { url in
+            DeepLinkRouter.storePending(url)
+            if session.isSignedIn {
+                DeepLinkRouter.flushPending()
+            }
+        }
         .onChange(of: scenePhase) { _, phase in
             guard phase == .active else { return }
-            Task { await session.recordActivityIfSignedIn() }
+            Task {
+                await session.recordActivityIfSignedIn()
+                await NotificationService.shared.registerForRemoteIfAuthorized()
+            }
         }
         .sheet(isPresented: $showAuthSheet) {
             ClerkAuthSheet(mode: .signIn)

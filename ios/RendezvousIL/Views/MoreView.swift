@@ -2,6 +2,7 @@ import SwiftUI
 
 struct MoreView: View {
     @Environment(AppSession.self) private var session
+    @State private var presentedMoreLink: MoreDeepLink?
 
     var body: some View {
         NavigationStack {
@@ -82,6 +83,35 @@ struct MoreView: View {
                 }
             }
             .navigationTitle("More")
+            .navigationDestination(item: $presentedMoreLink) { link in
+                moreDestination(link)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .rendezvousDeepLink)) { note in
+                guard let raw = note.userInfo?["more"] as? String,
+                      let link = MoreDeepLink(rawValue: raw)
+                else { return }
+                presentedMoreLink = link
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func moreDestination(_ link: MoreDeepLink) -> some View {
+        switch link {
+        case .directory:
+            DirectoryView()
+        case .directoryPhoto:
+            FamilyDirectoryManageView()
+        case .account:
+            AccountView()
+        case .notifications:
+            NotificationSettingsView()
+        case .bibleBowl:
+            BibleBowlView()
+        case .faq:
+            FAQView()
+        case .about:
+            AboutView()
         }
     }
 

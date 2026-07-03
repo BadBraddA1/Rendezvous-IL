@@ -19,6 +19,14 @@ final class LiveActivityManager {
 
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
 
+        let hasContent = result.current != nil || result.next != nil
+        let duringWeek = isEventWeek()
+
+        guard hasContent || duringWeek else {
+            await endAll()
+            return
+        }
+
         let state = RendezvousActivityAttributes.ContentState(
             currentTitle: result.current?.title,
             currentTime: result.current?.time,
@@ -31,10 +39,10 @@ final class LiveActivityManager {
         if let activity = Activity<RendezvousActivityAttributes>.activities.first {
             await activity.update(ActivityContent(state: state, staleDate: Date().addingTimeInterval(90)))
             observeActivityPushToken(activity)
-        } else if result.current != nil || isEventWeek() {
+        } else if hasContent || duringWeek {
             let attributes = RendezvousActivityAttributes(
-                eventYear: schedule?.year ?? snapshot?.eventYear ?? 2027,
-                dateRange: schedule?.dateRange ?? snapshot?.dateRange ?? "May 3–7, 2027"
+                eventYear: schedule?.year ?? snapshot?.eventYear ?? AppConfig.eventYear,
+                dateRange: schedule?.dateRange ?? snapshot?.dateRange ?? AppConfig.eventDates
             )
             let content = ActivityContent(state: state, staleDate: Date().addingTimeInterval(90))
             if let activity = try? Activity.request(attributes: attributes, content: content) {
@@ -57,6 +65,10 @@ final class LiveActivityManager {
         updateTask = Task {
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(60))
+                guard NotificationService.shared.liveActivityEnabled else {
+                    await endAll()
+                    return
+                }
                 guard let snapshot = SharedScheduleStore.load() else { continue }
                 let result = ScheduleNowNext.evaluate(items: snapshot.luItems)
                 let state = RendezvousActivityAttributes.ContentState(
@@ -69,6 +81,9 @@ final class LiveActivityManager {
                 )
                 if let activity = Activity<RendezvousActivityAttributes>.activities.first {
                     await activity.update(ActivityContent(state: state, staleDate: Date().addingTimeInterval(90)))
+                } else if result.current == nil && result.next == nil && !isEventWeek() {
+                    await endAll()
+                    return
                 }
             }
         }
@@ -78,8 +93,12 @@ final class LiveActivityManager {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(identifier: "America/Chicago")!
         let now = Date()
-        guard let start = calendar.date(from: DateComponents(year: 2027, month: 5, day: 3)),
-              let end = calendar.date(from: DateComponents(year: 2027, month: 5, day: 8))
+        let formatter = DateFormatter()
+        formatter.calendar = calendar
+        formatter.timeZone = calendar.timeZone
+        formatter.dateFormat = "yyyy-MM-dd"
+        guard let start = formatter.date(from: AppConfig.eventWeekStartISO),
+              let end = formatter.date(from: AppConfig.eventWeekEndISO)
         else { return false }
         return now >= start && now < end
     }
@@ -111,7 +130,11 @@ final class LiveActivityManager {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try? JSONEncoder().encode(
-            Body(activityToken: token, bundleId: "com.rendezvousil.app", environment: environment)
+            Body(
+                activityToken: token,
+                bundleId: AppConfig.bundleIdentifier,
+                environment: environment
+            )
         )
         _ = try? await URLSession.shared.data(for: request)
     }

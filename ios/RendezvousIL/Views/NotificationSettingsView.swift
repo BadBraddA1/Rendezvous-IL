@@ -1,3 +1,4 @@
+import ActivityKit
 import SwiftUI
 
 struct NotificationSettingsView: View {
@@ -5,14 +6,17 @@ struct NotificationSettingsView: View {
 
     @State private var isRescheduling = false
     @State private var rescheduleMessage: String?
+    @State private var isRefreshingLiveActivity = false
 
     private var notifications: NotificationService { NotificationService.shared }
     private var reminderCount: Int { ReminderService.shared.savedReminderCount }
+    private var pushService: PushRegistrationService { PushRegistrationService.shared }
 
     var body: some View {
         Form {
             Section {
                 LabeledContent("Permission", value: statusLabel)
+                LabeledContent("APNs device", value: apnsRegistrationLabel)
                 if notifications.authorizationStatus == .denied {
                     Button("Open Settings") {
                         if let url = URL(string: UIApplication.openSettingsURLString) {
@@ -23,6 +27,10 @@ struct NotificationSettingsView: View {
                     Button("Enable notifications") {
                         Task { await requestAndRegister() }
                     }
+                } else if notifications.broadcastAlertsEnabled {
+                    Button("Re-register for alerts") {
+                        Task { await notifications.registerForRemoteIfAuthorized() }
+                    }
                 }
             } footer: {
                 Text("Event reminders are scheduled on your device. Retreat-wide alerts use Apple Push Notification service (APNs).")
@@ -31,6 +39,22 @@ struct NotificationSettingsView: View {
             Section("Retreat alerts") {
                 Toggle("Organizer announcements (APNs)", isOn: broadcastBinding)
                 Toggle("Live Activity (Lock Screen / Dynamic Island)", isOn: liveActivityBinding)
+                LabeledContent("Live Activities", value: liveActivityAuthLabel)
+                if notifications.liveActivityEnabled {
+                    Button {
+                        Task { await refreshLiveActivity() }
+                    } label: {
+                        if isRefreshingLiveActivity {
+                            HStack {
+                                ProgressView()
+                                Text("Refreshing…")
+                            }
+                        } else {
+                            Text("Refresh Live Activity now")
+                        }
+                    }
+                    .disabled(isRefreshingLiveActivity)
+                }
             }
 
             Section("Event reminders") {
@@ -68,7 +92,7 @@ struct NotificationSettingsView: View {
             }
 
             Section("Widgets") {
-                Text("Add the Rendezvous widget from your Home Screen or Lock Screen for now/next at a glance.")
+                Text("Add the Rendezvous widget from your Home Screen or Lock Screen for now/next at a glance. Tapping a widget opens the Schedule tab.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
@@ -76,6 +100,10 @@ struct NotificationSettingsView: View {
         .navigationTitle("Notifications")
         .task {
             await notifications.refreshAuthorizationStatus()
+        }
+        .refreshable {
+            await notifications.refreshAuthorizationStatus()
+            await repository.syncSharedSnapshot()
         }
         .onAppear {
             rescheduleMessage = nil
@@ -110,6 +138,23 @@ struct NotificationSettingsView: View {
         case .notDetermined: return "Not asked"
         @unknown default: return "Unknown"
         }
+    }
+
+    private var apnsRegistrationLabel: String {
+        if pushService.lastRegisteredHex != nil { return "Registered" }
+        if let error = pushService.lastRegistrationError { return "Failed — \(error)" }
+        if notifications.broadcastAlertsEnabled { return "Pending" }
+        return "Off"
+    }
+
+    private var liveActivityAuthLabel: String {
+        ActivityAuthorizationInfo().areActivitiesEnabled ? "Allowed" : "Disabled in Settings"
+    }
+
+    private func refreshLiveActivity() async {
+        isRefreshingLiveActivity = true
+        defer { isRefreshingLiveActivity = false }
+        await repository.syncSharedSnapshot()
     }
 
     private func requestAndRegister() async {

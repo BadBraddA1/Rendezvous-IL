@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(WidgetKit)
+import WidgetKit
+#endif
 
 struct SchedulePayload: Codable, Sendable {
     let year: Int
@@ -102,6 +105,9 @@ enum SharedScheduleStore {
             lastUpdated: Date()
         )
         save(snapshot)
+        #if canImport(WidgetKit)
+        WidgetCenter.shared.reloadAllTimelines()
+        #endif
     }
 }
 

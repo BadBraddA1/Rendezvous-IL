@@ -23,16 +23,7 @@ struct RendezvousILApp: App {
             .onChange(of: scenePhase) { _, phase in
                 guard phase == .active else { return }
                 Task {
-                    // AppSession lives inside AppShell; activity ping is triggered from RootView after auth.
-                }
-            }
-            .onOpenURL { url in
-                if let tab = DeepLinkRouter.tab(for: url) {
-                    NotificationCenter.default.post(
-                        name: .rendezvousDeepLink,
-                        object: nil,
-                        userInfo: ["tab": tab]
-                    )
+                    await NotificationService.shared.registerForRemoteIfAuthorized()
                 }
             }
         }

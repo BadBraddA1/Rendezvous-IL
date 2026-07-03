@@ -10,6 +10,15 @@ enum AppConfig {
     static let theme = "1 Samuel"
     static let location = "Lake Williamson Christian Center, Carlinville, IL"
 
+    /// Main app bundle id (TestFlight uses braddcorp suffix).
+    static var bundleIdentifier: String {
+        Bundle.main.bundleIdentifier ?? "com.rendezvousil.braddcorp.app"
+    }
+
+    /// Event week boundaries (Chicago) for Live Activity auto-start.
+    static let eventWeekStartISO = "2027-05-03"
+    static let eventWeekEndISO = "2027-05-08"
+
     static var clerkPublishableKey: String? {
         guard let raw = Bundle.main.object(forInfoDictionaryKey: "CLERK_PUBLISHABLE_KEY") as? String else {
             return nil

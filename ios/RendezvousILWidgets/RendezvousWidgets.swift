@@ -20,6 +20,7 @@ struct NextEventWidget: Widget {
         StaticConfiguration(kind: kind, provider: RendezvousTimelineProvider()) { entry in
             NextEventWidgetView(entry: entry)
                 .containerBackground(BrandWidgetColors.lakeLight, for: .widget)
+                .widgetURL(URL(string: "rendezvousil://schedule")!)
         }
         .configurationDisplayName("Next event")
         .description("Shows the next Rendezvous activity.")
@@ -34,6 +35,7 @@ struct NowNextWidget: Widget {
         StaticConfiguration(kind: kind, provider: RendezvousTimelineProvider()) { entry in
             NowNextWidgetView(entry: entry)
                 .containerBackground(.fill.tertiary, for: .widget)
+                .widgetURL(URL(string: "rendezvousil://schedule")!)
         }
         .configurationDisplayName("Now & next")
         .description("Current and upcoming retreat activities.")

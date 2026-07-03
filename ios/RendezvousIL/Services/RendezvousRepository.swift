@@ -139,6 +139,7 @@ final class RendezvousRepository {
         guard let offline = ScheduleDataStore.bestOfflineSchedule() else { return }
         schedule = offline.schedule
         scheduleSource = offline.source
+        SharedScheduleStore.publish(schedule: schedule, nowNext: nowNext())
     }
 
     private func fetchMeals() async {

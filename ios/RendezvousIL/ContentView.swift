@@ -34,15 +34,18 @@ struct MainTabView: View {
         .onReceive(NotificationCenter.default.publisher(for: .rendezvousDeepLink)) { note in
             if let tab = note.userInfo?["tab"] as? AppTab {
                 selectedTab = tab
+            } else if let raw = note.userInfo?["tab"] as? String, let tab = AppTab(rawValue: raw) {
+                selectedTab = tab
             }
         }
         .task {
             await repository.bootstrap()
+            DeepLinkRouter.flushPending()
         }
     }
 }
 
-enum AppTab: Hashable {
+enum AppTab: String, Hashable {
     case home, schedule, updates, chat, more
 }
 
