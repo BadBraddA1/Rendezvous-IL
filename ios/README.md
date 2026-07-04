@@ -64,6 +64,28 @@ Then in Xcode:
 
 ## TestFlight
 
+### App Store screenshots
+
+**In Xcode (most reliable):**
+
+1. Open `RendezvousIL.xcodeproj`, scheme **RendezvousIL**, destination **iPhone 17 Pro Max** (6.9″).
+2. **Product → Scheme → Edit Scheme… → Run → Arguments**
+3. Add launch arguments: `-AppStoreScreenshots` and `-ScreenshotTab` with a value:
+   - `welcome` · `home` · `schedule` · `chat` · `directory` · `more`
+4. Run (⌘R). When the screen looks right: **Simulator → File → Save Screen** (or ⌘S).
+5. Repeat for each tab (change `-ScreenshotTab`, run again).
+6. Upload the PNGs in App Store Connect → version **2.0.1** → **Previews and Screenshots** → **iPhone 6.9" Display**.
+
+Demo mode uses sample chat/directory rows; schedule/home load live public data. Do not ship with those launch args (normal builds ignore them).
+
+**Script (when the simulator is healthy):**
+
+```bash
+bash scripts/capture-app-store-screenshots.sh
+```
+
+Writes to `ios/AppStoreScreenshots/`.
+
 ### Local upload
 
 From `ios/`:

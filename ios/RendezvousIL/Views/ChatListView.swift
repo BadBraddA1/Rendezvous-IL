@@ -92,6 +92,13 @@ struct ChatListView: View {
     }
 
     private func load(force: Bool) async {
+        if session.isAppStoreScreenshotMode {
+            channels = AppStoreScreenshotMode.sampleChannels
+            isLoading = false
+            errorMessage = nil
+            return
+        }
+
         guard let client = session.apiClient else {
             isLoading = false
             errorMessage = "Could not connect your account. Try signing out and back in."

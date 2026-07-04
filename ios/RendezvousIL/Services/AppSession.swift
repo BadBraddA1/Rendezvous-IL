@@ -19,8 +19,12 @@ final class AppSession {
     /// Mirrors Clerk session id for safe SwiftUI observation (avoid reading Clerk in view bodies).
     var clerkSessionId: String?
 
+    /// When true, UI uses sample data for App Store screenshot capture (launch arg only).
+    var isAppStoreScreenshotMode = false
+
     /// Display name from Clerk (family account holder). Nil until Clerk has finished loading.
     var userDisplayName: String? {
+        if isAppStoreScreenshotMode { return "Alex" }
         guard isClerkReady else { return nil }
         guard let user = Clerk.shared.user else { return nil }
         let name = [user.firstName, user.lastName]
@@ -44,7 +48,37 @@ final class AppSession {
 
     var publicClient: APIClient { apiClient ?? APIClient.shared }
 
+    /// Forces the signed-in shell with public API access for marketing screenshots.
+    func enableAppStoreScreenshotMode() {
+        isAppStoreScreenshotMode = true
+        isClerkReady = true
+        isSignedIn = true
+        isLoading = false
+        isAdmin = false
+        canViewDashboard = false
+        canCheckIn = false
+        canManageUsers = false
+        adminRole = nil
+        adminName = nil
+        authError = nil
+        clerkSetupError = nil
+        apiClient = APIClient.shared
+    }
+
     func bootstrapAuthIfNeeded() async {
+        if AppStoreScreenshotMode.isEnabled {
+            if AppStoreScreenshotMode.showsWelcome {
+                isAppStoreScreenshotMode = true
+                isClerkReady = true
+                isSignedIn = false
+                isLoading = false
+                apiClient = nil
+            } else {
+                enableAppStoreScreenshotMode()
+            }
+            return
+        }
+
         guard AppConfig.hasValidClerkKey else {
             clerkSetupError = "Add CLERK_PUBLISHABLE_KEY to ios/Config.xcconfig (copy from .env.local), then xcodegen generate."
             isClerkReady = false

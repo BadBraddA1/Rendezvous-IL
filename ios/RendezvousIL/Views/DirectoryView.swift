@@ -183,6 +183,12 @@ struct DirectoryView: View {
             }
         }
 
+        if session.isAppStoreScreenshotMode {
+            enabledYears = [AppConfig.eventYear]
+            year = AppConfig.eventYear
+            return
+        }
+
         guard let client = session.apiClient else {
             if enabledYears.isEmpty {
                 enabledYears = [AppConfig.eventYear]
@@ -211,6 +217,13 @@ struct DirectoryView: View {
 
     /// Show disk cache immediately, then refresh from the network in the background.
     private func loadDirectory(forceNetwork: Bool) async {
+        if session.isAppStoreScreenshotMode {
+            families = AppStoreScreenshotMode.sampleFamilies
+            errorMessage = nil
+            isLoading = false
+            return
+        }
+
         guard session.apiClient != nil else { return }
 
         let cached = DirectoryDataStore.loadFamilies(year: year) ?? []

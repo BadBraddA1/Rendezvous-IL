@@ -129,6 +129,14 @@ struct RootView: View {
 
     private func runBootstrap() async {
         AppLog.bootstrap("start")
+        if AppStoreScreenshotMode.isEnabled {
+            await session.bootstrapAuthIfNeeded()
+            // Short splash so logo frame is capturable, then main UI.
+            try? await Task.sleep(for: .milliseconds(400))
+            splashFinished = true
+            AppLog.bootstrap("screenshot mode tab=\(AppStoreScreenshotMode.tabName)")
+            return
+        }
         async let bootstrap: Void = session.bootstrapAuthIfNeeded()
         async let minimumSplash: Void = {
             try? await Task.sleep(for: .milliseconds(900))
