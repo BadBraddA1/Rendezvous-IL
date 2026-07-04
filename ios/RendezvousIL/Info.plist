@@ -33,6 +33,8 @@
 	<string>$(CLERK_PUBLISHABLE_KEY)</string>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.lifestyle</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Camera access is used by check-in staff to scan family QR codes.</string>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
 	<key>UIBackgroundModes</key>

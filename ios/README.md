@@ -15,7 +15,7 @@ Native SwiftUI **attendee community hub** for [rendezvousil.com](https://rendezv
 | **Notifications** | Local event reminders + **APNs** for organizer broadcasts; deep links from push open the right tab |
 | **Live Activity** | Lock Screen / Dynamic Island now & next during retreat week |
 | **Widgets** | Home/Lock Screen now/next; tap opens Schedule via `rendezvousil://schedule` |
-| **Staff check-in** | Check-In role — More → Check-in station (QR lookup, search, room keys, undo); 15s API timeouts |
+| **Staff check-in** | Check-In role — More → Check-in station (camera QR scan, code entry, search, keep-display-alive toggle, room keys, undo) |
 | **Admin** | Dashboard stats + quick links; user management CRUD for full admins (search, ban, password reset) |
 
 ## Requirements

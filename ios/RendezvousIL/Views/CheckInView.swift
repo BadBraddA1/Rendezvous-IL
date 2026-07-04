@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct CheckInView: View {
     @Environment(AppSession.self) private var session
@@ -12,6 +13,8 @@ struct CheckInView: View {
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var successMessage: String?
+    @State private var showScanner = false
+    @State private var keepDisplayAlive = false
 
     var body: some View {
         Group {
@@ -22,6 +25,29 @@ struct CheckInView: View {
             }
         }
         .navigationTitle("Check-In")
+        .toolbar {
+            if session.canCheckIn {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showScanner = true
+                    } label: {
+                        Label("Scan QR", systemImage: "qrcode.viewfinder")
+                    }
+                }
+            }
+        }
+        .sheet(isPresented: $showScanner) {
+            CheckInQRScannerView { scanned in
+                code = scanned
+                Task { await lookupByCode() }
+            }
+        }
+        .onChange(of: keepDisplayAlive) { _, enabled in
+            UIApplication.shared.isIdleTimerDisabled = enabled
+        }
+        .onDisappear {
+            UIApplication.shared.isIdleTimerDisabled = false
+        }
         .task {
             await session.refreshAdminStatus()
         }
@@ -59,6 +85,9 @@ struct CheckInView: View {
                         .foregroundStyle(.secondary)
                 }
 
+                keepDisplayAliveToggle
+
+                scanButton
                 lookupSection
                 searchSection
 
@@ -99,9 +128,37 @@ struct CheckInView: View {
         .allowsHitTesting(!isLoading)
     }
 
+    private var keepDisplayAliveToggle: some View {
+        Toggle(isOn: $keepDisplayAlive) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Keep display alive")
+                    .font(.subheadline.weight(.semibold))
+                Text("Prevents the screen from sleeping while check-in is open.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(14)
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
+        .tint(BrandColors.lake)
+    }
+
+    private var scanButton: some View {
+        Button {
+            showScanner = true
+        } label: {
+            Label("Scan QR code", systemImage: "qrcode.viewfinder")
+                .font(.headline)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+        }
+        .buttonStyle(.borderedProminent)
+        .tint(BrandColors.lake)
+    }
+
     private var lookupSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("QR / check-in code")
+            Text("Or enter check-in code")
                 .font(.headline)
 
             HStack {
