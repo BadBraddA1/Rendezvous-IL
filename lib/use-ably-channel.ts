@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import type { Message, Realtime, RealtimeChannel } from "ably"
 
 type AblyChannelOptions = {
@@ -10,28 +10,38 @@ type AblyChannelOptions = {
   onMessage: (message: Message) => void
 }
 
+export type AblyConnectionStatus = "idle" | "connecting" | "connected" | "failed"
+
 export function useAblyChannel({
   getTokenRequest,
   channelName,
   event = "message",
   onMessage,
-}: AblyChannelOptions) {
+}: AblyChannelOptions): AblyConnectionStatus {
   const onMessageRef = useRef(onMessage)
   onMessageRef.current = onMessage
 
   const getTokenRef = useRef(getTokenRequest)
   getTokenRef.current = getTokenRequest
 
+  const [status, setStatus] = useState<AblyConnectionStatus>("idle")
+
   useEffect(() => {
-    if (!channelName) return
+    if (!channelName) {
+      setStatus("idle")
+      return
+    }
 
     let client: Realtime | null = null
     let channel: RealtimeChannel | null = null
     let cancelled = false
+    setStatus("connecting")
 
     ;(async () => {
       try {
-        const Ably = (await import("ably/build/ably.js")).default
+        const AblyModule = await import("ably")
+        const Ably = AblyModule.default ?? AblyModule
+
         client = new Ably.Realtime({
           authCallback: (_params, callback) => {
             getTokenRef
@@ -43,10 +53,21 @@ export function useAblyChannel({
                 }
                 callback(null, token as Parameters<typeof callback>[1])
               })
-              .catch(() => {
-                callback("Token fetch failed", null)
+              .catch((err) => {
+                callback(err instanceof Error ? err.message : "Token fetch failed", null)
               })
           },
+          autoConnect: true,
+        })
+
+        client.connection.on("connected", () => {
+          if (!cancelled) setStatus("connected")
+        })
+        client.connection.on("failed", () => {
+          if (!cancelled) setStatus("failed")
+        })
+        client.connection.on("suspended", () => {
+          if (!cancelled) setStatus("failed")
         })
 
         if (cancelled) {
@@ -57,17 +78,36 @@ export function useAblyChannel({
         channel = client.channels.get(channelName)
         const events = Array.isArray(event) ? event : [event]
         for (const name of events) {
-          channel.subscribe(name, (msg) => onMessageRef.current(msg))
+          channel.subscribe(name, (msg) => {
+            onMessageRef.current(msg)
+          })
         }
+
+        // Attach explicitly so we don't miss messages while auth completes.
+        channel.attach((err) => {
+          if (cancelled) return
+          if (err) {
+            console.warn("[useAblyChannel] attach failed:", err)
+            setStatus("failed")
+          }
+        })
       } catch (err) {
         console.warn("[useAblyChannel] connection failed:", err)
+        if (!cancelled) setStatus("failed")
       }
     })()
 
     return () => {
       cancelled = true
-      channel?.unsubscribe()
+      try {
+        channel?.unsubscribe()
+        channel?.detach()
+      } catch {
+        // ignore
+      }
       client?.close()
     }
   }, [channelName, event])
+
+  return status
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { sql } from "@/lib/db"
+import { authUserContext } from "@/lib/clerk-auth"
 import { ensurePushSchema } from "@/lib/push-schema"
 
 export const dynamic = "force-dynamic"
@@ -14,11 +15,13 @@ function parsePlatform(value: unknown): PushPlatform {
 export async function POST(request: Request) {
   try {
     await ensurePushSchema()
+    const ctx = await authUserContext(request)
     const body = await request.json()
     const platform = parsePlatform(body.platform)
     const token = typeof body.token === "string" ? body.token.trim() : ""
     const bundleId =
       typeof body.bundleId === "string" ? body.bundleId.trim() : "com.rendezvousil.braddcorp.app"
+    const clerkUserId = ctx?.userId ?? (typeof body.clerkUserId === "string" ? body.clerkUserId : null)
 
     if (platform === "android") {
       if (!token || token.length < 20) {
@@ -26,10 +29,11 @@ export async function POST(request: Request) {
       }
 
       await sql`
-        INSERT INTO android_device_tokens (token, bundle_id, is_active, updated_at)
-        VALUES (${token}, ${bundleId}, 1, datetime('now'))
+        INSERT INTO android_device_tokens (token, bundle_id, clerk_user_id, is_active, updated_at)
+        VALUES (${token}, ${bundleId}, ${clerkUserId}, 1, datetime('now'))
         ON CONFLICT(token) DO UPDATE SET
           bundle_id = excluded.bundle_id,
+          clerk_user_id = COALESCE(excluded.clerk_user_id, android_device_tokens.clerk_user_id),
           is_active = 1,
           updated_at = datetime('now')
       `
@@ -44,17 +48,18 @@ export async function POST(request: Request) {
       }
 
       await sql`
-        INSERT INTO ios_device_tokens (token, bundle_id, environment, is_active, updated_at)
-        VALUES (${token}, ${bundleId}, ${environment}, 1, datetime('now'))
+        INSERT INTO ios_device_tokens (token, bundle_id, environment, clerk_user_id, is_active, updated_at)
+        VALUES (${token}, ${bundleId}, ${environment}, ${clerkUserId}, 1, datetime('now'))
         ON CONFLICT(token) DO UPDATE SET
           bundle_id = excluded.bundle_id,
           environment = excluded.environment,
+          clerk_user_id = COALESCE(excluded.clerk_user_id, ios_device_tokens.clerk_user_id),
           is_active = 1,
           updated_at = datetime('now')
       `
     }
 
-    return NextResponse.json({ success: true, platform })
+    return NextResponse.json({ success: true, platform, linkedUser: Boolean(clerkUserId) })
   } catch (error) {
     console.error("[push/register] error:", error)
     return NextResponse.json({ error: "Failed to register device token" }, { status: 500 })

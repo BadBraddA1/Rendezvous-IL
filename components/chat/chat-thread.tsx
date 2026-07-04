@@ -67,7 +67,7 @@ export function ChatThread({ channel, currentUserId, isAdmin = false }: ChatThre
     })
   }, [])
 
-  useAblyChannel({
+  const realtimeStatus = useAblyChannel({
     getTokenRequest: fetchAblyToken,
     channelName: chatChannelName(channel.id),
     onMessage: (message) => {
@@ -75,6 +75,15 @@ export function ChatThread({ channel, currentUserId, isAdmin = false }: ChatThre
       if (payload?.id) onRealtimeMessage(payload)
     },
   })
+
+  // Poll while Ably is down so the web thread still updates.
+  useEffect(() => {
+    if (realtimeStatus === "connected") return
+    const id = window.setInterval(() => {
+      void loadMessages()
+    }, 4000)
+    return () => window.clearInterval(id)
+  }, [realtimeStatus, loadMessages])
 
   async function sendMessage(isAnnouncement = false) {
     const body = draft.trim()
@@ -123,6 +132,17 @@ export function ChatThread({ channel, currentUserId, isAdmin = false }: ChatThre
         <div className="flex items-center gap-2">
           <h2 className="font-semibold">{channelLabel}</h2>
           {channel.is_test ? <Badge variant="secondary">Test</Badge> : null}
+          {realtimeStatus === "connected" ? (
+            <Badge variant="outline" className="text-emerald-700">
+              Live
+            </Badge>
+          ) : realtimeStatus === "connecting" ? (
+            <Badge variant="outline">Connecting…</Badge>
+          ) : realtimeStatus === "failed" ? (
+            <Badge variant="outline" className="text-amber-700">
+              Updating every few seconds
+            </Badge>
+          ) : null}
         </div>
         {channel.description ? (
           <p className="mt-1 text-sm text-muted-foreground">{channel.description}</p>

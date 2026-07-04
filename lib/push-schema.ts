@@ -12,6 +12,7 @@ export async function ensurePushSchema(): Promise<void> {
       token TEXT NOT NULL UNIQUE,
       bundle_id TEXT NOT NULL DEFAULT 'com.rendezvousil.braddcorp.app',
       environment TEXT NOT NULL DEFAULT 'production',
+      clerk_user_id TEXT,
       is_active INTEGER DEFAULT 1,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP
@@ -34,10 +35,32 @@ export async function ensurePushSchema(): Promise<void> {
     CREATE TABLE IF NOT EXISTS android_device_tokens (
       token TEXT PRIMARY KEY NOT NULL,
       bundle_id TEXT NOT NULL DEFAULT 'com.rendezvousil.app',
+      clerk_user_id TEXT,
       is_active INTEGER DEFAULT 1,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP
     )
+  `)
+
+  // Older deployments created these tables without clerk_user_id.
+  for (const statement of [
+    `ALTER TABLE ios_device_tokens ADD COLUMN clerk_user_id TEXT`,
+    `ALTER TABLE android_device_tokens ADD COLUMN clerk_user_id TEXT`,
+  ]) {
+    try {
+      await sql.query(statement)
+    } catch {
+      // Column already exists
+    }
+  }
+
+  await sql.query(`
+    CREATE INDEX IF NOT EXISTS idx_ios_device_tokens_clerk
+    ON ios_device_tokens (clerk_user_id)
+  `)
+  await sql.query(`
+    CREATE INDEX IF NOT EXISTS idx_android_device_tokens_clerk
+    ON android_device_tokens (clerk_user_id)
   `)
 
   schemaEnsured = true

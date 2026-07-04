@@ -2,6 +2,7 @@ import { randomUUID } from "crypto"
 import { sql, type SqlRow } from "@/lib/db"
 import { publishChatMessage } from "@/lib/ably"
 import { userCanAccessChannel } from "@/lib/chat/channels"
+import { notifyChatMessagePush } from "@/lib/chat/notify"
 import { ensureChatSchema } from "@/lib/chat-schema"
 import type { ChatMessagePayload } from "@/types/chat"
 
@@ -143,7 +144,33 @@ export async function sendChannelMessage(input: {
     console.error("[chat] Ably publish failed:", error)
   }
 
+  // Fire-and-forget push to other channel members (iOS / Android).
+  const channelTitle = await channelTitleForPush(input.channelId)
+  void notifyChatMessagePush({
+    channelId: input.channelId,
+    channelTitle,
+    message,
+  })
+
   return message
+}
+
+async function channelTitleForPush(channelId: string): Promise<string> {
+  try {
+    const [row] = await sql`
+      SELECT name, channel_type, event_year
+      FROM chat_channels
+      WHERE id = ${channelId}
+      LIMIT 1
+    `
+    if (!row) return "Rendezvous chat"
+    if (String(row.channel_type) === "year" && row.event_year != null) {
+      return `Rendezvous ${row.event_year}`
+    }
+    return String(row.name || "Rendezvous chat")
+  } catch {
+    return "Rendezvous chat"
+  }
 }
 
 export async function deleteChannelMessage(input: {

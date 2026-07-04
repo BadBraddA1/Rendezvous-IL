@@ -533,6 +533,7 @@ CREATE TABLE IF NOT EXISTS ios_device_tokens (
   token TEXT NOT NULL UNIQUE,
   bundle_id TEXT NOT NULL DEFAULT 'com.rendezvousil.braddcorp.app',
   environment TEXT NOT NULL DEFAULT 'production',
+  clerk_user_id TEXT,
   is_active INTEGER DEFAULT 1,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT DEFAULT CURRENT_TIMESTAMP
@@ -551,6 +552,7 @@ CREATE TABLE IF NOT EXISTS ios_activity_push_tokens (
 CREATE TABLE IF NOT EXISTS android_device_tokens (
   token TEXT PRIMARY KEY NOT NULL,
   bundle_id TEXT NOT NULL DEFAULT 'com.rendezvousil.app',
+  clerk_user_id TEXT,
   is_active INTEGER DEFAULT 1,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT DEFAULT CURRENT_TIMESTAMP

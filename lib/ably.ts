@@ -17,7 +17,10 @@ export async function publishChatMessage(
   payload: Record<string, unknown>,
 ): Promise<void> {
   const ably = getAblyRest()
-  if (!ably) return
+  if (!ably) {
+    console.error("[ably] ABLY_API_KEY is not configured — live chat updates will not publish")
+    return
+  }
   const channel = ably.channels.get(chatChannelName(channelId))
   await channel.publish("message", payload)
 }

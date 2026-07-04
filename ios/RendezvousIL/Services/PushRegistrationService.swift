@@ -9,6 +9,9 @@ final class PushRegistrationService {
     private(set) var lastRegistrationError: String?
     private var pendingToken: Data?
 
+    /// Set after sign-in so device tokens are linked to the Clerk user (chat push targeting).
+    var authTokenProvider: (() async -> String?)?
+
     var statusSummary: String {
         #if targetEnvironment(simulator)
         return "Simulator (push unavailable)"
@@ -23,10 +26,6 @@ final class PushRegistrationService {
     func register(deviceToken: Data) async {
         pendingToken = deviceToken
         let token = deviceToken.map { String(format: "%02x", $0) }.joined()
-        guard token != lastRegisteredHex else {
-            lastRegistrationError = nil
-            return
-        }
 
         #if DEBUG
         let environment = "sandbox"
@@ -44,6 +43,9 @@ final class PushRegistrationService {
         var request = URLRequest(url: AppConfig.url(for: "/api/push/register"))
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        if let jwt = await authTokenProvider?() {
+            request.setValue("Bearer \(jwt)", forHTTPHeaderField: "Authorization")
+        }
         request.httpBody = try? JSONEncoder().encode(
             Body(
                 token: token,
@@ -75,10 +77,10 @@ final class PushRegistrationService {
         lastRegistrationError = error.localizedDescription
     }
 
-    /// Retry last token (e.g. after network recovery or settings toggle).
+    /// Retry last token (e.g. after sign-in so clerk_user_id is linked).
     func retryPendingRegistration() async {
+        lastRegisteredHex = nil
         if let pendingToken {
-            lastRegisteredHex = nil
             await register(deviceToken: pendingToken)
         } else {
             await NotificationService.shared.registerForRemoteIfAuthorized()

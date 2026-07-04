@@ -118,6 +118,12 @@ final class AppSession {
         // Warm the client with a known-good token path (discarded; provider mints fresh ones).
         _ = token
 
+        PushRegistrationService.shared.authTokenProvider = {
+            try? await Self.sessionToken(forceRefresh: false)
+        }
+        // Re-register APNs token now that we can attach clerk_user_id (chat push targeting).
+        await PushRegistrationService.shared.retryPendingRegistration()
+
         await refreshAdminStatus()
         await recordActivityIfSignedIn()
         startActivityPingLoop()
@@ -214,6 +220,7 @@ final class AppSession {
         activityPingTask?.cancel()
         activityPingTask = nil
         apiClient = nil
+        PushRegistrationService.shared.authTokenProvider = nil
         isSignedIn = false
         isAdmin = false
         canViewDashboard = false
