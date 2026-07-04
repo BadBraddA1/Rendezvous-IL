@@ -8,10 +8,9 @@ Native SwiftUI **attendee community hub** for [rendezvousil.com](https://rendezv
 |------|---------|
 | **Sign-in gate** | Welcome screen → Clerk sheet → full app (Pew Packers pattern) |
 | **Account** | Profile card, web dashboard / registration / password links, directory + notification shortcuts |
-| **Home** | Greeting, now/next during retreat week, shortcuts to schedule / updates / chat / directory |
-| **Schedule** | Native week view, meals, worship leaders, **per-event reminder** (bell icon) |
-| **Updates** | Now/next, weather, announcements |
+| **Home** | Greeting, now/next during retreat week, shortcuts to schedule / chat / directory / more |
 | **Chat** | Year cohort channels (Ably realtime when available; messages still load if Ably fails), retry + pull-to-refresh |
+| **Schedule** (center tab) | Day schedule + live updates (now/next, weather, announcements), meals, worship leaders, event reminders |
 | **Directory** | Family cards (tap for full details); disk cache then background refresh; search, year picker; **Your photo** toolbar |
 | **Notifications** | Local event reminders + **APNs** for organizer broadcasts; deep links from push open the right tab |
 | **Live Activity** | Lock Screen / Dynamic Island now & next during retreat week |

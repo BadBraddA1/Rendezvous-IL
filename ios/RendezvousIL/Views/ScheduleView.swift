@@ -21,7 +21,7 @@ struct ScheduleView: View {
             }
             .navigationTitle("Schedule")
             .toolbar {
-                if repository.isRefreshingSchedule {
+                if repository.isRefreshingSchedule || repository.isLoadingUpdates {
                     ToolbarItem(placement: .topBarTrailing) {
                         ProgressView()
                     }
@@ -30,6 +30,10 @@ struct ScheduleView: View {
             .refreshable {
                 await repository.loadScheduleBundle()
                 await repository.loadScheduleExtras()
+                await repository.loadUpdates()
+            }
+            .task {
+                await repository.loadUpdates()
             }
             .onChange(of: repository.schedule?.year) { _, _ in
                 syncSelectedDay()
@@ -58,7 +62,9 @@ struct ScheduleView: View {
                 let isoDate = schedule.dayDates[day.day] ?? ""
 
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 16) {
+                    VStack(alignment: .leading, spacing: 20) {
+                        liveUpdatesSection
+
                         header(for: day, schedule: schedule)
 
                         if day.events.isEmpty {
@@ -95,6 +101,88 @@ struct ScheduleView: View {
         .frame(maxWidth: .infinity)
         .padding(.vertical, 8)
         .background(BrandColors.warmSurface)
+    }
+
+    /// Live updates (now/next, weather, announcements) live on Schedule so one tab covers the day.
+    private var liveUpdatesSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Now & next")
+                    .font(.headline)
+                RetreatNowNextSection(
+                    result: repository.nowNext(),
+                    emptyMessage: "Live now/next appears during retreat week (Central Time)."
+                )
+            }
+
+            weatherBlock
+            liveAnnouncementsBlock
+        }
+    }
+
+    @ViewBuilder
+    private var weatherBlock: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Weather")
+                .font(.headline)
+            if let current = repository.weather?.current {
+                HStack(alignment: .firstTextBaseline, spacing: 12) {
+                    Text("\(Int(current.temp.rounded()))°")
+                        .font(.system(size: 36, weight: .semibold, design: .rounded))
+                        .foregroundStyle(BrandColors.lake)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(current.weather.first?.description.capitalized ?? "Conditions")
+                            .font(.subheadline.weight(.medium))
+                        Text("Feels like \(Int(current.feels_like.rounded()))° · Wind \(Int(current.wind_speed)) mph")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .padding()
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(BrandColors.lakeLight.opacity(0.5), in: RoundedRectangle(cornerRadius: 12))
+            } else {
+                Text("Weather loads during retreat week when you're online.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .padding()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var liveAnnouncementsBlock: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Announcements")
+                .font(.headline)
+            if repository.liveAnnouncements.isEmpty {
+                Text("No active announcements right now.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .padding()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
+            } else {
+                ForEach(repository.liveAnnouncements) { item in
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack {
+                            Text(item.title)
+                                .font(.subheadline.weight(.semibold))
+                            Spacer()
+                            PriorityBadge(priority: item.priority)
+                        }
+                        Text(item.message)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
+                }
+            }
+        }
     }
 
     private func dayPicker(_ schedule: SchedulePayload) -> some View {

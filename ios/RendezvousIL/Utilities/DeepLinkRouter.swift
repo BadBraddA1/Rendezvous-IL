@@ -66,11 +66,11 @@ enum DeepLinkRouter {
         if normalized.isEmpty || normalized == "/" { return DeepLinkDestination(tab: .home, more: nil) }
         if normalized.hasPrefix("/schedule") { return DeepLinkDestination(tab: .schedule, more: nil) }
         if normalized.hasPrefix("/live-updates") || normalized.hasPrefix("/updates") {
-            return DeepLinkDestination(tab: .updates, more: nil)
+            return DeepLinkDestination(tab: .schedule, more: nil)
         }
         if normalized.hasPrefix("/chat") { return DeepLinkDestination(tab: .chat, more: nil) }
         if normalized.hasPrefix("/directory") {
-            return DeepLinkDestination(tab: .more, more: .directory)
+            return DeepLinkDestination(tab: .directory, more: nil)
         }
         if normalized.hasPrefix("/account") {
             return DeepLinkDestination(tab: .more, more: .account)

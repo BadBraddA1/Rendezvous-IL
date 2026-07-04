@@ -139,15 +139,29 @@ struct RootView: View {
     }
 
     private var launchSplash: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "leaf.fill")
-                .font(.system(size: 44))
-                .foregroundStyle(BrandColors.lake)
+        VStack(spacing: 20) {
+            Spacer()
+
+            Image("BraddCorpLogo")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 96, height: 96)
+                .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+                .shadow(color: .black.opacity(0.08), radius: 12, y: 4)
+
             Text("Rendezvous")
                 .font(.system(.title, design: .serif))
                 .fontWeight(.semibold)
+
             ProgressView()
                 .tint(BrandColors.lake)
+
+            Spacer()
+
+            Text("Powered by BraddCorp")
+                .font(.footnote.weight(.medium))
+                .foregroundStyle(.secondary)
+                .padding(.bottom, 28)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(.systemGroupedBackground))

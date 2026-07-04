@@ -4,10 +4,10 @@ extension Notification.Name {
     static let rendezvousDeepLink = Notification.Name("rendezvousDeepLink")
 }
 
-/// Signed-in tab shell — schedule, chat, directory, and retreat tools.
+/// Signed-in tab shell — Schedule is the center tab; Directory is a primary tab.
 struct MainTabView: View {
     @Environment(RendezvousRepository.self) private var repository
-    @State private var selectedTab: AppTab = .home
+    @State private var selectedTab: AppTab = .schedule
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -15,17 +15,19 @@ struct MainTabView: View {
                 .tabItem { Label("Home", systemImage: "house.fill") }
                 .tag(AppTab.home)
 
+            ChatListView()
+                .tabItem { Label("Chat", systemImage: "bubble.left.and.bubble.right.fill") }
+                .tag(AppTab.chat)
+
             ScheduleView()
                 .tabItem { Label("Schedule", systemImage: "calendar") }
                 .tag(AppTab.schedule)
 
-            UpdatesView()
-                .tabItem { Label("Updates", systemImage: "bell.badge") }
-                .tag(AppTab.updates)
-
-            ChatListView()
-                .tabItem { Label("Chat", systemImage: "bubble.left.and.bubble.right.fill") }
-                .tag(AppTab.chat)
+            NavigationStack {
+                DirectoryView()
+            }
+            .tabItem { Label("Directory", systemImage: "person.3.fill") }
+            .tag(AppTab.directory)
 
             MoreView()
                 .tabItem { Label("More", systemImage: "ellipsis.circle.fill") }
@@ -46,7 +48,19 @@ struct MainTabView: View {
 }
 
 enum AppTab: String, Hashable {
-    case home, schedule, updates, chat, more
+    case home, chat, schedule, directory, more
+
+    /// Older deep links used `updates` — map to schedule (now includes live updates).
+    init?(rawValue: String) {
+        switch rawValue {
+        case "home": self = .home
+        case "chat": self = .chat
+        case "schedule", "updates": self = .schedule
+        case "directory": self = .directory
+        case "more": self = .more
+        default: return nil
+        }
+    }
 }
 
 #Preview {

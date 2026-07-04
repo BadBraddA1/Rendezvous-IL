@@ -81,18 +81,15 @@ struct HomeView: View {
                 HubTile(title: "Schedule", icon: "calendar", color: BrandColors.lake) {
                     selectedTab = .schedule
                 }
-                HubTile(title: "Updates", icon: "bell.badge", color: BrandColors.coral) {
-                    selectedTab = .updates
-                }
                 HubTile(title: "Chat", icon: "bubble.left.and.bubble.right.fill", color: BrandColors.lake) {
                     selectedTab = .chat
                 }
-                NavigationLink {
-                    DirectoryView()
-                } label: {
-                    HubTileLabel(title: "Directory", icon: "person.3.fill", color: BrandColors.coral)
+                HubTile(title: "Directory", icon: "person.3.fill", color: BrandColors.coral) {
+                    selectedTab = .directory
                 }
-                .buttonStyle(.plain)
+                HubTile(title: "More", icon: "ellipsis.circle.fill", color: BrandColors.coral) {
+                    selectedTab = .more
+                }
             }
         }
     }

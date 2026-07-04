@@ -12,9 +12,6 @@ struct MoreView: View {
                 }
 
                 Section("Community") {
-                    NavigationLink { DirectoryView() } label: {
-                        Label("Family directory", systemImage: "person.3.fill")
-                    }
                     NavigationLink { FamilyDirectoryManageView() } label: {
                         Label("Your directory photo", systemImage: "camera.fill")
                     }
