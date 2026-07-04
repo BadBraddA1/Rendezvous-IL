@@ -145,8 +145,12 @@ struct RootView: View {
             Image("RendezvousLogo")
                 .resizable()
                 .scaledToFit()
-                .frame(maxWidth: 220, maxHeight: 120)
-                .shadow(color: .black.opacity(0.06), radius: 10, y: 3)
+                .frame(maxWidth: 200, maxHeight: 100)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 16)
+                // Logo art is dark; keep a light plate so it stays visible in dark mode.
+                .background(Color.white, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                .shadow(color: .black.opacity(0.12), radius: 12, y: 4)
 
             ProgressView()
                 .tint(BrandColors.lake)
