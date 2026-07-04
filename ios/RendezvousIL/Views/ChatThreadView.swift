@@ -1,5 +1,7 @@
 import Clerk
+import PhotosUI
 import SwiftUI
+import UIKit
 
 struct ChatThreadView: View {
     @Environment(AppSession.self) private var session
@@ -13,6 +15,9 @@ struct ChatThreadView: View {
     @State private var errorMessage: String?
     @State private var realtimeStatus: RealtimeStatus = .connecting
     @State private var ablyService = AblyService()
+    @State private var canModerate = false
+    @State private var pickerItem: PhotosPickerItem?
+    @State private var pendingImageData: Data?
 
     private enum RealtimeStatus {
         case connecting
@@ -23,6 +28,10 @@ struct ChatThreadView: View {
     private var currentUserId: String {
         guard session.isClerkReady else { return "" }
         return Clerk.shared.user?.id ?? ""
+    }
+
+    private var canSend: Bool {
+        !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || pendingImageData != nil
     }
 
     var body: some View {
@@ -38,6 +47,15 @@ struct ChatThreadView: View {
                 .padding(.horizontal)
                 .padding(.vertical, 8)
                 .background(BrandColors.warmSurface)
+            }
+
+            if canModerate {
+                Text("You can moderate this chat")
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(BrandColors.lake)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal)
+                    .padding(.top, 6)
             }
 
             if let errorMessage {
@@ -90,11 +108,20 @@ struct ChatThreadView: View {
         .onDisappear {
             ablyService.disconnect()
         }
+        .onChange(of: pickerItem) { _, item in
+            guard let item else { return }
+            Task {
+                if let data = try? await item.loadTransferable(type: Data.self) {
+                    pendingImageData = DirectoryImageProcessor.prepareForUpload(data)
+                }
+            }
+        }
     }
 
     @ViewBuilder
     private func messageBubble(_ message: ChatMessage) -> some View {
         let mine = !currentUserId.isEmpty && message.sender_clerk_id == currentUserId
+        let canDelete = mine || canModerate
         HStack {
             if mine { Spacer(minLength: 40) }
             VStack(alignment: mine ? .trailing : .leading, spacing: 4) {
@@ -109,10 +136,35 @@ struct ChatThreadView: View {
                     Text(ChatMessageFormatting.relativeTime(message.created_at))
                         .font(.caption2)
                         .foregroundStyle(.secondary)
+                    if canDelete {
+                        Button {
+                            Task { await deleteMessage(message.id) }
+                        } label: {
+                            Image(systemName: "trash")
+                                .font(.caption2)
+                        }
+                        .foregroundStyle(.secondary)
+                    }
                 }
-                Text(message.body)
-                    .font(.body)
-                    .multilineTextAlignment(mine ? .trailing : .leading)
+                if let imageUrl = message.image_url, let url = URL(string: imageUrl) {
+                    AsyncImage(url: url) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .scaledToFill()
+                        default:
+                            ProgressView()
+                        }
+                    }
+                    .frame(maxWidth: 220, maxHeight: 220)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+                if !message.body.isEmpty {
+                    Text(message.body)
+                        .font(.body)
+                        .multilineTextAlignment(mine ? .trailing : .leading)
+                }
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
@@ -127,26 +179,56 @@ struct ChatThreadView: View {
     }
 
     private var composer: some View {
-        HStack(alignment: .bottom, spacing: 8) {
-            TextField("Message", text: $draft, axis: .vertical)
-                .textFieldStyle(.roundedBorder)
-                .lineLimit(1...4)
-            Button {
-                Task { await sendMessage() }
-            } label: {
-                if isSending {
-                    ProgressView()
-                } else {
-                    Image(systemName: "paperplane.fill")
+        VStack(alignment: .leading, spacing: 8) {
+            if pendingImageData != nil {
+                HStack {
+                    Text("Photo attached")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Button("Remove") {
+                        pendingImageData = nil
+                        pickerItem = nil
+                    }
+                    .font(.caption.weight(.semibold))
                 }
+                .padding(.horizontal)
             }
-            .disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSending)
+            HStack(alignment: .bottom, spacing: 8) {
+                PhotosPicker(selection: $pickerItem, matching: .images) {
+                    Image(systemName: "photo")
+                        .font(.title3)
+                }
+                TextField("Message", text: $draft, axis: .vertical)
+                    .textFieldStyle(.roundedBorder)
+                    .lineLimit(1...4)
+                if canModerate {
+                    Button {
+                        Task { await sendMessage(isAnnouncement: true) }
+                    } label: {
+                        Image(systemName: "megaphone.fill")
+                    }
+                    .disabled(!canSend || isSending)
+                }
+                Button {
+                    Task { await sendMessage(isAnnouncement: false) }
+                } label: {
+                    if isSending {
+                        ProgressView()
+                    } else {
+                        Image(systemName: "paperplane.fill")
+                    }
+                }
+                .disabled(!canSend || isSending)
+            }
+            .padding(.horizontal)
+            .padding(.bottom)
         }
-        .padding()
+        .padding(.top, 8)
         .background(.bar)
     }
 
     private func setup() async {
+        canModerate = channel.canModerate || session.isAdmin
         await reloadMessages()
         await connectRealtime()
     }
@@ -165,6 +247,9 @@ struct ChatThreadView: View {
                 try await client.getChatMessages(channelId: channel.id)
             }
             messages = response.messages
+            if let moderate = response.can_moderate {
+                canModerate = moderate || session.isAdmin
+            }
             errorMessage = nil
         } catch {
             if APIError.isCancellation(error) { return }
@@ -195,23 +280,43 @@ struct ChatThreadView: View {
         }
     }
 
-    private func sendMessage() async {
+    private func sendMessage(isAnnouncement: Bool) async {
         guard let client = session.apiClient else { return }
         let body = draft.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !body.isEmpty else { return }
+        guard canSend else { return }
 
         isSending = true
         defer { isSending = false }
 
         do {
-            let response = try await RepositoryFetch.withTimeout {
-                try await client.sendChatMessage(channelId: channel.id, body: body)
+            let response = try await RepositoryFetch.withTimeout(seconds: 30) {
+                try await client.sendChatMessage(
+                    channelId: channel.id,
+                    body: body,
+                    isAnnouncement: isAnnouncement,
+                    imageData: pendingImageData
+                )
             }
             if !messages.contains(where: { $0.id == response.message.id }) {
                 messages.append(response.message)
             }
             draft = ""
+            pendingImageData = nil
+            pickerItem = nil
             errorMessage = nil
+        } catch {
+            if APIError.isCancellation(error) { return }
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func deleteMessage(_ id: String) async {
+        guard let client = session.apiClient else { return }
+        do {
+            try await RepositoryFetch.withTimeout {
+                try await client.deleteChatMessage(messageId: id)
+            }
+            messages.removeAll { $0.id == id }
         } catch {
             if APIError.isCancellation(error) { return }
             errorMessage = error.localizedDescription
@@ -230,7 +335,8 @@ struct ChatThreadView: View {
             is_active: true,
             is_test: false,
             last_message_preview: nil,
-            last_message_at: nil
+            last_message_at: nil,
+            can_moderate: false
         ))
     }
     .environment(AppSession())

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { listMemberChatChannels } from "@/lib/chat/channels"
+import { listMemberChatChannels, userCanModerateChannel } from "@/lib/chat/channels"
 import { authUserContext, getCurrentAdmin } from "@/lib/clerk-auth"
 
 export const dynamic = "force-dynamic"
@@ -13,12 +13,18 @@ export async function GET(request: Request) {
   try {
     const admin = await getCurrentAdmin(request)
     const channels = await listMemberChatChannels(ctx.userId, ctx.email, Boolean(admin))
+    const enriched = await Promise.all(
+      channels.map(async (channel) => ({
+        ...channel,
+        can_moderate: await userCanModerateChannel(channel.id, ctx.userId, Boolean(admin)),
+      })),
+    )
     return NextResponse.json({
-      channels,
+      channels: enriched,
       meta: {
         email: ctx.email ?? null,
         isAdmin: Boolean(admin),
-        channelCount: channels.length,
+        channelCount: enriched.length,
       },
     })
   } catch (error) {

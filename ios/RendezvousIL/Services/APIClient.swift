@@ -212,11 +212,66 @@ actor APIClient {
         try await get("/api/chat/channels/\(channelId)/messages?limit=\(limit)")
     }
 
-    func sendChatMessage(channelId: String, body: String, isAnnouncement: Bool = false) async throws -> ChatMessageResponse {
-        try await post(
+    func sendChatMessage(
+        channelId: String,
+        body: String,
+        isAnnouncement: Bool = false,
+        imageData: Data? = nil
+    ) async throws -> ChatMessageResponse {
+        if let imageData {
+            return try await uploadChatMessage(
+                channelId: channelId,
+                body: body,
+                isAnnouncement: isAnnouncement,
+                imageData: imageData
+            )
+        }
+        return try await post(
             "/api/chat/channels/\(channelId)/messages",
             body: ChatSendMessageBody(body: body, is_announcement: isAnnouncement)
         )
+    }
+
+    private func uploadChatMessage(
+        channelId: String,
+        body: String,
+        isAnnouncement: Bool,
+        imageData: Data
+    ) async throws -> ChatMessageResponse {
+        let boundary = "Boundary-\(UUID().uuidString)"
+        var data = Data()
+        func appendField(name: String, value: String) {
+            data.append("--\(boundary)\r\n".data(using: .utf8)!)
+            data.append("Content-Disposition: form-data; name=\"\(name)\"\r\n\r\n".data(using: .utf8)!)
+            data.append("\(value)\r\n".data(using: .utf8)!)
+        }
+        appendField(name: "body", value: body)
+        appendField(name: "is_announcement", value: isAnnouncement ? "true" : "false")
+        data.append("--\(boundary)\r\n".data(using: .utf8)!)
+        data.append("Content-Disposition: form-data; name=\"photo\"; filename=\"chat-photo.jpg\"\r\n".data(using: .utf8)!)
+        data.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
+        data.append(imageData)
+        data.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
+
+        let url = AppConfig.url(for: "/api/chat/channels/\(channelId)/messages")
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        request.setValue("RendezvousIL-iOS/1.0", forHTTPHeaderField: "User-Agent")
+        if let tokenProvider {
+            let token = try await tokenProvider()
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        request.httpBody = data
+
+        let (responseData, response) = try await session.data(for: request)
+        try Self.throwIfFailed(response: response, data: responseData)
+        return try decoder.decode(ChatMessageResponse.self, from: responseData)
+    }
+
+    func deleteChatMessage(messageId: String) async throws {
+        struct Ok: Decodable { let success: Bool? }
+        let _: Ok = try await delete("/api/chat/messages/\(messageId)")
     }
 
     func getAblyToken() async throws -> AblyTokenResponse {

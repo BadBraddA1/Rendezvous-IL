@@ -26,6 +26,8 @@ export interface ChatChannelSummary {
   last_message_preview: string | null
   last_message_at: string | null
   member_count?: number
+  /** Current user can moderate this channel (site admin or channel mod). */
+  can_moderate?: boolean
 }
 
 export interface ChatMessagePayload {
@@ -35,6 +37,7 @@ export interface ChatMessagePayload {
   sender_display_name: string
   sender_avatar_url: string | null
   body: string
+  image_url: string | null
   is_announcement: boolean
   created_at: string
 }

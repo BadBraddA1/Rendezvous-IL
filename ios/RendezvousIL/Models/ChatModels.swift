@@ -10,6 +10,7 @@ struct ChatChannelSummary: Codable, Identifiable, Hashable {
     let is_test: Bool
     let last_message_preview: String?
     let last_message_at: String?
+    let can_moderate: Bool?
 
     var displayTitle: String {
         if channel_type == "year", let year = event_year {
@@ -17,6 +18,8 @@ struct ChatChannelSummary: Codable, Identifiable, Hashable {
         }
         return name
     }
+
+    var canModerate: Bool { can_moderate == true }
 }
 
 struct ChatChannelsResponse: Decodable {
@@ -30,6 +33,7 @@ struct ChatMessage: Codable, Identifiable, Hashable {
     let sender_display_name: String
     let sender_avatar_url: String?
     let body: String
+    let image_url: String?
     let is_announcement: Bool
     let created_at: String
 }
@@ -38,6 +42,7 @@ struct ChatMessagesResponse: Decodable {
     let messages: [ChatMessage]
     let nextCursor: String?
     let hasMore: Bool
+    let can_moderate: Bool?
 }
 
 struct ChatMessageResponse: Decodable {

@@ -42,6 +42,7 @@ export function ChatPageClient({ currentUserId, isAdmin = false }: ChatPageClien
   }, [])
 
   const selected = channels.find((channel) => channel.id === selectedId) ?? null
+  const selectedCanModerate = Boolean(isAdmin || selected?.can_moderate)
 
   if (isLoading) {
     return <p className="text-muted-foreground">Loading your chats…</p>
@@ -105,7 +106,12 @@ export function ChatPageClient({ currentUserId, isAdmin = false }: ChatPageClien
 
       <div className="min-h-[32rem]">
         {selected ? (
-          <ChatThread channel={selected} currentUserId={currentUserId} isAdmin={isAdmin} />
+          <ChatThread
+            channel={selected}
+            currentUserId={currentUserId}
+            isAdmin={isAdmin}
+            canModerate={selectedCanModerate}
+          />
         ) : (
           <div className="flex h-full items-center justify-center rounded-xl border bg-card p-8 text-muted-foreground">
             Select a chat

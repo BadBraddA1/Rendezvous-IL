@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server"
 import { listChannelMessages, sendChannelMessage, clerkDisplayName } from "@/lib/chat/messages"
+import { userCanModerateChannel } from "@/lib/chat/channels"
+import { uploadChatPhoto, validateChatPhoto } from "@/lib/chat/photo-storage"
 import { authUserContext, getCurrentAdmin } from "@/lib/clerk-auth"
 
 type Params = { params: Promise<{ id: string }> }
@@ -17,6 +19,7 @@ export async function GET(request: Request, { params }: Params) {
 
   try {
     const admin = await getCurrentAdmin(request)
+    const canModerate = await userCanModerateChannel(channelId, ctx.userId, Boolean(admin))
 
     const result = await listChannelMessages(channelId, {
       clerkUserId: ctx.userId,
@@ -26,7 +29,7 @@ export async function GET(request: Request, { params }: Params) {
       limit,
     })
 
-    return NextResponse.json(result)
+    return NextResponse.json({ ...result, can_moderate: canModerate })
   } catch (error) {
     console.error("[chat/messages] GET error:", error)
     const message = error instanceof Error ? error.message : "Failed to load messages"
@@ -43,18 +46,42 @@ export async function POST(request: Request, { params }: Params) {
   }
 
   try {
-    const body = await request.json()
-    const text = typeof body.body === "string" ? body.body : ""
-    const isAnnouncement = Boolean(body.is_announcement)
+    const contentType = request.headers.get("content-type") || ""
+    let text = ""
+    let isAnnouncement = false
+    let imageUrl: string | null = null
 
-    const admin = await getCurrentAdmin(request)
-    if (isAnnouncement && !admin) {
-      return NextResponse.json({ error: "Admin required for announcements" }, { status: 403 })
+    if (contentType.includes("multipart/form-data")) {
+      const form = await request.formData()
+      text = typeof form.get("body") === "string" ? String(form.get("body")) : ""
+      isAnnouncement = String(form.get("is_announcement") || "") === "true"
+      const file = form.get("photo")
+      if (file instanceof File) {
+        const validationError = validateChatPhoto(file)
+        if (validationError) {
+          return NextResponse.json({ error: validationError }, { status: 400 })
+        }
+        imageUrl = await uploadChatPhoto(
+          channelId,
+          ctx.userId,
+          await file.arrayBuffer(),
+          file.type,
+        )
+      }
+    } else {
+      const body = await request.json()
+      text = typeof body.body === "string" ? body.body : ""
+      isAnnouncement = Boolean(body.is_announcement)
+      if (typeof body.image_url === "string" && body.image_url.trim()) {
+        imageUrl = body.image_url.trim()
+      }
     }
 
+    const admin = await getCurrentAdmin(request)
     const message = await sendChannelMessage({
       channelId,
       body: text,
+      imageUrl,
       clerkUserId: ctx.userId,
       email: ctx.email,
       isAdmin: Boolean(admin),
@@ -68,7 +95,11 @@ export async function POST(request: Request, { params }: Params) {
     console.error("[chat/messages] POST error:", error)
     const message = error instanceof Error ? error.message : "Failed to send message"
     const status =
-      message === "Forbidden" ? 403 : message.includes("required") || message.includes("long") ? 400 : 500
+      message === "Forbidden"
+        ? 403
+        : message.includes("required") || message.includes("long") || message.includes("configured")
+          ? 400
+          : 500
     return NextResponse.json({ error: message }, { status })
   }
 }

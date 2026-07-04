@@ -33,6 +33,7 @@ export async function ensureChatSchema(): Promise<void> {
     CREATE TABLE IF NOT EXISTS chat_channel_members (
       channel_id TEXT NOT NULL,
       clerk_user_id TEXT NOT NULL,
+      role TEXT NOT NULL DEFAULT 'member',
       joined_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       PRIMARY KEY (channel_id, clerk_user_id)
     )
@@ -45,12 +46,24 @@ export async function ensureChatSchema(): Promise<void> {
       sender_clerk_id TEXT NOT NULL,
       sender_display_name TEXT NOT NULL,
       sender_avatar_url TEXT,
-      body TEXT NOT NULL,
+      body TEXT NOT NULL DEFAULT '',
+      image_url TEXT,
       is_announcement INTEGER NOT NULL DEFAULT 0,
       deleted_at TEXT,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `)
+
+  for (const statement of [
+    `ALTER TABLE chat_channel_members ADD COLUMN role TEXT NOT NULL DEFAULT 'member'`,
+    `ALTER TABLE chat_messages ADD COLUMN image_url TEXT`,
+  ]) {
+    try {
+      await sql.query(statement)
+    } catch {
+      // column already exists
+    }
+  }
 
   await sql.query(`
     CREATE INDEX IF NOT EXISTS idx_chat_messages_channel_created

@@ -17,6 +17,7 @@ type ChatPerson = {
   displayName: string
   email: string
   imageUrl: string
+  role?: "member" | "moderator"
 }
 
 type AdminChatManagerProps = {
@@ -158,14 +159,16 @@ export function AdminChatManager({ currentUserId, canEdit }: AdminChatManagerPro
   }
 
   async function addMember(person: ChatPerson) {
-    if (!canEdit || !selected || selected.channel_type === "year") return
+    if (!canEdit || !selected) return
     setMemberActionId(person.id)
     setError(null)
     try {
+      // Year channels only accept explicit moderator rows.
+      const role = selected.channel_type === "year" ? "moderator" : "member"
       const response = await fetch(`/api/admin/chat/channels/${selected.id}/members`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ clerk_user_id: person.id }),
+        body: JSON.stringify({ clerk_user_id: person.id, role }),
       })
       const data = await response.json().catch(() => ({}))
       if (!response.ok) throw new Error(data.error || "Failed to add member")
@@ -178,8 +181,34 @@ export function AdminChatManager({ currentUserId, canEdit }: AdminChatManagerPro
     }
   }
 
+  async function toggleModerator(person: ChatPerson) {
+    if (!canEdit || !selected) return
+    setMemberActionId(person.id)
+    setError(null)
+    try {
+      const role = person.role === "moderator" ? "member" : "moderator"
+      // Year channels: demoting a mod removes the explicit row.
+      if (selected.channel_type === "year" && role === "member") {
+        await removeMember(person)
+        return
+      }
+      const response = await fetch(`/api/admin/chat/channels/${selected.id}/members`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clerk_user_id: person.id, role }),
+      })
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) throw new Error(data.error || "Failed to update moderator")
+      setChannelMembers((data.members ?? []) as ChatPerson[])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update moderator")
+    } finally {
+      setMemberActionId(null)
+    }
+  }
+
   async function removeMember(person: ChatPerson) {
-    if (!canEdit || !selected || selected.channel_type === "year") return
+    if (!canEdit || !selected) return
     setMemberActionId(person.id)
     setError(null)
     try {
@@ -305,7 +334,12 @@ export function AdminChatManager({ currentUserId, canEdit }: AdminChatManagerPro
 
         <div className="min-h-[36rem]">
           {selected ? (
-            <ChatThread channel={selected} currentUserId={currentUserId} isAdmin />
+            <ChatThread
+              channel={selected}
+              currentUserId={currentUserId}
+              isAdmin
+              canModerate
+            />
           ) : (
             <div className="flex h-full items-center justify-center rounded-xl border bg-card p-8 text-muted-foreground">
               Select a channel to chat
@@ -318,11 +352,12 @@ export function AdminChatManager({ currentUserId, canEdit }: AdminChatManagerPro
             <p className="mb-1 text-sm font-medium">Channel members</p>
             {selected?.channel_type === "year" ? (
               <p className="mb-3 text-xs text-muted-foreground">
-                Year chats include registered families automatically. No manual adds needed.
+                Year chats include registered families automatically. You can still promote
+                moderators who can delete messages and post announcements in this room.
               </p>
             ) : (
               <p className="mb-3 text-xs text-muted-foreground">
-                People in this channel. Remove anyone who should not have access.
+                People in this channel. Moderators can delete messages and post announcements.
               </p>
             )}
             {membersLoading ? (
@@ -334,26 +369,44 @@ export function AdminChatManager({ currentUserId, canEdit }: AdminChatManagerPro
                 {channelMembers.map((member) => (
                   <li key={member.id} className="flex items-center gap-2">
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">{member.displayName}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="truncate text-sm font-medium">{member.displayName}</p>
+                        {member.role === "moderator" ? (
+                          <Badge variant="secondary">Mod</Badge>
+                        ) : null}
+                      </div>
                       {member.email ? (
                         <p className="truncate text-xs text-muted-foreground">{member.email}</p>
                       ) : null}
                     </div>
-                    {canEdit && selected?.channel_type === "custom" ? (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="ghost"
-                        disabled={memberActionId === member.id}
-                        onClick={() => void removeMember(member)}
-                      >
-                        {memberActionId === member.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <UserMinus className="h-4 w-4" />
-                        )}
-                        <span className="sr-only">Remove</span>
-                      </Button>
+                    {canEdit ? (
+                      <div className="flex items-center gap-1">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          disabled={memberActionId === member.id}
+                          onClick={() => void toggleModerator(member)}
+                        >
+                          {member.role === "moderator" ? "Remove mod" : "Make mod"}
+                        </Button>
+                        {selected?.channel_type === "custom" || member.role === "moderator" ? (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            disabled={memberActionId === member.id}
+                            onClick={() => void removeMember(member)}
+                          >
+                            {memberActionId === member.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <UserMinus className="h-4 w-4" />
+                            )}
+                            <span className="sr-only">Remove</span>
+                          </Button>
+                        ) : null}
+                      </div>
                     ) : null}
                   </li>
                 ))}
@@ -361,9 +414,11 @@ export function AdminChatManager({ currentUserId, canEdit }: AdminChatManagerPro
             )}
           </div>
 
-          {canEdit && selected?.channel_type === "custom" ? (
+          {canEdit ? (
             <div className="rounded-xl border bg-card p-4">
-              <p className="mb-3 text-sm font-medium">Add people</p>
+              <p className="mb-3 text-sm font-medium">
+                {selected?.channel_type === "year" ? "Add moderators" : "Add people"}
+              </p>
               <Input
                 value={peopleQuery}
                 onChange={(event) => setPeopleQuery(event.target.value)}
@@ -396,7 +451,7 @@ export function AdminChatManager({ currentUserId, canEdit }: AdminChatManagerPro
                         ) : (
                           <UserPlus className="mr-1 h-4 w-4" />
                         )}
-                        Add
+                        {selected?.channel_type === "year" ? "Make mod" : "Add"}
                       </Button>
                     </li>
                   ))}

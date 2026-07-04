@@ -31,7 +31,7 @@ async function attachLastMessage(summaries: ChatChannelSummary[]): Promise<ChatC
   const ids = summaries.map((c) => c.id)
   const placeholders = ids.map(() => "?").join(", ")
   const rows = await sql.query(
-    `SELECT channel_id, body, created_at
+    `SELECT channel_id, body, image_url, created_at
      FROM chat_messages
      WHERE deleted_at IS NULL
        AND channel_id IN (${placeholders})
@@ -39,12 +39,13 @@ async function attachLastMessage(summaries: ChatChannelSummary[]): Promise<ChatC
     ids,
   )
 
-  const latestByChannel = new Map<string, { body: string; created_at: string }>()
+  const latestByChannel = new Map<string, { body: string; image_url: string | null; created_at: string }>()
   for (const row of rows) {
     const channelId = String(row.channel_id)
     if (!latestByChannel.has(channelId)) {
       latestByChannel.set(channelId, {
-        body: String(row.body),
+        body: String(row.body ?? ""),
+        image_url: row.image_url != null ? String(row.image_url) : null,
         created_at: String(row.created_at),
       })
     }
@@ -53,9 +54,11 @@ async function attachLastMessage(summaries: ChatChannelSummary[]): Promise<ChatC
   return summaries.map((channel) => {
     const latest = latestByChannel.get(channel.id)
     if (!latest) return channel
+    const preview =
+      latest.body.trim() || (latest.image_url ? "Sent a photo" : "")
     return {
       ...channel,
-      last_message_preview: latest.body.slice(0, 120),
+      last_message_preview: preview.slice(0, 120),
       last_message_at: latest.created_at,
     }
   })
@@ -312,6 +315,8 @@ export async function setChatChannelMembers(
   }
 }
 
+export type ChatMemberRole = "member" | "moderator"
+
 export async function listChatChannelMemberIds(channelId: string): Promise<string[]> {
   await ensureChatSchema()
   const rows = await sql`
@@ -323,7 +328,54 @@ export async function listChatChannelMemberIds(channelId: string): Promise<strin
   return rows.map((row) => String(row.clerk_user_id))
 }
 
-export async function addChatChannelMember(channelId: string, clerkUserId: string): Promise<void> {
+export async function listChatChannelMembers(
+  channelId: string,
+): Promise<{ clerk_user_id: string; role: ChatMemberRole }[]> {
+  await ensureChatSchema()
+  const rows = await sql`
+    SELECT clerk_user_id, role
+    FROM chat_channel_members
+    WHERE channel_id = ${channelId}
+    ORDER BY
+      CASE WHEN role = 'moderator' THEN 0 ELSE 1 END,
+      joined_at ASC
+  `
+  return rows.map((row) => ({
+    clerk_user_id: String(row.clerk_user_id),
+    role: String(row.role || "member") === "moderator" ? "moderator" : "member",
+  }))
+}
+
+export async function userIsChannelModerator(
+  channelId: string,
+  clerkUserId: string,
+): Promise<boolean> {
+  await ensureChatSchema()
+  const [row] = await sql`
+    SELECT role
+    FROM chat_channel_members
+    WHERE channel_id = ${channelId}
+      AND clerk_user_id = ${clerkUserId}
+    LIMIT 1
+  `
+  return String(row?.role || "") === "moderator"
+}
+
+/** Site admins can moderate any room; channel mods only rooms they moderate. */
+export async function userCanModerateChannel(
+  channelId: string,
+  clerkUserId: string,
+  isAdmin: boolean,
+): Promise<boolean> {
+  if (isAdmin) return true
+  return userIsChannelModerator(channelId, clerkUserId)
+}
+
+export async function addChatChannelMember(
+  channelId: string,
+  clerkUserId: string,
+  role: ChatMemberRole = "member",
+): Promise<void> {
   await ensureChatSchema()
   const id = clerkUserId.trim()
   if (!id) throw new Error("Member id is required")
@@ -332,14 +384,38 @@ export async function addChatChannelMember(channelId: string, clerkUserId: strin
     SELECT channel_type FROM chat_channels WHERE id = ${channelId} LIMIT 1
   `
   if (!existing) throw new Error("Channel not found")
-  if (String(existing.channel_type) === "year") {
+  // Year channels auto-include registrants; admins may still add explicit mod rows.
+  if (String(existing.channel_type) === "year" && role !== "moderator") {
     throw new Error("Year channel membership is managed automatically from registrations")
   }
 
   await sql`
-    INSERT INTO chat_channel_members (channel_id, clerk_user_id)
-    VALUES (${channelId}, ${id})
-    ON CONFLICT (channel_id, clerk_user_id) DO NOTHING
+    INSERT INTO chat_channel_members (channel_id, clerk_user_id, role)
+    VALUES (${channelId}, ${id}, ${role})
+    ON CONFLICT (channel_id, clerk_user_id) DO UPDATE SET
+      role = excluded.role
+  `
+}
+
+export async function setChatChannelMemberRole(
+  channelId: string,
+  clerkUserId: string,
+  role: ChatMemberRole,
+): Promise<void> {
+  await ensureChatSchema()
+  const id = clerkUserId.trim()
+  if (!id) throw new Error("Member id is required")
+
+  const [existing] = await sql`
+    SELECT id FROM chat_channels WHERE id = ${channelId} LIMIT 1
+  `
+  if (!existing) throw new Error("Channel not found")
+
+  await sql`
+    INSERT INTO chat_channel_members (channel_id, clerk_user_id, role)
+    VALUES (${channelId}, ${id}, ${role})
+    ON CONFLICT (channel_id, clerk_user_id) DO UPDATE SET
+      role = excluded.role
   `
 }
 
@@ -352,7 +428,14 @@ export async function removeChatChannelMember(channelId: string, clerkUserId: st
     SELECT channel_type FROM chat_channels WHERE id = ${channelId} LIMIT 1
   `
   if (!existing) throw new Error("Channel not found")
-  if (String(existing.channel_type) === "year") {
+
+  const [member] = await sql`
+    SELECT role FROM chat_channel_members
+    WHERE channel_id = ${channelId} AND clerk_user_id = ${id}
+    LIMIT 1
+  `
+  // Year channels: only explicit mod rows can be removed (not auto membership).
+  if (String(existing.channel_type) === "year" && String(member?.role || "") !== "moderator") {
     throw new Error("Year channel membership is managed automatically from registrations")
   }
 

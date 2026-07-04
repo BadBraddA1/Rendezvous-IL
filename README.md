@@ -91,8 +91,9 @@ pnpm db:verify
 
 - **Core attendee feature** — each event year gets a group chat (`year-2026`, `year-2027`). Register for a year → you can message that year's families; past years you attended stay available.
 - **Realtime** via Ably (`rendezvous:channel:{id}`); token at `POST /api/ably/token`. Tables: `chat_channels`, `chat_channel_members`, `chat_messages` (lazy-created by `lib/chat-schema.ts`).
-- **Member UI:** `/chat` (web) and iOS **Chat** tab (`ChatListView` / `ChatThreadView`). Requires Clerk sign-in + registration for year channels. Web uses Ably for live messages (polls as fallback). New messages send APNs/FCM to other channel members (device tokens linked to Clerk user id).
-- **Admin:** `/admin/chat` (nav: Communication → Year Chat) — create **test/custom** channels, pick members from a searchable account list (Add / Remove), chat from the web, post announcements. Year channels auto-include registered families.
+- **Member UI:** `/chat` (web) and iOS **Chat** tab (`ChatListView` / `ChatThreadView`). Requires Clerk sign-in + registration for year channels. Web uses Ably for live messages (polls as fallback). Members can send photos (Blob storage). New messages send APNs/FCM to other channel members (device tokens linked to Clerk user id).
+- **Mods:** Site admins moderate all rooms. Channel **moderators** (set in Admin → Year Chat) can delete messages and post announcements only in rooms they moderate.
+- **Admin:** `/admin/chat` (nav: Communication → Year Chat) — create **test/custom** channels, pick members, **Make mod / Remove mod**, chat from the web. Year channels auto-include registered families.
 - API: `GET /api/chat/channels`, `GET/POST /api/chat/channels/[id]/messages`, `DELETE /api/chat/messages/[id]`; admin `GET/POST/PATCH/DELETE /api/admin/chat/channels`, `GET /api/admin/chat/people`, `GET/POST/DELETE /api/admin/chat/channels/[id]/members`.
 
 ## Scripts

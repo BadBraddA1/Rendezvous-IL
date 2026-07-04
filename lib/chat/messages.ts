@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto"
 import { sql, type SqlRow } from "@/lib/db"
 import { publishChatMessage } from "@/lib/ably"
-import { userCanAccessChannel } from "@/lib/chat/channels"
+import { userCanAccessChannel, userCanModerateChannel } from "@/lib/chat/channels"
 import { notifyChatMessagePush } from "@/lib/chat/notify"
 import { ensureChatSchema } from "@/lib/chat-schema"
 import type { ChatMessagePayload } from "@/types/chat"
@@ -13,7 +13,8 @@ function rowToMessage(row: SqlRow): ChatMessagePayload {
     sender_clerk_id: String(row.sender_clerk_id),
     sender_display_name: String(row.sender_display_name),
     sender_avatar_url: row.sender_avatar_url != null ? String(row.sender_avatar_url) : null,
-    body: String(row.body),
+    body: String(row.body ?? ""),
+    image_url: row.image_url != null ? String(row.image_url) : null,
     is_announcement: Number(row.is_announcement) === 1,
     created_at: String(row.created_at),
   }
@@ -83,6 +84,7 @@ export async function listChannelMessages(
 export async function sendChannelMessage(input: {
   channelId: string
   body: string
+  imageUrl?: string | null
   clerkUserId: string
   email?: string
   isAdmin: boolean
@@ -93,7 +95,8 @@ export async function sendChannelMessage(input: {
   await ensureChatSchema()
 
   const body = input.body.trim()
-  if (!body) throw new Error("Message body is required")
+  const imageUrl = input.imageUrl?.trim() || null
+  if (!body && !imageUrl) throw new Error("Message body or photo is required")
   if (body.length > 4000) throw new Error("Message is too long")
 
   const canAccess = await userCanAccessChannel(
@@ -106,6 +109,17 @@ export async function sendChannelMessage(input: {
     throw new Error("Forbidden")
   }
 
+  if (input.isAnnouncement) {
+    const canModerate = await userCanModerateChannel(
+      input.channelId,
+      input.clerkUserId,
+      input.isAdmin,
+    )
+    if (!canModerate) {
+      throw new Error("Only admins and channel moderators can post announcements")
+    }
+  }
+
   const id = randomUUID()
   await sql`
     INSERT INTO chat_messages (
@@ -115,6 +129,7 @@ export async function sendChannelMessage(input: {
       sender_display_name,
       sender_avatar_url,
       body,
+      image_url,
       is_announcement
     ) VALUES (
       ${id},
@@ -123,6 +138,7 @@ export async function sendChannelMessage(input: {
       ${input.displayName},
       ${input.avatarUrl ?? null},
       ${body},
+      ${imageUrl},
       ${input.isAnnouncement ? 1 : 0}
     )
   `
@@ -134,14 +150,13 @@ export async function sendChannelMessage(input: {
     sender_display_name: input.displayName,
     sender_avatar_url: input.avatarUrl ?? null,
     body,
+    image_url: imageUrl,
     is_announcement: Boolean(input.isAnnouncement),
     created_at: new Date().toISOString(),
   }
 
   const channelTitle = await channelTitleForPush(input.channelId)
 
-  // Await both so Vercel does not freeze the function before push finishes.
-  // (Fire-and-forget on serverless often delays delivery by tens of seconds.)
   await Promise.all([
     publishChatMessage(input.channelId, message as unknown as Record<string, unknown>).catch(
       (error) => console.error("[chat] Ably publish failed:", error),
@@ -182,7 +197,7 @@ export async function deleteChannelMessage(input: {
   await ensureChatSchema()
 
   const [row] = await sql`
-    SELECT id, sender_clerk_id
+    SELECT id, channel_id, sender_clerk_id
     FROM chat_messages
     WHERE id = ${input.messageId}
       AND deleted_at IS NULL
@@ -190,7 +205,13 @@ export async function deleteChannelMessage(input: {
   `
   if (!row) return false
 
-  if (!input.isAdmin && String(row.sender_clerk_id) !== input.clerkUserId) {
+  const isOwner = String(row.sender_clerk_id) === input.clerkUserId
+  const canModerate = await userCanModerateChannel(
+    String(row.channel_id),
+    input.clerkUserId,
+    input.isAdmin,
+  )
+  if (!isOwner && !canModerate) {
     throw new Error("Forbidden")
   }
 

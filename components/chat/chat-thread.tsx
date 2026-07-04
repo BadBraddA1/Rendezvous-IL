@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { formatDistanceToNow } from "date-fns"
-import { Loader2, Megaphone, Send, Trash2 } from "lucide-react"
+import { ImagePlus, Loader2, Megaphone, Send, Trash2, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
@@ -24,15 +24,25 @@ type ChatThreadProps = {
   channel: ChatChannelSummary
   currentUserId: string
   isAdmin?: boolean
+  canModerate?: boolean
 }
 
-export function ChatThread({ channel, currentUserId, isAdmin = false }: ChatThreadProps) {
+export function ChatThread({
+  channel,
+  currentUserId,
+  isAdmin = false,
+  canModerate = false,
+}: ChatThreadProps) {
   const [messages, setMessages] = useState<ChatMessagePayload[]>([])
   const [draft, setDraft] = useState("")
+  const [photoFile, setPhotoFile] = useState<File | null>(null)
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSending, setIsSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [threadCanModerate, setThreadCanModerate] = useState(canModerate || isAdmin)
   const bottomRef = useRef<HTMLDivElement | null>(null)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   const loadMessages = useCallback(async () => {
     setError(null)
@@ -44,21 +54,31 @@ export function ChatThread({ channel, currentUserId, isAdmin = false }: ChatThre
       }
       const data = await response.json()
       setMessages(data.messages ?? [])
+      if (typeof data.can_moderate === "boolean") {
+        setThreadCanModerate(data.can_moderate || isAdmin)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load messages")
     } finally {
       setIsLoading(false)
     }
-  }, [channel.id])
+  }, [channel.id, isAdmin])
 
   useEffect(() => {
     setIsLoading(true)
+    setThreadCanModerate(canModerate || isAdmin || Boolean(channel.can_moderate))
     void loadMessages()
-  }, [loadMessages])
+  }, [loadMessages, canModerate, isAdmin, channel.can_moderate])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
+
+  useEffect(() => {
+    return () => {
+      if (photoPreview) URL.revokeObjectURL(photoPreview)
+    }
+  }, [photoPreview])
 
   const onRealtimeMessage = useCallback((payload: ChatMessagePayload) => {
     setMessages((current) => {
@@ -76,7 +96,6 @@ export function ChatThread({ channel, currentUserId, isAdmin = false }: ChatThre
     },
   })
 
-  // Poll while Ably is down so the web thread still updates.
   useEffect(() => {
     if (realtimeStatus === "connected") return
     const id = window.setInterval(() => {
@@ -85,18 +104,44 @@ export function ChatThread({ channel, currentUserId, isAdmin = false }: ChatThre
     return () => window.clearInterval(id)
   }, [realtimeStatus, loadMessages])
 
+  function clearPhoto() {
+    if (photoPreview) URL.revokeObjectURL(photoPreview)
+    setPhotoFile(null)
+    setPhotoPreview(null)
+    if (fileInputRef.current) fileInputRef.current.value = ""
+  }
+
+  function onPickPhoto(file: File | null) {
+    if (!file) return
+    if (photoPreview) URL.revokeObjectURL(photoPreview)
+    setPhotoFile(file)
+    setPhotoPreview(URL.createObjectURL(file))
+  }
+
   async function sendMessage(isAnnouncement = false) {
     const body = draft.trim()
-    if (!body || isSending) return
+    if ((!body && !photoFile) || isSending) return
 
     setIsSending(true)
     setError(null)
     try {
-      const response = await fetch(`/api/chat/channels/${channel.id}/messages`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ body, is_announcement: isAnnouncement }),
-      })
+      let response: Response
+      if (photoFile) {
+        const form = new FormData()
+        form.set("body", body)
+        form.set("is_announcement", isAnnouncement ? "true" : "false")
+        form.set("photo", photoFile)
+        response = await fetch(`/api/chat/channels/${channel.id}/messages`, {
+          method: "POST",
+          body: form,
+        })
+      } else {
+        response = await fetch(`/api/chat/channels/${channel.id}/messages`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ body, is_announcement: isAnnouncement }),
+        })
+      }
       if (!response.ok) {
         const data = await response.json().catch(() => ({}))
         throw new Error(data.error || "Failed to send message")
@@ -106,6 +151,7 @@ export function ChatThread({ channel, currentUserId, isAdmin = false }: ChatThre
         onRealtimeMessage(data.message as ChatMessagePayload)
       }
       setDraft("")
+      clearPhoto()
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to send message")
     } finally {
@@ -126,12 +172,15 @@ export function ChatThread({ channel, currentUserId, isAdmin = false }: ChatThre
     return channel.name
   }, [channel])
 
+  const canSend = Boolean(draft.trim() || photoFile)
+
   return (
     <div className="flex h-full min-h-[28rem] flex-col rounded-xl border bg-card">
       <div className="border-b px-4 py-3">
         <div className="flex items-center gap-2">
           <h2 className="font-semibold">{channelLabel}</h2>
           {channel.is_test ? <Badge variant="secondary">Test</Badge> : null}
+          {threadCanModerate ? <Badge variant="outline">Moderator</Badge> : null}
           {realtimeStatus === "connected" ? (
             <Badge variant="outline" className="text-emerald-700">
               Live
@@ -162,6 +211,7 @@ export function ChatThread({ channel, currentUserId, isAdmin = false }: ChatThre
         ) : (
           messages.map((message) => {
             const mine = message.sender_clerk_id === currentUserId
+            const canDelete = mine || threadCanModerate
             return (
               <div
                 key={message.id}
@@ -183,7 +233,7 @@ export function ChatThread({ channel, currentUserId, isAdmin = false }: ChatThre
                     <span>
                       {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
                     </span>
-                    {(mine || isAdmin) && (
+                    {canDelete ? (
                       <button
                         type="button"
                         className="ml-auto opacity-0 transition group-hover:opacity-100"
@@ -192,9 +242,19 @@ export function ChatThread({ channel, currentUserId, isAdmin = false }: ChatThre
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
-                    )}
+                    ) : null}
                   </div>
-                  <p className="whitespace-pre-wrap break-words">{message.body}</p>
+                  {message.image_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={message.image_url}
+                      alt=""
+                      className="mb-2 max-h-72 w-full rounded-xl object-cover"
+                    />
+                  ) : null}
+                  {message.body ? (
+                    <p className="whitespace-pre-wrap break-words">{message.body}</p>
+                  ) : null}
                 </div>
               </div>
             )
@@ -205,7 +265,42 @@ export function ChatThread({ channel, currentUserId, isAdmin = false }: ChatThre
 
       <div className="border-t p-4">
         {error ? <p className="mb-2 text-sm text-destructive">{error}</p> : null}
+        {photoPreview ? (
+          <div className="relative mb-3 inline-block">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={photoPreview}
+              alt="Selected"
+              className="h-24 rounded-lg border object-cover"
+            />
+            <button
+              type="button"
+              className="absolute -right-2 -top-2 rounded-full bg-background p-1 shadow"
+              onClick={clearPhoto}
+              aria-label="Remove photo"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        ) : null}
         <div className="flex gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            onChange={(event) => onPickPhoto(event.target.files?.[0] ?? null)}
+          />
+          <Button
+            type="button"
+            size="icon"
+            variant="outline"
+            disabled={isSending}
+            onClick={() => fileInputRef.current?.click()}
+            aria-label="Attach photo"
+          >
+            <ImagePlus className="h-4 w-4" />
+          </Button>
           <Textarea
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
@@ -223,18 +318,18 @@ export function ChatThread({ channel, currentUserId, isAdmin = false }: ChatThre
             <Button
               type="button"
               size="icon"
-              disabled={!draft.trim() || isSending}
+              disabled={!canSend || isSending}
               onClick={() => void sendMessage()}
               aria-label="Send message"
             >
               {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             </Button>
-            {isAdmin ? (
+            {threadCanModerate ? (
               <Button
                 type="button"
                 size="icon"
                 variant="secondary"
-                disabled={!draft.trim() || isSending}
+                disabled={!canSend || isSending}
                 onClick={() => void sendMessage(true)}
                 aria-label="Send announcement"
               >

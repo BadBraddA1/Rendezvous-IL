@@ -63,9 +63,12 @@ export async function notifyChatMessagePush(input: {
     const title = input.message.is_announcement
       ? `Announcement · ${input.channelTitle}`
       : input.channelTitle
+    const preview =
+      input.message.body.trim() ||
+      (input.message.image_url ? "Sent a photo" : "")
     const body = input.message.is_announcement
-      ? input.message.body.slice(0, 160)
-      : `${input.message.sender_display_name}: ${input.message.body}`.slice(0, 160)
+      ? preview.slice(0, 160)
+      : `${input.message.sender_display_name}: ${preview}`.slice(0, 160)
     const deepLink = `rendezvousil://chat`
     const webUrl = "https://rendezvousil.com/chat"
 

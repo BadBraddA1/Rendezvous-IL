@@ -1,21 +1,21 @@
 import { NextResponse } from "next/server"
 import { deleteChannelMessage } from "@/lib/chat/messages"
-import { authUserId, getCurrentAdmin } from "@/lib/clerk-auth"
+import { authUserContext, getCurrentAdmin } from "@/lib/clerk-auth"
 
 type Params = { params: Promise<{ id: string }> }
 
-export async function DELETE(_request: Request, { params }: Params) {
+export async function DELETE(request: Request, { params }: Params) {
   const { id: messageId } = await params
-  const userId = await authUserId()
-  if (!userId) {
+  const ctx = await authUserContext(request)
+  if (!ctx) {
     return NextResponse.json({ error: "Sign in required" }, { status: 401 })
   }
 
   try {
-    const admin = await getCurrentAdmin()
+    const admin = await getCurrentAdmin(request)
     const deleted = await deleteChannelMessage({
       messageId,
-      clerkUserId: userId,
+      clerkUserId: ctx.userId,
       isAdmin: Boolean(admin),
     })
 
