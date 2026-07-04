@@ -8,11 +8,14 @@ struct DirectoryView: View {
     @State private var families: [DirectoryFamily] = []
     @State private var search = ""
     @State private var isLoading = false
+    @State private var isRefreshing = false
     @State private var errorMessage: String?
 
     private var filteredFamilies: [DirectoryFamily] {
         let query = search.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        let base = families.sorted { $0.family_last_name.localizedCaseInsensitiveCompare($1.family_last_name) == .orderedAscending }
+        let base = families.sorted {
+            $0.family_last_name.localizedCaseInsensitiveCompare($1.family_last_name) == .orderedAscending
+        }
         guard !query.isEmpty else { return base }
         return base.filter { family in
             let haystack = [
@@ -42,6 +45,9 @@ struct DirectoryView: View {
             }
         }
         .navigationTitle("Family Directory")
+        .navigationDestination(for: DirectoryFamily.self) { family in
+            DirectoryFamilyDetailView(family: family)
+        }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 NavigationLink {
@@ -52,13 +58,13 @@ struct DirectoryView: View {
             }
         }
         .refreshable {
-            await loadEnabledYears()
-            await loadDirectory()
+            await loadEnabledYears(forceNetwork: true)
+            await loadDirectory(forceNetwork: true)
         }
         .task {
-            await loadEnabledYears()
+            await loadEnabledYears(forceNetwork: false)
             if !enabledYears.isEmpty {
-                await loadDirectory()
+                await loadDirectory(forceNetwork: false)
             }
         }
     }
@@ -82,7 +88,7 @@ struct DirectoryView: View {
                     }
                     .pickerStyle(.segmented)
                     .onChange(of: year) { _, _ in
-                        Task { await loadDirectory() }
+                        Task { await loadDirectory(forceNetwork: false) }
                     }
                 }
 
@@ -96,22 +102,22 @@ struct DirectoryView: View {
                 .padding(12)
                 .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
 
-                if isLoading {
+                if isLoading && families.isEmpty {
                     ProgressView("Loading directory…")
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 40)
-                } else if let errorMessage {
+                } else if let errorMessage, families.isEmpty {
                     VStack(alignment: .leading, spacing: 12) {
                         Text(errorMessage)
                             .foregroundStyle(.secondary)
                         Button("Try again") {
-                            Task { await loadDirectory() }
+                            Task { await loadDirectory(forceNetwork: true) }
                         }
                         .buttonStyle(.bordered)
                         if let alternateYear = enabledYears.first(where: { $0 != year }) {
                             Button("Try Rendezvous \(String(alternateYear))") {
                                 year = alternateYear
-                                Task { await loadDirectory() }
+                                Task { await loadDirectory(forceNetwork: false) }
                             }
                             .buttonStyle(.bordered)
                         }
@@ -141,13 +147,26 @@ struct DirectoryView: View {
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 32)
                 } else {
-                    Text("\(filteredFamilies.count) families")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
+                    HStack {
+                        Text("\(filteredFamilies.count) families")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                        if isRefreshing {
+                            ProgressView()
+                                .controlSize(.mini)
+                        }
+                        Spacer()
+                        Text("Tap a card for details")
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                    }
 
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 160), spacing: 16)], spacing: 16) {
                         ForEach(filteredFamilies) { family in
-                            DirectoryFamilyCard(family: family)
+                            NavigationLink(value: family) {
+                                DirectoryFamilyCard(family: family)
+                            }
+                            .buttonStyle(.plain)
                         }
                     }
                 }
@@ -156,10 +175,19 @@ struct DirectoryView: View {
         }
     }
 
-    private func loadEnabledYears() async {
+    private func loadEnabledYears(forceNetwork: Bool) async {
+        if !forceNetwork, let cached = DirectoryDataStore.loadYears(), !cached.isEmpty {
+            enabledYears = cached
+            if !cached.contains(year) {
+                year = cached[0]
+            }
+        }
+
         guard let client = session.apiClient else {
-            enabledYears = [AppConfig.eventYear]
-            year = AppConfig.eventYear
+            if enabledYears.isEmpty {
+                enabledYears = [AppConfig.eventYear]
+                year = AppConfig.eventYear
+            }
             return
         }
 
@@ -169,46 +197,77 @@ struct DirectoryView: View {
             }
             let years = response.years.isEmpty ? [AppConfig.eventYear] : response.years
             enabledYears = years
+            DirectoryDataStore.saveYears(years)
             if !years.contains(year) {
                 year = years[0]
             }
         } catch {
-            enabledYears = [AppConfig.eventYear]
-            year = AppConfig.eventYear
+            if enabledYears.isEmpty {
+                enabledYears = [AppConfig.eventYear]
+                year = AppConfig.eventYear
+            }
         }
     }
 
-    private func loadDirectory() async {
-        guard let client = session.apiClient else { return }
-        isLoading = true
+    /// Show disk cache immediately, then refresh from the network in the background.
+    private func loadDirectory(forceNetwork: Bool) async {
+        guard session.apiClient != nil else { return }
+
+        let cached = DirectoryDataStore.loadFamilies(year: year) ?? []
+        if !forceNetwork, !cached.isEmpty {
+            families = cached
+            errorMessage = nil
+            isLoading = false
+            await refreshDirectoryInBackground()
+            return
+        }
+
+        if families.isEmpty {
+            isLoading = true
+        }
         errorMessage = nil
         defer { isLoading = false }
+
+        await refreshDirectoryInBackground(showErrorsWhenEmpty: true)
+    }
+
+    private func refreshDirectoryInBackground(showErrorsWhenEmpty: Bool = false) async {
+        guard let client = session.apiClient else { return }
+        isRefreshing = true
+        defer { isRefreshing = false }
 
         do {
             let response = try await RepositoryFetch.withTimeout {
                 try await client.getDirectory(year: year)
             }
             families = response.families
+            DirectoryDataStore.saveFamilies(response.families, year: year)
+            errorMessage = nil
         } catch APIError.unauthorized {
-            families = []
-            errorMessage = "Session expired. Sign out and sign in again."
+            if families.isEmpty || showErrorsWhenEmpty {
+                families = []
+                errorMessage = "Session expired. Sign out and sign in again."
+            }
         } catch {
-            families = []
-            errorMessage = error.localizedDescription
-            if let status = try? await client.fetchMobileStatus() {
-                if status.hasFamilyProfile == false {
-                    errorMessage =
-                        "\(error.localizedDescription) Open Family account on the website once to link your registration."
-                } else if status.isAdmin != true,
-                          status.directoryAccess?[String(year)] == false {
-                    errorMessage =
-                        "No registration for Rendezvous \(String(year)) is linked to \(status.email ?? "this account")."
+            if families.isEmpty || showErrorsWhenEmpty {
+                families = []
+                errorMessage = error.localizedDescription
+                if let status = try? await client.fetchMobileStatus() {
+                    if status.hasFamilyProfile == false {
+                        errorMessage =
+                            "\(error.localizedDescription) Open Family account on the website once to link your registration."
+                    } else if status.isAdmin != true,
+                              status.directoryAccess?[String(year)] == false {
+                        errorMessage =
+                            "No registration for Rendezvous \(String(year)) is linked to \(status.email ?? "this account")."
+                    }
                 }
             }
         }
     }
 }
 
+/// Compact grid card — full details open on tap.
 private struct DirectoryFamilyCard: View {
     let family: DirectoryFamily
 
@@ -251,59 +310,166 @@ private struct DirectoryFamilyCard: View {
 
             Text("\(family.family_last_name) Family")
                 .font(.headline)
+                .foregroundStyle(.primary)
                 .lineLimit(2)
 
             if let congregation = family.home_congregation, !congregation.isEmpty {
                 Label(congregation, systemImage: "building.2")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                    .lineLimit(3)
-            }
-
-            if let email = family.email, !email.isEmpty, let url = URL(string: "mailto:\(email)") {
-                Link(destination: url) {
-                    Label(email, systemImage: "envelope")
-                        .font(.caption)
-                        .lineLimit(2)
-                }
-            }
-
-            if let address = family.formatted_address, !address.isEmpty {
-                Label(address, systemImage: "mappin.and.ellipse")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(3)
-            }
-
-            ForEach(Array(family.contact_phones.enumerated()), id: \.offset) { _, contact in
-                let digits = contact.phone.filter { $0.isNumber || $0 == "+" }
-                if !digits.isEmpty, let url = URL(string: "tel:\(digits)") {
-                    Link(destination: url) {
-                        Label(
-                            contact.name.isEmpty ? contact.phone : "\(contact.name): \(contact.phone)",
-                            systemImage: "phone"
-                        )
-                        .font(.caption)
-                        .lineLimit(2)
-                    }
-                }
+                    .lineLimit(2)
             }
 
             Text("\(family.member_count) attendee\(family.member_count == 1 ? "" : "s")")
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            if let blurb = family.directory_blurb, !blurb.isEmpty {
-                Text(blurb)
-                    .font(.caption)
-                    .foregroundStyle(.primary)
-                    .padding(8)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color(.tertiarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 8))
+            HStack(spacing: 4) {
+                Text("View details")
+                    .font(.caption2.weight(.semibold))
+                Image(systemName: "chevron.right")
+                    .font(.caption2.weight(.semibold))
             }
+            .foregroundStyle(BrandColors.lake)
         }
         .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
+    }
+}
+
+struct DirectoryFamilyDetailView: View {
+    let family: DirectoryFamily
+
+    private var directoryPhotoPlaceholder: some View {
+        Color(.secondarySystemGroupedBackground)
+            .overlay {
+                Image(systemName: "person.3.fill")
+                    .font(.largeTitle)
+                    .foregroundStyle(.secondary)
+            }
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                photo
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("\(family.family_last_name) Family")
+                        .font(.title2.weight(.semibold))
+                    parentsLine
+                    Text("\(family.member_count) attendee\(family.member_count == 1 ? "" : "s")")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+
+                if let blurb = family.directory_blurb, !blurb.isEmpty {
+                    Text(blurb)
+                        .font(.body)
+                        .padding(12)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(BrandColors.lakeLight.opacity(0.6), in: RoundedRectangle(cornerRadius: 12))
+                }
+
+                if !family.member_names.isEmpty {
+                    detailSection(title: "Family members") {
+                        ForEach(family.member_names, id: \.self) { name in
+                            Label(name, systemImage: "person")
+                                .font(.subheadline)
+                        }
+                    }
+                }
+
+                detailSection(title: "Contact") {
+                    if let congregation = family.home_congregation, !congregation.isEmpty {
+                        Label(congregation, systemImage: "building.2")
+                            .font(.subheadline)
+                    }
+                    if let email = family.email, !email.isEmpty, let url = URL(string: "mailto:\(email)") {
+                        Link(destination: url) {
+                            Label(email, systemImage: "envelope")
+                                .font(.subheadline)
+                        }
+                    }
+                    if let address = family.formatted_address, !address.isEmpty {
+                        Label(address, systemImage: "mappin.and.ellipse")
+                            .font(.subheadline)
+                            .foregroundStyle(.primary)
+                    }
+                    ForEach(Array(family.contact_phones.enumerated()), id: \.offset) { _, contact in
+                        let digits = contact.phone.filter { $0.isNumber || $0 == "+" }
+                        if !digits.isEmpty, let url = URL(string: "tel:\(digits)") {
+                            Link(destination: url) {
+                                Label(
+                                    contact.name.isEmpty ? contact.phone : "\(contact.name): \(contact.phone)",
+                                    systemImage: "phone"
+                                )
+                                .font(.subheadline)
+                            }
+                        } else if !contact.phone.isEmpty {
+                            Label(
+                                contact.name.isEmpty ? contact.phone : "\(contact.name): \(contact.phone)",
+                                systemImage: "phone"
+                            )
+                            .font(.subheadline)
+                        }
+                    }
+                }
+            }
+            .padding()
+        }
+        .navigationTitle(family.family_last_name)
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private var photo: some View {
+        Group {
+            if let photoUrl = family.photo_url, !photoUrl.isEmpty, let url = URL(string: photoUrl) {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .scaledToFill()
+                    case .failure, .empty:
+                        directoryPhotoPlaceholder
+                    @unknown default:
+                        directoryPhotoPlaceholder
+                    }
+                }
+            } else {
+                directoryPhotoPlaceholder
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 240)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+
+    @ViewBuilder
+    private var parentsLine: some View {
+        let parents = [family.husband_first_name, family.wife_first_name]
+            .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        if !parents.isEmpty {
+            Text(parents.joined(separator: " & "))
+                .font(.title3)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private func detailSection<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title)
+                .font(.headline)
+            VStack(alignment: .leading, spacing: 10) {
+                content()
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(14)
+            .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14))
+        }
     }
 }
 

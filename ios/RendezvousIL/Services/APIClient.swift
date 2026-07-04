@@ -454,13 +454,13 @@ struct ScheduleAnnouncementsResponse: Decodable {
     let announcements: [Announcement]?
 }
 
-struct DirectoryContactPhone: Decodable {
+struct DirectoryContactPhone: Codable, Hashable, Sendable {
     let member_id: Int?
     let name: String
     let phone: String
 }
 
-struct DirectoryFamily: Decodable, Identifiable {
+struct DirectoryFamily: Codable, Identifiable, Hashable, Sendable {
     let id: Int
     let family_last_name: String
     let home_congregation: String?
@@ -475,7 +475,7 @@ struct DirectoryFamily: Decodable, Identifiable {
     let member_names: [String]
 }
 
-struct DirectoryResponse: Decodable {
+struct DirectoryResponse: Codable, Sendable {
     let year: Int
     let hasAccess: Bool?
     let families: [DirectoryFamily]

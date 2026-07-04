@@ -12,7 +12,7 @@ Native SwiftUI **attendee community hub** for [rendezvousil.com](https://rendezv
 | **Schedule** | Native week view, meals, worship leaders, **per-event reminder** (bell icon) |
 | **Updates** | Now/next, weather, announcements |
 | **Chat** | Year cohort channels (Ably realtime when available; messages still load if Ably fails), retry + pull-to-refresh |
-| **Directory** | Family photos + contact info; search, year picker, pull-to-refresh; **Your photo** toolbar → upload/compress/blurb/opt-out |
+| **Directory** | Family cards (tap for full details); disk cache then background refresh; search, year picker; **Your photo** toolbar |
 | **Notifications** | Local event reminders + **APNs** for organizer broadcasts; deep links from push open the right tab |
 | **Live Activity** | Lock Screen / Dynamic Island now & next during retreat week |
 | **Widgets** | Home/Lock Screen now/next; tap opens Schedule via `rendezvousil://schedule` |
