@@ -94,6 +94,8 @@ struct SignInPromptCard: View {
 }
 
 /// Clerk `AuthView` sheet — attach **only** from `RootView`.
+/// Do **not** wrap `AuthView` in `NavigationStack`: Clerk owns navigation for
+/// forgot-password / alternate methods, and an outer stack swallows those taps.
 struct ClerkAuthSheet: View {
     @Environment(AppSession.self) private var session
     @Environment(\.dismiss) private var dismiss
@@ -101,23 +103,21 @@ struct ClerkAuthSheet: View {
     var mode: AuthView.Mode = .signInOrUp
 
     var body: some View {
-        NavigationStack {
-            Group {
-                if session.isClerkReady {
-                    AuthView(mode: mode, isDismissable: true)
-                        .environment(\.clerkTheme, .rendezvous)
-                } else {
-                    ProgressView("Loading sign-in…")
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                }
+        ZStack(alignment: .topTrailing) {
+            if session.isClerkReady {
+                AuthView(mode: mode)
+                    .environment(\.clerkTheme, .rendezvous)
+                    .environment(\.clerk, Clerk.shared)
+                    .environment(Clerk.shared)
+            } else {
+                ProgressView("Loading sign-in…")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            .navigationTitle(mode == .signIn ? "Sign in" : "Account")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Close") { dismiss() }
-                }
-            }
+
+            Button("Close") { dismiss() }
+                .font(.body.weight(.medium))
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
         }
         .onChange(of: session.clerkSessionId) { _, sessionId in
             guard sessionId != nil else { return }
@@ -125,7 +125,6 @@ struct ClerkAuthSheet: View {
             Task { await session.refreshAuth() }
         }
         .task {
-            // Poll Clerk session into our mirror while the sheet is open.
             while !Task.isCancelled {
                 if session.isClerkReady {
                     let id = Clerk.shared.session?.id
