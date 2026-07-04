@@ -88,6 +88,7 @@ export type ViewType =
   | "map"
   | "wifi"
   | "upcoming"
+  | "photoshow"
 
 export interface ScheduleSnapshot {
   nowItem: ScheduleItem | null

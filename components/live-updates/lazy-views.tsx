@@ -39,6 +39,10 @@ export const UpcomingView = dynamic(
   () => import("@/components/live-updates/views/upcoming-view").then((m) => ({ default: m.UpcomingView })),
   { loading: () => <ViewLoading />, ssr: false },
 )
+export const PhotoshowView = dynamic(
+  () => import("@/components/live-updates/views/photoshow-view").then((m) => ({ default: m.PhotoshowView })),
+  { loading: () => <ViewLoading />, ssr: false },
+)
 
 /** Warm view chunks after first paint so auto-rotate stays smooth on TVs. */
 export function prefetchLiveUpdateViews() {
@@ -51,4 +55,5 @@ export function prefetchLiveUpdateViews() {
   void import("@/components/live-updates/views/announcements-view")
   void import("@/components/live-updates/views/wifi-view")
   void import("@/components/live-updates/views/upcoming-view")
+  void import("@/components/live-updates/views/photoshow-view")
 }

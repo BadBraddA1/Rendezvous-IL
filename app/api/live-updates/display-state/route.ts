@@ -7,13 +7,14 @@ import {
   hasVolunteerData,
   LIVE_UPDATES_BASE_VIEWS,
 } from "@/lib/live-updates/display-state"
+import { countActivePhotoshowPhotos } from "@/lib/live-updates/photoshow"
 import { fetchNextVolunteerScheduleForLiveUpdates } from "@/lib/live-updates/server-volunteer"
 
 export const dynamic = "force-dynamic"
 
 export async function GET() {
   try {
-    const [announcementsResult, volunteerSchedule] = await Promise.all([
+    const [announcementsResult, volunteerSchedule, photoshowCount] = await Promise.all([
       sql`
         SELECT id
         FROM announcements
@@ -23,12 +24,14 @@ export async function GET() {
         LIMIT 1
       `,
       fetchNextVolunteerScheduleForLiveUpdates(),
+      countActivePhotoshowPhotos(),
     ])
 
     const announcementCount = announcementsResult.length
     const availableViews = buildAvailableViews({
       hasVolunteerData: hasVolunteerData(volunteerSchedule),
       announcementCount,
+      photoshowCount,
     })
 
     return NextResponse.json(buildDisplayState(availableViews, BUILD_VERSION))

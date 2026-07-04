@@ -44,6 +44,7 @@ export function hasVolunteerData(schedule: VolunteerSchedule | null | undefined)
 export function buildAvailableViews(options: {
   hasVolunteerData: boolean
   announcementCount: number
+  photoshowCount?: number
 }): ViewType[] {
   const views: ViewType[] = [...LIVE_UPDATES_BASE_VIEWS]
   if (options.hasVolunteerData) {
@@ -51,6 +52,9 @@ export function buildAvailableViews(options: {
   }
   if (options.announcementCount > 0) {
     views.push("announcements")
+  }
+  if ((options.photoshowCount ?? 0) > 0) {
+    views.push("photoshow")
   }
   return views
 }

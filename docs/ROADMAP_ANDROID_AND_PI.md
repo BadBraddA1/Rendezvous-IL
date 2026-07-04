@@ -219,7 +219,7 @@ const nextRotateAt = epoch + (Math.floor(elapsed / ROTATE_MS) + 1) * ROTATE_MS
 
 - `sync=1` — server-driven view index
 - `kiosk=1` — hide footer controls, force fullscreen attempt, disable local auto-rotate toggle
-- `view=<name>` — optional fixed view per Pi (cafeteria = meal, lobby = schedule)
+- `view=<name>` — optional fixed view per Pi (cafeteria = meal, lobby = schedule, rooms = photoshow)
 
 **Deliverables in repo:**
 

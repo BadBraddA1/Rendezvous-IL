@@ -17,6 +17,7 @@ import {
   AnnouncementsView,
   WifiView,
   UpcomingView,
+  PhotoshowView,
   prefetchLiveUpdateViews,
 } from "@/components/live-updates/lazy-views"
 import { fetchJsonCached } from "@/lib/fetch-json-cache"
@@ -45,6 +46,7 @@ import type {
   ViewType,
   ScheduleItem,
 } from "@/lib/live-updates/types"
+import type { PhotoshowPhoto } from "@/lib/live-updates/photoshow-shared"
 
 const VALID_VIEWS: ViewType[] = [
   "all",
@@ -56,6 +58,7 @@ const VALID_VIEWS: ViewType[] = [
   "upcoming",
   "volunteers",
   "announcements",
+  "photoshow",
 ]
 
 function parseViewQueryParam(raw: string | null): ViewType | null {
@@ -166,6 +169,7 @@ export function LiveUpdatesShell() {
   const [volunteerSchedule, setVolunteerSchedule] = useState<VolunteerSchedule | null>(null)
   const [volunteerTimeSlot, setVolunteerTimeSlot] = useState<string>("")
   const [mealData, setMealData] = useState<MealData | null>(null)
+  const [photoshowPhotos, setPhotoshowPhotos] = useState<PhotoshowPhoto[]>([])
 
   const [displayStateFailCount, setDisplayStateFailCount] = useState(0)
   const [weatherFetchOk, setWeatherFetchOk] = useState<boolean | null>(null)
@@ -217,8 +221,14 @@ export function LiveUpdatesShell() {
     if (announcements.length > 0) {
       views.push("announcements")
     }
+    if (photoshowPhotos.length > 0) {
+      views.push("photoshow")
+    }
     return views
-  }, [hasVolunteerData, announcements.length])
+  }, [hasVolunteerData, announcements.length, photoshowPhotos.length])
+
+  /** Dedicated room slideshow — full-bleed photos, no program chrome. */
+  const photoshowOnly = fixedView === "photoshow"
 
   // Auto-refresh when a new deployment is detected.
   //
@@ -411,6 +421,26 @@ export function LiveUpdatesShell() {
     fetchAnnouncements()
     const pollMs = kioskMode ? 20 * 1000 : 60 * 1000
     const interval = setInterval(fetchAnnouncements, pollMs)
+    return () => clearInterval(interval)
+  }, [kioskMode])
+
+  // Photoshow slides — poll so admin uploads reach room TVs without a reload.
+  useEffect(() => {
+    const fetchPhotos = async () => {
+      try {
+        const res = await fetch("/api/live-updates/photos", { cache: "no-store" })
+        if (!res.ok) throw new Error(`photos ${res.status}`)
+        const data = await res.json()
+        if (Array.isArray(data.photos)) {
+          setPhotoshowPhotos(data.photos)
+        }
+      } catch {
+        // keep last good list
+      }
+    }
+    fetchPhotos()
+    const pollMs = kioskMode ? 30 * 1000 : 60 * 1000
+    const interval = setInterval(fetchPhotos, pollMs)
     return () => clearInterval(interval)
   }, [kioskMode])
 
@@ -656,6 +686,13 @@ export function LiveUpdatesShell() {
           setCurrentView("upcoming")
           setIsAutoRotating(false)
           break
+        case "p":
+        case "P":
+          if (photoshowPhotos.length > 0) {
+            setCurrentView("photoshow")
+            setIsAutoRotating(false)
+          }
+          break
         case "0":
         case "a":
         case "A":
@@ -688,10 +725,14 @@ export function LiveUpdatesShell() {
 
     window.addEventListener("keydown", handleKeyDown)
     return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [toggleFullscreen, availableViews, announcements.length, hasVolunteerData, fixedView])
+  }, [toggleFullscreen, availableViews, announcements.length, hasVolunteerData, fixedView, photoshowPhotos.length])
 
   return (
-    <div className="live-updates-shell flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden text-[oklch(0.96_0.01_178)]">
+    <div
+      className={`live-updates-shell flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden text-[oklch(0.96_0.01_178)] ${
+        photoshowOnly ? "bg-black" : ""
+      }`}
+    >
       {isOffline && (
         <div
           role="status"
@@ -702,7 +743,9 @@ export function LiveUpdatesShell() {
       )}
       {/* Header  -  kept minimal: a tiny logo + the clock. Everything else
           (WiFi, branding tagline, etc.) was removed so the views below get
-          maximum vertical space and aren't competing with header noise. */}
+          maximum vertical space and aren't competing with header noise.
+          Dedicated photoshow mode hides chrome for a true room slideshow. */}
+      {!photoshowOnly && (
       <header className="site-chrome-top shrink-0 flex items-center justify-between gap-3 border-b border-primary/20 px-4 py-3 sm:gap-6 sm:px-8 sm:py-4">
         <div className="flex items-center gap-3 min-w-0 shrink">
           <div className="relative h-11 w-11 shrink-0 rounded-lg bg-white/5 border border-primary/20 p-1.5 flex items-center justify-center">
@@ -722,11 +765,16 @@ export function LiveUpdatesShell() {
 
         <LiveUpdatesClock />
       </header>
+      )}
 
       {/* Main Content */}
       <main
         id="main-content"
-        className="flex flex-1 items-center justify-center overflow-y-auto overflow-x-hidden p-4 sm:p-8 lg:overflow-hidden lg:p-12 [contain:layout_style_paint]"
+        className={`flex flex-1 items-center justify-center overflow-y-auto overflow-x-hidden [contain:layout_style_paint] ${
+          photoshowOnly
+            ? "p-0 lg:overflow-hidden"
+            : "p-4 sm:p-8 lg:overflow-hidden lg:p-12"
+        }`}
       >
         <ViewTransition viewKey={currentView} className="w-full h-full flex items-center justify-center">
           {currentView === "all" && (
@@ -765,11 +813,14 @@ export function LiveUpdatesShell() {
           {currentView === "upcoming" && (
             <UpcomingView nowItem={nowItem} upcomingToday={upcomingToday} upcomingAll={upcomingAll} />
           )}
+          {currentView === "photoshow" && (
+            <PhotoshowView photos={photoshowPhotos} immersive={photoshowOnly} />
+          )}
         </ViewTransition>
       </main>
 
       {/* Keyboard Controls Footer - hidden in fullscreen or when controls are hidden (press H to toggle) */}
-      {!isFullscreen && showControls && (
+      {!isFullscreen && showControls && !photoshowOnly && (
       <footer className="site-chrome-bottom shrink-0 border-t border-primary/20 px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-8 sm:py-6 lg:px-12">
         <div className="scroll-touch-x flex flex-nowrap items-center justify-start gap-4 sm:flex-wrap sm:justify-center">
           <KeyButton shortcut="1" name="All" active={currentView === "all"} onClick={() => selectView("all")} />
@@ -790,6 +841,14 @@ export function LiveUpdatesShell() {
           )}
           <KeyButton shortcut="8" name="WiFi" active={currentView === "wifi"} onClick={() => selectView("wifi")} />
           <KeyButton shortcut="9" name="Up next" active={currentView === "upcoming"} onClick={() => selectView("upcoming")} />
+          {photoshowPhotos.length > 0 && (
+            <KeyButton
+              shortcut="P"
+              name="Photoshow"
+              active={currentView === "photoshow"}
+              onClick={() => selectView("photoshow")}
+            />
+          )}
           {!fixedView && (
           <KeyButton
             shortcut="0"
