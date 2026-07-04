@@ -1,21 +1,29 @@
 import Foundation
 
 /// Launch with `-AppStoreScreenshots` (and optional `-ScreenshotTab <name>`) to capture marketing frames.
-/// Not used in normal App Store builds unless those args are passed.
+/// Simulator scripts can also set UserDefaults keys `AppStoreScreenshots` / `ScreenshotTab`
+/// (more reliable than launch args with `simctl`).
+/// Not used in normal App Store builds unless those args/defaults are set.
 enum AppStoreScreenshotMode {
+    private static let enabledKey = "AppStoreScreenshots"
+    private static let tabKey = "ScreenshotTab"
+
     static var isEnabled: Bool {
-        ProcessInfo.processInfo.arguments.contains("-AppStoreScreenshots")
+        if ProcessInfo.processInfo.arguments.contains("-AppStoreScreenshots") { return true }
+        return UserDefaults.standard.bool(forKey: enabledKey)
     }
 
     /// welcome | home | schedule | chat | directory | more
     static var tabName: String {
         let args = ProcessInfo.processInfo.arguments
-        guard let index = args.firstIndex(of: "-ScreenshotTab"),
-              args.index(after: index) < args.endIndex
-        else {
-            return "schedule"
+        if let index = args.firstIndex(of: "-ScreenshotTab"),
+           args.index(after: index) < args.endIndex {
+            return args[args.index(after: index)].lowercased()
         }
-        return args[args.index(after: index)].lowercased()
+        if let tab = UserDefaults.standard.string(forKey: tabKey), !tab.isEmpty {
+            return tab.lowercased()
+        }
+        return "schedule"
     }
 
     static var showsWelcome: Bool { tabName == "welcome" }

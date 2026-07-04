@@ -63,24 +63,41 @@ fi
 echo "==> Install on $UDID"
 xcrun simctl install "$UDID" "$APP"
 
+prefs_path() {
+  local data
+  data="$(xcrun simctl get_app_container "$UDID" "$BUNDLE_ID" data)"
+  echo "$data/Library/Preferences/$BUNDLE_ID"
+}
+
+set_tab() {
+  local tab="$1"
+  local prefs
+  prefs="$(prefs_path)"
+  # Write into the app container (simctl launch args / defaults write bundle-id are unreliable)
+  defaults write "$prefs" AppStoreScreenshots -bool true
+  defaults write "$prefs" ScreenshotTab -string "$tab"
+}
+
+clear_demo_prefs() {
+  local prefs
+  prefs="$(prefs_path)"
+  defaults delete "$prefs" AppStoreScreenshots 2>/dev/null || true
+  defaults delete "$prefs" ScreenshotTab 2>/dev/null || true
+}
+
 capture() {
   local tab="$1"
   local file="$2"
   echo "==> Screenshot: $tab → $file"
-  # terminate can hang if the app is not running — bound it
   ( xcrun simctl terminate "$UDID" "$BUNDLE_ID" & sleep 2; kill $! 2>/dev/null ) 2>/dev/null || true
-  xcrun simctl launch "$UDID" "$BUNDLE_ID" -AppStoreScreenshots -ScreenshotTab "$tab"
-  # Let schedule/network settle
-  sleep 3.5
+  sleep 1
+  set_tab "$tab"
+  open -a Simulator
+  xcrun simctl launch "$UDID" "$BUNDLE_ID"
+  # Let schedule/network settle; bring Simulator to front
+  sleep 5
   xcrun simctl io "$UDID" screenshot "$OUT_DIR/$file"
 }
-
-# Optional splash (logo) — launch and grab quickly
-echo "==> Screenshot: splash"
-xcrun simctl terminate "$UDID" "$BUNDLE_ID" 2>/dev/null || true
-xcrun simctl launch "$UDID" "$BUNDLE_ID" -AppStoreScreenshots -ScreenshotTab schedule
-sleep 0.35
-xcrun simctl io "$UDID" screenshot "$OUT_DIR/01-splash.png" || true
 
 capture welcome "02-welcome.png"
 capture home "03-home.png"
@@ -89,9 +106,12 @@ capture chat "05-chat.png"
 capture directory "06-directory.png"
 capture more "07-more.png"
 
+clear_demo_prefs
+
 echo ""
 echo "Screenshots saved to:"
 ls -la "$OUT_DIR"
 echo ""
 echo "Upload the 6.9\" frames in App Store Connect → App Store → version → Previews and Screenshots."
 echo "Device: $DEVICE_NAME (portrait PNGs)."
+echo "If frames are blank/SpringBoard, capture manually in Xcode (see ios/README.md)."
