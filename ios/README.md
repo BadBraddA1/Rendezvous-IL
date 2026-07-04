@@ -64,27 +64,35 @@ Then in Xcode:
 
 ## TestFlight
 
+### App Store listing (description, keywords, URLs)
+
+Copy-paste fields for App Store Connect live in **[app-store/metadata.md](app-store/metadata.md)**:
+
+| Field | Value |
+| --- | --- |
+| Marketing URL | https://rendezvousil.com |
+| Support URL | https://rendezvousil.com/about |
+| Privacy Policy URL | https://rendezvousil.com/privacy |
+| Keywords | see metadata.md |
+| Description | see metadata.md |
+
 ### App Store screenshots
 
-**In Xcode (most reliable):**
+From Terminal:
 
-1. Open `RendezvousIL.xcodeproj`, scheme **RendezvousIL**, destination **iPhone 17 Pro Max** (6.9″).
-2. **Product → Scheme → Edit Scheme… → Run → Arguments**
-3. Add launch arguments: `-AppStoreScreenshots` and `-ScreenshotTab` with a value:
-   - `welcome` · `home` · `schedule` · `chat` · `directory` · `more`
-4. Run (⌘R). When the screen looks right: **Simulator → File → Save Screen** (or ⌘S).
-5. Repeat for each tab (change `-ScreenshotTab`, run again).
-6. Upload the PNGs in App Store Connect → version **2.0.1** → **Previews and Screenshots** → **iPhone 6.9" Display**.
+```bash
+bash /Users/braddford/rendezvous-il/ios/scripts/capture-app-store-screenshots.sh
+```
 
-Demo mode uses sample chat/directory rows; schedule/home load live public data. Do not ship with those launch args (normal builds ignore them).
-
-**Script (when the simulator is healthy):**
+Or from `ios/`:
 
 ```bash
 bash scripts/capture-app-store-screenshots.sh
 ```
 
-Writes to `ios/AppStoreScreenshots/`.
+Builds the app, runs demo mode on **iPhone 17 Pro Max**, writes PNGs to `ios/AppStoreScreenshots/`, and opens Finder. Upload under **Previews and Screenshots → iPhone 6.9" Display**.
+
+If a frame is blank, recapture that tab in Xcode: scheme **Run → Arguments** → `-AppStoreScreenshots` and `-ScreenshotTab` (`welcome` / `home` / `schedule` / `chat` / `directory` / `more`), then **Simulator → File → Save Screen**.
 
 ### Local upload
 
