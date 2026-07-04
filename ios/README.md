@@ -64,13 +64,38 @@ Then in Xcode:
 
 ## TestFlight
 
+### Local upload
+
 From `ios/`:
 
 ```bash
 bash scripts/ship-testflight.sh
 ```
 
-Archives Release, verifies Clerk key in the IPA, and uploads to App Store Connect. Current ship: **v1.2.0 (build 15)**. After processing, run the checklist in [TESTFLIGHT_SMOKE.md](TESTFLIGHT_SMOKE.md) on a physical device.
+Archives Release, verifies Clerk key in the IPA, and uploads to App Store Connect. After processing, run the checklist in [TESTFLIGHT_SMOKE.md](TESTFLIGHT_SMOKE.md) on a physical device.
+
+If you see **Upload limit reached**, Apple capped uploads for this app for ~24 hours (local and Xcode Cloud share that limit). Wait a day and try again.
+
+### Xcode Cloud (recommended for day-to-day ships)
+
+The repo already has `ios/ci_scripts/ci_post_clone.sh` (runs XcodeGen + optional Clerk key). One-time setup in Xcode:
+
+1. Open `ios/RendezvousIL.xcodeproj` (run `bash scripts/setup-xcode.sh` first if needed).
+2. **Product → Xcode Cloud → Create Workflow…** (or the cloud icon in the report navigator).
+3. Sign in with the **Apple ID** that owns the App Store Connect app (`com.rendezvousil.braddcorp.app`).
+4. Grant access to the **GitHub** repo (`BadBraddA1/Rendezvous-IL`) when prompted.
+5. Workflow settings:
+   - **Project / workspace:** `ios/RendezvousIL.xcodeproj` (not the monorepo root alone)
+   - **Scheme:** `RendezvousIL`
+   - **Actions:** Archive → **TestFlight Internal Testing** (or External if you use that group)
+   - **Start condition:** Branch changes on `main`, and/or **Manual start**
+6. **Environment** (optional): add secret `CLERK_PUBLISHABLE_KEY` only if you need to override `Config.xcconfig`. Production builds usually use the committed live key.
+7. **Signing:** use **Automatically manage signing** with team **F5HPRRCC5H** (same as local). Xcode Cloud manages certificates/profiles in App Store Connect → Users and Access → Integrations → Xcode Cloud.
+8. Save, then **Start Build** (or push to `main` if you enabled that).
+
+Bump `CURRENT_PROJECT_VERSION` in `ios/project.yml` before each ship (Cloud archives whatever is on the branch). After a green build, the build appears under **App Store Connect → TestFlight** like a local upload.
+
+**Manual start later:** Xcode → Report navigator (speech bubble) → Cloud → select workflow → **Start Build**, or App Store Connect → Xcode Cloud.
 
 ## Admin access (Clerk)
 
