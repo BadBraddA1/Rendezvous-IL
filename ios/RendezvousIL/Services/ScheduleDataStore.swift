@@ -56,16 +56,23 @@ enum RepositoryFetch {
         operation: @escaping @Sendable () async throws -> T
     ) async throws -> T {
         try await withThrowingTaskGroup(of: T.self) { group in
-            group.addTask { try await operation() }
+            group.addTask {
+                try Task.checkCancellation()
+                return try await operation()
+            }
             group.addTask {
                 try await Task.sleep(nanoseconds: seconds * 1_000_000_000)
-                throw APIError.badStatus(-1)
+                throw APIError.timeout
             }
-            guard let result = try await group.next() else {
-                throw APIError.badStatus(-1)
+            defer { group.cancelAll() }
+            do {
+                guard let result = try await group.next() else {
+                    throw APIError.timeout
+                }
+                return result
+            } catch is CancellationError {
+                throw CancellationError()
             }
-            group.cancelAll()
-            return result
         }
     }
 }

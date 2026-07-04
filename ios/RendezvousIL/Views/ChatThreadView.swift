@@ -167,6 +167,7 @@ struct ChatThreadView: View {
             messages = response.messages
             errorMessage = nil
         } catch {
+            if APIError.isCancellation(error) { return }
             if messages.isEmpty {
                 errorMessage = error.localizedDescription
             }
@@ -189,6 +190,7 @@ struct ChatThreadView: View {
             }
             realtimeStatus = .connected
         } catch {
+            if APIError.isCancellation(error) { return }
             realtimeStatus = .unavailable
         }
     }
@@ -211,6 +213,7 @@ struct ChatThreadView: View {
             draft = ""
             errorMessage = nil
         } catch {
+            if APIError.isCancellation(error) { return }
             errorMessage = error.localizedDescription
         }
     }

@@ -249,6 +249,7 @@ struct DirectoryView: View {
                 errorMessage = "Session expired. Sign out and sign in again."
             }
         } catch {
+            if APIError.isCancellation(error) { return }
             if families.isEmpty || showErrorsWhenEmpty {
                 families = []
                 errorMessage = error.localizedDescription

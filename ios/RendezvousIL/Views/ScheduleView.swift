@@ -3,6 +3,7 @@ import SwiftUI
 struct ScheduleView: View {
     @Environment(RendezvousRepository.self) private var repository
     @State private var selectedDayIndex = 0
+    @State private var scrollToEventId: String?
 
     var body: some View {
         NavigationStack {
@@ -21,9 +22,15 @@ struct ScheduleView: View {
             }
             .navigationTitle("Schedule")
             .toolbar {
-                if repository.isRefreshingSchedule || repository.isLoadingUpdates {
-                    ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    if repository.isRefreshingSchedule || repository.isLoadingUpdates {
                         ProgressView()
+                    }
+                    if let schedule = repository.schedule, jumpTarget(in: schedule) != nil {
+                        Button("Jump to now") {
+                            jumpToNowNext(in: schedule)
+                        }
+                        .font(.subheadline.weight(.semibold))
                     }
                 }
             }
@@ -61,33 +68,74 @@ struct ScheduleView: View {
                 let day = schedule.days[selectedDayIndex]
                 let isoDate = schedule.dayDates[day.day] ?? ""
 
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 20) {
-                        liveUpdatesSection
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 20) {
+                            liveUpdatesSection
+                                .id("schedule-top")
 
-                        header(for: day, schedule: schedule)
+                            header(for: day, schedule: schedule)
 
-                        if day.events.isEmpty {
-                            Text("No events listed for this day.")
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 24)
-                        } else {
-                            ForEach(day.events) { event in
-                                EventCard(
-                                    event: event,
-                                    isoDate: isoDate,
-                                    luItem: matchingLUItem(event: event, isoDate: isoDate, items: schedule.luItems),
-                                    meal: mealFor(event: event, isoDate: isoDate),
-                                    volunteers: volunteersFor(event: event, isoDate: isoDate)
-                                )
+                            if day.events.isEmpty {
+                                Text("No events listed for this day.")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 24)
+                            } else {
+                                ForEach(day.events) { event in
+                                    EventCard(
+                                        event: event,
+                                        isoDate: isoDate,
+                                        luItem: matchingLUItem(event: event, isoDate: isoDate, items: schedule.luItems),
+                                        meal: mealFor(event: event, isoDate: isoDate),
+                                        volunteers: volunteersFor(event: event, isoDate: isoDate)
+                                    )
+                                    .id(eventScrollId(isoDate: isoDate, event: event))
+                                }
                             }
                         }
+                        .padding()
                     }
-                    .padding()
+                    .onChange(of: scrollToEventId) { _, eventId in
+                        guard let eventId else { return }
+                        withAnimation(.easeInOut(duration: 0.35)) {
+                            proxy.scrollTo(eventId, anchor: .top)
+                        }
+                        scrollToEventId = nil
+                    }
                 }
             }
+        }
+    }
+
+    private func eventScrollId(isoDate: String, event: ScheduleEvent) -> String {
+        "\(isoDate)|\(event.time)|\(event.title)"
+    }
+
+    /// Prefer the event happening now; otherwise the next upcoming event.
+    private func jumpTarget(in schedule: SchedulePayload) -> (dayIndex: Int, eventId: String)? {
+        let result = repository.nowNext()
+        guard let item = result.current ?? result.next else { return nil }
+
+        for (index, day) in schedule.days.enumerated() {
+            let isoDate = schedule.dayDates[day.day] ?? ""
+            guard isoDate == item.date else { continue }
+            if let event = day.events.first(where: { $0.title == item.title && $0.time == item.time })
+                ?? day.events.first(where: { $0.title == item.title }) {
+                return (index, eventScrollId(isoDate: isoDate, event: event))
+            }
+            return (index, "schedule-top")
+        }
+        return nil
+    }
+
+    private func jumpToNowNext(in schedule: SchedulePayload) {
+        guard let target = jumpTarget(in: schedule) else { return }
+        selectedDayIndex = target.dayIndex
+        // Allow the day list to render, then scroll.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            scrollToEventId = target.eventId
         }
     }
 

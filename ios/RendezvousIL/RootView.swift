@@ -142,16 +142,11 @@ struct RootView: View {
         VStack(spacing: 20) {
             Spacer()
 
-            Image("BraddCorpLogo")
+            Image("RendezvousLogo")
                 .resizable()
                 .scaledToFit()
-                .frame(width: 96, height: 96)
-                .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-                .shadow(color: .black.opacity(0.08), radius: 12, y: 4)
-
-            Text("Rendezvous")
-                .font(.system(.title, design: .serif))
-                .fontWeight(.semibold)
+                .frame(maxWidth: 220, maxHeight: 120)
+                .shadow(color: .black.opacity(0.06), radius: 10, y: 3)
 
             ProgressView()
                 .tint(BrandColors.lake)

@@ -114,6 +114,7 @@ struct ChatListView: View {
         } catch APIError.unauthorized {
             errorMessage = "Session expired. Sign out and sign in again."
         } catch {
+            if APIError.isCancellation(error) { return }
             errorMessage = error.localizedDescription
         }
     }

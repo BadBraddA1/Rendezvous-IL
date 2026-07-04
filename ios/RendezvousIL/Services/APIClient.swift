@@ -3,6 +3,7 @@ import Foundation
 enum APIError: LocalizedError {
     case invalidURL
     case unauthorized
+    case timeout
     case badStatus(Int)
     case serverMessage(String, Int)
     case decoding(Error)
@@ -13,13 +14,22 @@ enum APIError: LocalizedError {
             return "Invalid URL"
         case .unauthorized:
             return "Sign in required"
+        case .timeout:
+            return "Request timed out. Pull to refresh."
         case .badStatus(let code):
-            return "Server returned \(code)"
+            return code == -1 ? "Request timed out. Pull to refresh." : "Server returned \(code)"
         case .serverMessage(let message, _):
             return message
         case .decoding(let error):
             return "Could not read response: \(error.localizedDescription)"
         }
+    }
+
+    static func isCancellation(_ error: Error) -> Bool {
+        if error is CancellationError { return true }
+        if let urlError = error as? URLError, urlError.code == .cancelled { return true }
+        let ns = error as NSError
+        return ns.domain == NSURLErrorDomain && ns.code == NSURLErrorCancelled
     }
 }
 
