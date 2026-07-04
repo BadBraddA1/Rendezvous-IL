@@ -138,19 +138,20 @@ export async function sendChannelMessage(input: {
     created_at: new Date().toISOString(),
   }
 
-  try {
-    await publishChatMessage(input.channelId, message as unknown as Record<string, unknown>)
-  } catch (error) {
-    console.error("[chat] Ably publish failed:", error)
-  }
-
-  // Fire-and-forget push to other channel members (iOS / Android).
   const channelTitle = await channelTitleForPush(input.channelId)
-  void notifyChatMessagePush({
-    channelId: input.channelId,
-    channelTitle,
-    message,
-  })
+
+  // Await both so Vercel does not freeze the function before push finishes.
+  // (Fire-and-forget on serverless often delays delivery by tens of seconds.)
+  await Promise.all([
+    publishChatMessage(input.channelId, message as unknown as Record<string, unknown>).catch(
+      (error) => console.error("[chat] Ably publish failed:", error),
+    ),
+    notifyChatMessagePush({
+      channelId: input.channelId,
+      channelTitle,
+      message,
+    }),
+  ])
 
   return message
 }

@@ -166,11 +166,10 @@ export async function sendApnsAlerts(
   const host = apnsHost(options?.environment ?? defaultApnsEnvironment())
   const topic = options?.topic ?? defaultApnsTopic()
 
-  const results: ApnsSendResult[] = []
-  for (const token of deviceTokens) {
-    results.push(await sendOne(host, token, jwt, topic, payload))
-  }
-  return results
+  // Send in parallel — sequential HTTP/2 connects made chat pushes feel slow.
+  return Promise.all(
+    deviceTokens.map((token) => sendOne(host, token, jwt, topic, payload)),
+  )
 }
 
 /** Live Activity update via ActivityKit push (apns-push-type: liveactivity). */
