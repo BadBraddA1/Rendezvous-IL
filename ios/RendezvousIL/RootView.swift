@@ -41,7 +41,28 @@ struct RootView: View {
         .onChange(of: session.isSignedIn) { _, signedIn in
             if signedIn {
                 DeepLinkRouter.flushPending()
+                Task {
+                    // Let the home UI settle, then offer notifications once.
+                    try? await Task.sleep(for: .milliseconds(600))
+                    await NotificationService.shared.preparePostSignInPromptIfNeeded()
+                }
             }
+        }
+        .alert(
+            "Stay in the loop",
+            isPresented: Binding(
+                get: { NotificationService.shared.shouldShowPostSignInPrompt },
+                set: { if !$0 { NotificationService.shared.declinePostSignInPrompt() } }
+            )
+        ) {
+            Button("Enable notifications") {
+                Task { await NotificationService.shared.acceptPostSignInPrompt() }
+            }
+            Button("Not now", role: .cancel) {
+                NotificationService.shared.declinePostSignInPrompt()
+            }
+        } message: {
+            Text("Get organizer announcements and event reminders during Rendezvous. You can change this anytime in More → Notifications & widgets.")
         }
         .onOpenURL { url in
             DeepLinkRouter.storePending(url)

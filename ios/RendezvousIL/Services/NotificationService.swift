@@ -8,6 +8,9 @@ final class NotificationService {
     static let shared = NotificationService()
 
     private(set) var authorizationStatus: UNAuthorizationStatus = .notDetermined
+    /// Set when the post-sign-in explanation alert should be shown.
+    var shouldShowPostSignInPrompt = false
+
     var broadcastAlertsEnabled: Bool {
         didSet { UserDefaults.standard.set(broadcastAlertsEnabled, forKey: Keys.broadcastAlerts) }
     }
@@ -21,6 +24,7 @@ final class NotificationService {
     private enum Keys {
         static let broadcastAlerts = "notifications.broadcast"
         static let liveActivity = "notifications.liveActivity"
+        static let didPromptAfterSignIn = "notifications.didPromptAfterSignIn"
     }
 
     private init() {
@@ -52,5 +56,36 @@ final class NotificationService {
         guard broadcastAlertsEnabled else { return }
         guard authorizationStatus == .authorized || authorizationStatus == .provisional else { return }
         UIApplication.shared.registerForRemoteNotifications()
+    }
+
+    /// After sign-in: show a one-time explanation, then the system permission dialog.
+    /// If permission was already decided, just re-register for APNs when allowed.
+    func preparePostSignInPromptIfNeeded() async {
+        await refreshAuthorizationStatus()
+
+        switch authorizationStatus {
+        case .notDetermined:
+            guard !UserDefaults.standard.bool(forKey: Keys.didPromptAfterSignIn) else { return }
+            shouldShowPostSignInPrompt = true
+        case .authorized, .provisional, .ephemeral:
+            broadcastAlertsEnabled = true
+            await registerForRemoteIfAuthorized()
+        case .denied:
+            break
+        @unknown default:
+            break
+        }
+    }
+
+    func acceptPostSignInPrompt() async {
+        UserDefaults.standard.set(true, forKey: Keys.didPromptAfterSignIn)
+        shouldShowPostSignInPrompt = false
+        broadcastAlertsEnabled = true
+        _ = await requestPermissions()
+    }
+
+    func declinePostSignInPrompt() {
+        UserDefaults.standard.set(true, forKey: Keys.didPromptAfterSignIn)
+        shouldShowPostSignInPrompt = false
     }
 }
