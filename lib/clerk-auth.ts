@@ -5,6 +5,7 @@ import {
   verifyToken,
   type User,
 } from "@clerk/nextjs/server"
+import { headers as nextHeaders } from "next/headers"
 import {
   type AdminRole,
   type AdminPermissions,
@@ -26,12 +27,43 @@ export type AuthUserContext = {
   user: User
 }
 
-function bearerTokenFromRequest(request?: Request): string | null {
-  if (!request) return null
-  const header = request.headers.get("authorization") || request.headers.get("Authorization")
+function bearerFromAuthorizationHeader(header: string | null): string | null {
   if (!header) return null
   const match = header.match(/^Bearer\s+(.+)$/i)
   return match?.[1]?.trim() || null
+}
+
+function bearerTokenFromRequest(request?: Request): string | null {
+  if (!request) return null
+  return bearerFromAuthorizationHeader(
+    request.headers.get("authorization") || request.headers.get("Authorization"),
+  )
+}
+
+/**
+ * When handlers call getCurrentAdmin() without the Request, auth() alone is flaky
+ * for mobile Bearer tokens. Rebuild a minimal Request from Next.js headers so
+ * authenticateRequest / verifyToken still run.
+ */
+async function requestForBearerAuth(request?: Request): Promise<Request | undefined> {
+  if (request) return request
+
+  try {
+    const h = await nextHeaders()
+    const authorization = h.get("authorization") || h.get("Authorization")
+    if (!authorization) return undefined
+
+    const headerInit: Record<string, string> = { Authorization: authorization }
+    const cookie = h.get("cookie")
+    if (cookie) headerInit.Cookie = cookie
+
+    return new Request("https://rendezvousil.local/api/auth-context", {
+      headers: headerInit,
+    })
+  } catch {
+    // Outside a request scope (scripts, build) — no headers available.
+    return undefined
+  }
 }
 
 /**
@@ -47,10 +79,11 @@ export async function authUserId(request?: Request): Promise<string | null> {
     console.error("[clerk-auth] auth() failed:", error)
   }
 
-  if (request) {
+  const authRequest = await requestForBearerAuth(request)
+  if (authRequest) {
     try {
       const clerk = await clerkClient()
-      const state = await clerk.authenticateRequest(request, {
+      const state = await clerk.authenticateRequest(authRequest, {
         acceptsToken: "session_token",
       })
       if (state.isAuthenticated) {
@@ -61,7 +94,7 @@ export async function authUserId(request?: Request): Promise<string | null> {
       console.error("[clerk-auth] authenticateRequest failed:", error)
     }
 
-    const token = bearerTokenFromRequest(request)
+    const token = bearerTokenFromRequest(authRequest)
     if (token && process.env.CLERK_SECRET_KEY) {
       try {
         const payload = await verifyToken(token, {

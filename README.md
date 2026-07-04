@@ -140,7 +140,7 @@ Setup: `cd ios && bash scripts/setup-xcode.sh && open RendezvousIL.xcodeproj` �
 
 **TestFlight:** `cd ios && bash scripts/ship-testflight.sh` — latest **v1.2.0 (build 14)**. Device smoke checklist: [ios/TESTFLIGHT_SMOKE.md](ios/TESTFLIGHT_SMOKE.md).
 
-Native admin APIs: `GET /api/admin/me`, `GET /api/admin/mobile/dashboard` (Bearer Clerk session token).
+Native admin APIs: `GET /api/admin/me`, `GET /api/admin/mobile/dashboard` (Bearer Clerk session token). Mobile Bearer auth always falls back to `authenticateRequest` / `verifyToken` using the `Authorization` header from the request or Next.js `headers()` — so admin routes that omit the `Request` argument no longer fail intermittently on first open.
 
 ## Android app
 

@@ -163,12 +163,17 @@ final class AppSession {
                 adminName = nil
             }
         } catch {
-            isAdmin = false
-            canViewDashboard = false
-            canCheckIn = false
-            canManageUsers = false
-            adminRole = nil
-            adminName = nil
+            // Keep last-known admin flags on transient network/auth blips so a
+            // single failed probe does not flash "access denied" on Admin.
+            if APIError.isCancellation(error) { return }
+            if case APIError.unauthorized = error {
+                isAdmin = false
+                canViewDashboard = false
+                canCheckIn = false
+                canManageUsers = false
+                adminRole = nil
+                adminName = nil
+            }
         }
     }
 

@@ -5,8 +5,8 @@ import { getCurrentAdmin } from "@/lib/clerk-auth"
 export const dynamic = "force-dynamic"
 
 /** Compact admin dashboard payload for the iOS admin hub. */
-export async function GET() {
-  const admin = await getCurrentAdmin()
+export async function GET(request: Request) {
+  const admin = await getCurrentAdmin(request)
   if (!admin) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }

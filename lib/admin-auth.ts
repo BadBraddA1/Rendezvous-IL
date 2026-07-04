@@ -10,18 +10,20 @@ export type { AdminRole, AdminUser } from "@/lib/admin-permissions"
 export { getAdminPermissions, isAdminRole }
 
 /**
- * Any admin role (admin, editor, viewer, checkin)
+ * Any admin role (admin, editor, viewer, checkin).
+ * Pass `request` from route handlers so mobile Bearer tokens always resolve.
+ * When omitted, clerk-auth still reads Authorization from Next.js headers.
  */
-export async function checkAdminAuth() {
-  return getCurrentAdmin()
+export async function checkAdminAuth(request?: Request) {
+  return getCurrentAdmin(request)
 }
 
 /**
  * Check-in station access (admin, editor, or checkin role)
  */
-export async function checkCheckInAuth() {
+export async function checkCheckInAuth(request?: Request) {
   try {
-    return await requireCheckInApi()
+    return await requireCheckInApi(request)
   } catch {
     return null
   }

@@ -32,6 +32,7 @@ struct AdminDashboardView: View {
         .navigationBarTitleDisplayMode(.large)
         .background(Color(.systemGroupedBackground))
         .refreshable {
+            await session.refreshAdminStatus()
             await loadDashboard(force: true)
         }
         .task {
@@ -434,17 +435,43 @@ struct AdminDashboardView: View {
         defer { isLoading = false }
 
         do {
-            dashboard = try await RepositoryFetch.withTimeout {
-                try await client.getAdminDashboard()
-            }
+            dashboard = try await fetchDashboard(using: client)
+        } catch is CancellationError {
+            return
         } catch APIError.unauthorized {
-            if dashboard == nil {
-                errorMessage = "Session expired. Sign out and sign in again."
+            // One retry after a fresh admin probe — first open often races Clerk Bearer auth.
+            await session.refreshAdminStatus()
+            guard session.canViewDashboard, let retryClient = session.apiClient else {
+                if dashboard == nil {
+                    errorMessage = "Session expired. Sign out and sign in again."
+                }
+                return
+            }
+            do {
+                dashboard = try await fetchDashboard(using: retryClient)
+            } catch {
+                if APIError.isCancellation(error) { return }
+                if dashboard == nil {
+                    errorMessage = error.localizedDescription
+                }
             }
         } catch {
-            if dashboard == nil {
-                errorMessage = error.localizedDescription
+            if APIError.isCancellation(error) { return }
+            // Retry once on timeout / cold start — pull-to-refresh was working around this.
+            do {
+                dashboard = try await fetchDashboard(using: client)
+            } catch {
+                if APIError.isCancellation(error) { return }
+                if dashboard == nil {
+                    errorMessage = error.localizedDescription
+                }
             }
+        }
+    }
+
+    private func fetchDashboard(using client: APIClient) async throws -> AdminDashboardResponse {
+        try await RepositoryFetch.withTimeout(seconds: 25) {
+            try await client.getAdminDashboard()
         }
     }
 }
