@@ -34,6 +34,10 @@ final class RendezvousRepository {
     /// Offline-first bootstrap — call once after sign-in.
     func bootstrap() async {
         applyOfflineScheduleIfNeeded()
+        if AppStoreScreenshotMode.isEnabled {
+            // Demo mode: bundled schedule only — no network (faster, deterministic frames).
+            return
+        }
         async let scheduleTask: Void = loadScheduleBundle()
         async let extrasTask: Void = loadScheduleExtras()
         async let updatesTask: Void = loadUpdates()

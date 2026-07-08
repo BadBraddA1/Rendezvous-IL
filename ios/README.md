@@ -90,9 +90,23 @@ Or from `ios/`:
 bash scripts/capture-app-store-screenshots.sh
 ```
 
+<<<<<<< HEAD
 Builds the app, runs demo mode on **iPhone 17 Pro Max**, writes PNGs to `ios/AppStoreScreenshots/`, and opens Finder. Upload under **Previews and Screenshots → iPhone 6.9" Display**.
 
 If a frame is blank, recapture that tab in Xcode: scheme **Run → Arguments** → `-AppStoreScreenshots` and `-ScreenshotTab` (`welcome` / `home` / `schedule` / `chat` / `directory` / `more`), then **Simulator → File → Save Screen**.
+=======
+**iPad (required if the app runs on iPad):**
+
+```bash
+bash scripts/capture-app-store-screenshots-ipad.sh
+```
+
+Builds the app, runs demo mode on **iPhone 17 Pro Max**, writes PNGs to `ios/AppStoreScreenshots/` (resized to **1284×2778**), and opens Finder. Upload under **Previews and Screenshots → iPhone 6.7" Display**.
+
+The iPad script uses **iPad Pro 13-inch** and writes to `ios/AppStoreScreenshots-iPad/` at **2064×2752** — upload under **Previews and Screenshots → iPad 13" Display**.
+
+Uses `DEVELOPER_DIR` (defaults to `/Users/braddford/Downloads/Xcode-beta.app` when present). Opens **Simulator.app** when present, otherwise **DeviceHub.app** (Xcode 27). The script polls until each PNG exceeds ~200KB — `simctl io` often returns a blank ~80KB frame for several seconds after launch. Demo mode uses bundled schedule data and skips network/notifications.
+>>>>>>> a6ecc12 (Add photoshow, chat photo storage, iOS check-in QR, and admin push updates.)
 
 ### Local upload
 

@@ -75,12 +75,20 @@ Privacy: https://rendezvousil.com/privacy
 
 ## Screenshots
 
-From the `ios/` folder:
+**iPhone** — from the `ios/` folder:
 
 ```bash
 bash scripts/capture-app-store-screenshots.sh
 ```
 
 PNGs are written to `ios/AppStoreScreenshots/` (iPhone 6.9″, 1320×2868). Upload under **Previews and Screenshots → iPhone 6.9" Display**.
+
+**iPad 13-inch (required)** — App Store Connect blocks submission without these:
+
+```bash
+bash scripts/capture-app-store-screenshots-ipad.sh
+```
+
+PNGs → `ios/AppStoreScreenshots-iPad/` (**2064×2752**). Upload under **Previews and Screenshots → iPad 13" Display**.
 
 The script opens Finder when finished. If a frame looks blank, re-run the script or capture that tab in Xcode (see `ios/README.md`).

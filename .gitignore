@@ -40,3 +40,6 @@ next-env.d.ts
 # impeccable live mode (local dev only)
 .impeccable/
 ios/build/
+xcuserdata/
+*.xcuserstate
+.agents/

@@ -15,16 +15,26 @@ struct RootView: View {
 
     var body: some View {
         ZStack {
-            mainContent
-                .opacity(splashFinished ? 1 : 0)
+            // Headless simctl screenshots never run the opacity animation, so the
+            // main UI would stay at opacity 0 (blank white) after splash dismisses.
+            if AppStoreScreenshotMode.isEnabled {
+                if splashFinished {
+                    mainContent
+                } else {
+                    launchSplash
+                }
+            } else {
+                mainContent
+                    .opacity(splashFinished ? 1 : 0)
 
-            if !splashFinished {
-                launchSplash
-                    .transition(.opacity)
-                    .zIndex(1)
+                if !splashFinished {
+                    launchSplash
+                        .transition(.opacity)
+                        .zIndex(1)
+                }
             }
         }
-        .animation(.easeOut(duration: 0.3), value: splashFinished)
+        .animation(AppStoreScreenshotMode.isEnabled ? nil : .easeOut(duration: 0.3), value: splashFinished)
         .task {
             await runBootstrap()
         }
@@ -39,6 +49,7 @@ struct RootView: View {
             }
         }
         .onChange(of: session.isSignedIn) { _, signedIn in
+            guard !AppStoreScreenshotMode.isEnabled else { return }
             if signedIn {
                 DeepLinkRouter.flushPending()
                 Task {
@@ -51,7 +62,10 @@ struct RootView: View {
         .alert(
             "Stay in the loop",
             isPresented: Binding(
-                get: { NotificationService.shared.shouldShowPostSignInPrompt },
+                get: {
+                    !AppStoreScreenshotMode.isEnabled
+                        && NotificationService.shared.shouldShowPostSignInPrompt
+                },
                 set: { if !$0 { NotificationService.shared.declinePostSignInPrompt() } }
             )
         ) {

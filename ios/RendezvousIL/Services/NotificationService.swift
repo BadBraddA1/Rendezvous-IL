@@ -61,6 +61,7 @@ final class NotificationService {
     /// After sign-in: show a one-time explanation, then the system permission dialog.
     /// If permission was already decided, just re-register for APNs when allowed.
     func preparePostSignInPromptIfNeeded() async {
+        if AppStoreScreenshotMode.isEnabled { return }
         await refreshAuthorizationStatus()
 
         switch authorizationStatus {

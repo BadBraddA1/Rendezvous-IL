@@ -33,6 +33,7 @@
 		709C33B84426E71DA13A5F19 /* DirectoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDFCA925CF2F46C536CF5593 /* DirectoryView.swift */; };
 		7568F6D233AF16EAEA555420 /* BibleBowlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BDA213F53DB325886659882 /* BibleBowlView.swift */; };
 		7DA728921F342EA02A46E62B /* AdminUserModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BF3FBBFCE2EF235B3B1F1D9 /* AdminUserModels.swift */; };
+		8101634629AF3C73A1E2EE29 /* AppStoreScreenshotMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DDBF4B4F010F7A0FFA06C77 /* AppStoreScreenshotMode.swift */; };
 		82553140B28F7CC2EA40A2A2 /* BrandColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5079917DD576A66F72E89EF5 /* BrandColors.swift */; };
 		82B6C946BB374B347B58B7A6 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DC68024E8C93B6FAC44F6EAC /* Assets.xcassets */; };
 		8B4303C55E7D02D010F6E41B /* RendezvousRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07C50D82EE938B688ECCFCD4 /* RendezvousRepository.swift */; };
@@ -113,6 +114,7 @@
 		470F82732BB7CA2F2667959E /* AccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountView.swift; sourceTree = "<group>"; };
 		4BF3FBBFCE2EF235B3B1F1D9 /* AdminUserModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminUserModels.swift; sourceTree = "<group>"; };
 		4D1AD3F114E29E028A68BB4E /* AppConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfig.swift; sourceTree = "<group>"; };
+		4DDBF4B4F010F7A0FFA06C77 /* AppStoreScreenshotMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStoreScreenshotMode.swift; sourceTree = "<group>"; };
 		4E4BCFAB9A88FD07F6BC8449 /* ChatModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatModels.swift; sourceTree = "<group>"; };
 		5079917DD576A66F72E89EF5 /* BrandColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrandColors.swift; sourceTree = "<group>"; };
 		5827AB9131F3A63DC2A47844 /* RendezvousWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RendezvousWidgets.swift; sourceTree = "<group>"; };
@@ -149,7 +151,7 @@
 		F7E5B9C3FB21EACB9FD34C8B /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		F93DC358023809E27C05FF3B /* AppEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironment.swift; sourceTree = "<group>"; };
 		FCDBD34429936681124138B5 /* schedule-fallback.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "schedule-fallback.json"; sourceTree = "<group>"; };
-		"TEMP_8D481700-E857-4A99-BD7E-63D10D19A26D" /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
+		"TEMP_388F0309-067E-4FE3-A626-17A93B5CCA4A" /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -283,6 +285,7 @@
 			isa = PBXGroup;
 			children = (
 				F93DC358023809E27C05FF3B /* AppEnvironment.swift */,
+				4DDBF4B4F010F7A0FFA06C77 /* AppStoreScreenshotMode.swift */,
 				EA42AAF64E35D2BC5008BA39 /* ChatFormatting.swift */,
 				61C09630FEAE09AF651F5F52 /* DeepLinkRouter.swift */,
 			);
@@ -309,10 +312,10 @@
 			path = RendezvousIL;
 			sourceTree = "<group>";
 		};
-		"TEMP_E9862B54-F527-4D58-9551-1F8DB5B7872B" /* ios */ = {
+		"TEMP_5BE9DC9A-714A-4B96-B98F-16F02FC4365D" /* ios */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_8D481700-E857-4A99-BD7E-63D10D19A26D" /* Config.xcconfig */,
+				"TEMP_388F0309-067E-4FE3-A626-17A93B5CCA4A" /* Config.xcconfig */,
 			);
 			path = ios;
 			sourceTree = "<group>";
@@ -424,6 +427,7 @@
 				B3FC900548485BBE0D5A1121 /* AppEnvironment.swift in Sources */,
 				F64EE8546EE1937D9C940FD5 /* AppModels.swift in Sources */,
 				5635A4E0BBB120EA3599E770 /* AppSession.swift in Sources */,
+				8101634629AF3C73A1E2EE29 /* AppStoreScreenshotMode.swift in Sources */,
 				7568F6D233AF16EAEA555420 /* BibleBowlView.swift in Sources */,
 				82553140B28F7CC2EA40A2A2 /* BrandColors.swift in Sources */,
 				F763B88C4136397DCED07719 /* BundledContent.swift in Sources */,
@@ -574,7 +578,7 @@
 		};
 		7ADBCEC1B448B95857681847 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_8D481700-E857-4A99-BD7E-63D10D19A26D" /* Config.xcconfig */;
+			baseConfigurationReference = "TEMP_388F0309-067E-4FE3-A626-17A93B5CCA4A" /* Config.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = RendezvousIL/RendezvousIL.entitlements;
@@ -675,7 +679,7 @@
 		};
 		F8122583B54F4443475E1AD8 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_8D481700-E857-4A99-BD7E-63D10D19A26D" /* Config.xcconfig */;
+			baseConfigurationReference = "TEMP_388F0309-067E-4FE3-A626-17A93B5CCA4A" /* Config.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = RendezvousIL/RendezvousIL.entitlements;
