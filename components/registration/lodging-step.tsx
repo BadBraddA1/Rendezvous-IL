@@ -1,30 +1,77 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Calculator, Home, Tent, Caravan } from "lucide-react"
-import { calculateLodgingCost } from "@/lib/lodging-cost"
+import {
+  calculateLodgingCost,
+  lodgingAdultRate,
+  lodgingPriceReference,
+  REGISTRATION_SITE_NIGHTS,
+  type LodgingRatesByCategory,
+} from "@/lib/lodging-cost"
 import type { RegistrationData, LodgingType } from "@/types/registration"
+import { formatMoney } from "@/lib/rate-display"
 
 type Props = {
   data: RegistrationData
   updateData: (updates: Partial<RegistrationData>) => void
+  /** Event-year rate chart (e.g. 2027). Fetched automatically when omitted. */
+  rates?: LodgingRatesByCategory | null
+  ratesYear?: number
 }
 
-export function LodgingStep({ data, updateData }: Props) {
-  useEffect(() => {
-    const { total, updatedMembers } = calculateLodgingCost(data.lodgingType, data.familyMembers)
-    updateData({ lodgingTotal: total, familyMembers: updatedMembers })
-  }, [data.lodgingType, data.familyMembers.map((m) => m.age).join(",")])
+export function LodgingStep({ data, updateData, rates: ratesProp, ratesYear = 2027 }: Props) {
+  const [rates, setRates] = useState<LodgingRatesByCategory | null | undefined>(ratesProp)
 
-  const { total } = calculateLodgingCost(data.lodgingType, data.familyMembers)
+  useEffect(() => {
+    if (ratesProp !== undefined) {
+      setRates(ratesProp)
+      return
+    }
+
+    let cancelled = false
+    async function loadRates() {
+      try {
+        const response = await fetch(`/api/rates?year=${ratesYear}`, { cache: "no-store" })
+        if (!response.ok) return
+        const payload = await response.json()
+        if (!cancelled) setRates(payload.rates ?? null)
+      } catch {
+        if (!cancelled) setRates(null)
+      }
+    }
+    void loadRates()
+    return () => {
+      cancelled = true
+    }
+  }, [ratesProp, ratesYear])
+
+  useEffect(() => {
+    const { total, updatedMembers } = calculateLodgingCost(
+      data.lodgingType,
+      data.familyMembers,
+      rates,
+    )
+    updateData({ lodgingTotal: total, familyMembers: updatedMembers })
+  }, [data.lodgingType, data.familyMembers.map((m) => m.age).join(","), rates])
+
+  const { total, siteFee } = useMemo(
+    () => calculateLodgingCost(data.lodgingType, data.familyMembers, rates),
+    [data.lodgingType, data.familyMembers, rates],
+  )
+  const reference = lodgingPriceReference(data.lodgingType, rates)
+  const adultCampRate = lodgingAdultRate(data.lodgingType, rates)
+  const rvSite = lodgingPriceReference("rv", rates)
+  const tentSite = lodgingPriceReference("tent", rates)
 
   return (
     <div className="space-y-6">
       <div className="rounded-lg bg-muted/50 p-4">
         <p className="text-sm text-muted-foreground">
           All fees include 4 nights lodging (May 4-8), 12 meals, and basic recreation activities.
+          Prices use the {ratesYear} rate chart.
         </p>
       </div>
 
@@ -35,7 +82,6 @@ export function LodgingStep({ data, updateData }: Props) {
           onValueChange={(value) => updateData({ lodgingType: value as LodgingType })}
         >
           <div className="space-y-3">
-            {/* Motel Option 1 */}
             <label
               htmlFor="motel-2queen-bunk"
               className={`flex cursor-pointer items-start gap-4 rounded-lg border-2 p-4 transition-colors hover:bg-muted/50 active:bg-muted/50 ${
@@ -54,7 +100,6 @@ export function LodgingStep({ data, updateData }: Props) {
               </div>
             </label>
 
-            {/* Motel Option 2 */}
             <label
               htmlFor="motel-1queen-2bunk"
               className={`flex cursor-pointer items-start gap-4 rounded-lg border-2 p-4 transition-colors hover:bg-muted/50 active:bg-muted/50 ${
@@ -73,7 +118,6 @@ export function LodgingStep({ data, updateData }: Props) {
               </div>
             </label>
 
-            {/* RV Option */}
             <label
               htmlFor="rv"
               className={`flex cursor-pointer items-start gap-4 rounded-lg border-2 p-4 transition-colors hover:bg-muted/50 active:bg-muted/50 ${
@@ -86,11 +130,13 @@ export function LodgingStep({ data, updateData }: Props) {
                   <Caravan className="h-5 w-5 text-primary" />
                   <span className="font-medium">RV Site</span>
                 </div>
-                <p className="mt-1 text-sm text-muted-foreground">$30/night × 4 nights = $120. Bring your own RV.</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  ${formatMoney(rvSite.siteNight)}/night × {REGISTRATION_SITE_NIGHTS} nights = $
+                  {formatMoney(rvSite.siteTotal)}. Bring your own RV.
+                </p>
               </div>
             </label>
 
-            {/* Tent Option */}
             <label
               htmlFor="tent"
               className={`flex cursor-pointer items-start gap-4 rounded-lg border-2 p-4 transition-colors hover:bg-muted/50 active:bg-muted/50 ${
@@ -103,21 +149,23 @@ export function LodgingStep({ data, updateData }: Props) {
                   <Tent className="h-5 w-5 text-primary" />
                   <span className="font-medium">Tent Camping</span>
                 </div>
-                <p className="mt-1 text-sm text-muted-foreground">$20/night × 4 nights = $80. Bring your own tent.</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  ${formatMoney(tentSite.siteNight)}/night × {REGISTRATION_SITE_NIGHTS} nights = $
+                  {formatMoney(tentSite.siteTotal)}. Bring your own tent.
+                </p>
               </div>
             </label>
           </div>
         </RadioGroup>
       </div>
 
-      {/* Cost Breakdown */}
       <Card className="border-primary/20 bg-surface-highlight">
         <CardHeader>
           <CardTitle className="font-display flex items-center gap-2 text-subheading">
             <Calculator className="h-5 w-5" />
             Lodging Cost Breakdown
           </CardTitle>
-          <CardDescription>Based on your family size and ages</CardDescription>
+          <CardDescription>Based on your family size and ages ({ratesYear} rates)</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2 rounded-lg bg-background/50 p-4">
@@ -126,29 +174,29 @@ export function LodgingStep({ data, updateData }: Props) {
               .map((member, index) => (
                 <div key={member.id} className="flex justify-between text-sm">
                   <span className="text-muted-foreground">
-                    {member.firstName || `Person ${index + 1}`} (Age {member.age})
+                    {member.firstName || `Person ${index + 1}`}{" "}
+                    {member.age >= 18 ? "(Adult)" : `(Age ${member.age})`}
                   </span>
-                  <span className="font-medium">${member.personCost?.toFixed(2) || "0.00"}</span>
+                  <span className="font-medium">${formatMoney(member.personCost ?? 0)}</span>
                 </div>
               ))}
-            {(data.lodgingType === "rv" || data.lodgingType === "tent") && (
+            {(data.lodgingType === "rv" || data.lodgingType === "tent") && siteFee > 0 && (
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">
-                  {data.lodgingType === "rv" ? "RV" : "Tent"} Site (4 nights)
+                  {data.lodgingType === "rv" ? "RV" : "Tent"} Site ({REGISTRATION_SITE_NIGHTS} nights)
                 </span>
-                <span className="font-medium">${data.lodgingType === "rv" ? "120.00" : "80.00"}</span>
+                <span className="font-medium">${formatMoney(siteFee)}</span>
               </div>
             )}
           </div>
 
           <div className="flex items-baseline justify-between border-t border-border/50 pt-4">
             <span className="text-lg font-semibold">Lodging Total:</span>
-            <span className="text-amount text-primary">${total.toFixed(2)}</span>
+            <span className="text-amount text-primary">${formatMoney(total)}</span>
           </div>
         </CardContent>
       </Card>
 
-      {/* Pricing Reference */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Pricing Reference</CardTitle>
@@ -157,13 +205,13 @@ export function LodgingStep({ data, updateData }: Props) {
           {data.lodgingType.startsWith("motel") && (
             <div>
               <p className="font-medium text-foreground">Motel Pricing (per person):</p>
-              <ul className="ml-4 mt-1 space-y-1 list-disc">
-                <li>Single Occupancy (1 paying person): $515</li>
-                <li>Double Occupancy (2 paying people): $350 each</li>
-                <li>Triple Occupancy (3 paying people): $315 each</li>
-                <li>Quad+ Occupancy (4+ paying people): $300 each</li>
-                <li>Ages 12-17: $235</li>
-                <li>Ages 6-11: $190</li>
+              <ul className="ml-4 mt-1 list-disc space-y-1">
+                <li>Single Occupancy (1 paying person): ${formatMoney(reference.single)}</li>
+                <li>Double Occupancy (2 paying people): ${formatMoney(reference.double)} each</li>
+                <li>Triple Occupancy (3 paying people): ${formatMoney(reference.triple)} each</li>
+                <li>Quad+ Occupancy (4+ paying people): ${formatMoney(reference.quad)} each</li>
+                <li>Ages 12-17: ${formatMoney(reference.youth)}</li>
+                <li>Ages 6-11: ${formatMoney(reference.child)}</li>
                 <li>Ages 0-5: FREE</li>
               </ul>
             </div>
@@ -171,22 +219,30 @@ export function LodgingStep({ data, updateData }: Props) {
           {data.lodgingType === "rv" && (
             <div>
               <p className="font-medium text-foreground">RV Pricing:</p>
-              <ul className="ml-4 mt-1 space-y-1 list-disc">
-                <li>Ages 12+: $155 per person</li>
-                <li>Ages 6-11: $75 per person</li>
+              <ul className="ml-4 mt-1 list-disc space-y-1">
+                <li>Ages 18+: ${formatMoney(adultCampRate)} per person</li>
+                <li>Ages 12-17: ${formatMoney(reference.youth)} per person</li>
+                <li>Ages 6-11: ${formatMoney(reference.child)} per person</li>
                 <li>Ages 0-5: FREE</li>
-                <li>RV Site: $30/night × 4 nights = $120</li>
+                <li>
+                  RV Site: ${formatMoney(reference.siteNight)}/night × {REGISTRATION_SITE_NIGHTS} nights
+                  = ${formatMoney(reference.siteTotal)}
+                </li>
               </ul>
             </div>
           )}
           {data.lodgingType === "tent" && (
             <div>
               <p className="font-medium text-foreground">Tent Pricing:</p>
-              <ul className="ml-4 mt-1 space-y-1 list-disc">
-                <li>Ages 12+: $155 per person</li>
-                <li>Ages 6-11: $75 per person</li>
+              <ul className="ml-4 mt-1 list-disc space-y-1">
+                <li>Ages 18+: ${formatMoney(adultCampRate)} per person</li>
+                <li>Ages 12-17: ${formatMoney(reference.youth)} per person</li>
+                <li>Ages 6-11: ${formatMoney(reference.child)} per person</li>
                 <li>Ages 0-5: FREE</li>
-                <li>Tent Site: $20/night × 4 nights = $80</li>
+                <li>
+                  Tent Site: ${formatMoney(reference.siteNight)}/night × {REGISTRATION_SITE_NIGHTS}{" "}
+                  nights = ${formatMoney(reference.siteTotal)}
+                </li>
               </ul>
             </div>
           )}

@@ -24,7 +24,7 @@ import { MerchandiseStep } from "@/components/registration/merchandise-step"
 import { AdditionalInfoStep } from "@/components/registration/additional-info-step"
 import { AgreementStep } from "@/components/registration/agreement-step"
 import { ConfirmationStep } from "@/components/registration/confirmation-step"
-import { calculateLodgingCost } from "@/lib/lodging-cost"
+import { calculateLodgingCost, type LodgingRatesByCategory } from "@/lib/lodging-cost"
 import { calculateRegistrationFee } from "@/utils/registration-fee"
 import type { RegistrationData } from "@/types/registration"
 
@@ -48,12 +48,16 @@ type Props = {
   prefill: RegistrationData
   sourceYear: number
   signatureEmailsEnabled?: boolean
+  rates?: LodgingRatesByCategory | null
+  ratesYear?: number
 }
 
 export function ExpressRegistrationClient({
   prefill,
   sourceYear,
   signatureEmailsEnabled = false,
+  rates = null,
+  ratesYear = 2027,
 }: Props) {
   const [currentStep, setCurrentStep] = useState(1)
   const [editingSteps, setEditingSteps] = useState<Record<number, boolean>>({})
@@ -70,11 +74,16 @@ export function ExpressRegistrationClient({
   // editor (members added/removed on step 1 change per-person costs).
   useEffect(() => {
     setRegistrationData((prev) => {
-      const { total, updatedMembers } = calculateLodgingCost(prev.lodgingType, prev.familyMembers)
+      const { total, updatedMembers } = calculateLodgingCost(
+        prev.lodgingType,
+        prev.familyMembers,
+        rates,
+      )
       if (total === prev.lodgingTotal) return prev
       return { ...prev, lodgingTotal: total, familyMembers: updatedMembers }
     })
   }, [
+    rates,
     registrationData.lodgingType,
     registrationData.familyMembers.map((m) => m.age).join(","),
   ])
@@ -262,7 +271,14 @@ export function ExpressRegistrationClient({
 
   const editors: Record<number, React.ReactNode> = {
     1: <FamilyInfoStep data={registrationData} updateData={updateData} />,
-    2: <LodgingStep data={registrationData} updateData={updateData} />,
+    2: (
+      <LodgingStep
+        data={registrationData}
+        updateData={updateData}
+        rates={rates}
+        ratesYear={ratesYear}
+      />
+    ),
     3: <MerchandiseStep data={registrationData} updateData={updateData} />,
     4: <AdditionalInfoStep data={registrationData} updateData={updateData} />,
   }

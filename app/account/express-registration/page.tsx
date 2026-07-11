@@ -7,7 +7,9 @@ import { ShieldAlert, Users, FileQuestion } from "lucide-react"
 import { getCurrentFamily, getFamilyByEmail, linkFamilyToClerk } from "@/lib/family-auth"
 import { canAccessExpressRegistrationPreview } from "@/lib/registration-access"
 import { isSignatureEmailsEnabled } from "@/lib/registration-settings"
-import { getExpressPrefill } from "@/lib/express-registration-prefill"
+import { getExpressPrefill, EXPRESS_TARGET_YEAR } from "@/lib/express-registration-prefill"
+import { fetchRatesByYear } from "@/lib/calculator-rates-db"
+import type { LodgingRatesByCategory } from "@/lib/lodging-cost"
 import { ExpressRegistrationClient } from "./express-registration-client"
 
 export default async function ExpressRegistrationPage() {
@@ -107,6 +109,7 @@ export default async function ExpressRegistrationPage() {
   }
 
   const signatureEmailsEnabled = await isSignatureEmailsEnabled()
+  const ratesData = await fetchRatesByYear(EXPRESS_TARGET_YEAR)
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -121,6 +124,8 @@ export default async function ExpressRegistrationPage() {
         prefill={prefill.data}
         sourceYear={prefill.sourceYear}
         signatureEmailsEnabled={signatureEmailsEnabled}
+        rates={(ratesData?.rates as LodgingRatesByCategory | undefined) ?? null}
+        ratesYear={EXPRESS_TARGET_YEAR}
       />
     </div>
   )

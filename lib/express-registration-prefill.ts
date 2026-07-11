@@ -1,5 +1,6 @@
 import { sql, type SqlRow } from "@/lib/db"
-import { calculateLodgingCost } from "@/lib/lodging-cost"
+import { calculateLodgingCost, type LodgingRatesByCategory } from "@/lib/lodging-cost"
+import { fetchRatesByYear } from "@/lib/calculator-rates-db"
 import type { FamilyMember, HealthInfo, LodgingType, RegistrationData } from "@/types/registration"
 import { DEFAULT_ARRIVAL_DEPARTURE } from "@/lib/registration-arrival-departure"
 
@@ -151,7 +152,12 @@ export async function getExpressPrefill(familyEmail: string): Promise<ExpressPre
   }
 
   const lodgingType = normalizeLodging(reg.lodging_type)
-  const { total: lodgingTotal, updatedMembers } = calculateLodgingCost(lodgingType, familyMembers)
+  const ratesData = await fetchRatesByYear(EXPRESS_TARGET_YEAR)
+  const { total: lodgingTotal, updatedMembers } = calculateLodgingCost(
+    lodgingType,
+    familyMembers,
+    (ratesData?.rates as LodgingRatesByCategory | undefined) ?? null,
+  )
 
   const data: RegistrationData = {
     familyLastName,
