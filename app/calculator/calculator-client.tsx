@@ -119,9 +119,30 @@ const familyFetcher = async (url: string): Promise<FamilyApiResponse> => {
   return data
 }
 
+type EstimatePath = "choose" | "new" | "returning"
+
+const ESTIMATE_PATH_KEY = "calculator-estimate-path"
+
+function readStoredEstimatePath(): EstimatePath {
+  if (typeof window === "undefined") return "choose"
+  const stored = sessionStorage.getItem(ESTIMATE_PATH_KEY)
+  if (stored === "new" || stored === "returning" || stored === "choose") return stored
+  return "choose"
+}
+
+function storeEstimatePath(path: EstimatePath) {
+  if (typeof window === "undefined") return
+  sessionStorage.setItem(ESTIMATE_PATH_KEY, path)
+}
+
 export function CalculatorClient({ ratesData, initialEnabled }: CalculatorClientProps) {
   const { isSignedIn, isLoaded: authLoaded } = useUser()
   const [familySeed, setFamilySeed] = useState<CalculatorFamilySeed | null>(null)
+  const [estimatePath, setEstimatePath] = useState<EstimatePath>("choose")
+
+  useEffect(() => {
+    setEstimatePath(readStoredEstimatePath())
+  }, [])
 
   const {
     data: statusData,
@@ -149,18 +170,41 @@ export function CalculatorClient({ ratesData, initialEnabled }: CalculatorClient
   )
 
   useEffect(() => {
-    if (familyData?.priorRegistration) {
+    if (estimatePath === "returning" && familyData?.priorRegistration) {
       setFamilySeed(familyData.priorRegistration)
     }
-  }, [familyData?.priorRegistration])
+  }, [estimatePath, familyData?.priorRegistration])
 
   const calculatorRedirect = "/calculator"
   const pendingFamilyAutoLoad =
+    estimatePath === "returning" &&
     authLoaded &&
     isSignedIn &&
     isEnabled &&
     !familySeed &&
     (familyLoading || Boolean(familyData?.priorRegistration))
+
+  const setPath = (path: EstimatePath) => {
+    storeEstimatePath(path)
+    setEstimatePath(path)
+  }
+
+  const chooseNewFamily = () => {
+    setFamilySeed(null)
+    setPath("new")
+  }
+
+  const chooseReturningFamily = () => {
+    setPath("returning")
+    if (familyData?.priorRegistration) {
+      setFamilySeed(familyData.priorRegistration)
+    }
+  }
+
+  const resetToPathChooser = () => {
+    setFamilySeed(null)
+    setPath("choose")
+  }
 
   const [members, setMembers] = useState<CalcMember[]>([
     { id: "1", firstName: "", dateOfBirth: "", isOver18: true },
@@ -422,40 +466,96 @@ export function CalculatorClient({ ratesData, initialEnabled }: CalculatorClient
         <p className="text-lead text-muted-foreground">Estimate your total cost for Rendezvous</p>
       </header>
 
-      {authLoaded && !isSignedIn && isEnabled && (
+      {estimatePath === "choose" ? (
+        <Card className="mx-auto max-w-lg border-primary/15">
+          <CardContent className="space-y-4 p-4 sm:p-6">
+            <div className="text-sm font-medium">How would you like to estimate?</div>
+            <div className="space-y-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="h-auto w-full whitespace-normal bg-transparent px-4 py-3 text-left"
+                onClick={chooseNewFamily}
+              >
+                <span className="flex w-full items-start gap-3">
+                  <UserPlus className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+                  <span>
+                    <span className="block font-medium">New family</span>
+                    <span className="mt-0.5 block text-sm font-normal text-muted-foreground">
+                      Build an estimate from scratch — add people, ages, and lodging.
+                    </span>
+                  </span>
+                </span>
+              </Button>
+              <div className="border-t border-border/60 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-auto w-full whitespace-normal bg-transparent px-4 py-3 text-left"
+                  onClick={chooseReturningFamily}
+                >
+                  <span className="flex w-full items-start gap-3">
+                    <History className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+                    <span>
+                      <span className="block font-medium">Returning family</span>
+                      <span className="mt-0.5 block text-sm font-normal text-muted-foreground">
+                        Use last year&apos;s registration — pre-filled family, lodging, and a
+                        year-over-year comparison.
+                      </span>
+                    </span>
+                  </span>
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ) : pendingFamilyAutoLoad ? (
         <Card className="mb-6 border-primary/20 bg-primary/5">
-          <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <CardContent className="flex items-center justify-center gap-3 p-8">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" aria-hidden="true" />
+            <p className="text-sm text-muted-foreground">
+              Looking up your family&apos;s prior registration…
+            </p>
+          </CardContent>
+        </Card>
+      ) : estimatePath === "returning" && authLoaded && !isSignedIn ? (
+        <Card className="mx-auto max-w-lg border-primary/20 bg-primary/5">
+          <CardContent className="space-y-4 p-4 sm:p-6">
             <div className="flex items-start gap-3">
-              <UserPlus className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+              <LogIn className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
               <div>
-                <p className="font-medium">Returning family? Sign in for a personalized estimate</p>
+                <p className="font-medium">Sign in for your returning-family estimate</p>
                 <p className="text-sm text-muted-foreground">
-                  Create a free account or sign in with the email you used last year — we&apos;ll
-                  pre-fill your family, lodging, nights, and meals from your prior registration and
-                  show how {ratesData.year} compares.
+                  Use the email from last year — we&apos;ll pre-fill your family, lodging, nights,
+                  and meals, and show how {ratesData.year} compares.
                 </p>
               </div>
             </div>
-            <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
-              <Button asChild>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Button asChild className="flex-1">
                 <Link href={`/sign-in?redirect_url=${encodeURIComponent(calculatorRedirect)}`}>
                   <LogIn className="mr-2 h-4 w-4" aria-hidden="true" />
                   Sign in
                 </Link>
               </Button>
-              <Button asChild variant="outline">
+              <Button asChild variant="outline" className="flex-1">
                 <Link href={`/sign-up?redirect_url=${encodeURIComponent(calculatorRedirect)}`}>
                   Create account
                 </Link>
               </Button>
             </div>
+            <Button type="button" variant="ghost" className="w-full" onClick={resetToPathChooser}>
+              Back to choices
+            </Button>
           </CardContent>
         </Card>
-      )}
-
-      {authLoaded && isSignedIn && !familySeed && isEnabled && familyData?.linked === false && (
-        <Card className="mb-6 border-primary/20 bg-primary/5">
-          <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
+      ) : estimatePath === "returning" &&
+        authLoaded &&
+        isSignedIn &&
+        !familySeed &&
+        familyData?.linked === false ? (
+        <Card className="mx-auto max-w-lg border-primary/20 bg-primary/5">
+          <CardContent className="space-y-4 p-4 sm:p-6">
             <div className="flex items-start gap-3">
               <History className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
               <div>
@@ -466,31 +566,50 @@ export function CalculatorClient({ ratesData, initialEnabled }: CalculatorClient
                 </p>
               </div>
             </div>
-            <Button asChild variant="outline" className="shrink-0">
+            <Button asChild className="w-full">
               <Link href="/account">Go to account</Link>
             </Button>
-          </CardContent>
-        </Card>
-      )}
-
-      {pendingFamilyAutoLoad ? (
-        <Card className="mb-6 border-primary/20 bg-primary/5">
-          <CardContent className="flex items-center justify-center gap-3 p-8">
-            <Loader2 className="h-6 w-6 animate-spin text-primary" aria-hidden="true" />
-            <p className="text-sm text-muted-foreground">
-              Looking up your family&apos;s prior registration…
-            </p>
+            <Button type="button" variant="ghost" className="w-full" onClick={resetToPathChooser}>
+              Back to choices
+            </Button>
           </CardContent>
         </Card>
       ) : familySeed ? (
         <FamilyEstimatePanel
           seed={familySeed}
           ratesData={ratesData}
-          onReset={() => setFamilySeed(null)}
+          onReset={resetToPathChooser}
         />
+      ) : estimatePath === "returning" && authLoaded && isSignedIn && !familyLoading ? (
+        <Card className="mx-auto max-w-lg border-primary/20 bg-primary/5">
+          <CardContent className="space-y-4 p-4 sm:p-6">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+              <div>
+                <p className="font-medium">No prior registration found</p>
+                <p className="text-sm text-muted-foreground">
+                  We couldn&apos;t find a previous Rendezvous registration for this account. You can
+                  still build a new-family estimate from scratch.
+                </p>
+              </div>
+            </div>
+            <Button type="button" className="w-full" onClick={chooseNewFamily}>
+              Estimate as a new family
+            </Button>
+            <Button type="button" variant="ghost" className="w-full" onClick={resetToPathChooser}>
+              Back to choices
+            </Button>
+          </CardContent>
+        </Card>
       ) : (
       <div className="grid gap-6 lg:grid-cols-3 lg:items-start">
         <div className="space-y-6 lg:col-span-2">
+          <div className="flex justify-start">
+            <Button type="button" variant="ghost" size="sm" onClick={resetToPathChooser} className="gap-1.5">
+              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+              Back to choices
+            </Button>
+          </div>
           <Card className="border-primary/15">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-widget-heading">

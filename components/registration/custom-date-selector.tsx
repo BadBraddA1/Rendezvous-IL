@@ -105,7 +105,7 @@ export function CustomDateSelector({ value, onChange, isOver18, onOver18Change, 
   }
 
   const formatDisplayValue = () => {
-    if (isOver18) return "Adult (Over 18)"
+    if (isOver18) return "Adult (18+)"
     if (value) {
       const [year, month, day] = value.split("-").map(Number)
       return `${months[month - 1]} ${day}, ${year}`
@@ -113,15 +113,54 @@ export function CustomDateSelector({ value, onChange, isOver18, onOver18Change, 
     return "Select date of birth"
   }
 
+  const clearAdultAndOpen = () => {
+    onOver18Change(false)
+    setView("year")
+    setSelectedYear(null)
+    setSelectedMonth(null)
+    setOpen(true)
+  }
+
+  // Adults are locked once chosen — no birth-year tweaking needed for pricing.
+  if (isOver18) {
+    return (
+      <div className="space-y-2">
+        <Label htmlFor={id}>
+          {label ?? "Date of Birth"}
+          {required && !label?.includes("*") ? " *" : ""}
+        </Label>
+        <div className="flex gap-2">
+          <Button
+            id={id}
+            type="button"
+            variant="outline"
+            className="w-full justify-start text-left font-normal"
+            disabled
+            aria-disabled="true"
+          >
+            <Calendar className="mr-2 h-4 w-4" />
+            {formatDisplayValue()}
+          </Button>
+          <Button type="button" variant="ghost" className="shrink-0" onClick={clearAdultAndOpen}>
+            Change
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-2">
-      <Label htmlFor={id}>Date of Birth{required && " *"}</Label>
+      <Label htmlFor={id}>
+        {label ?? "Date of Birth"}
+        {required && !label?.includes("*") ? " *" : ""}
+      </Label>
       <Popover open={open} onOpenChange={handleOpenChange}>
         <PopoverTrigger asChild>
           <Button
             id={id}
             variant="outline"
-            className={cn("w-full justify-start text-left font-normal", !value && !isOver18 && "text-muted-foreground")}
+            className={cn("w-full justify-start text-left font-normal", !value && "text-muted-foreground")}
           >
             <Calendar className="mr-2 h-4 w-4" />
             {formatDisplayValue()}

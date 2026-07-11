@@ -270,29 +270,33 @@ export function FamilyEstimatePanel({ seed, ratesData, onReset }: Props) {
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => updateMemberAge(member.id, -1)}
-                        aria-label={`Decrease age for ${member.name}`}
-                      >
-                        <Minus className="h-4 w-4" />
-                      </Button>
-                      <span className="w-8 text-center text-sm font-medium tabular-nums">
-                        {member.age}
-                      </span>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => updateMemberAge(member.id, 1)}
-                        aria-label={`Increase age for ${member.name}`}
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
+                      {ageGroup !== "adult" && (
+                        <>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => updateMemberAge(member.id, -1)}
+                            aria-label={`Decrease age for ${member.name}`}
+                          >
+                            <Minus className="h-4 w-4" />
+                          </Button>
+                          <span className="w-8 text-center text-sm font-medium tabular-nums">
+                            {member.age}
+                          </span>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => updateMemberAge(member.id, 1)}
+                            aria-label={`Increase age for ${member.name}`}
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
                       {line && (
                         <Badge variant="secondary" className="tabular-nums">
                           ${formatMoney(line.total)}
