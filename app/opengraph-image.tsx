@@ -52,14 +52,11 @@ export default async function Image() {
           <div style={{ fontSize: 28, color: lakeMuted, lineHeight: 1.35, maxWidth: 900 }}>
             Lake Williamson Christian Center · Carlinville, IL
           </div>
-          <div style={{ fontSize: 26, fontWeight: 600, color: lake, lineHeight: 1.3, marginTop: 4 }}>
-            Christian Homeschool Family Retreat
-          </div>
           <div
             style={{
               display: "flex",
               alignItems: "center",
-              marginTop: 24,
+              marginTop: 28,
               padding: "16px 40px",
               backgroundColor: coral,
               color: "#ffffff",
@@ -69,7 +66,7 @@ export default async function Image() {
               letterSpacing: 0.2,
             }}
           >
-            Register starting Jan 1, 2027 →
+            Registration opens Jan 1, 2027 →
           </div>
           <div style={{ fontSize: 22, color: lakeMuted, lineHeight: 1.3, marginTop: 12 }}>
             rendezvousil.com
