@@ -129,19 +129,19 @@ export function CustomDateSelector({ value, onChange, isOver18, onOver18Change, 
           {label ?? "Date of Birth"}
           {required && !label?.includes("*") ? " *" : ""}
         </Label>
-        <div className="flex gap-2">
+        <div className="flex min-w-0 items-center gap-2">
           <Button
             id={id}
             type="button"
             variant="outline"
-            className="w-full justify-start text-left font-normal"
+            className="min-w-0 flex-1 justify-start overflow-hidden text-left font-normal"
             disabled
             aria-disabled="true"
           >
-            <Calendar className="mr-2 h-4 w-4" />
-            {formatDisplayValue()}
+            <Calendar className="mr-2 h-4 w-4 shrink-0" />
+            <span className="truncate">{formatDisplayValue()}</span>
           </Button>
-          <Button type="button" variant="ghost" className="shrink-0" onClick={clearAdultAndOpen}>
+          <Button type="button" variant="ghost" size="sm" className="shrink-0 px-2" onClick={clearAdultAndOpen}>
             Change
           </Button>
         </div>

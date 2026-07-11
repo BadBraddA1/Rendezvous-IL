@@ -702,7 +702,7 @@ export function CalculatorClient({ ratesData, initialEnabled }: CalculatorClient
                 const age = member.isOver18 ? null : ageOnEventDate(member.dateOfBirth, eventYear)
                 return (
                   <div key={member.id} className="flex items-start gap-3 rounded-lg border border-border/60 p-3">
-                    <div className="flex-1 space-y-3">
+                    <div className="min-w-0 flex-1 space-y-3">
                       <div>
                         <Label htmlFor={`calc-name-${member.id}`}>First name (optional)</Label>
                         <Input
