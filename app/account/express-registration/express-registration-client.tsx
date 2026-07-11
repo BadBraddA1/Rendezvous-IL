@@ -138,8 +138,14 @@ export function ExpressRegistrationClient({
   const stillRightBanner = (
     <Alert className="border-primary/25 bg-primary/5">
       <AlertDescription>
-        This is what you had for <strong>Rendezvous {sourceYear}</strong>. Is it still right for
-        2027? If anything changed, tap <strong>Make changes</strong>.
+        This is what you had for{" "}
+        <span className="whitespace-nowrap">
+          <strong>Rendezvous {sourceYear}</strong>.
+        </span>{" "}
+        Is it still right for 2027? If anything changed, tap{" "}
+        <span className="whitespace-nowrap">
+          <strong>Make changes</strong>.
+        </span>
       </AlertDescription>
     </Alert>
   )
