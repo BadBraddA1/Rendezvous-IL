@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { formatDateOfBirthDisplay } from "@/lib/date-of-birth"
 
 type Props = {
   value: string
@@ -107,8 +108,7 @@ export function CustomDateSelector({ value, onChange, isOver18, onOver18Change, 
   const formatDisplayValue = () => {
     if (isOver18) return "Adult (18+)"
     if (value) {
-      const [year, month, day] = value.split("-").map(Number)
-      return `${months[month - 1]} ${day}, ${year}`
+      return formatDateOfBirthDisplay(value) ?? "Select date of birth"
     }
     return "Select date of birth"
   }

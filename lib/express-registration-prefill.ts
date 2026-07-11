@@ -1,6 +1,7 @@
 import { sql, type SqlRow } from "@/lib/db"
 import { calculateLodgingCost, type LodgingRatesByCategory } from "@/lib/lodging-cost"
 import { fetchRatesByYear } from "@/lib/calculator-rates-db"
+import { normalizeDateOfBirth } from "@/lib/date-of-birth"
 import type { FamilyMember, HealthInfo, LodgingType, RegistrationData } from "@/types/registration"
 import { DEFAULT_ARRIVAL_DEPARTURE } from "@/lib/registration-arrival-departure"
 
@@ -113,7 +114,7 @@ export async function getExpressPrefill(familyEmail: string): Promise<ExpressPre
   const familyLastName = String(reg.family_last_name ?? "")
 
   const familyMembers: FamilyMember[] = memberRows.map((row, index) => {
-    const dob = typeof row.date_of_birth === "string" ? row.date_of_birth : ""
+    const dob = normalizeDateOfBirth(row.date_of_birth)
     const storedAge = row.age != null ? Number(row.age) : null
     const age = ageForExpressPrefill(dob, storedAge, sourceYear, yearGap)
     const lastName = String(row.last_name ?? "") || familyLastName
