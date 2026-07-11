@@ -16,6 +16,9 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
 
+/** Dispatched after family directory photo upload/remove so the header avatar refreshes. */
+export const FAMILY_PHOTO_UPDATED_EVENT = "rendezvous:family-photo-updated"
+
 export interface UserMenuLink {
   label: string
   href: string
@@ -54,6 +57,7 @@ export function UserMenuButton({
   const [isAdmin, setIsAdmin] = useState(false)
   const [adminChecked, setAdminChecked] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
+  const [familyPhotoUrl, setFamilyPhotoUrl] = useState<string | null>(null)
 
   useEffect(() => {
     setIsMounted(true)
@@ -85,6 +89,50 @@ export function UserMenuButton({
     }
   }, [isMounted, isLoaded, user])
 
+  useEffect(() => {
+    if (!isMounted || !isLoaded || !user) {
+      setFamilyPhotoUrl(null)
+      return
+    }
+
+    let cancelled = false
+
+    async function loadFamilyPhoto() {
+      try {
+        const response = await fetch("/api/family/directory", { cache: "no-store" })
+        if (!response.ok) {
+          if (!cancelled) setFamilyPhotoUrl(null)
+          return
+        }
+        const data = await response.json()
+        const url =
+          typeof data.settings?.photo_url === "string" && data.settings.photo_url.trim()
+            ? data.settings.photo_url.trim()
+            : null
+        if (!cancelled) setFamilyPhotoUrl(url)
+      } catch {
+        if (!cancelled) setFamilyPhotoUrl(null)
+      }
+    }
+
+    loadFamilyPhoto()
+
+    const onPhotoUpdated = (event: Event) => {
+      const detail = (event as CustomEvent<{ photoUrl?: string | null }>).detail
+      if (detail && "photoUrl" in detail) {
+        setFamilyPhotoUrl(detail.photoUrl?.trim() || null)
+        return
+      }
+      loadFamilyPhoto()
+    }
+
+    window.addEventListener(FAMILY_PHOTO_UPDATED_EVENT, onPhotoUpdated)
+    return () => {
+      cancelled = true
+      window.removeEventListener(FAMILY_PHOTO_UPDATED_EVENT, onPhotoUpdated)
+    }
+  }, [isMounted, isLoaded, user])
+
   const avatarSize = size === "sm" ? "h-9 w-9" : "h-10 w-10"
   const menuLinks = links ?? defaultLinks
   const displayName =
@@ -92,6 +140,7 @@ export function UserMenuButton({
     user?.primaryEmailAddress?.emailAddress ||
     "Account"
   const email = user?.primaryEmailAddress?.emailAddress
+  const avatarSrc = familyPhotoUrl || user?.imageUrl
 
   if (!isMounted || !isLoaded || !adminChecked) {
     return (
@@ -112,7 +161,7 @@ export function UserMenuButton({
           aria-label="Open account menu"
         >
           <Avatar className={avatarSize}>
-            <AvatarImage src={user.imageUrl} alt={displayName} />
+            <AvatarImage src={avatarSrc} alt={displayName} className="object-cover" />
             <AvatarFallback className="bg-primary/10 text-sm font-medium text-primary">
               {userInitials(user.firstName, user.lastName, email)}
             </AvatarFallback>

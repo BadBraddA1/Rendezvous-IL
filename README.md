@@ -55,6 +55,7 @@ pnpm db:verify
 ## Family accounts (`/account/profile`)
 
 - Clerk users are linked to a `families` row by `clerk_user_id` or matching registration email (auto-linked on first visit).
+- The site header account avatar (`UserMenuButton`) prefers the **family directory photo** when one is uploaded (`GET /api/family/directory`); otherwise it falls back to the Clerk profile image. Uploading or removing a photo on this page refreshes the header avatar immediately.
 - Profile edits do **not** write directly to Turso — they queue rows in `pending_family_changes` for admin approval at `/admin/pending-changes`.
 - Member type / age group: adults and teens skip the age-group picker; children with a registration birthday get age group auto-calculated (`lib/member-age.ts`).
 - Admin roles: `admin`, `editor`, `viewer`, and **`checkin`** (check-in station only — web + iOS). Permissions live in `lib/clerk-auth.ts` (`getAdminPermissions`).

@@ -10,6 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { Camera, Loader2, Trash2, Users } from "lucide-react"
 import Link from "next/link"
+import { FAMILY_PHOTO_UPDATED_EVENT } from "@/components/user-menu-button"
 
 export type FamilyDirectoryPhotoState = {
   photo_url: string | null
@@ -72,6 +73,11 @@ export function FamilyDirectoryPhotoCard({ settings, onChange, eventYear = 2027 
       onChange(data.settings)
       setOptIn(Boolean(data.settings.directory_opt_in))
       setBlurb(data.settings.directory_blurb || "")
+      window.dispatchEvent(
+        new CustomEvent(FAMILY_PHOTO_UPDATED_EVENT, {
+          detail: { photoUrl: data.settings.photo_url ?? null },
+        }),
+      )
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : "Upload failed")
     } finally {
@@ -90,6 +96,11 @@ export function FamilyDirectoryPhotoCard({ settings, onChange, eventYear = 2027 
       }
       onChange(data.settings)
       setBlurb(data.settings.directory_blurb || "")
+      window.dispatchEvent(
+        new CustomEvent(FAMILY_PHOTO_UPDATED_EVENT, {
+          detail: { photoUrl: data.settings.photo_url ?? null },
+        }),
+      )
     } catch (removeError) {
       setError(removeError instanceof Error ? removeError.message : "Could not remove photo")
     } finally {
