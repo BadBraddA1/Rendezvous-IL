@@ -175,7 +175,7 @@ export function ExpressRegistrationClient({
                 )}
               </p>
               <p className="text-sm text-muted-foreground">
-                {member.age >= 18 ? `Adult (${member.age})` : `Age ${member.age} at the event`}
+                {member.age >= 18 || member.isOver18 ? "Adult" : `Age ${member.age} at the event`}
                 {member.isBaptized && " • Baptized"}
               </p>
               {(member.email || member.phone) && (

@@ -4,7 +4,6 @@ import type { FamilyMember, HealthInfo, LodgingType, RegistrationData } from "@/
 import { DEFAULT_ARRIVAL_DEPARTURE } from "@/lib/registration-arrival-departure"
 
 export const EXPRESS_TARGET_YEAR = 2027
-const EVENT_DATE = new Date(`${EXPRESS_TARGET_YEAR}-05-03T12:00:00`)
 
 export type ExpressPrefill = {
   sourceYear: number
@@ -22,22 +21,48 @@ function normalizeLodging(raw: unknown): LodgingType {
   return "motel-2queen-bunk"
 }
 
-function ageOnEventDate(dateOfBirth: string): number | null {
+function ageOnEventDate(dateOfBirth: string, eventYear = EXPRESS_TARGET_YEAR): number | null {
   const birth = new Date(dateOfBirth)
   if (Number.isNaN(birth.getTime())) return null
-  let age = EVENT_DATE.getFullYear() - birth.getFullYear()
-  const monthDiff = EVENT_DATE.getMonth() - birth.getMonth()
-  if (monthDiff < 0 || (monthDiff === 0 && EVENT_DATE.getDate() < birth.getDate())) {
+  const eventDate = new Date(`${eventYear}-05-03T12:00:00`)
+  let age = eventDate.getFullYear() - birth.getFullYear()
+  const monthDiff = eventDate.getMonth() - birth.getMonth()
+  if (monthDiff < 0 || (monthDiff === 0 && eventDate.getDate() < birth.getDate())) {
     age--
   }
   return Math.max(0, age)
 }
 
 /**
+ * Age for express prefill: youth/children age forward to the target year;
+ * anyone already 18+ last year stays an adult (no year bump).
+ */
+function ageForExpressPrefill(
+  dateOfBirth: string,
+  storedAge: number | null,
+  sourceYear: number,
+  yearGap: number,
+): number {
+  const priorAge = dateOfBirth
+    ? ageOnEventDate(dateOfBirth, sourceYear)
+    : storedAge
+  if (priorAge != null && priorAge >= 18) {
+    return priorAge
+  }
+  if (dateOfBirth) {
+    return ageOnEventDate(dateOfBirth) ?? 0
+  }
+  if (storedAge != null) {
+    return Math.max(0, storedAge + yearGap)
+  }
+  return 0
+}
+
+/**
  * Load the family's most recent prior registration and map it into the
  * registration form's data shape, with ages recomputed for the target event
- * year. This powers the express "review & confirm" flow for returning
- * families.
+ * year (youth/children only — adults stay Adult). This powers the express
+ * "review & confirm" flow for returning families.
  */
 export async function getExpressPrefill(familyEmail: string): Promise<ExpressPrefill | null> {
   // Prefer the newest registration from a previous year; fall back to the
@@ -89,7 +114,7 @@ export async function getExpressPrefill(familyEmail: string): Promise<ExpressPre
   const familyMembers: FamilyMember[] = memberRows.map((row, index) => {
     const dob = typeof row.date_of_birth === "string" ? row.date_of_birth : ""
     const storedAge = row.age != null ? Number(row.age) : null
-    const age = (dob ? ageOnEventDate(dob) : null) ?? (storedAge != null ? storedAge + yearGap : 0)
+    const age = ageForExpressPrefill(dob, storedAge, sourceYear, yearGap)
     const lastName = String(row.last_name ?? "") || familyLastName
     const parentRole =
       row.parent_role === "father" || row.parent_role === "mother" ? row.parent_role : null
