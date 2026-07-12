@@ -5,4 +5,5 @@ export const siteDescription =
 export const siteTitle = "Rendezvous 2027 · May 3–7 at Lake Williamson"
 
 export const ogImageAlt =
-  "Rendezvous 2027 — May 3–7 at Lake Williamson Christian Center. Registration opens January 1, 2027."
+  "Rendezvous 2026 group photo with 2027 dates — May 3–7 at Lake Williamson. Registration opens January 1, 2027."
+

@@ -7,13 +7,16 @@ export const alt = ogImageAlt
 export const size = { width: 1200, height: 630 }
 export const contentType = "image/png"
 
-const lake = "#1a5c56"
-const lakeMuted = "#5a7875"
 const coral = "#b85c38"
 
 export default async function Image() {
   const logoData = await readFile(join(process.cwd(), "public/rendezvous-logo.png"))
   const logoSrc = `data:image/png;base64,${logoData.toString("base64")}`
+
+  const groupData = await readFile(
+    join(process.cwd(), "public/images/rendezvous-group-2026-og.jpg"),
+  )
+  const groupSrc = `data:image/jpeg;base64,${groupData.toString("base64")}`
 
   return new ImageResponse(
     (
@@ -22,53 +25,75 @@ export default async function Image() {
           width: "100%",
           height: "100%",
           display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          backgroundColor: "#ffffff",
-          padding: "40px 64px",
+          position: "relative",
+          backgroundColor: "#0f2f2c",
         }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={logoSrc}
+          src={groupSrc}
           alt=""
-          width={400}
-          height={132}
-          style={{ objectFit: "contain", marginBottom: 28 }}
+          width={1200}
+          height={630}
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+          }}
         />
         <div
           style={{
+            position: "absolute",
+            inset: 0,
+            background:
+              "linear-gradient(to top, rgba(10, 35, 32, 0.92) 0%, rgba(10, 35, 32, 0.55) 45%, rgba(10, 35, 32, 0.35) 100%)",
+          }}
+        />
+        <div
+          style={{
+            position: "relative",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            gap: 10,
+            justifyContent: "flex-end",
+            width: "100%",
+            height: "100%",
+            padding: "48px 56px 44px",
             textAlign: "center",
           }}
         >
-          <div style={{ fontSize: 60, fontWeight: 700, color: lake, lineHeight: 1.05 }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={logoSrc}
+            alt=""
+            width={280}
+            height={92}
+            style={{ objectFit: "contain", marginBottom: 18 }}
+          />
+          <div style={{ fontSize: 52, fontWeight: 700, color: "#ffffff", lineHeight: 1.05 }}>
             May 3–7, 2027
           </div>
-          <div style={{ fontSize: 28, color: lakeMuted, lineHeight: 1.35, maxWidth: 900 }}>
+          <div style={{ fontSize: 24, color: "rgba(255,255,255,0.88)", lineHeight: 1.35, marginTop: 8 }}>
             Lake Williamson Christian Center · Carlinville, IL
           </div>
           <div
             style={{
               display: "flex",
               alignItems: "center",
-              marginTop: 28,
-              padding: "16px 40px",
+              marginTop: 22,
+              padding: "14px 34px",
               backgroundColor: coral,
               color: "#ffffff",
-              fontSize: 28,
+              fontSize: 24,
               fontWeight: 700,
               borderRadius: 999,
-              letterSpacing: 0.2,
             }}
           >
             Registration opens Jan 1, 2027 →
           </div>
-          <div style={{ fontSize: 22, color: lakeMuted, lineHeight: 1.3, marginTop: 12 }}>
+          <div style={{ fontSize: 18, color: "rgba(255,255,255,0.7)", marginTop: 12 }}>
             rendezvousil.com
           </div>
         </div>

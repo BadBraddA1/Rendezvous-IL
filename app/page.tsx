@@ -19,6 +19,9 @@ import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { HeroSection } from "@/components/hero-section"
 import { RegistrationCountdown2027 } from "@/components/registration-countdown-2027"
+import { latestCompletedAttendance } from "@/lib/attendance-history"
+
+const lastGathering = latestCompletedAttendance()
 
 const MuxVideoPlayer = dynamic(
   () => import("@/components/mux-video-player").then((mod) => mod.MuxVideoPlayer),
@@ -101,6 +104,30 @@ export default function HomePage() {
         <HeroSection />
 
         <RegistrationCountdown2027 />
+
+        <section className="section-sm border-b border-border/50">
+          <div className="site-container">
+            <figure className="mx-auto max-w-5xl overflow-hidden rounded-xl border border-primary/15 bg-card shadow-sm">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/images/rendezvous-group-2026.jpg"
+                alt="Rendezvous 2026 group photo at Lake Williamson Christian Center"
+                className="h-auto w-full"
+              />
+              <figcaption className="border-t border-border/60 px-4 py-3 text-center text-sm text-muted-foreground">
+                <Link
+                  href="/about"
+                  className="font-medium text-foreground underline-offset-4 transition-colors hover:text-primary hover:underline"
+                >
+                  Rendezvous {lastGathering?.year ?? 2026}
+                  {lastGathering ? <> · {lastGathering.attendees} people</> : null}
+                  {" — "}
+                  see you May 3–7, 2027
+                </Link>
+              </figcaption>
+            </figure>
+          </div>
+        </section>
 
         <section className="section-lg">
           <div className="site-container">

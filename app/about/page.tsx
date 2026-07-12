@@ -12,22 +12,9 @@ import {
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { Button } from "@/components/ui/button"
+import { attendanceHistory, latestCompletedAttendance } from "@/lib/attendance-history"
 
-const attendanceHistory = [
-  { year: 2015, attendees: 50, theme: "Matthew" },
-  { year: 2016, attendees: 52, theme: "John" },
-  { year: 2017, attendees: 63, theme: "Acts" },
-  { year: 2018, attendees: 92, theme: "Genesis" },
-  { year: 2019, attendees: 73, theme: "Exodus" },
-  { year: 2020, attendees: 82, theme: "Lev, Num, & Deut" },
-  { year: 2021, attendees: 129, theme: "Romans" },
-  { year: 2022, attendees: 138, theme: "1 Corinthians" },
-  { year: 2023, attendees: 174, theme: "2 Corinthians" },
-  { year: 2024, attendees: 124, theme: "Joshua" },
-  { year: 2025, attendees: 118, theme: "Judges" },
-  { year: 2026, attendees: 136, theme: "Galatians & Ephesians" },
-  { year: 2027, attendees: "?", theme: "1 Samuel" },
-] as const
+const lastGathering = latestCompletedAttendance()
 
 const facilityHighlights = [
   {
@@ -214,6 +201,19 @@ export default function AboutPage() {
 
         <section className="section-sm border-t border-border/50 bg-card/40">
           <div className="site-container max-w-4xl">
+            <figure className="mb-10 overflow-hidden rounded-xl border border-primary/15 bg-card shadow-sm">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/images/rendezvous-group-2026.jpg"
+                alt="Rendezvous 2026 group photo at Lake Williamson Christian Center"
+                className="h-auto w-full"
+              />
+              <figcaption className="border-t border-border/60 px-4 py-3 text-center text-sm text-muted-foreground">
+                Last year&apos;s gathering — Rendezvous {lastGathering?.year ?? 2026}
+                {lastGathering ? <> · {lastGathering.attendees} people</> : null}
+              </figcaption>
+            </figure>
+
             <div className="mb-6 flex items-center gap-3 md:mb-8">
               <div className="flex h-11 w-11 items-center justify-center rounded-full bg-secondary text-secondary-foreground md:h-12 md:w-12">
                 <Calendar className="h-5 w-5 md:h-6 md:w-6" aria-hidden="true" />
