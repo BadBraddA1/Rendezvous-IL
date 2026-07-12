@@ -8,7 +8,8 @@ Native SwiftUI **attendee community hub** for [rendezvousil.com](https://rendezv
 |------|---------|
 | **Sign-in gate** | Welcome screen → Clerk sheet → full app (Pew Packers pattern) |
 | **Account** | Profile card, web dashboard / registration / password links, directory + notification shortcuts |
-| **Home** | Greeting, now/next during retreat week, shortcuts to schedule / chat / directory / more |
+| **Home** | Greeting, now/next during retreat week, shortcuts to schedule / map / chat / directory |
+| **Map** | Hybrid: MapKit directions to Lake Williamson + on-campus image map (same pins as the website). Uses When-In-Use location to auto-switch when you arrive. Schedule locations open the matching pin. Blue-dot overlay is reserved for a later update. |
 | **Chat** | Year cohort channels (Ably realtime when available; messages still load if Ably fails), retry + pull-to-refresh |
 | **Schedule** (center tab) | Day schedule + live updates (now/next, weather, announcements), meals, worship leaders, event reminders |
 | **Directory** | Family cards (tap for full details); disk cache then background refresh; search, year picker; **Your photo** toolbar |

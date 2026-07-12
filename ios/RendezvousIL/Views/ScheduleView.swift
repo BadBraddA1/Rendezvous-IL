@@ -384,9 +384,19 @@ private struct EventCard: View {
             .font(.body.weight(.medium))
 
         if let location = event.location {
-            Label(location, systemImage: "mappin.and.ellipse")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+            Button {
+                if let pin = VenueMapStore.pin(matchingLocationText: location) {
+                    DeepLinkRouter.open(URL(string: "rendezvousil://map?pin=\(pin.id)")!)
+                } else {
+                    DeepLinkRouter.open(URL(string: "rendezvousil://map")!)
+                }
+            } label: {
+                Label(location, systemImage: "mappin.and.ellipse")
+                    .font(.subheadline)
+                    .foregroundStyle(BrandColors.lake)
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint("Opens campus map")
         }
 
         if let note = event.note {

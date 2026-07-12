@@ -8,6 +8,7 @@ enum MoreDeepLink: String, Hashable, Identifiable {
     case bibleBowl
     case faq
     case about
+    case map
 
     var id: String { rawValue }
 }
@@ -15,6 +16,7 @@ enum MoreDeepLink: String, Hashable, Identifiable {
 struct DeepLinkDestination: Equatable {
     let tab: AppTab
     let more: MoreDeepLink?
+    let mapPinId: String?
 }
 
 enum DeepLinkRouter {
@@ -39,14 +41,19 @@ enum DeepLinkRouter {
     }
 
     static func destination(for url: URL) -> DeepLinkDestination? {
+        let pinId = URLComponents(url: url, resolvingAgainstBaseURL: false)?
+            .queryItems?
+            .first(where: { $0.name == "pin" })?
+            .value
+
         if url.scheme?.lowercased() == "rendezvousil" {
             let path = customSchemePath(for: url)
-            return destination(forPath: path)
+            return destination(forPath: path, mapPinId: pinId)
         }
 
         if let host = url.host?.lowercased(),
            host == "rendezvousil.com" || host.hasSuffix(".rendezvousil.com") {
-            return destination(forPath: url.path)
+            return destination(forPath: url.path, mapPinId: pinId)
         }
 
         return nil
@@ -61,32 +68,35 @@ enum DeepLinkRouter {
         return "/" + parts.joined(separator: "/")
     }
 
-    private static func destination(forPath path: String) -> DeepLinkDestination? {
+    private static func destination(forPath path: String, mapPinId: String? = nil) -> DeepLinkDestination? {
         let normalized = path.lowercased()
-        if normalized.isEmpty || normalized == "/" { return DeepLinkDestination(tab: .home, more: nil) }
-        if normalized.hasPrefix("/schedule") { return DeepLinkDestination(tab: .schedule, more: nil) }
+        if normalized.isEmpty || normalized == "/" { return DeepLinkDestination(tab: .home, more: nil, mapPinId: nil) }
+        if normalized.hasPrefix("/schedule") { return DeepLinkDestination(tab: .schedule, more: nil, mapPinId: nil) }
         if normalized.hasPrefix("/live-updates") || normalized.hasPrefix("/updates") {
-            return DeepLinkDestination(tab: .schedule, more: nil)
+            return DeepLinkDestination(tab: .schedule, more: nil, mapPinId: nil)
         }
-        if normalized.hasPrefix("/chat") { return DeepLinkDestination(tab: .chat, more: nil) }
+        if normalized.hasPrefix("/chat") { return DeepLinkDestination(tab: .chat, more: nil, mapPinId: nil) }
         if normalized.hasPrefix("/directory") {
-            return DeepLinkDestination(tab: .directory, more: nil)
+            return DeepLinkDestination(tab: .directory, more: nil, mapPinId: nil)
+        }
+        if normalized.hasPrefix("/map") {
+            return DeepLinkDestination(tab: .more, more: .map, mapPinId: mapPinId)
         }
         if normalized.hasPrefix("/account") {
-            return DeepLinkDestination(tab: .more, more: .account)
+            return DeepLinkDestination(tab: .more, more: .account, mapPinId: nil)
         }
         if normalized.hasPrefix("/notifications") {
-            return DeepLinkDestination(tab: .more, more: .notifications)
+            return DeepLinkDestination(tab: .more, more: .notifications, mapPinId: nil)
         }
         if normalized.hasPrefix("/bible-bowl") || normalized.hasPrefix("/biblebowl") {
-            return DeepLinkDestination(tab: .more, more: .bibleBowl)
+            return DeepLinkDestination(tab: .more, more: .bibleBowl, mapPinId: nil)
         }
-        if normalized.hasPrefix("/faq") { return DeepLinkDestination(tab: .more, more: .faq) }
-        if normalized.hasPrefix("/about") { return DeepLinkDestination(tab: .more, more: .about) }
+        if normalized.hasPrefix("/faq") { return DeepLinkDestination(tab: .more, more: .faq, mapPinId: nil) }
+        if normalized.hasPrefix("/about") { return DeepLinkDestination(tab: .more, more: .about, mapPinId: nil) }
         if normalized.hasPrefix("/registration") || normalized.hasPrefix("/check-in") {
-            return DeepLinkDestination(tab: .home, more: nil)
+            return DeepLinkDestination(tab: .home, more: nil, mapPinId: nil)
         }
-        if normalized.hasPrefix("/more") { return DeepLinkDestination(tab: .more, more: nil) }
+        if normalized.hasPrefix("/more") { return DeepLinkDestination(tab: .more, more: nil, mapPinId: nil) }
         return nil
     }
 
@@ -94,6 +104,9 @@ enum DeepLinkRouter {
         var userInfo: [String: Any] = ["tab": destination.tab]
         if let more = destination.more {
             userInfo["more"] = more.rawValue
+        }
+        if let mapPinId = destination.mapPinId {
+            userInfo["mapPinId"] = mapPinId
         }
         NotificationCenter.default.post(
             name: .rendezvousDeepLink,

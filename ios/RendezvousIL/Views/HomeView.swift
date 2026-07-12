@@ -81,14 +81,14 @@ struct HomeView: View {
                 HubTile(title: "Schedule", icon: "calendar", color: BrandColors.lake) {
                     selectedTab = .schedule
                 }
-                HubTile(title: "Chat", icon: "bubble.left.and.bubble.right.fill", color: BrandColors.lake) {
+                HubTile(title: "Map", icon: "map.fill", color: BrandColors.lake) {
+                    DeepLinkRouter.open(URL(string: "rendezvousil://map")!)
+                }
+                HubTile(title: "Chat", icon: "bubble.left.and.bubble.right.fill", color: BrandColors.coral) {
                     selectedTab = .chat
                 }
                 HubTile(title: "Directory", icon: "person.3.fill", color: BrandColors.coral) {
                     selectedTab = .directory
-                }
-                HubTile(title: "More", icon: "ellipsis.circle.fill", color: BrandColors.coral) {
-                    selectedTab = .more
                 }
             }
         }

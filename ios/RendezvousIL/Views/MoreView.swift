@@ -3,6 +3,7 @@ import SwiftUI
 struct MoreView: View {
     @Environment(AppSession.self) private var session
     @State private var presentedMoreLink: MoreDeepLink?
+    @State private var mapPinId: String?
 
     var body: some View {
         NavigationStack {
@@ -21,6 +22,9 @@ struct MoreView: View {
                 }
 
                 Section("Retreat resources") {
+                    NavigationLink { VenueMapView() } label: {
+                        Label("Campus map", systemImage: "map.fill")
+                    }
                     NavigationLink { BibleBowlView() } label: {
                         Label("Bible Bowl (\(AppConfig.theme))", systemImage: "book.closed")
                     }
@@ -87,6 +91,7 @@ struct MoreView: View {
                 guard let raw = note.userInfo?["more"] as? String,
                       let link = MoreDeepLink(rawValue: raw)
                 else { return }
+                mapPinId = note.userInfo?["mapPinId"] as? String
                 presentedMoreLink = link
             }
         }
@@ -109,6 +114,8 @@ struct MoreView: View {
             FAQView()
         case .about:
             AboutView()
+        case .map:
+            VenueMapView(initialPinId: mapPinId, preferCampus: mapPinId != nil)
         }
     }
 

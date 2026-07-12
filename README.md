@@ -131,9 +131,9 @@ rendezvous-il/
 
 Native **SwiftUI** attendee hub in `ios/` (not a WebView shell). **Sign-in required** for almost everything — welcome screen, then Clerk, then tabs:
 
-- **Home** — greeting, retreat shortcuts (schedule, updates, chat, directory)
-- **Schedule** — week view, meals, worship leaders, event reminders
-- **Updates** — now/next, weather, announcements
+- **Home** — greeting, retreat shortcuts (schedule, map, chat, directory)
+- **Schedule** — week view, meals, worship leaders, event reminders (tap location → campus map)
+- **Map** — MapKit directions to campus + image venue map on site (geofence switch); More → Campus map
 - **Chat** — year group chat (Ably)
 - **More** — directory, account, Bible Bowl, FAQ, notifications, admin/check-in for staff
 - **CarPlay** — today’s schedule + directions to Lake Williamson ([setup](ios/docs/carplay/SETUP.md); entitlement approved — enable on App ID before device/TestFlight)

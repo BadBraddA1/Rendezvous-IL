@@ -1,0 +1,133 @@
+{
+  "imageAspectWidthOverHeight": 1.3407821229050278,
+  "venue": {
+    "name": "Lake Williamson Christian Center",
+    "address": "17080 IL Route 4, Carlinville, IL 62626",
+    "latitude": 39.3142,
+    "longitude": -89.8818,
+    "campusRadiusMeters": 1200
+  },
+  "locations": [
+    {
+      "id": "activities-center",
+      "name": "Activities Center",
+      "description": "Check-In, Room 207, Room 205/206, Main Gym, Indoor Pool, Ping Pong Room, 9 Square",
+      "x": 70.8,
+      "y": 23,
+      "category": "meeting",
+      "color": "red",
+      "latitude": null,
+      "longitude": null
+    },
+    {
+      "id": "lakeside-dining",
+      "name": "Lakeside Dining Room",
+      "description": "All meals - Breakfast, Lunch, Dinner",
+      "x": 66,
+      "y": 63,
+      "category": "dining",
+      "color": "orange",
+      "latitude": null,
+      "longitude": null
+    },
+    {
+      "id": "bonfire-site",
+      "name": "Pavilions & Bonfire Site",
+      "description": "Thursday evening assembly location",
+      "x": 16.9,
+      "y": 19.6,
+      "category": "recreation",
+      "color": "purple",
+      "latitude": null,
+      "longitude": null
+    },
+    {
+      "id": "archery",
+      "name": "Archery",
+      "description": "Tuesday afternoon activity",
+      "x": 73.7,
+      "y": 5.1,
+      "category": "recreation",
+      "color": "purple",
+      "latitude": null,
+      "longitude": null
+    },
+    {
+      "id": "human-foosball",
+      "name": "Human Foosball",
+      "description": "Tuesday afternoon activity",
+      "x": 37.8,
+      "y": 23,
+      "category": "recreation",
+      "color": "purple",
+      "latitude": null,
+      "longitude": null
+    },
+    {
+      "id": "disc-golf",
+      "name": "Disc Golf",
+      "description": "Wednesday afternoon - begins behind Activity Center",
+      "x": 82.5,
+      "y": 15.1,
+      "category": "recreation",
+      "color": "purple",
+      "latitude": null,
+      "longitude": null
+    },
+    {
+      "id": "rec-field-kickball",
+      "name": "Recreation Field",
+      "description": "Kickball, Capture the Flag, and rope games",
+      "x": 75.8,
+      "y": 10.5,
+      "category": "recreation",
+      "color": "purple",
+      "latitude": null,
+      "longitude": null
+    },
+    {
+      "id": "location-1776272179875",
+      "name": "Motel",
+      "description": "Ice Machine",
+      "x": 63.3,
+      "y": 28.5,
+      "category": "lodging",
+      "color": "blue",
+      "latitude": null,
+      "longitude": null
+    },
+    {
+      "id": "location-1776272356027",
+      "name": "RV & Tent Sites",
+      "description": "RV & Tent Sites",
+      "x": 58.2,
+      "y": 3.1,
+      "category": "lodging",
+      "color": "blue",
+      "latitude": null,
+      "longitude": null
+    },
+    {
+      "id": "location-1776272406151",
+      "name": "Ice Machine",
+      "description": "",
+      "x": 56.3,
+      "y": 28.7,
+      "category": "lodging",
+      "color": "blue",
+      "latitude": null,
+      "longitude": null
+    },
+    {
+      "id": "location-1776347433668",
+      "name": "Kickball",
+      "description": "Kickball Damond",
+      "x": 53.3,
+      "y": 19.9,
+      "category": "activities",
+      "color": "purple",
+      "latitude": null,
+      "longitude": null
+    }
+  ]
+}

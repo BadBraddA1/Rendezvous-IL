@@ -8,11 +8,11 @@ Run on a physical device after each TestFlight build.
 3. Sign out → welcome screen
 
 ## Tabs
-4. **Home** — greeting, shortcuts load
-5. **Schedule** — day picker, events, bell reminder sheet opens
+4. **Home** — greeting, shortcuts load; **Map** tile opens campus map
+5. **Schedule** — day picker, events, bell reminder sheet opens; tap a location → map pin
 6. **Updates** — announcements / weather or empty state
 7. **Chat** — channel list or empty state (no crash)
-8. **More** — profile header, links
+8. **More** — profile header, links; **Campus map** → Get there / Campus map modes
 
 ## Community
 9. More → **Family directory** — loads or friendly error

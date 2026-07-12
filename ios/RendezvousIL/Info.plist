@@ -35,6 +35,8 @@
 	<string>public.app-category.lifestyle</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Camera access is used by check-in staff to scan family QR codes.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Your location is used to switch to the Lake Williamson campus map when you arrive, and for directions to the retreat.</string>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
 	<key>UIBackgroundModes</key>
