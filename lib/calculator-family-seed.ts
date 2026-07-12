@@ -15,6 +15,33 @@ import {
   type RegistrationMemberRow,
 } from "@/lib/registration-to-calculator"
 
+export type CalculatorFamilyComparison = {
+  priorYearPaid: number
+  /** Same plan re-priced on the prior year's rate chart; null if unavailable / $0. */
+  priorYearCalculated: number | null
+  priorYearLodgingOnly: number
+}
+
+export type PriorYearReferenceKind = "same_plan" | "lodging" | "paid"
+
+/**
+ * Pick the best prior-year baseline for YoY compare.
+ * Never treat a $0 "same plan" reprice as real — that happens when the prior
+ * rate chart exists but calculator rate names/amounts don't resolve.
+ */
+export function resolvePriorYearReference(comparison: CalculatorFamilyComparison): {
+  amount: number
+  kind: PriorYearReferenceKind
+} {
+  if (comparison.priorYearCalculated != null && comparison.priorYearCalculated > 0) {
+    return { amount: comparison.priorYearCalculated, kind: "same_plan" }
+  }
+  if (comparison.priorYearLodgingOnly > 0) {
+    return { amount: comparison.priorYearLodgingOnly, kind: "lodging" }
+  }
+  return { amount: comparison.priorYearPaid, kind: "paid" }
+}
+
 export type CalculatorFamilySeed = {
   sourceYear: number
   sourceRegistrationId: number
@@ -24,11 +51,7 @@ export type CalculatorFamilySeed = {
   lodgingType: ReturnType<typeof normalizeRegistrationLodgingType>
   numNights: number
   sameScheduleForAll: boolean
-  comparison: {
-    priorYearPaid: number
-    priorYearCalculated: number | null
-    priorYearLodgingOnly: number
-  }
+  comparison: CalculatorFamilyComparison
 }
 
 export async function getRatesGroupedByYear(year: number): Promise<Record<string, RateRow[]> | null> {
@@ -261,13 +284,16 @@ export async function buildCalculatorFamilySeed(input: {
   const priorRates = await getRatesGroupedByYear(sourceYear)
   let priorYearCalculated: number | null = null
   if (priorRates) {
-    priorYearCalculated = computeAdminCalculatorCost({
+    const recomputed = computeAdminCalculatorCost({
       members,
       attendance,
       lodgingType,
       numNights,
       rates: priorRates,
     }).total
+    // A present chart that prices everything at $0 is not usable for comparison
+    // (seen with the 2026 chart vs calculator rate name lookups).
+    priorYearCalculated = recomputed > 0 ? recomputed : null
   }
 
   return {

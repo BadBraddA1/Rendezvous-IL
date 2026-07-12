@@ -34,7 +34,10 @@ import {
 import { formatMoney, formatSiteFeeLine, formatUnitLine } from "@/lib/rate-display"
 import { CalculatorSchedulePicker } from "@/components/admin/calculator-schedule-picker"
 import { CalculatorSiteNights } from "@/components/admin/calculator-site-nights"
-import type { CalculatorFamilySeed } from "@/lib/calculator-family-seed"
+import {
+  resolvePriorYearReference,
+  type CalculatorFamilySeed,
+} from "@/lib/calculator-family-seed"
 
 type Rate = {
   id: number
@@ -145,9 +148,14 @@ export function FamilyEstimatePanel({ seed, ratesData, onReset }: Props) {
     }
   }, [members, attendance, lodgingType, numNights, ratesData.year])
 
-  const priorReference =
-    seed.comparison.priorYearCalculated ?? seed.comparison.priorYearPaid
-  const difference = (calculation?.total ?? 0) - priorReference
+  const priorReference = resolvePriorYearReference(seed.comparison)
+  const difference = (calculation?.total ?? 0) - priorReference.amount
+  const priorLabel =
+    priorReference.kind === "same_plan"
+      ? `${seed.sourceYear} (same plan)`
+      : priorReference.kind === "lodging"
+        ? `${seed.sourceYear} (lodging)`
+        : `${seed.sourceYear} (paid)`
 
   const updateMemberAge = (id: string, delta: number) => {
     setMembers((prev) =>
@@ -391,13 +399,9 @@ export function FamilyEstimatePanel({ seed, ratesData, onReset }: Props) {
               <p className="mb-2 font-medium">Compared to {seed.sourceYear}</p>
               <dl className="space-y-1 text-muted-foreground">
                 <div className="flex justify-between gap-4">
-                  <dt>
-                    {seed.comparison.priorYearCalculated != null
-                      ? `${seed.sourceYear} (same plan)`
-                      : `${seed.sourceYear} (paid)`}
-                  </dt>
+                  <dt>{priorLabel}</dt>
                   <dd className="tabular-nums text-foreground">
-                    ${formatMoney(priorReference)}
+                    ${formatMoney(priorReference.amount)}
                   </dd>
                 </div>
                 <div className="flex justify-between gap-4 font-medium text-foreground">
@@ -423,7 +427,8 @@ export function FamilyEstimatePanel({ seed, ratesData, onReset }: Props) {
                   </dd>
                 </div>
               </dl>
-              {seed.comparison.priorYearPaid !== priorReference && (
+              {seed.comparison.priorYearPaid > 0 &&
+                seed.comparison.priorYearPaid !== priorReference.amount && (
                 <p className="mt-2 text-xs text-muted-foreground">
                   Your {seed.sourceYear} registration total was $
                   {formatMoney(seed.comparison.priorYearPaid)} including shirts, fees, and extras.
