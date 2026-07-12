@@ -1,51 +1,56 @@
 # CarPlay setup (Rendezvous IL)
 
-CarPlay is a **managed Apple entitlement**. Device/TestFlight CarPlay only works after Apple grants `com.apple.developer.carplay-driving-task` to team **F5HPRRCC5H** for App ID `com.rendezvousil.braddcorp.app`.
+**Status (Jul 2026):** Apple approved the **CarPlay Driving Task** entitlement for team **F5HPRRCC5H** / App ID `com.rendezvousil.braddcorp.app`.
 
-## 1. Submit the entitlement request (required)
+The app already includes the entitlement key, CarPlay scene, and schedule + Maps UI. Finish the portal/profile steps below, then ship a new build to TestFlight.
 
-1. Open [Apple CarPlay contact](https://developer.apple.com/contact/carplay/) (or [developer.apple.com/carplay](https://developer.apple.com/carplay)).
-2. Agree to the **CarPlay Entitlement Addendum**.
-3. Request category: **CarPlay driving task app**
-4. App: **Rendezvous IL** — bundle ID `com.rendezvousil.braddcorp.app`
-5. Description to paste:
+## 1. Enable on the App ID (do this once)
 
-> Rendezvous IL helps families attending the Rendezvous Homeschool Family Retreat at Lake Williamson Christian Center. On CarPlay we show today’s retreat schedule and let the driver open Apple Maps for directions to the venue or the next gathering location. We do not provide turn-by-turn navigation inside the app, messaging, or audio playback on CarPlay. The experience is glanceable and uses list templates only.
+1. Open [Identifiers](https://developer.apple.com/account/resources/identifiers/list).
+2. Select **`com.rendezvousil.braddcorp.app`**.
+3. Enable **CarPlay Driving Task** (or **CarPlay** → Driving Task) → Save.
+4. If Xcode manages signing: open the project, select the **RendezvousIL** target → **Signing & Capabilities** → confirm **CarPlay Driving Task** appears (or click **+ Capability** and add it if needed).
+5. Regenerate / refresh profiles: in Xcode, uncheck and recheck **Automatically manage signing**, or download updated profiles from [Profiles](https://developer.apple.com/account/resources/profiles/list).
 
-6. Wait for Apple to attach the managed capability (can take days–weeks).
+## 2. Confirm the project (already done in repo)
 
-## 2. After Apple approves
-
-1. [Certificates, Identifiers & Profiles](https://developer.apple.com/account/resources/identifiers/list) → App ID `com.rendezvousil.braddcorp.app` → enable **CarPlay Driving Task**.
-2. Regenerate Development / Distribution profiles and refresh in Xcode.
-3. Confirm `ios/RendezvousIL/RendezvousIL.entitlements` contains:
+`ios/RendezvousIL/RendezvousIL.entitlements` contains:
 
 ```xml
 <key>com.apple.developer.carplay-driving-task</key>
 <true/>
 ```
 
-4. Build to a physical iPhone connected to CarPlay (or Xcode → I/O → External Displays → CarPlay for Simulator).
-
-## 3. What the app shows (v1)
-
-- **Schedule** — today’s events during retreat week (title, time, location); outside the week, the next few upcoming items
-- Tap an event → Apple Maps directions (venue / location text)
-- **Directions to Lake Williamson** — Maps handoff to campus
-
-## 4. Out of scope (v1)
-
-- In-car chat, Bible Bowl, turn-by-turn inside Rendezvous IL
-
-## 5. Code map
+Also wired:
 
 | Piece | Path |
 |-------|------|
-| Entitlement | `ios/RendezvousIL/RendezvousIL.entitlements` |
-| Scene plist | `ios/RendezvousIL/Info.plist` (`UIApplicationSceneManifest`) |
+| Scene plist | `ios/RendezvousIL/Info.plist` (`CPTemplateApplicationSceneSessionRoleApplication`) |
 | Delegate | `ios/RendezvousIL/CarPlay/CarPlaySceneDelegate.swift` |
 | Schedule + Maps | `ios/RendezvousIL/CarPlay/CarPlayDataProvider.swift` |
 
-## 6. Simulator
+## 3. Ship a TestFlight build
 
-Xcode → **I/O → External Displays → CarPlay** while the iOS Simulator is running.
+```bash
+cd ios
+# bump already applied in project.yml when shipping CarPlay
+bash scripts/ship-testflight.sh
+```
+
+Install on a phone, connect to CarPlay (or Xcode Simulator → **I/O → External Displays → CarPlay**).
+
+## 4. What CarPlay shows (v1)
+
+- **Schedule** — today’s events during retreat week; outside the week, the next few upcoming items
+- Tap an event → Apple Maps directions
+- **Directions to Lake Williamson** — Maps handoff to campus
+
+## 5. Out of scope (v1)
+
+- In-car chat, Bible Bowl, turn-by-turn inside Rendezvous IL
+
+## 6. Original request notes (historical)
+
+Request category was **CarPlay driving task app**. Description used:
+
+> Rendezvous IL helps families attending the Rendezvous Homeschool Family Retreat at Lake Williamson Christian Center. On CarPlay we show today’s retreat schedule and let the driver open Apple Maps for directions to the venue or the next gathering location. We do not provide turn-by-turn navigation inside the app, messaging, or audio playback on CarPlay. The experience is glanceable and uses list templates only.

@@ -155,7 +155,7 @@
 		F7E5B9C3FB21EACB9FD34C8B /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		F93DC358023809E27C05FF3B /* AppEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironment.swift; sourceTree = "<group>"; };
 		FCDBD34429936681124138B5 /* schedule-fallback.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "schedule-fallback.json"; sourceTree = "<group>"; };
-		"TEMP_0F64DDDA-B265-4274-B62C-4407A72E72BF" /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
+		"TEMP_E8E6125E-A321-4AC8-98CE-9CA082F775BD" /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -326,10 +326,10 @@
 			path = RendezvousIL;
 			sourceTree = "<group>";
 		};
-		"TEMP_9EA1BCBA-3AAF-4E59-A030-F4CAFAF775CF" /* ios */ = {
+		"TEMP_7B016CB0-2E8A-4FFD-B036-6CD572AA30C8" /* ios */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_0F64DDDA-B265-4274-B62C-4407A72E72BF" /* Config.xcconfig */,
+				"TEMP_E8E6125E-A321-4AC8-98CE-9CA082F775BD" /* Config.xcconfig */,
 			);
 			path = ios;
 			sourceTree = "<group>";
@@ -573,7 +573,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = RendezvousILWidgets/RendezvousILWidgets.entitlements;
-				CURRENT_PROJECT_VERSION = 202;
+				CURRENT_PROJECT_VERSION = 203;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = RendezvousILWidgets/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Rendezvous Widgets";
@@ -583,7 +583,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 2.0.2;
+				MARKETING_VERSION = 2.0.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.rendezvousil.braddcorp.app.widgets;
 				PRODUCT_NAME = RendezvousILWidgets;
 				SDKROOT = iphoneos;
@@ -594,18 +594,18 @@
 		};
 		7ADBCEC1B448B95857681847 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_0F64DDDA-B265-4274-B62C-4407A72E72BF" /* Config.xcconfig */;
+			baseConfigurationReference = "TEMP_E8E6125E-A321-4AC8-98CE-9CA082F775BD" /* Config.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = RendezvousIL/RendezvousIL.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 202;
+				CURRENT_PROJECT_VERSION = 203;
 				INFOPLIST_FILE = RendezvousIL/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.0.2;
+				MARKETING_VERSION = 2.0.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.rendezvousil.braddcorp.app;
 				PRODUCT_NAME = "Rendezvous IL";
 				SDKROOT = iphoneos;
@@ -674,7 +674,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = RendezvousILWidgets/RendezvousILWidgets.entitlements;
-				CURRENT_PROJECT_VERSION = 202;
+				CURRENT_PROJECT_VERSION = 203;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = RendezvousILWidgets/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Rendezvous Widgets";
@@ -684,7 +684,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 2.0.2;
+				MARKETING_VERSION = 2.0.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.rendezvousil.braddcorp.app.widgets;
 				PRODUCT_NAME = RendezvousILWidgets;
 				SDKROOT = iphoneos;
@@ -695,18 +695,18 @@
 		};
 		F8122583B54F4443475E1AD8 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_0F64DDDA-B265-4274-B62C-4407A72E72BF" /* Config.xcconfig */;
+			baseConfigurationReference = "TEMP_E8E6125E-A321-4AC8-98CE-9CA082F775BD" /* Config.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = RendezvousIL/RendezvousIL.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 202;
+				CURRENT_PROJECT_VERSION = 203;
 				INFOPLIST_FILE = RendezvousIL/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.0.2;
+				MARKETING_VERSION = 2.0.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.rendezvousil.braddcorp.app;
 				PRODUCT_NAME = "Rendezvous IL";
 				SDKROOT = iphoneos;

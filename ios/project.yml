@@ -51,8 +51,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.rendezvousil.braddcorp.app
         PRODUCT_NAME: Rendezvous IL
-        MARKETING_VERSION: "2.0.2"
-        CURRENT_PROJECT_VERSION: "202"
+        MARKETING_VERSION: "2.0.3"
+        CURRENT_PROJECT_VERSION: "203"
         INFOPLIST_FILE: RendezvousIL/Info.plist
         CODE_SIGN_ENTITLEMENTS: RendezvousIL/RendezvousIL.entitlements
 
@@ -68,8 +68,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.rendezvousil.braddcorp.app.widgets
         PRODUCT_NAME: RendezvousILWidgets
-        MARKETING_VERSION: "2.0.2"
-        CURRENT_PROJECT_VERSION: "202"
+        MARKETING_VERSION: "2.0.3"
+        CURRENT_PROJECT_VERSION: "203"
         INFOPLIST_KEY_CFBundleDisplayName: Rendezvous Widgets
         INFOPLIST_KEY_NSSupportsLiveActivities: YES
         GENERATE_INFOPLIST_FILE: YES

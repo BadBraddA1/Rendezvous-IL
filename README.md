@@ -136,7 +136,7 @@ Native **SwiftUI** attendee hub in `ios/` (not a WebView shell). **Sign-in requi
 - **Updates** — now/next, weather, announcements
 - **Chat** — year group chat (Ably)
 - **More** — directory, account, Bible Bowl, FAQ, notifications, admin/check-in for staff
-- **CarPlay** — today’s schedule + directions to Lake Williamson ([setup](ios/docs/carplay/SETUP.md); needs Apple driving-task entitlement)
+- **CarPlay** — today’s schedule + directions to Lake Williamson ([setup](ios/docs/carplay/SETUP.md); entitlement approved — enable on App ID before device/TestFlight)
 
 Setup: `cd ios && bash scripts/setup-xcode.sh && open RendezvousIL.xcodeproj` — see [ios/README.md](ios/README.md). For staff sign-in, add your Clerk key to `ios/Config.local.xcconfig`.
 
