@@ -4,6 +4,8 @@ Production site for the Rendezvous Christian Homeschool Family Retreat — [rend
 
 Handles public event pages, family registration (2027), admin dashboard (registrations, meals, check-in, messaging), and Clerk-based family accounts.
 
+**Homepage / About:** Rendezvous 2026 group photo (`public/images/rendezvous-group-2026.jpg`) with caption headcount from `lib/attendance-history.ts` (homepage caption links to `/about`). Social OG image uses the cropped group photo (`rendezvous-group-2026-og.jpg`).
+
 ## Tech stack
 
 - **Next.js 16** (App Router) + React 19 + TypeScript
