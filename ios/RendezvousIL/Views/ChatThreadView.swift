@@ -26,6 +26,9 @@ struct ChatThreadView: View {
     }
 
     private var currentUserId: String {
+        if session.isDemoMode {
+            return AppStoreScreenshotMode.demoReviewerClerkId
+        }
         guard session.isClerkReady else { return "" }
         return Clerk.shared.user?.id ?? ""
     }
@@ -36,6 +39,10 @@ struct ChatThreadView: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            if session.isDemoMode {
+                demoBanner
+            }
+
             if realtimeStatus == .unavailable {
                 HStack(spacing: 8) {
                     Image(systemName: "wifi.slash")
@@ -106,7 +113,9 @@ struct ChatThreadView: View {
         .navigationBarTitleDisplayMode(.inline)
         .task { await setup() }
         .onDisappear {
-            ablyService.disconnect()
+            if !session.isDemoMode {
+                ablyService.disconnect()
+            }
         }
         .onChange(of: pickerItem) { _, item in
             guard let item else { return }
@@ -116,6 +125,19 @@ struct ChatThreadView: View {
                 }
             }
         }
+    }
+
+    private var demoBanner: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "eyeglasses")
+            Text("Demo mode — sample chat for App Review. Messages stay on this device.")
+                .font(.caption)
+        }
+        .foregroundStyle(.secondary)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal)
+        .padding(.vertical, 8)
+        .background(BrandColors.warmSurface)
     }
 
     @ViewBuilder
@@ -228,12 +250,29 @@ struct ChatThreadView: View {
     }
 
     private func setup() async {
+        if session.isDemoMode {
+            canModerate = false
+            messages = AppStoreScreenshotMode.sampleMessages(for: channel.id)
+            isLoading = false
+            realtimeStatus = .connected
+            errorMessage = nil
+            return
+        }
         canModerate = channel.canModerate || session.isAdmin
         await reloadMessages()
         await connectRealtime()
     }
 
     private func reloadMessages() async {
+        if session.isDemoMode {
+            if messages.isEmpty {
+                messages = AppStoreScreenshotMode.sampleMessages(for: channel.id)
+            }
+            isLoading = false
+            errorMessage = nil
+            return
+        }
+
         guard let client = session.apiClient else {
             errorMessage = "Could not connect your account."
             isLoading = false
@@ -260,6 +299,11 @@ struct ChatThreadView: View {
     }
 
     private func connectRealtime() async {
+        if session.isDemoMode {
+            realtimeStatus = .connected
+            return
+        }
+
         guard let client = session.apiClient else { return }
         realtimeStatus = .connecting
 
@@ -281,9 +325,33 @@ struct ChatThreadView: View {
     }
 
     private func sendMessage(isAnnouncement: Bool) async {
-        guard let client = session.apiClient else { return }
         let body = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard canSend else { return }
+
+        if session.isDemoMode {
+            isSending = true
+            defer { isSending = false }
+            let iso = ISO8601DateFormatter()
+            let local = ChatMessage(
+                id: "demo-local-\(UUID().uuidString)",
+                channel_id: channel.id,
+                sender_clerk_id: AppStoreScreenshotMode.demoReviewerClerkId,
+                sender_display_name: session.userDisplayName ?? "Alex",
+                sender_avatar_url: nil,
+                body: body.isEmpty && pendingImageData != nil ? "(Photo)" : body,
+                image_url: nil,
+                is_announcement: isAnnouncement,
+                created_at: iso.string(from: Date())
+            )
+            messages.append(local)
+            draft = ""
+            pendingImageData = nil
+            pickerItem = nil
+            errorMessage = nil
+            return
+        }
+
+        guard let client = session.apiClient else { return }
 
         isSending = true
         defer { isSending = false }
@@ -311,6 +379,11 @@ struct ChatThreadView: View {
     }
 
     private func deleteMessage(_ id: String) async {
+        if session.isDemoMode {
+            messages.removeAll { $0.id == id }
+            return
+        }
+
         guard let client = session.apiClient else { return }
         do {
             try await RepositoryFetch.withTimeout {

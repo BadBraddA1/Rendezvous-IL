@@ -19,8 +19,11 @@ final class AppSession {
     /// Mirrors Clerk session id for safe SwiftUI observation (avoid reading Clerk in view bodies).
     var clerkSessionId: String?
 
-    /// When true, UI uses sample data for App Store screenshot capture (launch arg only).
+    /// When true, UI uses sample data (App Store screenshots / App Review demo).
     var isAppStoreScreenshotMode = false
+
+    /// Offline demo (screenshots or App Review) — same as `isAppStoreScreenshotMode`.
+    var isDemoMode: Bool { isAppStoreScreenshotMode }
 
     /// Display name from Clerk (family account holder). Nil until Clerk has finished loading.
     var userDisplayName: String? {
@@ -48,7 +51,7 @@ final class AppSession {
 
     var publicClient: APIClient { apiClient ?? APIClient.shared }
 
-    /// Forces the signed-in shell with public API access for marketing screenshots.
+    /// Forces the signed-in shell with public API access for marketing screenshots / App Review.
     func enableAppStoreScreenshotMode() {
         isAppStoreScreenshotMode = true
         isClerkReady = true
@@ -63,6 +66,27 @@ final class AppSession {
         authError = nil
         clerkSetupError = nil
         apiClient = APIClient.shared
+    }
+
+    /// App Review / welcome-button entry: persist flag, open demo shell, jump to Chat.
+    func enableAppReviewDemoMode() {
+        AppStoreScreenshotMode.enableAppReviewDemo()
+        enableAppStoreScreenshotMode()
+        NotificationCenter.default.post(
+            name: .rendezvousDeepLink,
+            object: nil,
+            userInfo: ["tab": AppTab.chat]
+        )
+    }
+
+    /// Leave offline demo and return to the normal sign-in gate.
+    func exitDemoMode() {
+        AppStoreScreenshotMode.clearAppReviewDemo()
+        isAppStoreScreenshotMode = false
+        clearSession()
+        isClerkReady = false
+        clerkSessionId = nil
+        clerkSetupError = nil
     }
 
     func bootstrapAuthIfNeeded() async {

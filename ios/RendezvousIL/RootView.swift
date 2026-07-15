@@ -79,6 +79,10 @@ struct RootView: View {
             Text("Get organizer announcements and event reminders during Rendezvous. You can change this anytime in More → Notifications & widgets.")
         }
         .onOpenURL { url in
+            if DeepLinkRouter.isAppReviewDemoURL(url) {
+                session.enableAppReviewDemoMode()
+                return
+            }
             DeepLinkRouter.storePending(url)
             if session.isSignedIn {
                 DeepLinkRouter.flushPending()
@@ -113,6 +117,8 @@ struct RootView: View {
         case .welcome:
             WelcomeHubView {
                 showAuthSheet = true
+            } onAppReviewDemo: {
+                session.enableAppReviewDemoMode()
             }
         case .misconfigured(let message):
             bootstrapErrorView(message: message)

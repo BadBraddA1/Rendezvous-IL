@@ -47,25 +47,35 @@ Questions? Contact Stephen@Bradd.us or visit rendezvousil.com.
 Your Rendezvous retreat companion: schedule, live updates, year chat, and family directory — all in one place.
 ```
 
-## What's New (2.0.1)
+## What's New (2.0.5)
 
 ```
-• Channel moderators and chat photos
-• Live Updates photoshow for room displays
-• Admin dashboard reliability fixes
-• Schedule tab with live updates, QR check-in, and polish
+• App Review demo mode for year chat (Continue with demo / -AppReviewDemo)
+• Sample channels and messages reviewers can open, send, and delete offline
+• Review notes updated for chat demo access
 ```
 
 ## Review notes (for App Review)
 
 ```
-Sign in with a TestFlight / review account that has a registration linked on rendezvousil.com.
+CHAT / COMMUNITY DEMO (no account required)
 
-Demo path without staff roles:
+On the welcome screen, tap “Continue with demo”.
+Or open this link on the device: rendezvousil://app-review-demo
+
+You land in Chat with sample year channels. Open “Rendezvous 2027”, read messages,
+compose and send, and delete your own messages. Messages are local sample data for review.
+Schedule and Directory tabs also use sample content in demo mode.
+Exit via More → Exit demo.
+
+Optional launch flag (Xcode scheme Arguments Passed On Launch):
+-AppReviewDemo
+
+Signed-in path (real account with a registration on rendezvousil.com):
 1. Sign in
-2. Open Schedule (center tab) for the program and live updates
-3. Open Chat for year channels
-4. Open Directory for family listings
+2. Schedule (center tab) — program and live updates
+3. Chat — year channels (live)
+4. Directory — family listings
 
 Staff check-in and Admin appear under More only for accounts with those roles.
 

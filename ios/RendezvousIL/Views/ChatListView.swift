@@ -42,6 +42,20 @@ struct ChatListView: View {
             .navigationTitle("Chat")
             .refreshable { await load(force: true) }
             .task { await load(force: false) }
+            .safeAreaInset(edge: .top, spacing: 0) {
+                if session.isDemoMode {
+                    HStack(spacing: 8) {
+                        Image(systemName: "eyeglasses")
+                        Text("Demo mode — tap a year channel to open sample chat.")
+                            .font(.caption)
+                    }
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal)
+                    .padding(.vertical, 8)
+                    .background(BrandColors.warmSurface)
+                }
+            }
             .navigationDestination(for: ChatChannelSummary.self) { channel in
                 ChatThreadView(channel: channel)
             }

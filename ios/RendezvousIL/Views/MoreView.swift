@@ -76,10 +76,19 @@ struct MoreView: View {
                 }
 
                 Section {
-                    Button(role: .destructive) {
-                        Task { await session.signOut() }
-                    } label: {
-                        Label("Sign out", systemImage: "rectangle.portrait.and.arrow.right")
+                    if session.isDemoMode {
+                        Button {
+                            session.exitDemoMode()
+                            Task { await session.bootstrapAuthIfNeeded() }
+                        } label: {
+                            Label("Exit demo", systemImage: "arrow.uturn.backward")
+                        }
+                    } else {
+                        Button(role: .destructive) {
+                            Task { await session.signOut() }
+                        } label: {
+                            Label("Sign out", systemImage: "rectangle.portrait.and.arrow.right")
+                        }
                     }
                 }
             }

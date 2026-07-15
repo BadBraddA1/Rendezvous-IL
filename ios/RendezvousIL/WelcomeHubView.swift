@@ -3,6 +3,8 @@ import SwiftUI
 /// Public welcome — sign-in only. Clerk sheet is presented by `RootView`.
 struct WelcomeHubView: View {
     var onSignIn: () -> Void
+    /// Offline App Review / screenshots demo (sample chat, schedule, directory).
+    var onAppReviewDemo: (() -> Void)? = nil
 
     var body: some View {
         NavigationStack {
@@ -16,6 +18,20 @@ struct WelcomeHubView: View {
                         buttonTitle: "Sign in",
                         onSignIn: onSignIn
                     )
+
+                    if let onAppReviewDemo {
+                        Button(action: onAppReviewDemo) {
+                            Text("Continue with demo")
+                                .font(.subheadline.weight(.semibold))
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
+                        .tint(BrandColors.lake)
+                        Text("For App Review — sample year chat, schedule, and directory (no account required).")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
 
                     VStack(alignment: .leading, spacing: 10) {
                         Label("Schedule & updates during retreat week", systemImage: "calendar")
