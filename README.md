@@ -98,6 +98,7 @@ pnpm db:verify
 - **Realtime** via Ably (`rendezvous:channel:{id}`); token at `POST /api/ably/token`. Tables: `chat_channels`, `chat_channel_members`, `chat_messages` (lazy-created by `lib/chat-schema.ts`).
 - **Member UI:** `/chat` (web) and iOS **Chat** tab (`ChatListView` / `ChatThreadView`). Requires Clerk sign-in + registration for year channels. Web uses Ably for live messages (polls as fallback). Members can send photos (Blob storage). New messages send APNs/FCM to other channel members (device tokens linked to Clerk user id).
 - **iOS chat demo flag:** `-ChatDemo` (optional code override) sends `X-Chat-Demo-Code` matching Vercel `CHAT_DEMO_CODE` and lists only active admin **test** channels — change rooms anytime under Admin → Year Chat.
+- **Demo Chat seed:** `node scripts/seed-demo-chat.mjs` (with Turso env) creates/updates the `demo-chat` test channel with 20 sample messages. Re-run anytime to refresh.
 - **Mods:** Site admins moderate all rooms. Channel **moderators** (set in Admin → Year Chat) can delete messages and post announcements only in rooms they moderate.
 - **Admin:** `/admin/chat` (nav: Communication → Year Chat) — create **test/custom** channels, pick members, **Make mod / Remove mod**, chat from the web. Year channels auto-include registered families.
 - API: `GET /api/chat/channels`, `GET/POST /api/chat/channels/[id]/messages`, `DELETE /api/chat/messages/[id]`; admin `GET/POST/PATCH/DELETE /api/admin/chat/channels`, `GET /api/admin/chat/people`, `GET/POST/DELETE /api/admin/chat/channels/[id]/members`.
