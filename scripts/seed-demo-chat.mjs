@@ -20,7 +20,6 @@ if (!url || !authToken) {
 
 const db = createClient({ url, authToken })
 
-const CHANNEL_ID = "demo-chat"
 const CHANNEL_NAME = "Demo Chat"
 
 const SEED = [
@@ -76,24 +75,34 @@ await db.execute(`
   )
 `)
 
-await db.execute({
-  sql: `
-    INSERT INTO chat_channels (
-      id, name, channel_type, event_year, description, is_active, is_test
-    ) VALUES (?, ?, 'custom', NULL, ?, 1, 1)
-    ON CONFLICT (id) DO UPDATE SET
-      name = excluded.name,
-      description = excluded.description,
-      is_active = 1,
-      is_test = 1,
-      updated_at = CURRENT_TIMESTAMP
-  `,
-  args: [
-    CHANNEL_ID,
-    CHANNEL_NAME,
-    "App Review demo room — sample conversation for testers.",
-  ],
+// Prefer the existing Admin "Demo Chat" (UUID id). Fall back to creating demo-chat.
+let channelId = null
+const existing = await db.execute({
+  sql: `SELECT id FROM chat_channels WHERE name = ? AND is_test = 1 ORDER BY created_at ASC LIMIT 1`,
+  args: [CHANNEL_NAME],
 })
+if (existing.rows[0]) {
+  channelId = String(existing.rows[0].id)
+} else {
+  channelId = "demo-chat"
+  await db.execute({
+    sql: `
+      INSERT INTO chat_channels (
+        id, name, channel_type, event_year, description, is_active, is_test
+      ) VALUES (?, ?, 'custom', NULL, ?, 1, 1)
+      ON CONFLICT (id) DO UPDATE SET
+        name = excluded.name,
+        is_active = 1,
+        is_test = 1,
+        updated_at = CURRENT_TIMESTAMP
+    `,
+    args: [
+      channelId,
+      CHANNEL_NAME,
+      "App Review demo room — sample conversation for testers.",
+    ],
+  })
+}
 
 await db.execute({
   sql: `
@@ -102,10 +111,9 @@ await db.execute({
       AND (
         sender_clerk_id LIKE 'seed-%'
         OR sender_clerk_id = 'demo-chat-reviewer'
-        OR sender_clerk_id = 'seed-organizer'
       )
   `,
-  args: [CHANNEL_ID],
+  args: [channelId],
 })
 
 const now = Date.now()
@@ -118,15 +126,15 @@ for (const [senderId, senderName, body, isAnnouncement, minutesAgo] of SEED) {
         sender_avatar_url, body, image_url, is_announcement, created_at
       ) VALUES (?, ?, ?, ?, NULL, ?, NULL, ?, ?)
     `,
-    args: [randomUUID(), CHANNEL_ID, senderId, senderName, body, isAnnouncement, createdAt],
+    args: [randomUUID(), channelId, senderId, senderName, body, isAnnouncement, createdAt],
   })
 }
 
 const count = await db.execute({
   sql: `SELECT COUNT(*) AS c FROM chat_messages WHERE channel_id = ? AND deleted_at IS NULL`,
-  args: [CHANNEL_ID],
+  args: [channelId],
 })
 
 console.log(
-  `Demo Chat ready: channel=${CHANNEL_ID} messages=${count.rows[0].c} (seeded ${SEED.length})`,
+  `Demo Chat ready: channel=${channelId} messages=${count.rows[0].c} (seeded ${SEED.length})`,
 )
