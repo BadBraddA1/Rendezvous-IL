@@ -68,26 +68,9 @@ enum DeepLinkRouter {
         return "/" + parts.joined(separator: "/")
     }
 
-    /// True for `rendezvousil://app-review-demo` (and https equivalent path).
-    static func isAppReviewDemoURL(_ url: URL) -> Bool {
-        if url.scheme?.lowercased() == "rendezvousil" {
-            let path = customSchemePath(for: url).lowercased()
-            return path == "/app-review-demo" || path.hasPrefix("/app-review-demo/")
-        }
-        if let host = url.host?.lowercased(),
-           host == "rendezvousil.com" || host.hasSuffix(".rendezvousil.com") {
-            let path = url.path.lowercased()
-            return path == "/app-review-demo" || path.hasPrefix("/app-review-demo/")
-        }
-        return false
-    }
-
     private static func destination(forPath path: String, mapPinId: String? = nil) -> DeepLinkDestination? {
         let normalized = path.lowercased()
         if normalized.isEmpty || normalized == "/" { return DeepLinkDestination(tab: .home, more: nil, mapPinId: nil) }
-        if normalized.hasPrefix("/app-review-demo") {
-            return DeepLinkDestination(tab: .chat, more: nil, mapPinId: nil)
-        }
         if normalized.hasPrefix("/schedule") { return DeepLinkDestination(tab: .schedule, more: nil, mapPinId: nil) }
         if normalized.hasPrefix("/live-updates") || normalized.hasPrefix("/updates") {
             return DeepLinkDestination(tab: .schedule, more: nil, mapPinId: nil)

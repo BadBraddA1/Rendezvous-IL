@@ -27,6 +27,7 @@ Required on Vercel (`v0-ren`):
 | `JWT_SECRET`, `ADMIN_SECRET`, `ADMIN_SETUP_KEY` | Admin auth |
 | `RESEND_API_KEY` | Email |
 | `ABLY_API_KEY` | Year chat realtime (Ably) |
+| `CHAT_DEMO_CODE` | Shared secret for iOS `-ChatDemo` (active **test** channels only) |
 
 Full list and legacy cleanup notes: [docs/TURSO_SETUP.md](docs/TURSO_SETUP.md)
 
@@ -96,7 +97,7 @@ pnpm db:verify
 - **Core attendee feature** — each event year gets a group chat (`year-2026`, `year-2027`). Register for a year → you can message that year's families; past years you attended stay available.
 - **Realtime** via Ably (`rendezvous:channel:{id}`); token at `POST /api/ably/token`. Tables: `chat_channels`, `chat_channel_members`, `chat_messages` (lazy-created by `lib/chat-schema.ts`).
 - **Member UI:** `/chat` (web) and iOS **Chat** tab (`ChatListView` / `ChatThreadView`). Requires Clerk sign-in + registration for year channels. Web uses Ably for live messages (polls as fallback). Members can send photos (Blob storage). New messages send APNs/FCM to other channel members (device tokens linked to Clerk user id).
-- **iOS App Review demo:** Welcome → **Continue with demo**, deep link `rendezvousil://app-review-demo`, or launch arg `-AppReviewDemo` — sample year channels with local send/delete (see `ios/app-store/metadata.md`).
+- **iOS chat demo flag:** `-ChatDemo` (optional code override) sends `X-Chat-Demo-Code` matching Vercel `CHAT_DEMO_CODE` and lists only active admin **test** channels — change rooms anytime under Admin → Year Chat.
 - **Mods:** Site admins moderate all rooms. Channel **moderators** (set in Admin → Year Chat) can delete messages and post announcements only in rooms they moderate.
 - **Admin:** `/admin/chat` (nav: Communication → Year Chat) — create **test/custom** channels, pick members, **Make mod / Remove mod**, chat from the web. Year channels auto-include registered families.
 - API: `GET /api/chat/channels`, `GET/POST /api/chat/channels/[id]/messages`, `DELETE /api/chat/messages/[id]`; admin `GET/POST/PATCH/DELETE /api/admin/chat/channels`, `GET /api/admin/chat/people`, `GET/POST/DELETE /api/admin/chat/channels/[id]/members`.

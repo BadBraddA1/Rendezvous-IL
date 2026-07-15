@@ -108,15 +108,15 @@ If a frame is blank, recapture that tab in Xcode: scheme **Run → Arguments** �
 
 ### App Review chat demo
 
-Apple can exercise year chat without an account:
+Launch flag (scheme → Arguments Passed On Launch):
 
-| How | What to tell them |
-| --- | --- |
-| Welcome button | Tap **Continue with demo** on the welcome screen |
-| Deep link | Open `rendezvousil://app-review-demo` |
-| Launch flag | Xcode scheme → Arguments → `-AppReviewDemo` |
+```
+-ChatDemo
+```
 
-Opens the signed-in shell with sample channels/messages; compose, send, and delete work on-device only. Copy-paste Review Notes are in [app-store/metadata.md](app-store/metadata.md).
+Optional: `-ChatDemo ren-review-chat` (override; must match Vercel `CHAT_DEMO_CODE`).
+
+Opens the app into Chat and loads **live** channels marked Test in Admin → Year Chat (add/edit messages there anytime). Code is baked in `Config.xcconfig` as `CHAT_DEMO_CODE`.
 
 ### Local upload
 

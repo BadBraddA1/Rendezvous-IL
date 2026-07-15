@@ -43,10 +43,10 @@ struct ChatListView: View {
             .refreshable { await load(force: true) }
             .task { await load(force: false) }
             .safeAreaInset(edge: .top, spacing: 0) {
-                if session.isDemoMode {
+                if session.isChatDemoMode {
                     HStack(spacing: 8) {
-                        Image(systemName: "eyeglasses")
-                        Text("Demo mode — tap a year channel to open sample chat.")
+                        Image(systemName: "flag.fill")
+                        Text("Demo chat — admin test channels (live).")
                             .font(.caption)
                     }
                     .foregroundStyle(.secondary)
@@ -130,7 +130,9 @@ struct ChatListView: View {
             }
             channels = response.channels.sortedForDisplay()
             if channels.isEmpty {
-                statusHint = await emptyChatHint(using: client)
+                statusHint = session.isChatDemoMode
+                    ? "No active test channels yet. In admin → Year Chat, create a channel and mark it Test."
+                    : await emptyChatHint(using: client)
             }
         } catch APIError.unauthorized {
             errorMessage = "Session expired. Sign out and sign in again."

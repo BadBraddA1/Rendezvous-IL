@@ -2,4 +2,7 @@
 // Override in Config.local.xcconfig for local dev with a test key if needed.
 CLERK_PUBLISHABLE_KEY = pk_live_Y2xlcmsucmVuZGV6dm91c2lsLmNvbSQ
 
+// Live chat demo (-ChatDemo). Must match Vercel env CHAT_DEMO_CODE.
+CHAT_DEMO_CODE = ren-review-chat
+
 #include? "Config.local.xcconfig"

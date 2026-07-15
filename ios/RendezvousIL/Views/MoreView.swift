@@ -76,12 +76,12 @@ struct MoreView: View {
                 }
 
                 Section {
-                    if session.isDemoMode {
+                    if session.isChatDemoMode {
                         Button {
-                            session.exitDemoMode()
+                            session.exitChatDemoMode()
                             Task { await session.bootstrapAuthIfNeeded() }
                         } label: {
-                            Label("Exit demo", systemImage: "arrow.uturn.backward")
+                            Label("Exit demo chat", systemImage: "arrow.uturn.backward")
                         }
                     } else {
                         Button(role: .destructive) {

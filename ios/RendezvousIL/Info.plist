@@ -31,6 +31,8 @@
 	<false/>
 	<key>CLERK_PUBLISHABLE_KEY</key>
 	<string>$(CLERK_PUBLISHABLE_KEY)</string>
+	<key>CHAT_DEMO_CODE</key>
+	<string>$(CHAT_DEMO_CODE)</string>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.lifestyle</string>
 	<key>NSCameraUsageDescription</key>

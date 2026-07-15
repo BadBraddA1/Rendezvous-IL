@@ -7,9 +7,11 @@ extension Notification.Name {
 /// Signed-in tab shell — Schedule is the center tab; Directory is a primary tab.
 struct MainTabView: View {
     @Environment(RendezvousRepository.self) private var repository
-    @State private var selectedTab: AppTab = AppStoreScreenshotMode.isEnabled
-        ? AppStoreScreenshotMode.initialTab
-        : .schedule
+    @State private var selectedTab: AppTab = {
+        if AppStoreScreenshotMode.isEnabled { return AppStoreScreenshotMode.initialTab }
+        if ChatDemoMode.isEnabled { return .chat }
+        return .schedule
+    }()
 
     var body: some View {
         TabView(selection: $selectedTab) {

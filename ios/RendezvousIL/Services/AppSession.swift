@@ -19,14 +19,15 @@ final class AppSession {
     /// Mirrors Clerk session id for safe SwiftUI observation (avoid reading Clerk in view bodies).
     var clerkSessionId: String?
 
-    /// When true, UI uses sample data (App Store screenshots / App Review demo).
+    /// When true, UI uses sample data for App Store screenshot capture (launch arg only).
     var isAppStoreScreenshotMode = false
 
-    /// Offline demo (screenshots or App Review) — same as `isAppStoreScreenshotMode`.
-    var isDemoMode: Bool { isAppStoreScreenshotMode }
+    /// Live chat demo via `-ChatDemo` — real admin test channels.
+    var isChatDemoMode = false
 
     /// Display name from Clerk (family account holder). Nil until Clerk has finished loading.
     var userDisplayName: String? {
+        if isChatDemoMode { return "App Review" }
         if isAppStoreScreenshotMode { return "Alex" }
         guard isClerkReady else { return nil }
         guard let user = Clerk.shared.user else { return nil }
@@ -40,6 +41,7 @@ final class AppSession {
 
     /// Primary email for account screen. Nil until Clerk has finished loading.
     var userEmail: String? {
+        if isChatDemoMode { return nil }
         guard isClerkReady else { return nil }
         return Clerk.shared.user?.primaryEmailAddress?.emailAddress
     }
@@ -51,9 +53,10 @@ final class AppSession {
 
     var publicClient: APIClient { apiClient ?? APIClient.shared }
 
-    /// Forces the signed-in shell with public API access for marketing screenshots / App Review.
+    /// Forces the signed-in shell with public API access for marketing screenshots.
     func enableAppStoreScreenshotMode() {
         isAppStoreScreenshotMode = true
+        isChatDemoMode = false
         isClerkReady = true
         isSignedIn = true
         isLoading = false
@@ -68,10 +71,26 @@ final class AppSession {
         apiClient = APIClient.shared
     }
 
-    /// App Review / welcome-button entry: persist flag, open demo shell, jump to Chat.
-    func enableAppReviewDemoMode() {
-        AppStoreScreenshotMode.enableAppReviewDemo()
-        enableAppStoreScreenshotMode()
+    /// Live demo chat: opens the app shell and talks to `/api/chat/*` with the demo code header.
+    func enableChatDemoMode() {
+        guard let code = ChatDemoMode.accessCode, !code.isEmpty else {
+            clerkSetupError = "Chat demo needs a code. Use -ChatDemo <code> or set CHAT_DEMO_CODE in Config.xcconfig."
+            return
+        }
+        isChatDemoMode = true
+        isAppStoreScreenshotMode = false
+        isClerkReady = true
+        isSignedIn = true
+        isLoading = false
+        isAdmin = false
+        canViewDashboard = false
+        canCheckIn = false
+        canManageUsers = false
+        adminRole = nil
+        adminName = nil
+        authError = nil
+        clerkSetupError = nil
+        apiClient = APIClient(chatDemoCode: code)
         NotificationCenter.default.post(
             name: .rendezvousDeepLink,
             object: nil,
@@ -79,10 +98,9 @@ final class AppSession {
         )
     }
 
-    /// Leave offline demo and return to the normal sign-in gate.
-    func exitDemoMode() {
-        AppStoreScreenshotMode.clearAppReviewDemo()
-        isAppStoreScreenshotMode = false
+    /// Leave live chat demo and return to the normal sign-in gate.
+    func exitChatDemoMode() {
+        isChatDemoMode = false
         clearSession()
         isClerkReady = false
         clerkSessionId = nil
@@ -100,6 +118,11 @@ final class AppSession {
             } else {
                 enableAppStoreScreenshotMode()
             }
+            return
+        }
+
+        if ChatDemoMode.isEnabled {
+            enableChatDemoMode()
             return
         }
 

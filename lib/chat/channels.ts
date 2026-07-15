@@ -90,6 +90,19 @@ export async function userCanAccessChannel(
 
   if (isAdmin) return true
 
+  // App Review / -ChatDemo identity may only use active test channels.
+  if (clerkUserId === "demo-chat-reviewer") {
+    const [testChannel] = await sql`
+      SELECT id
+      FROM chat_channels
+      WHERE id = ${channelId}
+        AND is_active = 1
+        AND is_test = 1
+      LIMIT 1
+    `
+    return Boolean(testChannel)
+  }
+
   const [channel] = await sql`
     SELECT id, channel_type, event_year, is_active
     FROM chat_channels
@@ -168,6 +181,18 @@ export async function listMemberChatChannels(
 
   const summaries = rows.map((row) => rowToSummary(row))
   return attachLastMessage(summaries)
+}
+
+export async function listActiveTestChatChannels(): Promise<ChatChannelSummary[]> {
+  await ensureChatSchema()
+  const rows = await sql`
+    SELECT *
+    FROM chat_channels
+    WHERE is_active = 1
+      AND is_test = 1
+    ORDER BY name ASC
+  `
+  return attachLastMessage(rows.map((row) => rowToSummary(row)))
 }
 
 export async function listAllChatChannelsForAdmin(): Promise<ChatChannelSummary[]> {

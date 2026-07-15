@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { listChannelMessages, sendChannelMessage, clerkDisplayName } from "@/lib/chat/messages"
 import { userCanModerateChannel } from "@/lib/chat/channels"
+import { chatDemoContextFromRequest } from "@/lib/chat/demo"
 import { uploadChatPhoto, validateChatPhoto } from "@/lib/chat/photo-storage"
 import { authUserContext, getCurrentAdmin } from "@/lib/clerk-auth"
 
@@ -8,7 +9,11 @@ type Params = { params: Promise<{ id: string }> }
 
 export async function GET(request: Request, { params }: Params) {
   const { id: channelId } = await params
-  const ctx = await authUserContext(request)
+  const demo = chatDemoContextFromRequest(request)
+  const ctx = demo
+    ? { userId: demo.userId, email: undefined as string | undefined, user: null }
+    : await authUserContext(request)
+
   if (!ctx) {
     return NextResponse.json({ error: "Sign in required" }, { status: 401 })
   }
@@ -18,8 +23,10 @@ export async function GET(request: Request, { params }: Params) {
   const limit = Number(searchParams.get("limit") ?? 50)
 
   try {
-    const admin = await getCurrentAdmin(request)
-    const canModerate = await userCanModerateChannel(channelId, ctx.userId, Boolean(admin))
+    const admin = demo ? null : await getCurrentAdmin(request)
+    const canModerate = demo
+      ? false
+      : await userCanModerateChannel(channelId, ctx.userId, Boolean(admin))
 
     const result = await listChannelMessages(channelId, {
       clerkUserId: ctx.userId,
@@ -40,7 +47,11 @@ export async function GET(request: Request, { params }: Params) {
 
 export async function POST(request: Request, { params }: Params) {
   const { id: channelId } = await params
-  const ctx = await authUserContext(request)
+  const demo = chatDemoContextFromRequest(request)
+  const ctx = demo
+    ? { userId: demo.userId, email: undefined as string | undefined, user: null }
+    : await authUserContext(request)
+
   if (!ctx) {
     return NextResponse.json({ error: "Sign in required" }, { status: 401 })
   }
@@ -77,7 +88,15 @@ export async function POST(request: Request, { params }: Params) {
       }
     }
 
-    const admin = await getCurrentAdmin(request)
+    // Demo may not post announcements.
+    if (demo) isAnnouncement = false
+
+    const admin = demo ? null : await getCurrentAdmin(request)
+    const displayName = demo
+      ? demo.displayName
+      : clerkDisplayName(ctx.user!)
+    const avatarUrl = demo ? null : ctx.user?.imageUrl
+
     const message = await sendChannelMessage({
       channelId,
       body: text,
@@ -85,8 +104,8 @@ export async function POST(request: Request, { params }: Params) {
       clerkUserId: ctx.userId,
       email: ctx.email,
       isAdmin: Boolean(admin),
-      displayName: clerkDisplayName(ctx.user),
-      avatarUrl: ctx.user.imageUrl,
+      displayName,
+      avatarUrl,
       isAnnouncement,
     })
 

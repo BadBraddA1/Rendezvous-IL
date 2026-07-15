@@ -50,26 +50,23 @@ Your Rendezvous retreat companion: schedule, live updates, year chat, and family
 ## What's New (2.0.5)
 
 ```
-• App Review demo mode for year chat (Continue with demo / -AppReviewDemo)
-• Sample channels and messages reviewers can open, send, and delete offline
-• Review notes updated for chat demo access
+• Chat demo launch flag (-ChatDemo) for App Review — live admin test channels
+• Manage which rooms appear: Admin → Year Chat → mark Test
 ```
 
 ## Review notes (for App Review)
 
 ```
-CHAT / COMMUNITY DEMO (no account required)
+CHAT DEMO (launch flag — live test channels from admin)
 
-On the welcome screen, tap “Continue with demo”.
-Or open this link on the device: rendezvousil://app-review-demo
+Scheme → Run → Arguments Passed On Launch:
+  -ChatDemo
 
-You land in Chat with sample year channels. Open “Rendezvous 2027”, read messages,
-compose and send, and delete your own messages. Messages are local sample data for review.
-Schedule and Directory tabs also use sample content in demo mode.
-Exit via More → Exit demo.
+Opens Chat using admin-managed Test channels (create/edit under Admin → Year Chat;
+mark the channel as Test). Compose, send, and delete work against production.
 
-Optional launch flag (Xcode scheme Arguments Passed On Launch):
--AppReviewDemo
+Optional override with an explicit code (must match server CHAT_DEMO_CODE):
+  -ChatDemo ren-review-chat
 
 Signed-in path (real account with a registration on rendezvousil.com):
 1. Sign in

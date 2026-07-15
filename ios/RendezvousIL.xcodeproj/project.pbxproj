@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		001F6BE14BDAF1A0A6F00A2C /* MoreView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37B9B084751C0C1099D59FE7 /* MoreView.swift */; };
+		0096B6D5331F9F0E8FF3CB84 /* ChatDemoMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1172BDB29FF145E10C031C28 /* ChatDemoMode.swift */; };
 		0355F432B0E93344589A9241 /* VenueMapModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = F96773E3A3A26024702E5D84 /* VenueMapModels.swift */; };
 		041325F9C6E45EDC4CD28A99 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7E5B9C3FB21EACB9FD34C8B /* RootView.swift */; };
 		080C996997D121C22C44D3F1 /* RendezvousActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = C081E03DADF196CFEE5740DD /* RendezvousActivityAttributes.swift */; };
@@ -104,6 +105,7 @@
 		092E3DF0A72BACCECEE03E35 /* ScheduleShared.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleShared.swift; sourceTree = "<group>"; };
 		0FE407421254F1FD65DD9F86 /* VenueMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VenueMapView.swift; sourceTree = "<group>"; };
 		10BA3D6FED0463578297010C /* RegistrationCountdownView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegistrationCountdownView.swift; sourceTree = "<group>"; };
+		1172BDB29FF145E10C031C28 /* ChatDemoMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatDemoMode.swift; sourceTree = "<group>"; };
 		13FDED7BA671DC4135511810 /* FamilyDirectoryManageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FamilyDirectoryManageView.swift; sourceTree = "<group>"; };
 		17E9348A90094B82009B4CBD /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
 		1A62644C156B0B0D6EADBF84 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
@@ -163,7 +165,7 @@
 		F93DC358023809E27C05FF3B /* AppEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironment.swift; sourceTree = "<group>"; };
 		F96773E3A3A26024702E5D84 /* VenueMapModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VenueMapModels.swift; sourceTree = "<group>"; };
 		FCDBD34429936681124138B5 /* schedule-fallback.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "schedule-fallback.json"; sourceTree = "<group>"; };
-		"TEMP_85FE6010-D9FD-4D1B-83D5-829F885A4F71" /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
+		"TEMP_F6705EE1-FCA4-40E7-A843-510B06326A58" /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -311,6 +313,7 @@
 			children = (
 				F93DC358023809E27C05FF3B /* AppEnvironment.swift */,
 				4DDBF4B4F010F7A0FFA06C77 /* AppStoreScreenshotMode.swift */,
+				1172BDB29FF145E10C031C28 /* ChatDemoMode.swift */,
 				EA42AAF64E35D2BC5008BA39 /* ChatFormatting.swift */,
 				61C09630FEAE09AF651F5F52 /* DeepLinkRouter.swift */,
 			);
@@ -338,10 +341,10 @@
 			path = RendezvousIL;
 			sourceTree = "<group>";
 		};
-		"TEMP_A469C493-DFF0-4DDD-940B-5989DC82D5E2" /* ios */ = {
+		"TEMP_269FD387-B29C-49C2-B816-EC384A755FE1" /* ios */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_85FE6010-D9FD-4D1B-83D5-829F885A4F71" /* Config.xcconfig */,
+				"TEMP_F6705EE1-FCA4-40E7-A843-510B06326A58" /* Config.xcconfig */,
 			);
 			path = ios;
 			sourceTree = "<group>";
@@ -462,6 +465,7 @@
 				9AFC09B1C3BFA8FB6D3A70F3 /* CampusLocationMonitor.swift in Sources */,
 				8BF585E509998F0FAB97B470 /* CarPlayDataProvider.swift in Sources */,
 				E34D277B093C78B4B9F4368E /* CarPlaySceneDelegate.swift in Sources */,
+				0096B6D5331F9F0E8FF3CB84 /* ChatDemoMode.swift in Sources */,
 				E684A3B3E7C19748BB83302B /* ChatFormatting.swift in Sources */,
 				51ED2EABA9D44315EABB8AAA /* ChatListView.swift in Sources */,
 				F3C879A023201FC4FC71526E /* ChatModels.swift in Sources */,
@@ -610,7 +614,7 @@
 		};
 		7ADBCEC1B448B95857681847 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_85FE6010-D9FD-4D1B-83D5-829F885A4F71" /* Config.xcconfig */;
+			baseConfigurationReference = "TEMP_F6705EE1-FCA4-40E7-A843-510B06326A58" /* Config.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = RendezvousIL/RendezvousIL.entitlements;
@@ -711,7 +715,7 @@
 		};
 		F8122583B54F4443475E1AD8 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_85FE6010-D9FD-4D1B-83D5-829F885A4F71" /* Config.xcconfig */;
+			baseConfigurationReference = "TEMP_F6705EE1-FCA4-40E7-A843-510B06326A58" /* Config.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = RendezvousIL/RendezvousIL.entitlements;

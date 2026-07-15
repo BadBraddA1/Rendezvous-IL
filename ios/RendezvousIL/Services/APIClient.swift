@@ -39,14 +39,17 @@ actor APIClient {
     private let session: URLSession
     private let decoder: JSONDecoder
     private let tokenProvider: (@Sendable () async throws -> String)?
+    private let chatDemoCode: String?
 
     init(
         session: URLSession = .shared,
-        tokenProvider: (@Sendable () async throws -> String)? = nil
+        tokenProvider: (@Sendable () async throws -> String)? = nil,
+        chatDemoCode: String? = nil
     ) {
         self.session = session
         self.decoder = JSONDecoder()
         self.tokenProvider = tokenProvider
+        self.chatDemoCode = chatDemoCode
     }
 
     func get<T: Decodable>(_ path: String, as type: T.Type = T.self) async throws -> T {
@@ -258,6 +261,9 @@ actor APIClient {
         request.httpMethod = "POST"
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
         request.setValue("RendezvousIL-iOS/1.0", forHTTPHeaderField: "User-Agent")
+        if let chatDemoCode {
+            request.setValue(chatDemoCode, forHTTPHeaderField: "X-Chat-Demo-Code")
+        }
         if let tokenProvider {
             let token = try await tokenProvider()
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
@@ -307,6 +313,9 @@ actor APIClient {
         request.httpMethod = "POST"
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
         request.setValue("RendezvousIL-iOS/1.0", forHTTPHeaderField: "User-Agent")
+        if let chatDemoCode {
+            request.setValue(chatDemoCode, forHTTPHeaderField: "X-Chat-Demo-Code")
+        }
         if let tokenProvider {
             let token = try await tokenProvider()
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
@@ -330,6 +339,9 @@ actor APIClient {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("RendezvousIL-iOS/1.0", forHTTPHeaderField: "User-Agent")
 
+        if let chatDemoCode {
+            request.setValue(chatDemoCode, forHTTPHeaderField: "X-Chat-Demo-Code")
+        }
         if let tokenProvider {
             let token = try await tokenProvider()
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")

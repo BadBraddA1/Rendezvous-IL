@@ -26,8 +26,11 @@ struct ChatThreadView: View {
     }
 
     private var currentUserId: String {
-        if session.isDemoMode {
-            return AppStoreScreenshotMode.demoReviewerClerkId
+        if session.isChatDemoMode {
+            return "demo-chat-reviewer"
+        }
+        if session.isAppStoreScreenshotMode {
+            return "demo-alex"
         }
         guard session.isClerkReady else { return "" }
         return Clerk.shared.user?.id ?? ""
@@ -39,8 +42,17 @@ struct ChatThreadView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            if session.isDemoMode {
-                demoBanner
+            if session.isChatDemoMode {
+                HStack(spacing: 8) {
+                    Image(systemName: "flag.fill")
+                    Text("Demo chat — live test rooms from admin (send/delete work).")
+                        .font(.caption)
+                }
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal)
+                .padding(.vertical, 8)
+                .background(BrandColors.warmSurface)
             }
 
             if realtimeStatus == .unavailable {
@@ -113,7 +125,7 @@ struct ChatThreadView: View {
         .navigationBarTitleDisplayMode(.inline)
         .task { await setup() }
         .onDisappear {
-            if !session.isDemoMode {
+            if !session.isAppStoreScreenshotMode {
                 ablyService.disconnect()
             }
         }
@@ -125,19 +137,6 @@ struct ChatThreadView: View {
                 }
             }
         }
-    }
-
-    private var demoBanner: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "eyeglasses")
-            Text("Demo mode — sample chat for App Review. Messages stay on this device.")
-                .font(.caption)
-        }
-        .foregroundStyle(.secondary)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal)
-        .padding(.vertical, 8)
-        .background(BrandColors.warmSurface)
     }
 
     @ViewBuilder
@@ -250,7 +249,7 @@ struct ChatThreadView: View {
     }
 
     private func setup() async {
-        if session.isDemoMode {
+        if session.isAppStoreScreenshotMode {
             canModerate = false
             messages = AppStoreScreenshotMode.sampleMessages(for: channel.id)
             isLoading = false
@@ -260,11 +259,16 @@ struct ChatThreadView: View {
         }
         canModerate = channel.canModerate || session.isAdmin
         await reloadMessages()
+        if session.isChatDemoMode {
+            // Demo identity has no Ably token — poll/pull-to-refresh only.
+            realtimeStatus = .unavailable
+            return
+        }
         await connectRealtime()
     }
 
     private func reloadMessages() async {
-        if session.isDemoMode {
+        if session.isAppStoreScreenshotMode {
             if messages.isEmpty {
                 messages = AppStoreScreenshotMode.sampleMessages(for: channel.id)
             }
@@ -299,8 +303,8 @@ struct ChatThreadView: View {
     }
 
     private func connectRealtime() async {
-        if session.isDemoMode {
-            realtimeStatus = .connected
+        if session.isAppStoreScreenshotMode || session.isChatDemoMode {
+            realtimeStatus = session.isChatDemoMode ? .unavailable : .connected
             return
         }
 
@@ -328,14 +332,14 @@ struct ChatThreadView: View {
         let body = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard canSend else { return }
 
-        if session.isDemoMode {
+        if session.isAppStoreScreenshotMode {
             isSending = true
             defer { isSending = false }
             let iso = ISO8601DateFormatter()
             let local = ChatMessage(
-                id: "demo-local-\(UUID().uuidString)",
+                id: "shot-local-\(UUID().uuidString)",
                 channel_id: channel.id,
-                sender_clerk_id: AppStoreScreenshotMode.demoReviewerClerkId,
+                sender_clerk_id: "demo-alex",
                 sender_display_name: session.userDisplayName ?? "Alex",
                 sender_avatar_url: nil,
                 body: body.isEmpty && pendingImageData != nil ? "(Photo)" : body,
@@ -379,7 +383,7 @@ struct ChatThreadView: View {
     }
 
     private func deleteMessage(_ id: String) async {
-        if session.isDemoMode {
+        if session.isAppStoreScreenshotMode {
             messages.removeAll { $0.id == id }
             return
         }
