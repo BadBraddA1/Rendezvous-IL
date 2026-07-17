@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { formatDistanceToNow } from "date-fns"
+import { normalizeChatTimestamp } from "@/lib/chat/timestamps"
 import {
   BarChart3,
   ImagePlus,
@@ -494,7 +495,9 @@ export function ChatThread({
                     {message.kind === "poll" ? <BarChart3 className="h-3.5 w-3.5" /> : null}
                     <span className="font-medium">{message.sender_display_name}</span>
                     <span>
-                      {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
+                      {formatDistanceToNow(new Date(normalizeChatTimestamp(message.created_at)), {
+                        addSuffix: true,
+                      })}
                     </span>
                     {canDelete ? (
                       <button

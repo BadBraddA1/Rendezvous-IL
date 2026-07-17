@@ -8,6 +8,7 @@ import {
   registrationYearLabel,
   type RegistrationEventYear,
 } from "@/lib/registration-event-years"
+import { normalizeChatTimestamp } from "@/lib/chat/timestamps"
 import type { ChatChannelSummary, ChatChannelType } from "@/types/chat"
 
 function rowToSummary(row: SqlRow, extras?: Partial<ChatChannelSummary>): ChatChannelSummary {
@@ -59,7 +60,7 @@ async function attachLastMessage(summaries: ChatChannelSummary[]): Promise<ChatC
         image_urls: row.image_urls != null ? String(row.image_urls) : null,
         kind: String(row.kind || "text"),
         poll_question: row.poll_question != null ? String(row.poll_question) : null,
-        created_at: String(row.created_at),
+        created_at: normalizeChatTimestamp(String(row.created_at)),
       })
     }
   }

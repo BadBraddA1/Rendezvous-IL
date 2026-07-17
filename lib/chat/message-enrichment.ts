@@ -1,5 +1,6 @@
 import { sql, type SqlRow } from "@/lib/db"
 import { CHAT_REACTION_EMOJIS } from "@/lib/chat/reactions"
+import { normalizeChatTimestamp } from "@/lib/chat/timestamps"
 import type {
   ChatMessageKind,
   ChatMessagePayload,
@@ -57,7 +58,9 @@ export function rowToBaseMessage(row: SqlRow): Omit<
     poll_question:
       kind === "poll" && row.poll_question != null ? String(row.poll_question) : null,
     poll_options: parsePollOptions(row),
-    created_at: String(row.created_at),
+    created_at: normalizeChatTimestamp(
+      row.created_at != null ? String(row.created_at) : null,
+    ),
   }
 }
 

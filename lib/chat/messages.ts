@@ -149,6 +149,8 @@ export async function sendChannelMessage(input: {
   const id = randomUUID()
   const imageUrlsJson = imageUrls.length > 0 ? JSON.stringify(imageUrls) : null
   const pollOptionsJson = pollOptions ? JSON.stringify(pollOptions) : null
+  // Explicit ISO UTC so clients never see bare SQLite CURRENT_TIMESTAMP.
+  const createdAt = new Date().toISOString()
 
   await sql`
     INSERT INTO chat_messages (
@@ -163,7 +165,8 @@ export async function sendChannelMessage(input: {
       kind,
       poll_question,
       poll_options,
-      is_announcement
+      is_announcement,
+      created_at
     ) VALUES (
       ${id},
       ${input.channelId},
@@ -176,7 +179,8 @@ export async function sendChannelMessage(input: {
       ${kind},
       ${pollQuestion},
       ${pollOptionsJson},
-      ${input.isAnnouncement ? 1 : 0}
+      ${input.isAnnouncement ? 1 : 0},
+      ${createdAt}
     )
   `
 
