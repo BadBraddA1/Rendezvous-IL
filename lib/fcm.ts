@@ -4,6 +4,8 @@ export interface FcmAlertPayload {
   title: string
   body: string
   url?: string
+  /** Public HTTPS image URL shown as Android big-picture / rich notification. */
+  imageUrl?: string
 }
 
 export interface FcmSendResult {
@@ -124,19 +126,35 @@ async function sendOne(
   projectId: string,
   payload: FcmAlertPayload,
 ): Promise<FcmSendResult> {
+  const notification: Record<string, string> = {
+    title: payload.title,
+    body: payload.body,
+  }
+  if (payload.imageUrl) {
+    notification.image = payload.imageUrl
+  }
+
+  const data: Record<string, string> = {}
+  if (payload.url) data.url = payload.url
+  if (payload.imageUrl) data.image = payload.imageUrl
+
   const message: Record<string, unknown> = {
     token: deviceToken,
-    notification: {
-      title: payload.title,
-      body: payload.body,
-    },
+    notification,
     android: {
       priority: "HIGH",
+      ...(payload.imageUrl
+        ? {
+            notification: {
+              image: payload.imageUrl,
+            },
+          }
+        : {}),
     },
   }
 
-  if (payload.url) {
-    message.data = { url: payload.url }
+  if (Object.keys(data).length > 0) {
+    message.data = data
   }
 
   try {

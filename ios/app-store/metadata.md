@@ -47,6 +47,13 @@ Questions? Contact Stephen@Bradd.us or visit rendezvousil.com.
 Your Rendezvous retreat companion: schedule, live updates, year chat, and family directory — all in one place.
 ```
 
+## What's New (2.0.6)
+
+```
+• Chat photo notifications show a preview on the lock screen
+• Family members linked by email get the same year chat alerts
+```
+
 ## What's New (2.0.5)
 
 ```

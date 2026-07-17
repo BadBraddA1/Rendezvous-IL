@@ -10,6 +10,8 @@ export interface ApnsAlertPayload {
   url?: string
   badge?: number
   threadId?: string
+  /** Public HTTPS image URL — iOS Notification Service Extension attaches a preview. */
+  imageUrl?: string
 }
 
 export interface ApnsSendResult {
@@ -100,8 +102,10 @@ function sendOne(
         sound: "default",
         ...(payload.badge !== undefined ? { badge: payload.badge } : {}),
         ...(payload.threadId ? { "thread-id": payload.threadId } : {}),
+        ...(payload.imageUrl ? { "mutable-content": 1 } : {}),
       },
       ...(payload.url ? { url: payload.url } : {}),
+      ...(payload.imageUrl ? { image: payload.imageUrl } : {}),
     })
 
     const req = client.request({

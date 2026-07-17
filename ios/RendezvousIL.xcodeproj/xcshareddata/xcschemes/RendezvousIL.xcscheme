@@ -29,6 +29,20 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
+               BlueprintIdentifier = "0DC21CB6BD797798181411EA"
+               BuildableName = "RendezvousILNotificationService.appex"
+               BlueprintName = "RendezvousILNotificationService"
+               ReferencedContainer = "container:RendezvousIL.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "YES"
+            buildForProfiling = "YES"
+            buildForArchiving = "YES"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
                BlueprintIdentifier = "230AF75A88B837D006954100"
                BuildableName = "RendezvousILWidgets.appex"
                BlueprintName = "RendezvousILWidgets"

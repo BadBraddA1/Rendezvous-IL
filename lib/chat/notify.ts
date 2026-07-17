@@ -3,12 +3,14 @@ import { defaultApnsEnvironment, isApnsConfigured, sendApnsAlerts } from "@/lib/
 import { listChatChannelMemberIds } from "@/lib/chat/channels"
 import { ensureChatSchema, yearChannelId } from "@/lib/chat-schema"
 import { isFcmConfigured, isPermanentFcmTokenFailure, sendFcmAlerts } from "@/lib/fcm"
+import { ensureFamilyMembershipSchema } from "@/lib/family-membership"
 import { ensurePushSchema } from "@/lib/push-schema"
 import type { RegistrationEventYear } from "@/lib/registration-event-years"
 import type { ChatMessagePayload } from "@/types/chat"
 
 async function recipientClerkIds(channelId: string, senderClerkId: string): Promise<string[]> {
   await ensureChatSchema()
+  await ensureFamilyMembershipSchema()
 
   const [channel] = await sql`
     SELECT channel_type, event_year
@@ -19,21 +21,54 @@ async function recipientClerkIds(channelId: string, senderClerkId: string): Prom
 
   let ids = await listChatChannelMemberIds(channelId)
 
-  // Year channels: also include anyone with a linked family registration for that year
-  // (membership rows may be incomplete until each user opens chat).
+  // Year channels: include everyone on a registered family for that year
+  // (primary clerk_user_id + family_account_members). Membership rows may be
+  // incomplete until each user opens chat.
   if (channel && String(channel.channel_type) === "year" && channel.event_year != null) {
     const year = Number(channel.event_year) as RegistrationEventYear
     const yearId = yearChannelId(year)
     if (yearId === channelId) {
       try {
-        const rows = await sql`
+        const membershipRows = await sql`
+          SELECT DISTINCT m.clerk_user_id AS clerk_user_id
+          FROM family_account_members m
+          WHERE EXISTS (
+            SELECT 1 FROM registrations_v2 rv
+            WHERE rv.family_id = m.family_id AND rv.event_year = ${year}
+          )
+          OR EXISTS (
+            SELECT 1
+            FROM families f
+            JOIN registrations r ON LOWER(r.email) = LOWER(f.email)
+            WHERE f.id = m.family_id
+              AND COALESCE(r.event_year, 2026) = ${year}
+          )
+        `
+        for (const row of membershipRows) {
+          if (row.clerk_user_id) ids.push(String(row.clerk_user_id))
+        }
+      } catch {
+        // family_account_members / registrations_v2 may be absent on older DBs
+      }
+
+      try {
+        const primaryRows = await sql`
           SELECT DISTINCT f.clerk_user_id AS clerk_user_id
           FROM families f
-          INNER JOIN registrations_v2 rv ON rv.family_id = f.id
           WHERE f.clerk_user_id IS NOT NULL
-            AND rv.event_year = ${year}
+            AND (
+              EXISTS (
+                SELECT 1 FROM registrations_v2 rv
+                WHERE rv.family_id = f.id AND rv.event_year = ${year}
+              )
+              OR EXISTS (
+                SELECT 1 FROM registrations r
+                WHERE LOWER(r.email) = LOWER(f.email)
+                  AND COALESCE(r.event_year, 2026) = ${year}
+              )
+            )
         `
-        for (const row of rows) {
+        for (const row of primaryRows) {
           if (row.clerk_user_id) ids.push(String(row.clerk_user_id))
         }
       } catch {
@@ -63,9 +98,13 @@ export async function notifyChatMessagePush(input: {
     const title = input.message.is_announcement
       ? `Announcement · ${input.channelTitle}`
       : input.channelTitle
+    const imageUrl =
+      typeof input.message.image_url === "string" && input.message.image_url.trim()
+        ? input.message.image_url.trim()
+        : undefined
     const preview =
       input.message.body.trim() ||
-      (input.message.image_url ? "Sent a photo" : "")
+      (imageUrl ? "Sent a photo" : "")
     const body = input.message.is_announcement
       ? preview.slice(0, 160)
       : `${input.message.sender_display_name}: ${preview}`.slice(0, 160)
@@ -89,6 +128,7 @@ export async function notifyChatMessagePush(input: {
           body,
           url: deepLink,
           threadId: `chat-${input.channelId}`,
+          imageUrl,
         })
         for (const f of results.filter((r) => !r.success)) {
           if (f.reason?.includes("BadDeviceToken") || f.reason?.includes("Unregistered")) {
@@ -111,6 +151,7 @@ export async function notifyChatMessagePush(input: {
           title,
           body,
           url: webUrl,
+          imageUrl,
         })
         for (const f of results.filter((r) => !r.success)) {
           if (isPermanentFcmTokenFailure(f.reason)) {

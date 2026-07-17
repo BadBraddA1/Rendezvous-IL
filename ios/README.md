@@ -13,7 +13,7 @@ Native SwiftUI **attendee community hub** for [rendezvousil.com](https://rendezv
 | **Chat** | Year cohort channels (Ably realtime when available; messages still load if Ably fails), retry + pull-to-refresh |
 | **Schedule** (center tab) | Day schedule + live updates (now/next, weather, announcements), meals, worship leaders, event reminders |
 | **Directory** | Family cards (tap for full details); disk cache then background refresh; search, year picker; **Your photo** toolbar |
-| **Notifications** | Local event reminders + **APNs** for organizer broadcasts; deep links from push open the right tab |
+| **Notifications** | Local event reminders + **APNs** for organizer broadcasts and chat; photo messages show a lock-screen preview via **Notification Service Extension**; deep links from push open the right tab |
 | **Live Activity** | Lock Screen / Dynamic Island now & next during retreat week |
 | **Widgets** | Home/Lock Screen now/next; tap opens Schedule via `rendezvousil://schedule` |
 | **CarPlay** | Driving-task list: today’s retreat schedule + **Directions to Lake Williamson** (Apple entitlement **approved** — enable on App ID + refresh profiles; see [docs/carplay/SETUP.md](docs/carplay/SETUP.md)) |
@@ -59,8 +59,8 @@ App Store builds use `Config.xcconfig` — no extra setup on device.
 
 Then in Xcode:
 
-1. **Signing** — select your Team on **RendezvousIL** and **RendezvousILWidgets** targets (simulator does not need a team).
-2. **Capabilities** — entitlements include Push Notifications + App Group `group.com.rendezvousil.app`.
+1. **Signing** — select your Team on **RendezvousIL**, **RendezvousILWidgets**, and **RendezvousILNotificationService** targets (simulator does not need a team).
+2. **Capabilities** — entitlements include Push Notifications + App Group `group.com.rendezvousil.app`. Chat photo previews require the notification-service extension bundle id `com.rendezvousil.braddcorp.app.notification-service` (created by XcodeGen from `project.yml`).
 3. **App icon** — `AppIcon.appiconset` includes `AppIcon-1024.png` (from `public/rendezvous-logo.png`, same as the site header). To refresh after a logo change: `bash ios/scripts/sync-app-icon.sh`.
 4. Run on device (⌘R).
 
