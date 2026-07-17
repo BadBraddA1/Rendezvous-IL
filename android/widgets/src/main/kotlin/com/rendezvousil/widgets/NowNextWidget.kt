@@ -20,8 +20,8 @@ import androidx.glance.layout.width
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
+import androidx.compose.ui.unit.dp
 import androidx.glance.unit.ColorProvider
-import androidx.glance.unit.dp
 import com.rendezvousil.core.schedule.ScheduleNowNext
 import com.rendezvousil.core.schedule.SharedScheduleSnapshot
 

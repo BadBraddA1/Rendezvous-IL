@@ -4,7 +4,8 @@ plugins {
 }
 
 kotlin {
-    jvmToolchain(17)
+    // Match Android Studio JBR (often 21). Emits bytecode compatible with the app modules.
+    jvmToolchain(21)
 }
 
 dependencies {

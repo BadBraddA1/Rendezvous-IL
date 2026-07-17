@@ -2,10 +2,11 @@ package com.rendezvousil.app
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MoreHoriz
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -13,16 +14,19 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.rendezvousil.app.di.RendezvousViewModelFactory
 import com.rendezvousil.app.navigation.Routes
 import com.rendezvousil.app.auth.AppSession
@@ -34,6 +38,10 @@ import com.rendezvousil.app.ui.account.AccountScreen
 import com.rendezvousil.app.ui.checkin.CheckInScreen
 import com.rendezvousil.app.ui.biblebowl.BibleBowlScreen
 import com.rendezvousil.app.ui.calculator.CalculatorScreen
+import com.rendezvousil.app.ui.chat.ChatListScreen
+import com.rendezvousil.app.ui.chat.ChatListViewModel
+import com.rendezvousil.app.ui.chat.ChatThreadScreen
+import com.rendezvousil.app.ui.chat.ChatThreadViewModel
 import com.rendezvousil.app.ui.directory.DirectoryManageScreen
 import com.rendezvousil.app.ui.directory.DirectoryManageViewModel
 import com.rendezvousil.app.ui.directory.DirectoryScreen
@@ -60,8 +68,9 @@ private data class BottomNavItem(
 
 private val bottomNavItems = listOf(
     BottomNavItem(Routes.HOME, "Home", Icons.Default.Home),
+    BottomNavItem(Routes.CHAT, "Chat", Icons.AutoMirrored.Filled.Chat),
     BottomNavItem(Routes.SCHEDULE, "Schedule", Icons.Default.CalendarMonth),
-    BottomNavItem(Routes.UPDATES, "Updates", Icons.Default.Notifications),
+    BottomNavItem(Routes.DIRECTORY, "Directory", Icons.Default.Groups),
     BottomNavItem(Routes.MORE, "More", Icons.Default.MoreHoriz),
 )
 
@@ -96,15 +105,21 @@ fun RendezvousApp(
                 navigateToTab(navController, Routes.SCHEDULE)
                 onDeepLinkConsumed()
             }
+            Routes.CHAT -> {
+                navigateToTab(navController, Routes.CHAT)
+                onDeepLinkConsumed()
+            }
         }
     }
 
+    val showBottomBar = currentRoute == null ||
+        Routes.isTopLevelRoute(currentRoute) ||
+        Routes.isMoreRoute(currentRoute) ||
+        currentRoute == Routes.UPDATES
+
     Scaffold(
         bottomBar = {
-            if (currentRoute == null ||
-                Routes.isTopLevelRoute(currentRoute) ||
-                Routes.isMoreRoute(currentRoute)
-            ) {
+            if (showBottomBar && !Routes.isChatThreadRoute(currentRoute)) {
                 RendezvousBottomBar(
                     navController = navController,
                     currentRoute = currentRoute,
@@ -120,9 +135,61 @@ fun RendezvousApp(
             composable(Routes.HOME) {
                 HomeScreen(
                     onNavigateToSchedule = { navigateToTab(navController, Routes.SCHEDULE) },
-                    onNavigateToUpdates = { navigateToTab(navController, Routes.UPDATES) },
+                    onNavigateToUpdates = { navController.navigate(Routes.UPDATES) },
+                    onNavigateToChat = { navigateToTab(navController, Routes.CHAT) },
+                    onNavigateToDirectory = { navigateToTab(navController, Routes.DIRECTORY) },
                     onNavigateToFaq = { navigateToMore(navController, Routes.MORE_FAQ) },
                     onNavigateToCalculator = { navigateToMore(navController, Routes.MORE_CALCULATOR) },
+                )
+            }
+            composable(Routes.CHAT) { entry ->
+                val viewModel: ChatListViewModel = viewModel(factory = viewModelFactory)
+                val refreshList by entry.savedStateHandle
+                    .getStateFlow("refreshChatList", false)
+                    .collectAsState()
+                LaunchedEffect(refreshList) {
+                    if (refreshList) {
+                        viewModel.refresh()
+                        entry.savedStateHandle["refreshChatList"] = false
+                    }
+                }
+                ChatListScreen(
+                    viewModel = viewModel,
+                    onOpenChannel = { channel ->
+                        navController.navigate(
+                            Routes.chatThread(
+                                channelId = channel.id,
+                                title = channel.displayTitle,
+                                canModerate = channel.can_moderate == true,
+                            ),
+                        )
+                    },
+                    onNavigateToAccount = { navController.navigate(Routes.MORE_ACCOUNT) },
+                )
+            }
+            composable(
+                route = Routes.CHAT_THREAD,
+                arguments = listOf(
+                    navArgument("channelId") { type = NavType.StringType },
+                    navArgument("title") {
+                        type = NavType.StringType
+                        defaultValue = "Chat"
+                    },
+                    navArgument("canModerate") {
+                        type = NavType.StringType
+                        defaultValue = "false"
+                    },
+                ),
+            ) {
+                val viewModel: ChatThreadViewModel = viewModel(factory = viewModelFactory)
+                ChatThreadScreen(
+                    viewModel = viewModel,
+                    onBack = {
+                        navController.previousBackStackEntry
+                            ?.savedStateHandle
+                            ?.set("refreshChatList", true)
+                        navController.popBackStack()
+                    },
                 )
             }
             composable(Routes.SCHEDULE) {
@@ -130,6 +197,15 @@ fun RendezvousApp(
                 ScheduleScreen(
                     viewModel = viewModel,
                     reminderService = reminderService,
+                )
+            }
+            composable(Routes.DIRECTORY) {
+                val viewModel: DirectoryViewModel = viewModel(factory = viewModelFactory)
+                DirectoryScreen(
+                    viewModel = viewModel,
+                    onBack = null,
+                    onNavigateToAccount = { navController.navigate(Routes.MORE_ACCOUNT) },
+                    onNavigateToManage = { navController.navigate(Routes.MORE_DIRECTORY_MANAGE) },
                 )
             }
             composable(Routes.UPDATES) {
@@ -146,10 +222,11 @@ fun RendezvousApp(
                     onNavigateToAdminDashboard = { navController.navigate(Routes.MORE_ADMIN_DASHBOARD) },
                     onNavigateToAdminUsers = { navController.navigate(Routes.MORE_ADMIN_USERS) },
                     onNavigateToCheckIn = { navController.navigate(Routes.MORE_CHECK_IN) },
-                    onNavigateToDirectory = { navController.navigate(Routes.MORE_DIRECTORY) },
+                    onNavigateToDirectory = { navigateToTab(navController, Routes.DIRECTORY) },
                     onNavigateToDirectoryManage = { navController.navigate(Routes.MORE_DIRECTORY_MANAGE) },
                     onNavigateToAccount = { navController.navigate(Routes.MORE_ACCOUNT) },
                     onNavigateToNotifications = { navController.navigate(Routes.MORE_NOTIFICATIONS) },
+                    onNavigateToUpdates = { navController.navigate(Routes.UPDATES) },
                 )
             }
             composable(Routes.MORE_CALCULATOR) {
@@ -168,13 +245,9 @@ fun RendezvousApp(
                 AboutScreen(onBack = { navController.popBackStack() })
             }
             composable(Routes.MORE_DIRECTORY) {
-                val viewModel: DirectoryViewModel = viewModel(factory = viewModelFactory)
-                DirectoryScreen(
-                    viewModel = viewModel,
-                    onBack = { navController.popBackStack() },
-                    onNavigateToAccount = { navController.navigate(Routes.MORE_ACCOUNT) },
-                    onNavigateToManage = { navController.navigate(Routes.MORE_DIRECTORY_MANAGE) },
-                )
+                LaunchedEffect(Unit) {
+                    navigateToTab(navController, Routes.DIRECTORY)
+                }
             }
             composable(Routes.MORE_DIRECTORY_MANAGE) {
                 val viewModel: DirectoryManageViewModel = viewModel(factory = viewModelFactory)
@@ -188,7 +261,7 @@ fun RendezvousApp(
                 AccountScreen(
                     appSession = appSession,
                     onBack = { navController.popBackStack() },
-                    onNavigateToDirectory = { navController.navigate(Routes.MORE_DIRECTORY) },
+                    onNavigateToDirectory = { navigateToTab(navController, Routes.DIRECTORY) },
                     onNavigateToDirectoryManage = { navController.navigate(Routes.MORE_DIRECTORY_MANAGE) },
                 )
             }
@@ -236,6 +309,10 @@ private fun RendezvousBottomBar(
         bottomNavItems.forEach { item ->
             val selected = when (item.route) {
                 Routes.MORE -> Routes.isMoreRoute(currentRoute)
+                Routes.CHAT -> currentRoute == Routes.CHAT || Routes.isChatThreadRoute(currentRoute)
+                Routes.DIRECTORY -> currentRoute == Routes.DIRECTORY ||
+                    currentRoute == Routes.MORE_DIRECTORY ||
+                    currentRoute == Routes.MORE_DIRECTORY_MANAGE
                 else -> currentRoute == item.route
             }
             NavigationBarItem(

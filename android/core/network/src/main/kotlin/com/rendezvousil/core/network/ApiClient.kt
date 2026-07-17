@@ -1,5 +1,6 @@
 package com.rendezvousil.core.network
 
+import com.rendezvousil.core.network.dto.AblyTokenResponse
 import com.rendezvousil.core.network.dto.AdminDashboardResponse
 import com.rendezvousil.core.network.dto.AdminMeResponse
 import com.rendezvousil.core.network.dto.AdminResetPasswordBody
@@ -11,6 +12,15 @@ import com.rendezvousil.core.network.dto.AdminUserRolePatchBody
 import com.rendezvousil.core.network.dto.AdminUsersListResponse
 import com.rendezvousil.core.network.dto.SimpleSuccessResponse
 import com.rendezvousil.core.network.dto.AnnouncementsResponse
+import com.rendezvousil.core.network.dto.ChatChannelsResponse
+import com.rendezvousil.core.network.dto.ChatCreatePollBody
+import com.rendezvousil.core.network.dto.ChatMessageResponse
+import com.rendezvousil.core.network.dto.ChatMessagesResponse
+import com.rendezvousil.core.network.dto.ChatReactionBody
+import com.rendezvousil.core.network.dto.ChatReactionResponse
+import com.rendezvousil.core.network.dto.ChatSendMessageBody
+import com.rendezvousil.core.network.dto.ChatVoteBody
+import com.rendezvousil.core.network.dto.ChatVoteResponse
 import com.rendezvousil.core.network.dto.CheckInFullResponse
 import com.rendezvousil.core.network.dto.CheckInLookupResponse
 import com.rendezvousil.core.network.dto.CheckInMutationResponse
@@ -48,7 +58,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.HttpException
 import retrofit2.Retrofit
-import retrofit2.converter.kotlinx.serialization.asConverterFactory
+import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
@@ -344,6 +354,86 @@ class ApiClient private constructor(
         path = "api/admin/users/$userId/reset-password",
         body = AdminResetPasswordBody(mode = mode, password = password),
     )
+
+    suspend fun getChatChannels(): ChatChannelsResponse =
+        getJson("api/chat/channels")
+
+    suspend fun getChatMessages(channelId: String, limit: Int = 80): ChatMessagesResponse =
+        getJson(
+            path = "api/chat/channels/$channelId/messages",
+            queryParameters = mapOf("limit" to limit.toString()),
+        )
+
+    suspend fun sendChatMessage(
+        channelId: String,
+        body: String,
+        isAnnouncement: Boolean = false,
+    ): ChatMessageResponse = postJson(
+        path = "api/chat/channels/$channelId/messages",
+        body = ChatSendMessageBody(body = body, is_announcement = isAnnouncement),
+    )
+
+    suspend fun sendChatMessageWithPhotos(
+        channelId: String,
+        body: String,
+        isAnnouncement: Boolean,
+        photos: List<Pair<ByteArray, String>>,
+    ): ChatMessageResponse {
+        val multipart = MultipartBody.Builder().setType(MultipartBody.FORM)
+            .addFormDataPart("body", body)
+            .addFormDataPart("is_announcement", if (isAnnouncement) "true" else "false")
+        photos.forEachIndexed { index, (bytes, mime) ->
+            val ext = when {
+                mime.contains("png") -> "png"
+                mime.contains("webp") -> "webp"
+                else -> "jpg"
+            }
+            multipart.addFormDataPart(
+                "photo",
+                "chat-photo-$index.$ext",
+                bytes.toRequestBody(mime.toMediaType()),
+            )
+        }
+        val request = Request.Builder()
+            .url(urlFor("api/chat/channels/$channelId/messages"))
+            .post(multipart.build())
+            .build()
+        return executeJsonRequest(request)
+    }
+
+    suspend fun createChatPoll(
+        channelId: String,
+        question: String,
+        options: List<String>,
+    ): ChatMessageResponse = postJson(
+        path = "api/chat/channels/$channelId/messages",
+        body = ChatCreatePollBody(
+            body = question,
+            poll_question = question,
+            poll_options = options,
+        ),
+    )
+
+    suspend fun voteOnChatPoll(messageId: String, optionIndex: Int): ChatVoteResponse =
+        postJson(
+            path = "api/chat/messages/$messageId/vote",
+            body = ChatVoteBody(option_index = optionIndex),
+        )
+
+    suspend fun toggleChatReaction(messageId: String, emoji: String): ChatReactionResponse =
+        postJson(
+            path = "api/chat/messages/$messageId/reactions",
+            body = ChatReactionBody(emoji = emoji),
+        )
+
+    suspend fun deleteChatMessage(messageId: String): SimpleSuccessResponse =
+        deleteJson("api/chat/messages/$messageId")
+
+    suspend fun getAblyToken(): AblyTokenResponse =
+        postJson(path = "api/ably/token", body = EmptyJsonBody())
+
+    @kotlinx.serialization.Serializable
+    private data class EmptyJsonBody(val _unused: String? = null)
 
     private suspend inline fun <reified T> getJson(
         path: String,

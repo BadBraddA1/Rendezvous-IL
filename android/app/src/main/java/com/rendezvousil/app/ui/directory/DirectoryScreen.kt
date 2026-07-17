@@ -61,7 +61,7 @@ import com.rendezvousil.core.network.dto.DirectoryFamily
 @Composable
 fun DirectoryScreen(
     viewModel: DirectoryViewModel,
-    onBack: () -> Unit,
+    onBack: (() -> Unit)? = null,
     onNavigateToAccount: () -> Unit,
     onNavigateToManage: () -> Unit,
     modifier: Modifier = Modifier,
@@ -75,8 +75,10 @@ fun DirectoryScreen(
             TopAppBar(
                 title = { Text("Family Directory") },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    if (onBack != null) {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        }
                     }
                 },
             )

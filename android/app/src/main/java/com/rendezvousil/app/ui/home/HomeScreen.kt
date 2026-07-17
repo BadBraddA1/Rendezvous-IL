@@ -12,6 +12,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.HelpOutline
@@ -49,6 +50,8 @@ private data class FactItem(
 fun HomeScreen(
     onNavigateToSchedule: () -> Unit,
     onNavigateToUpdates: () -> Unit,
+    onNavigateToChat: () -> Unit = {},
+    onNavigateToDirectory: () -> Unit = {},
     onNavigateToFaq: () -> Unit,
     onNavigateToCalculator: () -> Unit,
     modifier: Modifier = Modifier,
@@ -87,6 +90,8 @@ fun HomeScreen(
             CountdownCard()
             QuickActionsSection(
                 onNavigateToSchedule = onNavigateToSchedule,
+                onNavigateToChat = onNavigateToChat,
+                onNavigateToDirectory = onNavigateToDirectory,
                 onNavigateToUpdates = onNavigateToUpdates,
                 onNavigateToFaq = onNavigateToFaq,
                 onNavigateToCalculator = onNavigateToCalculator,
@@ -171,6 +176,8 @@ private fun CountdownCard() {
 @Composable
 private fun QuickActionsSection(
     onNavigateToSchedule: () -> Unit,
+    onNavigateToChat: () -> Unit,
+    onNavigateToDirectory: () -> Unit,
     onNavigateToUpdates: () -> Unit,
     onNavigateToFaq: () -> Unit,
     onNavigateToCalculator: () -> Unit,
@@ -183,6 +190,22 @@ private fun QuickActionsSection(
                 icon = { Icon(Icons.Default.CalendarMonth, null, tint = BrandColors.Lake, modifier = Modifier.size(28.dp)) },
                 color = BrandColors.Lake,
                 onClick = onNavigateToSchedule,
+                modifier = Modifier.weight(1f),
+            )
+            QuickActionButton(
+                title = "Chat",
+                icon = { Icon(Icons.AutoMirrored.Filled.Chat, null, tint = BrandColors.Coral, modifier = Modifier.size(28.dp)) },
+                color = BrandColors.Coral,
+                onClick = onNavigateToChat,
+                modifier = Modifier.weight(1f),
+            )
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            QuickActionButton(
+                title = "Directory",
+                icon = { Icon(Icons.Default.Groups, null, tint = BrandColors.Lake, modifier = Modifier.size(28.dp)) },
+                color = BrandColors.Lake,
+                onClick = onNavigateToDirectory,
                 modifier = Modifier.weight(1f),
             )
             QuickActionButton(

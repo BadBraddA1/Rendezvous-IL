@@ -8,6 +8,8 @@ import kotlinx.coroutines.flow.StateFlow
  */
 interface AppSession {
     val isSignedIn: Boolean
+    /** Clerk user id when signed in (for chat “mine” bubbles, etc.). */
+    val clerkUserId: String?
     val isAdmin: Boolean
     val canViewDashboard: Boolean
     val canCheckIn: Boolean

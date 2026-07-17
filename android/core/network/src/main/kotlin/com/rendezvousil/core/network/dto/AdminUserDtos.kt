@@ -19,7 +19,24 @@ data class AdminUserRecord(
     val lastPlatform: String? = null,
     val lastAppVersion: String? = null,
     val visitCount: Int,
-)
+) {
+    val displayName: String
+        get() {
+            val name = listOfNotNull(firstName, lastName)
+                .joinToString(" ")
+                .trim()
+            return name.ifEmpty { email }
+        }
+
+    val roleLabel: String
+        get() = when (role?.lowercase()) {
+            "admin" -> "Admin"
+            "staff" -> "Staff"
+            "moderator" -> "Moderator"
+            null, "", "user", "member" -> "Member"
+            else -> role.replaceFirstChar { it.uppercase() }
+        }
+}
 
 @Serializable
 data class AdminUsersListResponse(

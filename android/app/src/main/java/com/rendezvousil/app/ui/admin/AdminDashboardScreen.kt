@@ -36,8 +36,8 @@ import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.RvHookup
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.Target
-import androidx.compose.material.icons.filled.Tent
+import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.filled.Park
 import androidx.compose.material.icons.filled.VpnKey
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -427,7 +427,7 @@ private fun RegistrationProgressCard(payload: AdminDashboardResponse) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Target, contentDescription = null, tint = BrandColors.Lake)
+                Icon(Icons.Default.Flag, contentDescription = null, tint = BrandColors.Lake)
                 Text(
                     text = "Registration goal",
                     modifier = Modifier.padding(start = 8.dp),
@@ -645,7 +645,7 @@ private fun LodgingCard(lodging: AdminLodgingBreakdown) {
         Spacer(modifier = Modifier.height(12.dp))
         LodgingRow("Motel", lodging.motel, Icons.Default.Bed)
         LodgingRow("RV", lodging.rv, Icons.Default.RvHookup)
-        LodgingRow("Tent", lodging.tent, Icons.Default.Tent)
+        LodgingRow("Tent", lodging.tent, Icons.Default.Park)
         LodgingRow("Drive-in", lodging.drivein, Icons.Default.CarRental)
     }
 }

@@ -16,7 +16,7 @@ import androidx.glance.layout.padding
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
-import androidx.glance.unit.dp
+import androidx.compose.ui.unit.dp
 import com.rendezvousil.core.schedule.ScheduleNowNext
 import com.rendezvousil.core.schedule.SharedScheduleSnapshot
 
@@ -36,13 +36,15 @@ private fun NextEventWidgetContent(
     snapshot: SharedScheduleSnapshot?,
     nowNext: com.rendezvousil.core.schedule.model.NowNextResult,
 ) {
+    val current = nowNext.current
+    val next = nowNext.next
     val primaryTitle = when {
-        nowNext.current?.title != null -> "Now: ${nowNext.current.title}"
-        nowNext.next?.title != null -> nowNext.next.title
+        current?.title != null -> "Now: ${current.title}"
+        next?.title != null -> next.title
         else -> "Registration opens ${snapshot?.registrationOpens ?: "Jan 1, 2027"}"
     }
     val subtitle = when {
-        nowNext.next != null -> listOfNotNull(nowNext.next.day, nowNext.next.time).joinToString(" · ")
+        next != null -> listOfNotNull(next.day, next.time).joinToString(" · ")
         else -> snapshot?.dateRange ?: "May 3–7, 2027"
     }
 

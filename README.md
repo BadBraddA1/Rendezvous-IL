@@ -102,11 +102,11 @@ pnpm db:verify
 
 - **Core attendee feature** — each event year gets a group chat (`year-2026`, `year-2027`). Register for a year → you can message that year's families; past years you attended stay available.
 - **Realtime** via Ably Pub/Sub (`rendezvous:channel:{id}`), not `@ably/chat`. Events: `message`, `message_deleted`, `reaction`, `poll_updated`. Token at `POST /api/ably/token`. HTTP poll every 4s is the fallback when Ably is disconnected. Tables: `chat_channels`, `chat_channel_members`, `chat_messages`, `chat_poll_votes`, `chat_message_reactions`, `chat_channel_reads` (lazy-created by `lib/chat-schema.ts`).
-- **Channel list:** Sorted by newest message first. Each channel includes `unread_count` (messages from others since you last opened it; first visit only counts the last 7 days). Opening a thread (`GET …/messages`) marks the channel read. Badges show on web `/chat` and iOS `ChatListView`.
-- **Timestamps:** SQLite `CURRENT_TIMESTAMP` is UTC without a `Z`; the API normalizes `created_at` / `last_message_at` to ISO-8601 UTC (`lib/chat/timestamps.ts`) so web and iOS don’t show times several hours off. New messages also store an explicit ISO `created_at`.
-- **Member UI:** `/chat` (web) and iOS **Chat** tab (`ChatListView` / `ChatThreadView`). Requires Clerk sign-in + registration for year channels. Members can send **up to 6 photos** per message (Blob storage) with composer previews. New messages send APNs/FCM to other channel members **and all linked family accounts** registered for that year (`lib/chat/notify.ts` → `family_account_members` + primary `families.clerk_user_id`). Photo messages include the image URL in the push payload: Android shows a big-picture preview via FCM; iOS needs the **Notification Service Extension** (`RendezvousILNotificationService`, app build **2.0.6+**) which downloads the image when `mutable-content` is set. Release archives use `aps-environment=production` via `APS_ENVIRONMENT` (Debug stays `development`) so Xcode Cloud App Store / Ad Hoc export can sign.
+- **Channel list:** Sorted by newest message first. Each channel includes `unread_count` (messages from others since you last opened it; first visit only counts the last 7 days). Opening a thread (`GET …/messages`) marks the channel read. Badges show on web `/chat`, iOS `ChatListView`, and Android `ChatListScreen`.
+- **Timestamps:** SQLite `CURRENT_TIMESTAMP` is UTC without a `Z`; the API normalizes `created_at` / `last_message_at` to ISO-8601 UTC (`lib/chat/timestamps.ts`) so web, iOS, and Android don’t show times several hours off. New messages also store an explicit ISO `created_at`.
+- **Member UI:** `/chat` (web), iOS **Chat** tab (`ChatListView` / `ChatThreadView`), and Android **Chat** tab (`ChatListScreen` / `ChatThreadScreen`). Requires Clerk sign-in + registration for year channels. Members can send **up to 6 photos** per message (Blob storage) with composer previews. New messages send APNs/FCM to other channel members **and all linked family accounts** registered for that year (`lib/chat/notify.ts` → `family_account_members` + primary `families.clerk_user_id`). Photo messages include the image URL in the push payload: Android shows a big-picture preview via FCM; iOS needs the **Notification Service Extension** (`RendezvousILNotificationService`, app build **2.0.6+**) which downloads the image when `mutable-content` is set. Release archives use `aps-environment=production` via `APS_ENVIRONMENT` (Debug stays `development`) so Xcode Cloud App Store / Ad Hoc export can sign.
 - **Polls:** Site admins and channel moderators can create polls (2–6 options). Anyone in the channel can vote (one vote per user, changeable). Live counts via Ably `poll_updated`. No extra push beyond the initial “new poll” message notify.
-- **Reactions:** Fixed set `🦙 👍 ❤️ 😂 🙏` on any message (text, photo, announcement, poll). The picker stays behind a smile control (web dropdown / iOS menu); existing reaction chips still show when someone has reacted. Toggle via `POST /api/chat/messages/[id]/reactions`. Push goes **only to the message author** (not the whole channel).
+- **Reactions:** Fixed set `🦙 👍 ❤️ 😂 🙏` on any message (text, photo, announcement, poll). The picker stays behind a smile control (web dropdown / iOS menu / Android dropdown); existing reaction chips still show when someone has reacted. Toggle via `POST /api/chat/messages/[id]/reactions`. Push goes **only to the message author** (not the whole channel).
 - **Mods:** Site admins moderate all rooms. Channel **moderators** (set in Admin → Year Chat) can delete messages, post announcements, and create polls in rooms they moderate. Deletes publish `message_deleted` so other clients remove the message live.
 - **iOS chat demo flag:** `-ChatDemo` (optional code override) sends `X-Chat-Demo-Code` matching Vercel `CHAT_DEMO_CODE` and lists only active admin **test** channels — change rooms anytime under Admin → Year Chat.
 - **Demo Chat seed:** `node scripts/seed-demo-chat.mjs` (with Turso env) creates/updates the `demo-chat` test channel with 20 sample messages. Re-run anytime to refresh.
@@ -163,18 +163,19 @@ Native admin APIs: `GET /api/admin/me`, `GET /api/admin/mobile/dashboard` (Beare
 
 ## Android app
 
-Native **Jetpack Compose** app in `android/` (Phases 1–4):
+Native **Jetpack Compose** app in `android/` (Phases 1–5):
 
-- **Home / Schedule / Updates / More** — 4-tab shell matching iOS
+- **Home / Chat / Schedule / Directory / More** — 5-tab shell aligned with iOS (CarPlay / campus map stay iOS-ahead)
+- **Chat** — year group chat parity with iOS/web: channel list (unread badges, activity sort), thread (text, up to 6 photos, polls, announcements for mods, reactions behind smile menu, delete), Ably Pub/Sub + 4s HTTP poll fallback (`ably-android`)
 - **Schedule** — opens on today / next upcoming day and scrolls toward the current event; day picker, meals, volunteer slots, **event reminders** (bell icon), offline fallback
-- **Updates** — now/next (Central Time), weather, announcements
-- **More** — calculator, Bible Bowl, FAQ, About, **Clerk account**, **directory**, **notifications & widgets**, **admin** (dashboard, user management, staff check-in)
+- **Updates** — now/next (Central Time), weather, announcements (Home quick link + More → Live updates; not a bottom tab)
+- **More** — calculator, Bible Bowl, FAQ, About, **Clerk account**, directory manage, **notifications & widgets**, **admin** (dashboard, user management, staff check-in)
 - **Admin** — mobile dashboard stats, staff check-in with QR scan, user CRUD (role-gated via Clerk session)
-- **Push** — FCM organizer broadcasts; `POST /api/push/register` with `platform: "android"`
+- **Push** — FCM organizer broadcasts + chat; `POST /api/push/register` with `platform: "android"`
 - **Widgets** — Glance home screen: Next event + Now & next
 - **Deep links** — `rendezvousil://schedule` opens Schedule tab
 
-Setup: open `android/` in Android Studio (JDK 17), copy `local.properties.example` → `local.properties`, add `CLERK_PUBLISHABLE_KEY`, add `google-services.json` (or Firebase manual keys) for FCM — see [android/README.md](android/README.md) and [docs/FCM_SETUP.md](docs/FCM_SETUP.md).
+Setup: open `android/` in Android Studio (JDK 17+), copy `local.properties.example` → `local.properties`, add `CLERK_PUBLISHABLE_KEY`, add `google-services.json` (or Firebase manual keys) for FCM — see [android/README.md](android/README.md) and [docs/FCM_SETUP.md](docs/FCM_SETUP.md).
 
 ## Contact
 

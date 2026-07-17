@@ -55,6 +55,7 @@ fun MoreScreen(
     onNavigateToDirectoryManage: () -> Unit,
     onNavigateToAccount: () -> Unit,
     onNavigateToNotifications: () -> Unit,
+    onNavigateToUpdates: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -76,6 +77,11 @@ fun MoreScreen(
                 SectionHeader("Plan your trip")
             }
             item {
+                NavListItem(
+                    title = "Live updates",
+                    icon = { Icon(Icons.Default.Notifications, contentDescription = null) },
+                    onClick = onNavigateToUpdates,
+                )
                 NavListItem(
                     title = "Cost calculator",
                     icon = { Icon(Icons.Default.AttachMoney, contentDescription = null) },

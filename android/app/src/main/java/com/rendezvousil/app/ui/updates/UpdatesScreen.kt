@@ -72,7 +72,7 @@ fun UpdatesScreen(
                 verticalArrangement = Arrangement.spacedBy(20.dp),
             ) {
                 NowNextSection(nowNext = nowNext)
-                WeatherSection(weather = weather.current)
+                WeatherSection(weather = weather?.current)
                 AnnouncementsSection(announcements = announcements)
             }
         }

@@ -28,6 +28,9 @@ class ClerkAppSession(
     override val isSignedIn: Boolean
         get() = _isSignedIn.value
 
+    override val clerkUserId: String?
+        get() = Clerk.user?.id ?: Clerk.session?.user?.id
+
     private val _isAdmin = MutableStateFlow(false)
     override val isAdminFlow: StateFlow<Boolean> = _isAdmin.asStateFlow()
     override val isAdmin: Boolean

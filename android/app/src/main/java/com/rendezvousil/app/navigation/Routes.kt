@@ -1,8 +1,13 @@
 package com.rendezvousil.app.navigation
 
+import android.net.Uri
+
 object Routes {
     const val HOME = "home"
+    const val CHAT = "chat"
+    const val CHAT_THREAD = "chat/{channelId}?title={title}&canModerate={canModerate}"
     const val SCHEDULE = "schedule"
+    const val DIRECTORY = "directory"
     const val UPDATES = "updates"
     const val MORE = "more"
     const val MORE_CALCULATOR = "more/calculator"
@@ -19,10 +24,18 @@ object Routes {
     /** Alias for [MORE_CHECKIN] (MoreScreen navigation). */
     const val MORE_CHECK_IN = MORE_CHECKIN
 
-    val topLevelRoutes = listOf(HOME, SCHEDULE, UPDATES, MORE)
+    val topLevelRoutes = listOf(HOME, CHAT, SCHEDULE, DIRECTORY, MORE)
 
     fun isTopLevelRoute(route: String?): Boolean = route in topLevelRoutes
 
     fun isMoreRoute(route: String?): Boolean =
         route == MORE || route?.startsWith("more/") == true
+
+    fun isChatThreadRoute(route: String?): Boolean =
+        route?.startsWith("chat/") == true
+
+    fun chatThread(channelId: String, title: String, canModerate: Boolean): String {
+        val encodedTitle = Uri.encode(title)
+        return "chat/$channelId?title=$encodedTitle&canModerate=$canModerate"
+    }
 }

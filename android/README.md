@@ -39,10 +39,10 @@ Debug builds allow cleartext HTTP via `app/src/debug/AndroidManifest.xml`.
 
 ## Gradle wrapper
 
-The repo includes `gradlew` / `gradle-wrapper.properties` (Gradle **8.7**). If the wrapper scripts are missing, regenerate from the `android/` directory:
+The repo includes `gradlew` / `gradle-wrapper.properties` (Gradle **8.11.1**). If the wrapper scripts are missing, regenerate from the `android/` directory:
 
 ```bash
-gradle wrapper --gradle-version 8.7
+gradle wrapper --gradle-version 8.11.1
 ```
 
 ## Build
@@ -68,7 +68,7 @@ Generates `app/src/main/assets/schedule-fallback.json` from `lib/schedule-data.t
 
 | Area | Details |
 |------|---------|
-| **Shell** | 4 tabs: Home, Schedule, Updates, More |
+| **Shell** | 5 tabs: Home, Chat, Schedule, Directory, More (Updates via Home/More) |
 | **Schedule** | Day picker, meals, volunteer slots, schedule announcements, offline fallback JSON |
 | **Updates** | Now/next (America/Chicago), weather, live announcements |
 | **Public pages** | FAQ, About, Bible Bowl, cost calculator (same logic as iOS/web) |
@@ -146,6 +146,19 @@ Local event reminders work without Firebase. FCM broadcast alerts require Fireba
 | **User management** | `AdminUsersScreen` — list, search, pull-to-refresh, create sheet, detail sheet (role, ban, delete, reset password / sign-in link) |
 | **API** | `GET /api/admin/mobile/dashboard`, check-in registration routes, `GET/POST/PATCH/DELETE /api/admin/users`, `POST .../reset-password` via `ApiClient` |
 
+## Phase 5 — Year chat ✅
+
+Core chat parity with iOS/web (CarPlay remains iOS-only):
+
+| Area | Details |
+|------|---------|
+| **Tabs** | Bottom bar: Home, **Chat**, Schedule, **Directory**, More — same primary surfaces as iOS |
+| **Chat list** | `ChatListScreen` — channels from `GET /api/chat/channels`, newest activity first, unread badges, pull-to-refresh |
+| **Thread** | `ChatThreadScreen` — messages, send text, up to 6 photos (multipart), polls + announcements (mods), reactions (`🦙👍❤️😂🙏` behind smile menu), delete own/mod |
+| **Realtime** | `AblyChatService` — `POST /api/ably/token`, channel `rendezvous:channel:{id}`, events `message` / `message_deleted` / `reaction` / `poll_updated`; HTTP poll every 4s if Ably fails |
+| **API** | `ApiClient` chat helpers + DTOs in `core/network/.../dto/ChatDtos.kt` |
+| **Deps** | `io.ably:ably-android` (Pub/Sub, not `@ably/chat`) |
+
 ## Project layout
 
 ```
@@ -162,4 +175,4 @@ android/
 └── settings.gradle.kts     # :app, :core:network, :core:schedule, :widgets
 ```
 
-Package: `com.rendezvousil.app` · minSdk **26** · target/compileSdk **35**
+Package: `com.rendezvousil.app` · minSdk **26** · targetSdk **35** · compileSdk **36** · AGP **8.9.1** · Kotlin **2.4.10**
