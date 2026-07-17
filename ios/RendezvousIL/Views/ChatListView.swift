@@ -134,7 +134,12 @@ struct ChatListView: View {
             return
         }
 
-        if !force { isLoading = true }
+        if !force, let cached = ChatDataStore.loadChannels(), !cached.isEmpty {
+            channels = cached.sortedForDisplay()
+            isLoading = false
+        } else if !force {
+            isLoading = true
+        }
         errorMessage = nil
         statusHint = nil
         defer { isLoading = false }
@@ -144,16 +149,21 @@ struct ChatListView: View {
                 try await client.getChatChannels()
             }
             channels = response.channels.sortedForDisplay()
+            ChatDataStore.saveChannels(channels)
             if channels.isEmpty {
                 statusHint = session.isChatDemoMode
                     ? "No active test channels yet. In admin → Year Chat, create a channel and mark it Test."
                     : await emptyChatHint(using: client)
             }
         } catch APIError.unauthorized {
-            errorMessage = "Session expired. Sign out and sign in again."
+            if channels.isEmpty {
+                errorMessage = "Session expired. Sign out and sign in again."
+            }
         } catch {
             if APIError.isCancellation(error) { return }
-            errorMessage = error.localizedDescription
+            if channels.isEmpty {
+                errorMessage = error.localizedDescription
+            }
         }
     }
 

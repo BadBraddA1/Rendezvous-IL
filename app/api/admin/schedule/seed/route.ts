@@ -3,6 +3,7 @@ import { checkAdminAuth, getAdminPermissions, logAuditAction } from "@/lib/admin
 import { getRequestAuditMeta } from "@/lib/audit-log"
 import { listScheduleEvents, seedScheduleEvents } from "@/lib/event-schedule"
 import { parseRegistrationEventYear } from "@/lib/registration-event-years"
+import { revalidatePublicSchedule } from "@/lib/schedule-revalidate"
 
 export const dynamic = "force-dynamic"
 
@@ -31,6 +32,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    revalidatePublicSchedule()
     return NextResponse.json({
       success: true,
       inserted,

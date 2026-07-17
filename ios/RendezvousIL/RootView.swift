@@ -92,6 +92,9 @@ struct RootView: View {
                 }
                 await session.recordActivityIfSignedIn()
                 await NotificationService.shared.registerForRemoteIfAuthorized()
+                // Pull a fresh schedule when returning to the app so admin edits land quickly.
+                await repository.loadScheduleBundle()
+                await repository.loadScheduleExtras()
             }
         }
         .sheet(isPresented: $showAuthSheet) {

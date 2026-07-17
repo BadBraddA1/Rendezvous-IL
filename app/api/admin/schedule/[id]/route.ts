@@ -8,6 +8,7 @@ import {
   updateScheduleEvent,
 } from "@/lib/event-schedule"
 import { parseRegistrationEventYear } from "@/lib/registration-event-years"
+import { revalidatePublicSchedule } from "@/lib/schedule-revalidate"
 
 export const dynamic = "force-dynamic"
 
@@ -44,6 +45,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       ipAddress,
       userAgent,
     )
+    revalidatePublicSchedule()
     return NextResponse.json({ success: true, events: await listScheduleEvents(year) })
   } catch (error) {
     console.error("[admin/schedule/:id] PATCH error:", error)
@@ -78,6 +80,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
       ipAddress,
       userAgent,
     )
+    revalidatePublicSchedule()
     return NextResponse.json({ success: true, events: await listScheduleEvents(year) })
   } catch (error) {
     console.error("[admin/schedule/:id] DELETE error:", error)

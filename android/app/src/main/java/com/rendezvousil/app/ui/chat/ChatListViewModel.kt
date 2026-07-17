@@ -1,16 +1,20 @@
 package com.rendezvousil.app.ui.chat
 
+import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rendezvousil.app.auth.AppSession
+import com.rendezvousil.app.chat.ChatDataStore
 import com.rendezvousil.app.chat.sortedForDisplay
 import com.rendezvousil.core.network.ApiException
 import com.rendezvousil.core.network.dto.ChatChannelSummary
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 data class ChatListUiState(
     val isSignedIn: Boolean = false,
@@ -22,7 +26,9 @@ data class ChatListUiState(
 
 class ChatListViewModel(
     private val appSession: AppSession,
+    application: Application,
 ) : ViewModel() {
+    private val cache = ChatDataStore(application)
     private val _uiState = MutableStateFlow(ChatListUiState())
     val uiState: StateFlow<ChatListUiState> = _uiState.asStateFlow()
 
@@ -75,7 +81,18 @@ class ChatListViewModel(
             }
 
             if (!force) {
-                _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+                val cached = withContext(Dispatchers.IO) { cache.loadChannels() }
+                if (!cached.isNullOrEmpty()) {
+                    _uiState.update {
+                        it.copy(
+                            channels = cached.sortedForDisplay(),
+                            isLoading = false,
+                            errorMessage = null,
+                        )
+                    }
+                } else {
+                    _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+                }
             } else {
                 _uiState.update { it.copy(errorMessage = null) }
             }
@@ -83,6 +100,7 @@ class ChatListViewModel(
             try {
                 val response = client.getChatChannels()
                 val channels = response.channels.sortedForDisplay()
+                withContext(Dispatchers.IO) { cache.saveChannels(channels) }
                 _uiState.update {
                     it.copy(
                         channels = channels,
@@ -99,14 +117,22 @@ class ChatListViewModel(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        errorMessage = "Sign in required to load chats.",
+                        errorMessage = if (it.channels.isEmpty()) {
+                            "Sign in required to load chats."
+                        } else {
+                            it.errorMessage
+                        },
                     )
                 }
             } catch (error: Exception) {
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        errorMessage = error.message ?: "Could not load chat",
+                        errorMessage = if (it.channels.isEmpty()) {
+                            error.message ?: "Could not load chat"
+                        } else {
+                            it.errorMessage
+                        },
                     )
                 }
             }

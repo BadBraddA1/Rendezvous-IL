@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { checkAdminAuth, getAdminPermissions, logAuditAction } from "@/lib/admin-auth"
 import { getRequestAuditMeta } from "@/lib/audit-log"
 import { getScheduleMeta, setScheduleMeta } from "@/lib/schedule-meta"
+import { revalidatePublicSchedule } from "@/lib/schedule-revalidate"
 import { parseRegistrationEventYear } from "@/lib/registration-event-years"
 
 export const dynamic = "force-dynamic"
@@ -46,6 +47,7 @@ export async function PUT(req: NextRequest) {
       userAgent,
     )
 
+    revalidatePublicSchedule()
     return NextResponse.json({ success: true, meta })
   } catch (error) {
     console.error("[admin/schedule/meta] PUT error:", error)

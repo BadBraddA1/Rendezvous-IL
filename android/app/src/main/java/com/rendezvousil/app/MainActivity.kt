@@ -46,6 +46,9 @@ class MainActivity : ComponentActivity() {
                 if (event == Lifecycle.Event.ON_RESUME) {
                     lifecycleScope.launch {
                         app.appSession.recordActivityIfSignedIn()
+                        // Refresh schedule in the background so admin edits show without force-stop.
+                        app.repository.loadScheduleBundle()
+                        app.repository.loadScheduleExtras()
                     }
                 }
             },

@@ -6,6 +6,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -53,6 +54,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -124,6 +127,37 @@ fun ChatThreadScreen(
             onPost = { viewModel.createPoll() },
             isSending = state.isSending,
         )
+    }
+
+    state.enlargedPhotoUrl?.let { url ->
+        Dialog(
+            onDismissRequest = { viewModel.enlargePhoto(null) },
+            properties = DialogProperties(usePlatformDefaultWidth = false),
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black)
+                    .clickable { viewModel.enlargePhoto(null) },
+            ) {
+                AsyncImage(
+                    model = url,
+                    contentDescription = null,
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(12.dp),
+                )
+                IconButton(
+                    onClick = { viewModel.enlargePhoto(null) },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp),
+                ) {
+                    Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
+                }
+            }
+        }
     }
 
     Scaffold(
@@ -240,6 +274,7 @@ fun ChatThreadScreen(
                                     onVote = viewModel::vote,
                                     onToggleReaction = viewModel::toggleReaction,
                                     onDelete = viewModel::deleteMessage,
+                                    onPhotoClick = viewModel::enlargePhoto,
                                 )
                             }
                         }
@@ -272,6 +307,7 @@ private fun MessageBubble(
     onVote: (String, Int) -> Unit,
     onToggleReaction: (String, String) -> Unit,
     onDelete: (String) -> Unit,
+    onPhotoClick: (String) -> Unit,
 ) {
     val background = when {
         message.is_announcement -> Color(0xFFFFE0B2).copy(alpha = 0.7f)
@@ -337,11 +373,12 @@ private fun MessageBubble(
                     urls.forEach { url ->
                         AsyncImage(
                             model = url,
-                            contentDescription = null,
+                            contentDescription = "Enlarge photo",
                             contentScale = ContentScale.Crop,
                             modifier = Modifier
                                 .size(if (urls.size == 1) 220.dp else 140.dp)
-                                .clip(RoundedCornerShape(12.dp)),
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable { onPhotoClick(url) },
                         )
                     }
                 }

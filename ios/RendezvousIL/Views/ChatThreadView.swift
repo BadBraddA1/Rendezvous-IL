@@ -21,6 +21,7 @@ struct ChatThreadView: View {
     @State private var showPollSheet = false
     @State private var pollQuestion = ""
     @State private var pollOptions = ["", ""]
+    @State private var enlargedPhotoURL: URL?
 
     private let maxPhotos = 6
 
@@ -143,6 +144,16 @@ struct ChatThreadView: View {
         .onChange(of: pickerItems) { _, items in
             Task { await loadPickerItems(items) }
         }
+        .fullScreenCover(isPresented: Binding(
+            get: { enlargedPhotoURL != nil },
+            set: { if !$0 { enlargedPhotoURL = nil } }
+        )) {
+            if let url = enlargedPhotoURL {
+                ChatPhotoViewer(url: url) {
+                    enlargedPhotoURL = nil
+                }
+            }
+        }
         .sheet(isPresented: $showPollSheet) {
             NavigationStack {
                 Form {
@@ -230,18 +241,24 @@ struct ChatThreadView: View {
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: columns), spacing: 4) {
                         ForEach(urls, id: \.self) { urlString in
                             if let url = URL(string: urlString) {
-                                AsyncImage(url: url) { phase in
-                                    switch phase {
-                                    case .success(let image):
-                                        image
-                                            .resizable()
-                                            .scaledToFill()
-                                    default:
-                                        ProgressView()
+                                Button {
+                                    enlargedPhotoURL = url
+                                } label: {
+                                    AsyncImage(url: url) { phase in
+                                        switch phase {
+                                        case .success(let image):
+                                            image
+                                                .resizable()
+                                                .scaledToFill()
+                                        default:
+                                            ProgressView()
+                                        }
                                     }
+                                    .frame(maxWidth: 220, maxHeight: 220)
+                                    .clipShape(RoundedRectangle(cornerRadius: 12))
                                 }
-                                .frame(maxWidth: 220, maxHeight: 220)
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                                .buttonStyle(.plain)
+                                .accessibilityLabel("Enlarge photo")
                             }
                         }
                     }
@@ -466,7 +483,12 @@ struct ChatThreadView: View {
             isLoading = false
             return
         }
-        isLoading = messages.isEmpty
+        if messages.isEmpty, let cached = ChatDataStore.loadMessages(channelId: channel.id), !cached.isEmpty {
+            messages = cached
+            isLoading = false
+        } else {
+            isLoading = messages.isEmpty
+        }
         defer { isLoading = false }
 
         do {
@@ -474,6 +496,7 @@ struct ChatThreadView: View {
                 try await client.getChatMessages(channelId: channel.id)
             }
             messages = response.messages
+            ChatDataStore.saveMessages(messages, channelId: channel.id)
             if let moderate = response.can_moderate {
                 canModerate = moderate || session.isAdmin
             } else {
@@ -654,6 +677,7 @@ struct ChatThreadView: View {
             } else {
                 messages.append(response.message)
             }
+            ChatDataStore.saveMessages(messages, channelId: channel.id)
             draft = ""
             pendingImages = []
             pickerItems = []

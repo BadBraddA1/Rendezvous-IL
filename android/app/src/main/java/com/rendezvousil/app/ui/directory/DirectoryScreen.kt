@@ -1,5 +1,6 @@
 package com.rendezvousil.app.ui.directory
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -21,9 +23,12 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Message
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
@@ -349,10 +354,16 @@ private fun DirectoryFamilyCard(
             )
 
             family.displayLocation?.let { location ->
-                DirectoryInfoRow(
-                    icon = { Icon(Icons.Default.LocationOn, contentDescription = null) },
-                    text = location,
-                )
+                val mapsQuery = family.formatted_address?.takeIf { it.isNotBlank() } ?: location
+                TextButton(
+                    onClick = { openMaps(context, mapsQuery) },
+                    contentPadding = PaddingValues(0.dp),
+                ) {
+                    DirectoryInfoRow(
+                        icon = { Icon(Icons.Default.LocationOn, contentDescription = null) },
+                        text = location,
+                    )
+                }
             }
 
             family.email?.takeIf { it.isNotEmpty() }?.let { email ->
@@ -371,8 +382,39 @@ private fun DirectoryFamilyCard(
                 }
             }
 
-            family.contact_phones.forEach { contact ->
-                PhoneContactRow(contact = contact)
+            family.formatted_address
+                ?.takeIf { it.isNotBlank() && it != family.displayLocation }
+                ?.let { address ->
+                    TextButton(
+                        onClick = { openMaps(context, address) },
+                        contentPadding = PaddingValues(0.dp),
+                    ) {
+                        DirectoryInfoRow(
+                            icon = { Icon(Icons.Default.Home, contentDescription = null) },
+                            text = address,
+                        )
+                    }
+                }
+
+            if (family.member_names.isNotEmpty()) {
+                family.member_names.forEach { name ->
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        DirectoryInfoRow(
+                            icon = { Icon(Icons.Default.Person, contentDescription = null) },
+                            text = name,
+                        )
+                        phonesForMember(family, name).forEach { contact ->
+                            PhoneContactRow(contact = contact, showName = false)
+                        }
+                    }
+                }
+                orphanPhones(family).forEach { contact ->
+                    PhoneContactRow(contact = contact, showName = true)
+                }
+            } else {
+                family.contact_phones.forEach { contact ->
+                    PhoneContactRow(contact = contact, showName = true)
+                }
             }
 
             Text(
@@ -452,20 +494,85 @@ private fun DirectoryInfoRow(
 }
 
 @Composable
-private fun PhoneContactRow(contact: DirectoryContactPhone) {
+private fun PhoneContactRow(
+    contact: DirectoryContactPhone,
+    showName: Boolean,
+) {
     val context = LocalContext.current
     val dialNumber = contact.phone.filter { it.isDigit() || it == '+' }
-    val label = if (contact.name.isEmpty()) contact.phone else "${contact.name}: ${contact.phone}"
 
-    TextButton(
-        onClick = {
-            context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$dialNumber")))
-        },
-        contentPadding = PaddingValues(0.dp),
+    Column(
+        modifier = Modifier.padding(start = if (showName) 0.dp else 22.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        DirectoryInfoRow(
-            icon = { Icon(Icons.Default.Phone, contentDescription = null) },
-            text = label,
+        if (showName && contact.name.isNotBlank()) {
+            Text(
+                text = contact.name,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Medium,
+            )
+        }
+        Text(
+            text = contact.phone,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        if (dialNumber.isNotEmpty()) {
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                TextButton(
+                    onClick = {
+                        context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$dialNumber")))
+                    },
+                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp),
+                ) {
+                    Icon(Icons.Default.Phone, contentDescription = null, modifier = Modifier.padding(end = 4.dp))
+                    Text("Call")
+                }
+                TextButton(
+                    onClick = {
+                        context.startActivity(Intent(Intent.ACTION_SENDTO, Uri.parse("sms:$dialNumber")))
+                    },
+                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp),
+                ) {
+                    Icon(Icons.AutoMirrored.Filled.Message, contentDescription = null, modifier = Modifier.padding(end = 4.dp))
+                    Text("Text")
+                }
+            }
+        }
+    }
+}
+
+private fun openMaps(context: Context, query: String) {
+    val encoded = Uri.encode(query)
+    val geo = Uri.parse("geo:0,0?q=$encoded")
+    val intent = Intent(Intent.ACTION_VIEW, geo)
+    if (intent.resolveActivity(context.packageManager) != null) {
+        context.startActivity(intent)
+    } else {
+        context.startActivity(
+            Intent(Intent.ACTION_VIEW, Uri.parse("https://maps.google.com/?q=$encoded")),
         )
     }
 }
+
+private fun contactMatchesMember(contact: DirectoryContactPhone, memberName: String): Boolean {
+    val contactName = contact.name.trim()
+    val member = memberName.trim()
+    if (contactName.isEmpty() || member.isEmpty()) return false
+    if (contactName.equals(member, ignoreCase = true)) return true
+    val contactFirst = contactName.substringBefore(' ')
+    return contactFirst.equals(member, ignoreCase = true) ||
+        contactName.contains(member, ignoreCase = true)
+}
+
+private fun phonesForMember(
+    family: DirectoryFamily,
+    memberName: String,
+): List<DirectoryContactPhone> =
+    family.contact_phones.filter { contactMatchesMember(it, memberName) }
+
+private fun orphanPhones(family: DirectoryFamily): List<DirectoryContactPhone> =
+    family.contact_phones.filter { contact ->
+        contact.name.isBlank() ||
+            family.member_names.none { contactMatchesMember(contact, it) }
+    }

@@ -7,6 +7,7 @@ import {
   seedReminderTestEvents,
 } from "@/lib/event-schedule"
 import { parseRegistrationEventYear } from "@/lib/registration-event-years"
+import { revalidatePublicSchedule } from "@/lib/schedule-revalidate"
 
 export const dynamic = "force-dynamic"
 
@@ -39,6 +40,7 @@ export async function POST(req: NextRequest) {
         ipAddress,
         userAgent,
       )
+      revalidatePublicSchedule()
       return NextResponse.json({
         success: true,
         action,
@@ -59,6 +61,7 @@ export async function POST(req: NextRequest) {
         ipAddress,
         userAgent,
       )
+      revalidatePublicSchedule()
       return NextResponse.json({
         success: true,
         action,

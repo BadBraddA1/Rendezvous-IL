@@ -39,8 +39,8 @@ export async function GET() {
     },
     {
       headers: {
-        // Editable now, so don't cache for long — but keep the TV/app polling cheap.
-        "Cache-Control": "public, max-age=0, s-maxage=300, stale-while-revalidate=600",
+        // Admin edits should show up on the next app refresh (was 5m CDN cache).
+        "Cache-Control": "public, max-age=0, s-maxage=15, stale-while-revalidate=30",
       },
     },
   )

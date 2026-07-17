@@ -412,11 +412,32 @@ export default function DirectoryPage() {
                           </div>
                         )}
                         {family.city_state && (
-                          <p className="flex items-start gap-2 text-sm text-muted-foreground">
-                            <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
-                            <span className="min-w-0 break-words">{family.city_state}</span>
+                          <p className="flex items-start gap-2 text-sm">
+                            <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                            <a
+                              href={`https://maps.google.com/?q=${encodeURIComponent(family.formatted_address || family.city_state)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="min-w-0 break-words text-primary hover:underline"
+                            >
+                              {family.city_state}
+                            </a>
                           </p>
                         )}
+                        {family.formatted_address &&
+                          family.formatted_address !== family.city_state && (
+                            <p className="flex items-start gap-2 text-sm">
+                              <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                              <a
+                                href={`https://maps.google.com/?q=${encodeURIComponent(family.formatted_address)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="min-w-0 break-words text-primary hover:underline"
+                              >
+                                {family.formatted_address}
+                              </a>
+                            </p>
+                          )}
                         {family.email && (
                           <p className="flex items-start gap-2 text-sm">
                             <Mail className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
@@ -428,7 +449,7 @@ export default function DirectoryPage() {
                             </a>
                           </p>
                         )}
-                        <DirectoryContactPhones contacts={family.contact_phones} className="space-y-1" />
+                        <DirectoryContactPhones contacts={family.contact_phones} className="space-y-2" />
                         <div className="space-y-1 text-sm text-muted-foreground">
                           <p className="flex items-center gap-2">
                             <Users className="h-4 w-4 shrink-0" />

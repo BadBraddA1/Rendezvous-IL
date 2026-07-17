@@ -395,16 +395,21 @@ struct DirectoryFamilyDetailView: View {
                 if !family.member_names.isEmpty {
                     detailSection(title: "Family members") {
                         ForEach(family.member_names, id: \.self) { name in
-                            Label(name, systemImage: "person")
-                                .font(.subheadline)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Label(name, systemImage: "person")
+                                    .font(.subheadline)
+                                ForEach(phones(forMemberName: name), id: \.phone) { contact in
+                                    DirectoryPhoneActions(contact: contact, showName: false)
+                                        .padding(.leading, 28)
+                                }
+                            }
                         }
                     }
                 }
 
                 detailSection(title: "Contact") {
                     if let location = family.displayLocation {
-                        Label(location, systemImage: "mappin.and.ellipse")
-                            .font(.subheadline)
+                        mapsLink(label: location, query: family.formatted_address ?? location)
                     }
                     if let email = family.email, !email.isEmpty, let url = URL(string: "mailto:\(email)") {
                         Link(destination: url) {
@@ -414,27 +419,15 @@ struct DirectoryFamilyDetailView: View {
                     }
                     if let address = family.formatted_address, !address.isEmpty,
                        address != family.displayLocation {
-                        Label(address, systemImage: "house")
-                            .font(.subheadline)
-                            .foregroundStyle(.primary)
+                        mapsLink(label: address, query: address)
                     }
-                    ForEach(Array(family.contact_phones.enumerated()), id: \.offset) { _, contact in
-                        let digits = contact.phone.filter { $0.isNumber || $0 == "+" }
-                        if !digits.isEmpty, let url = URL(string: "tel:\(digits)") {
-                            Link(destination: url) {
-                                Label(
-                                    contact.name.isEmpty ? contact.phone : "\(contact.name): \(contact.phone)",
-                                    systemImage: "phone"
-                                )
-                                .font(.subheadline)
-                            }
-                        } else if !contact.phone.isEmpty {
-                            Label(
-                                contact.name.isEmpty ? contact.phone : "\(contact.name): \(contact.phone)",
-                                systemImage: "phone"
-                            )
-                            .font(.subheadline)
-                        }
+                    let orphanPhones = family.contact_phones.filter { contact in
+                        contact.name.isEmpty || !family.member_names.contains(where: {
+                            Self.contact(contact, matchesMemberName: $0)
+                        })
+                    }
+                    ForEach(Array(orphanPhones.enumerated()), id: \.offset) { _, contact in
+                        DirectoryPhoneActions(contact: contact, showName: true)
                     }
                 }
             }
@@ -470,6 +463,36 @@ struct DirectoryFamilyDetailView: View {
             .contentShape(RoundedRectangle(cornerRadius: 16))
     }
 
+    private func phones(forMemberName name: String) -> [DirectoryContactPhone] {
+        family.contact_phones.filter { contact in
+            Self.contact(contact, matchesMemberName: name)
+        }
+    }
+
+    private static func contact(_ contact: DirectoryContactPhone, matchesMemberName name: String) -> Bool {
+        let contactName = contact.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let memberName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !contactName.isEmpty, !memberName.isEmpty else { return false }
+        if contactName.caseInsensitiveCompare(memberName) == .orderedSame { return true }
+        let contactFirst = contactName.split(separator: " ").first.map(String.init) ?? contactName
+        return contactFirst.caseInsensitiveCompare(memberName) == .orderedSame
+            || contactName.localizedCaseInsensitiveContains(memberName)
+    }
+
+    @ViewBuilder
+    private func mapsLink(label: String, query: String) -> some View {
+        let encoded = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query
+        if let url = URL(string: "http://maps.apple.com/?q=\(encoded)") {
+            Link(destination: url) {
+                Label(label, systemImage: "map")
+                    .font(.subheadline)
+            }
+        } else {
+            Label(label, systemImage: "mappin.and.ellipse")
+                .font(.subheadline)
+        }
+    }
+
     @ViewBuilder
     private var parentsLine: some View {
         let parents = [family.husband_first_name, family.wife_first_name]
@@ -493,6 +516,41 @@ struct DirectoryFamilyDetailView: View {
             .padding(14)
             .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14))
         }
+    }
+}
+
+/// Name on top (if present), phone underneath, Call / Text actions.
+private struct DirectoryPhoneActions: View {
+    let contact: DirectoryContactPhone
+    var showName: Bool = true
+
+    private var digits: String {
+        contact.phone.filter { $0.isNumber || $0 == "+" }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            if showName, !contact.name.isEmpty {
+                Text(contact.name)
+                    .font(.subheadline.weight(.medium))
+            }
+            Text(contact.phone)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            if !digits.isEmpty {
+                HStack(spacing: 16) {
+                    if let tel = URL(string: "tel:\(digits)") {
+                        Link("Call", destination: tel)
+                            .font(.subheadline.weight(.semibold))
+                    }
+                    if let sms = URL(string: "sms:\(digits)") {
+                        Link("Text", destination: sms)
+                            .font(.subheadline.weight(.semibold))
+                    }
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 

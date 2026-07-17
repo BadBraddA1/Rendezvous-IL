@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { checkAdminAuth, getAdminPermissions } from "@/lib/admin-auth"
 import { isIsoDate, listScheduleEvents, reorderScheduleEvents } from "@/lib/event-schedule"
 import { parseRegistrationEventYear } from "@/lib/registration-event-years"
+import { revalidatePublicSchedule } from "@/lib/schedule-revalidate"
 
 export const dynamic = "force-dynamic"
 
@@ -29,6 +30,7 @@ export async function POST(req: NextRequest) {
     }
 
     await reorderScheduleEvents(year, day || "Custom", orderedIds, eventDate)
+    revalidatePublicSchedule()
     return NextResponse.json({ success: true, events: await listScheduleEvents(year) })
   } catch (error) {
     console.error("[admin/schedule/reorder] POST error:", error)

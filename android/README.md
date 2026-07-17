@@ -156,8 +156,12 @@ Core chat parity with iOS/web (CarPlay remains iOS-only):
 | **Chat list** | `ChatListScreen` — channels from `GET /api/chat/channels`, newest activity first, unread badges, pull-to-refresh |
 | **Thread** | `ChatThreadScreen` — messages, send text, up to 6 photos (multipart), polls + announcements (mods), reactions (`🦙👍❤️😂🙏` behind smile menu), delete own/mod |
 | **Realtime** | `AblyChatService` — `POST /api/ably/token`, channel `rendezvous:channel:{id}`, events `message` / `message_deleted` / `reaction` / `poll_updated`; HTTP poll every 4s if Ably fails |
+| **Cache** | `ChatDataStore` — channels + per-thread messages on disk; show cache first, refresh in background |
+| **Photos** | Tap a chat photo to open full-screen viewer |
 | **API** | `ApiClient` chat helpers + DTOs in `core/network/.../dto/ChatDtos.kt` |
 | **Deps** | `io.ably:ably-android` (Pub/Sub, not `@ably/chat`) |
+| **Directory** | Address opens Maps; phones under member names with Call / Text |
+| **Schedule** | Refreshes on app resume so admin edits appear without force-stop |
 
 ## Project layout
 

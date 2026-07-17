@@ -1,15 +1,18 @@
 package com.rendezvousil.app.ui.chat
 
+import android.app.Application
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rendezvousil.app.auth.AppSession
 import com.rendezvousil.app.chat.AblyChatService
+import com.rendezvousil.app.chat.ChatDataStore
 import com.rendezvousil.app.chat.ChatRealtimeEvent
 import com.rendezvousil.core.network.ApiException
 import com.rendezvousil.core.network.dto.ChatMessage
 import com.rendezvousil.core.network.dto.ChatReactionEmoji
 import com.rendezvousil.core.network.dto.ChatReactionUpdate
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,7 +22,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.Dispatchers
 
 enum class ChatRealtimeStatus {
     Connecting,
@@ -48,10 +50,12 @@ data class ChatThreadUiState(
     val pollQuestion: String = "",
     val pollOptions: List<String> = listOf("", ""),
     val currentUserId: String = "",
+    val enlargedPhotoUrl: String? = null,
 )
 
 class ChatThreadViewModel(
     private val appSession: AppSession,
+    application: Application,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
     private val channelId: String = checkNotNull(savedStateHandle.get<String>("channelId"))
@@ -59,6 +63,7 @@ class ChatThreadViewModel(
     private val initialCanModerate: Boolean =
         savedStateHandle.get<String>("canModerate") == "true"
 
+    private val cache = ChatDataStore(application)
     private val ably = AblyChatService()
     private var pollJob: Job? = null
 
@@ -116,6 +121,10 @@ class ChatThreadViewModel(
 
     fun setShowPollSheet(show: Boolean) {
         _uiState.update { it.copy(showPollSheet = show) }
+    }
+
+    fun enlargePhoto(url: String?) {
+        _uiState.update { it.copy(enlargedPhotoUrl = url) }
     }
 
     fun addPhotos(photos: List<PendingChatPhoto>) {
@@ -287,12 +296,22 @@ class ChatThreadViewModel(
             }
             return
         }
-        if (showLoading) {
+        if (showLoading && _uiState.value.messages.isEmpty()) {
+            val cached = withContext(Dispatchers.IO) { cache.loadMessages(channelId) }
+            if (!cached.isNullOrEmpty()) {
+                _uiState.update {
+                    it.copy(messages = cached, isLoading = false)
+                }
+            } else {
+                _uiState.update { it.copy(isLoading = true) }
+            }
+        } else if (showLoading) {
             _uiState.update { it.copy(isLoading = true) }
         }
         try {
             val response = client.getChatMessages(channelId)
             val canModerate = response.can_moderate == true || appSession.isAdmin || initialCanModerate
+            withContext(Dispatchers.IO) { cache.saveMessages(channelId, response.messages) }
             _uiState.update {
                 it.copy(
                     messages = response.messages,
@@ -304,7 +323,10 @@ class ChatThreadViewModel(
             }
         } catch (error: ApiException.Unauthorized) {
             _uiState.update {
-                it.copy(isLoading = false, errorMessage = "Sign in required.")
+                it.copy(
+                    isLoading = false,
+                    errorMessage = if (it.messages.isEmpty()) "Sign in required." else it.errorMessage,
+                )
             }
         } catch (error: Exception) {
             _uiState.update {
@@ -380,6 +402,9 @@ class ChatThreadViewModel(
                 state.messages.toMutableList().also { it[index] = message }
             } else {
                 state.messages + message
+            }
+            viewModelScope.launch(Dispatchers.IO) {
+                cache.saveMessages(channelId, messages)
             }
             state.copy(messages = messages)
         }
