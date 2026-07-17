@@ -386,7 +386,9 @@ struct DirectoryFamilyDetailView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("\(family.family_last_name) Family")
                         .font(.title2.weight(.semibold))
-                    parentsLine
+                    if family.structuredMembers.isEmpty {
+                        parentsLine
+                    }
                     Text("\(family.member_count) attendee\(family.member_count == 1 ? "" : "s")")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
@@ -400,7 +402,38 @@ struct DirectoryFamilyDetailView: View {
                         .background(BrandColors.lakeLight.opacity(0.6), in: RoundedRectangle(cornerRadius: 12))
                 }
 
-                if !family.member_names.isEmpty {
+                if !family.structuredMembers.isEmpty {
+                    detailSection(title: "Family members") {
+                        ForEach(family.structuredMembers.filter { $0.role != "child" }) { member in
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("\(member.role == "father" ? "Father" : "Mother"): \(member.name)")
+                                    .font(.subheadline.weight(.medium))
+                                ForEach(phones(forMemberName: member.name), id: \.phone) { contact in
+                                    DirectoryPhoneActions(contact: contact, showName: false)
+                                        .padding(.leading, 12)
+                                }
+                            }
+                        }
+                        let kids = family.structuredMembers.filter { $0.role == "child" }
+                        if !kids.isEmpty {
+                            Text(
+                                "Kids: " + kids.map { kid in
+                                    if let label = kid.ageLabel {
+                                        return "\(kid.name) (\(label))"
+                                    }
+                                    return kid.name
+                                }.joined(separator: ", ")
+                            )
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            ForEach(kids.filter { phones(forMemberName: $0.name).isEmpty == false }) { kid in
+                                ForEach(phones(forMemberName: kid.name), id: \.phone) { contact in
+                                    DirectoryPhoneActions(contact: contact, showName: true)
+                                }
+                            }
+                        }
+                    }
+                } else if !family.member_names.isEmpty {
                     detailSection(title: "Family members") {
                         ForEach(family.member_names, id: \.self) { name in
                             VStack(alignment: .leading, spacing: 4) {

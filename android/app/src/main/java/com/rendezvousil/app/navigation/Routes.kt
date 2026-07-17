@@ -16,6 +16,7 @@ object Routes {
     const val MORE_ABOUT = "more/about"
     const val MORE_DIRECTORY = "more/directory"
     const val MORE_DIRECTORY_MANAGE = "more/directory_manage"
+    const val MORE_VOLUNTEERING = "more/volunteering"
     const val MORE_ACCOUNT = "more/account"
     const val MORE_NOTIFICATIONS = "more/notifications"
     const val MORE_ADMIN_DASHBOARD = "more/admin_dashboard"

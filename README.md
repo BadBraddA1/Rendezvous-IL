@@ -147,12 +147,13 @@ rendezvous-il/
 
 Native **SwiftUI** attendee hub in `ios/` (not a WebView shell). **Sign-in required** for almost everything — welcome screen, then Clerk, then tabs:
 
-- **Home** — greeting, retreat shortcuts (schedule, map, chat, directory)
+- **Home (Live day board)** — now/next, weather, active announcements, next meal, chat unread, and **your volunteering** when you have assignments or pending lesson-topic actions (`GET /api/family/volunteering`)
 - **Schedule** — opens on today (Central Time) or the next upcoming day. **Happening now** highlight only when an event is actually in progress (Central Time) — not the next upcoming item. Empty announcements are hidden. Meals, worship leaders, event reminders (bell → local notification; prefs store the event so reminders still schedule if the shared snapshot is empty). Tap location → campus map
-- **Directory** — disk cache shows last-loaded families immediately, then refreshes in the background (avoids empty flash after a hard reset). Manage your family photo from **More → Account / Directory photo**, not a camera button on the browse list
+- **Directory** — disk cache shows last-loaded families immediately, then refreshes in the background. Family detail matches the website: Father/Mother lines plus **Kids with ages**. Manage your family photo from **More → Directory photo**
 - **Map** — MapKit directions to campus + image venue map on site (geofence switch); More → Campus map
 - **Chat** — year group chat (Ably)
-- **More** — directory, account, Bible Bowl, FAQ, notifications, admin/check-in for staff
+- **More** — directory, **your volunteering**, account, Bible Bowl, FAQ, notifications, admin/check-in for staff
+- **Live Activity** — lock-screen “now/next” uses explicit dark text on the light lake tint so Light Mode stays readable
 - **CarPlay** — today’s schedule + directions to Lake Williamson ([setup](ios/docs/carplay/SETUP.md); entitlement approved — enable on App ID before device/TestFlight)
 
 Setup: `cd ios && bash scripts/setup-xcode.sh && open RendezvousIL.xcodeproj` — see [ios/README.md](ios/README.md). For staff sign-in, add your Clerk key to `ios/Config.local.xcconfig`.
@@ -167,12 +168,13 @@ Native admin APIs: `GET /api/admin/me`, `GET /api/admin/mobile/dashboard` (Beare
 
 Native **Jetpack Compose** app in `android/` (Phases 1–5):
 
-- **Home / Chat / Schedule / Directory / More** — 5-tab shell aligned with iOS (CarPlay / campus map stay iOS-ahead)
+- **Home / Chat / Schedule / Directory / More** — 5-tab shell aligned with iOS (CarPlay / campus map stay iOS-ahead). Home is a **Live day board** (now/next, weather, announcements, meal, chat unread, volunteering when relevant)
 - **Chat** — year group chat parity with iOS/web: channel list (unread badges, activity sort), thread (text, up to 6 photos, polls, announcements for mods, reactions behind smile menu, delete), Ably Pub/Sub + 4s HTTP poll fallback (`ably-android`)
 - **Schedule** — opens on today / next upcoming day; **Happening now** only for the in-progress event (Central Time); day picker, meals, volunteer slots, **event reminders** (bell icon), offline fallback; empty announcements hidden
-- **Directory** — on-device cache first, background refresh; family photo manage stays under More
-- **Updates** — now/next (Central Time), weather, announcements when active (Home quick link + More → Live updates; not a bottom tab)
-- **More** — calculator, Bible Bowl, FAQ, About, **Clerk account**, directory manage, **notifications & widgets**, **admin** (dashboard, user management, staff check-in)
+- **Directory** — on-device cache first, background refresh; Father/Mother + **Kids (ages)** like the website; family photo manage stays under More
+- **Volunteering** — `GET /api/family/volunteering`; Home card + More → Your volunteering (pending lesson-topic links + confirmed worship/special jobs). Hidden when empty
+- **Updates** — now/next (Central Time), weather, announcements when active (More → Live updates; not a bottom tab)
+- **More** — calculator, Bible Bowl, FAQ, About, **Clerk account**, directory manage, volunteering, **notifications & widgets**, **admin** (dashboard, user management, staff check-in)
 - **Admin** — mobile dashboard stats, staff check-in with QR scan, user CRUD (role-gated via Clerk session)
 - **Push** — FCM organizer broadcasts + chat; `POST /api/push/register` with `platform: "android"`
 - **Widgets** — Glance home screen: Next event + Now & next

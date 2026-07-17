@@ -152,7 +152,8 @@ Core chat parity with iOS/web (CarPlay remains iOS-only):
 
 | Area | Details |
 |------|---------|
-| **Tabs** | Bottom bar: Home, **Chat**, Schedule, **Directory**, More — same primary surfaces as iOS |
+| **Tabs** | Bottom bar: Home (live day board), **Chat**, Schedule, **Directory**, More — same primary surfaces as iOS |
+| **Volunteering** | Home card + More → Your volunteering via `GET /api/family/volunteering` (hidden when empty) |
 | **Chat list** | `ChatListScreen` — channels from `GET /api/chat/channels`, newest activity first, unread badges, pull-to-refresh |
 | **Thread** | `ChatThreadScreen` — messages, send text, up to 6 photos (multipart), polls + announcements (mods), reactions (`🦙👍❤️😂🙏` behind smile menu), delete own/mod |
 | **Realtime** | `AblyChatService` — `POST /api/ably/token`, channel `rendezvous:channel:{id}`, events `message` / `message_deleted` / `reaction` / `poll_updated`; HTTP poll every 4s if Ably fails |

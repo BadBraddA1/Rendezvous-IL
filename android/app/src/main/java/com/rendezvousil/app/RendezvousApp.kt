@@ -48,6 +48,9 @@ import com.rendezvousil.app.ui.directory.DirectoryScreen
 import com.rendezvousil.app.ui.directory.DirectoryViewModel
 import com.rendezvousil.app.ui.faq.FAQScreen
 import com.rendezvousil.app.ui.home.HomeScreen
+import com.rendezvousil.app.ui.home.HomeViewModel
+import com.rendezvousil.app.ui.home.VolunteeringScreen
+import com.rendezvousil.app.ui.home.VolunteeringViewModel
 import com.rendezvousil.app.ui.more.MoreScreen
 import com.rendezvousil.app.ui.schedule.ScheduleScreen
 import com.rendezvousil.app.ui.schedule.ScheduleViewModel
@@ -133,13 +136,12 @@ fun RendezvousApp(
             modifier = Modifier.padding(innerPadding),
         ) {
             composable(Routes.HOME) {
+                val homeViewModel: HomeViewModel = viewModel(factory = viewModelFactory)
                 HomeScreen(
+                    viewModel = homeViewModel,
                     onNavigateToSchedule = { navigateToTab(navController, Routes.SCHEDULE) },
-                    onNavigateToUpdates = { navController.navigate(Routes.UPDATES) },
                     onNavigateToChat = { navigateToTab(navController, Routes.CHAT) },
-                    onNavigateToDirectory = { navigateToTab(navController, Routes.DIRECTORY) },
-                    onNavigateToFaq = { navigateToMore(navController, Routes.MORE_FAQ) },
-                    onNavigateToCalculator = { navigateToMore(navController, Routes.MORE_CALCULATOR) },
+                    onNavigateToVolunteering = { navController.navigate(Routes.MORE_VOLUNTEERING) },
                 )
             }
             composable(Routes.CHAT) { entry ->
@@ -224,9 +226,17 @@ fun RendezvousApp(
                     onNavigateToCheckIn = { navController.navigate(Routes.MORE_CHECK_IN) },
                     onNavigateToDirectory = { navigateToTab(navController, Routes.DIRECTORY) },
                     onNavigateToDirectoryManage = { navController.navigate(Routes.MORE_DIRECTORY_MANAGE) },
+                    onNavigateToVolunteering = { navController.navigate(Routes.MORE_VOLUNTEERING) },
                     onNavigateToAccount = { navController.navigate(Routes.MORE_ACCOUNT) },
                     onNavigateToNotifications = { navController.navigate(Routes.MORE_NOTIFICATIONS) },
                     onNavigateToUpdates = { navController.navigate(Routes.UPDATES) },
+                )
+            }
+            composable(Routes.MORE_VOLUNTEERING) {
+                val volunteeringViewModel: VolunteeringViewModel = viewModel(factory = viewModelFactory)
+                VolunteeringScreen(
+                    viewModel = volunteeringViewModel,
+                    onBack = { navController.popBackStack() },
                 )
             }
             composable(Routes.MORE_CALCULATOR) {

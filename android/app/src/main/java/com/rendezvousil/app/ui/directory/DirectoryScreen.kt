@@ -405,7 +405,38 @@ private fun DirectoryFamilyCard(
                     }
                 }
 
-            if (family.member_names.isNotEmpty()) {
+            if (family.members.isNotEmpty()) {
+                family.members.filter { it.role != "child" }.forEach { member ->
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        val roleLabel = if (member.role == "father") "Father" else "Mother"
+                        DirectoryInfoRow(
+                            icon = { Icon(Icons.Default.Person, contentDescription = null) },
+                            text = "$roleLabel: ${member.name}",
+                        )
+                        phonesForMember(family, member.name).forEach { contact ->
+                            PhoneContactRow(contact = contact, showName = false)
+                        }
+                    }
+                }
+                val kids = family.members.filter { it.role == "child" }
+                if (kids.isNotEmpty()) {
+                    val kidsLine = kids.joinToString(", ") { kid ->
+                        kid.ageLabel?.let { "${kid.name} ($it)" } ?: kid.name
+                    }
+                    DirectoryInfoRow(
+                        icon = { Icon(Icons.Default.People, contentDescription = null) },
+                        text = "Kids: $kidsLine",
+                    )
+                    kids.forEach { kid ->
+                        phonesForMember(family, kid.name).forEach { contact ->
+                            PhoneContactRow(contact = contact, showName = true)
+                        }
+                    }
+                }
+                orphanPhones(family).forEach { contact ->
+                    PhoneContactRow(contact = contact, showName = true)
+                }
+            } else if (family.member_names.isNotEmpty()) {
                 family.member_names.forEach { name ->
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         DirectoryInfoRow(

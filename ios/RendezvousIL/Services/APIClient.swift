@@ -207,6 +207,10 @@ actor APIClient {
         try await delete("/api/family/directory")
     }
 
+    func getFamilyVolunteering(year: Int = AppConfig.eventYear) async throws -> FamilyVolunteeringResponse {
+        try await get("/api/family/volunteering?year=\(year)")
+    }
+
     func getChatChannels() async throws -> ChatChannelsResponse {
         try await get("/api/chat/channels")
     }
@@ -570,6 +574,23 @@ struct DirectoryContactPhone: Codable, Hashable, Sendable {
     let phone: String
 }
 
+struct DirectoryMember: Codable, Hashable, Sendable, Identifiable {
+    var id: String { "\(role)-\(name)-\(age.map(String.init) ?? "x")" }
+    let name: String
+    /// `father`, `mother`, or `child`.
+    let role: String
+    let age: Int?
+    let is_adult: Bool
+    let email: String?
+    let phone: String?
+
+    var ageLabel: String? {
+        if is_adult { return "Adult" }
+        if let age { return String(age) }
+        return nil
+    }
+}
+
 struct DirectoryFamily: Codable, Identifiable, Hashable, Sendable {
     let id: Int
     let family_last_name: String
@@ -587,6 +608,8 @@ struct DirectoryFamily: Codable, Identifiable, Hashable, Sendable {
     let contact_phones: [DirectoryContactPhone]
     let member_count: Int
     let member_names: [String]
+    /// Structured members with ages (empty/legacy when missing).
+    let members: [DirectoryMember]?
 
     /// Location line for cards: city/state when available.
     var displayLocation: String? {
@@ -600,6 +623,8 @@ struct DirectoryFamily: Codable, Identifiable, Hashable, Sendable {
         if !statePart.isEmpty { return statePart }
         return nil
     }
+
+    var structuredMembers: [DirectoryMember] { members ?? [] }
 }
 
 struct DirectoryResponse: Codable, Sendable {
@@ -643,6 +668,61 @@ struct FamilyDirectorySettingsResponse: Decodable {
 struct FamilyDirectorySettingsBody: Encodable {
     let directory_opt_in: Bool
     let directory_blurb: String?
+}
+
+struct FamilyVolunteeringPendingAction: Codable, Hashable, Identifiable, Sendable {
+    var id: String { "\(type)-\(href)" }
+    let type: String
+    let label: String
+    let href: String
+}
+
+struct FamilyVolunteeringWorship: Codable, Hashable, Sendable {
+    let assignedDate: String?
+    let timeSlot: String?
+    let prayerType: String?
+    let roleLabel: String
+    let scheduleStatus: String?
+}
+
+struct FamilyVolunteeringLesson: Codable, Hashable, Sendable {
+    let topicId: Int
+    let topicTitle: String
+    let lessonTitle: String?
+    let scriptureReading: String?
+}
+
+struct FamilyVolunteerEntry: Codable, Hashable, Identifiable, Sendable {
+    let id: Int
+    let volunteerName: String
+    let volunteerType: String
+    let worshipAssignment: FamilyVolunteeringWorship?
+    let lessonTopic: FamilyVolunteeringLesson?
+    let pendingActions: [FamilyVolunteeringPendingAction]
+}
+
+struct FamilySpecialAssignment: Codable, Hashable, Identifiable, Sendable {
+    let id: Int
+    let activityName: String
+    let assignedDate: String?
+    let timeSlot: String?
+    let notes: String?
+    let matchedName: String
+}
+
+struct FamilyVolunteeringSummary: Codable, Hashable, Sendable {
+    let pendingActionCount: Int
+    let confirmedWorshipCount: Int
+    let specialAssignmentCount: Int
+}
+
+struct FamilyVolunteeringResponse: Codable, Sendable {
+    let eventYear: Int
+    let registrationId: Int?
+    let volunteers: [FamilyVolunteerEntry]
+    let specialAssignments: [FamilySpecialAssignment]
+    let summary: FamilyVolunteeringSummary
+    let hasContent: Bool?
 }
 
 private struct EmptyBody: Encodable {}

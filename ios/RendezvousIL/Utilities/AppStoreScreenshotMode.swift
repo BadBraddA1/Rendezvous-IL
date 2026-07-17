@@ -126,7 +126,14 @@ enum AppStoreScreenshotMode {
             formatted_address: "Springfield, IL",
             contact_phones: [],
             member_count: 5,
-            member_names: ["Mark", "Sarah", "Emma", "Noah", "Lily"]
+            member_names: ["Mark", "Sarah", "Emma", "Noah", "Lily"],
+            members: [
+                DirectoryMember(name: "Mark", role: "father", age: 42, is_adult: true, email: nil, phone: nil),
+                DirectoryMember(name: "Sarah", role: "mother", age: 40, is_adult: true, email: nil, phone: nil),
+                DirectoryMember(name: "Emma", role: "child", age: 14, is_adult: false, email: nil, phone: nil),
+                DirectoryMember(name: "Noah", role: "child", age: 11, is_adult: false, email: nil, phone: nil),
+                DirectoryMember(name: "Lily", role: "child", age: 8, is_adult: false, email: nil, phone: nil),
+            ]
         ),
         DirectoryFamily(
             id: 2,
@@ -143,7 +150,13 @@ enum AppStoreScreenshotMode {
             formatted_address: "Peoria, IL",
             contact_phones: [],
             member_count: 4,
-            member_names: ["James", "Rachel", "Olivia", "Ethan"]
+            member_names: ["James", "Rachel", "Olivia", "Ethan"],
+            members: [
+                DirectoryMember(name: "James", role: "father", age: 38, is_adult: true, email: nil, phone: nil),
+                DirectoryMember(name: "Rachel", role: "mother", age: 36, is_adult: true, email: nil, phone: nil),
+                DirectoryMember(name: "Olivia", role: "child", age: 12, is_adult: false, email: nil, phone: nil),
+                DirectoryMember(name: "Ethan", role: "child", age: 9, is_adult: false, email: nil, phone: nil),
+            ]
         ),
         DirectoryFamily(
             id: 3,
@@ -160,7 +173,12 @@ enum AppStoreScreenshotMode {
             formatted_address: "Champaign, IL",
             contact_phones: [],
             member_count: 3,
-            member_names: ["David", "Amy", "Grace"]
+            member_names: ["David", "Amy", "Grace"],
+            members: [
+                DirectoryMember(name: "David", role: "father", age: 45, is_adult: true, email: nil, phone: nil),
+                DirectoryMember(name: "Amy", role: "mother", age: 43, is_adult: true, email: nil, phone: nil),
+                DirectoryMember(name: "Grace", role: "child", age: 16, is_adult: false, email: nil, phone: nil),
+            ]
         ),
     ]
 }

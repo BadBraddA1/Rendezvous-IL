@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.ManageAccounts
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.VolunteerActivism
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -53,6 +54,7 @@ fun MoreScreen(
     onNavigateToCheckIn: () -> Unit,
     onNavigateToDirectory: () -> Unit,
     onNavigateToDirectoryManage: () -> Unit,
+    onNavigateToVolunteering: () -> Unit = {},
     onNavigateToAccount: () -> Unit,
     onNavigateToNotifications: () -> Unit,
     onNavigateToUpdates: () -> Unit = {},
@@ -151,6 +153,11 @@ fun MoreScreen(
                     title = "Directory photo",
                     icon = { Icon(Icons.Default.CameraAlt, contentDescription = null) },
                     onClick = onNavigateToDirectoryManage,
+                )
+                NavListItem(
+                    title = "Your volunteering",
+                    icon = { Icon(Icons.Default.VolunteerActivism, contentDescription = null) },
+                    onClick = onNavigateToVolunteering,
                 )
                 NavListItem(
                     title = "Notifications & widgets",

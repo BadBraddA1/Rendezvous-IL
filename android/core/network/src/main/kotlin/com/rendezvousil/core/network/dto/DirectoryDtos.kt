@@ -10,6 +10,24 @@ data class DirectoryContactPhone(
 )
 
 @Serializable
+data class DirectoryMember(
+    val name: String = "",
+    /** father | mother | child */
+    val role: String = "child",
+    val age: Int? = null,
+    val is_adult: Boolean = false,
+    val email: String? = null,
+    val phone: String? = null,
+) {
+    val ageLabel: String?
+        get() = when {
+            is_adult -> "Adult"
+            age != null -> age.toString()
+            else -> null
+        }
+}
+
+@Serializable
 data class DirectoryFamily(
     val id: Int,
     val family_last_name: String,
@@ -27,6 +45,7 @@ data class DirectoryFamily(
     val contact_phones: List<DirectoryContactPhone> = emptyList(),
     val member_count: Int = 0,
     val member_names: List<String> = emptyList(),
+    val members: List<DirectoryMember> = emptyList(),
 ) {
     val displayLocation: String?
         get() {

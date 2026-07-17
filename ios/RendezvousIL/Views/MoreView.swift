@@ -16,6 +16,9 @@ struct MoreView: View {
                     NavigationLink { FamilyDirectoryManageView() } label: {
                         Label("Your directory photo", systemImage: "camera.fill")
                     }
+                    NavigationLink { FamilyVolunteeringView() } label: {
+                        Label("Your volunteering", systemImage: "hands.sparkles")
+                    }
                     NavigationLink { AccountView() } label: {
                         Label("Family account", systemImage: "person.crop.circle")
                     }

@@ -28,6 +28,7 @@ import com.rendezvousil.core.network.dto.CheckInRegistrationSummary
 import com.rendezvousil.core.network.dto.CheckInSubmitBody
 import com.rendezvousil.core.network.dto.CheckInUndoResponse
 import com.rendezvousil.core.network.dto.DirectoryResponse
+import com.rendezvousil.core.network.dto.FamilyVolunteeringResponse
 import com.rendezvousil.core.network.dto.DirectoryYearsResponse
 import com.rendezvousil.core.network.dto.FamilyDirectorySettings
 import com.rendezvousil.core.network.dto.FamilyDirectorySettingsBody
@@ -103,6 +104,9 @@ interface RendezvousApi {
 
     @GET("api/family/directory")
     suspend fun getFamilyDirectorySettings(): FamilyDirectorySettingsEnvelope
+
+    @GET("api/family/volunteering")
+    suspend fun getFamilyVolunteering(@Query("year") year: Int): FamilyVolunteeringResponse
 }
 
 class ApiClient private constructor(
@@ -221,6 +225,9 @@ class ApiClient private constructor(
 
     suspend fun getDirectory(year: Int): DirectoryResponse =
         apiCall { api.getDirectory(year) }
+
+    suspend fun getFamilyVolunteering(year: Int = AppConfig.EVENT_YEAR): FamilyVolunteeringResponse =
+        apiCall { api.getFamilyVolunteering(year) }
 
     suspend fun getFamilyDirectorySettings(): FamilyDirectorySettings {
         val envelope = apiCall { api.getFamilyDirectorySettings() }

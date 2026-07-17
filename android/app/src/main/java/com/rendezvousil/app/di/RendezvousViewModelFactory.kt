@@ -13,6 +13,8 @@ import com.rendezvousil.app.ui.chat.ChatThreadViewModel
 import com.rendezvousil.app.ui.checkin.CheckInViewModel
 import com.rendezvousil.app.ui.directory.DirectoryManageViewModel
 import com.rendezvousil.app.ui.directory.DirectoryViewModel
+import com.rendezvousil.app.ui.home.HomeViewModel
+import com.rendezvousil.app.ui.home.VolunteeringViewModel
 import com.rendezvousil.app.ui.schedule.ScheduleViewModel
 import com.rendezvousil.app.ui.updates.UpdatesViewModel
 import com.rendezvousil.core.network.RendezvousRepository
@@ -33,6 +35,10 @@ class RendezvousViewModelFactory(
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
         return when {
+            modelClass.isAssignableFrom(HomeViewModel::class.java) ->
+                HomeViewModel(repository, appSession) as T
+            modelClass.isAssignableFrom(VolunteeringViewModel::class.java) ->
+                VolunteeringViewModel(appSession) as T
             modelClass.isAssignableFrom(ScheduleViewModel::class.java) ->
                 ScheduleViewModel(repository, reminderService) as T
             modelClass.isAssignableFrom(UpdatesViewModel::class.java) ->

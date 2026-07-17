@@ -222,6 +222,11 @@ struct RendezvousLiveActivityWidget: Widget {
 struct LiveActivityLockView: View {
     let context: ActivityViewContext<RendezvousActivityAttributes>
 
+    /// Explicit dark ink — Live Activities with a light `activityBackgroundTint`
+    /// otherwise keep white system text and become unreadable in Light Mode.
+    private let ink = Color(red: 0.12, green: 0.16, blue: 0.2)
+    private let muted = Color(red: 0.12, green: 0.16, blue: 0.2).opacity(0.65)
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
@@ -238,26 +243,29 @@ struct LiveActivityLockView: View {
             if let current = context.state.currentTitle {
                 Text("Now: \(current)")
                     .font(.headline)
+                    .foregroundStyle(ink)
                 if let time = context.state.currentTime {
                     Text(time)
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(muted)
                 }
             } else if let next = context.state.nextTitle {
                 Text("Up next: \(next)")
                     .font(.headline)
+                    .foregroundStyle(ink)
                 if let time = context.state.nextTime {
                     Text(time)
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(muted)
                 }
                 if let location = context.state.nextLocation, !location.isEmpty {
                     Text(location)
                         .font(.caption2)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(muted)
                 }
             }
         }
         .padding()
+        .environment(\.colorScheme, .light)
     }
 }
