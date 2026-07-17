@@ -19,6 +19,8 @@ export type FamilyVolunteerWorshipAssignment = {
   prayerType: string | null
   roleLabel: string
   scheduleStatus: string | null
+  /** ISO-8601 start in America/Chicago — clients schedule a 30-minute reminder from this. */
+  startsAt: string | null
 }
 
 export type FamilyVolunteerLessonTopic = {
@@ -44,6 +46,8 @@ export type FamilySpecialAssignment = {
   timeSlot: string | null
   notes: string | null
   matchedName: string
+  /** ISO-8601 start in America/Chicago when a start time can be inferred. */
+  startsAt: string | null
 }
 
 export type FamilyVolunteeringPayload = {
@@ -69,6 +73,52 @@ function normalizeName(value: string): string {
 
 function firstName(value: string): string {
   return normalizeName(value).split(" ")[0] || ""
+}
+
+function pad2(value: number): string {
+  return String(value).padStart(2, "0")
+}
+
+/** Rough Chicago offset: CDT (-05) Mar–Oct, CST (-06) otherwise. */
+function chicagoOffsetForDate(isoDate: string): string {
+  const month = Number(isoDate.slice(5, 7))
+  return month >= 3 && month <= 10 ? "-05:00" : "-06:00"
+}
+
+function chicagoStartsAt(isoDate: string, hour: number, minute: number): string {
+  return `${isoDate}T${pad2(hour)}:${pad2(minute)}:00${chicagoOffsetForDate(isoDate)}`
+}
+
+/**
+ * Resolve a worship / special-assignment wall-clock start for reminders.
+ * Morning Devotion → 9:00 AM, Evening Devotion → 7:00 PM (Central).
+ * Other slots try to parse a leading time like "1:30 - 3:30 PM".
+ */
+export function resolveVolunteerStartsAt(
+  assignedDate: string | null,
+  timeSlot: string | null,
+): string | null {
+  if (!assignedDate || !/^\d{4}-\d{2}-\d{2}$/.test(assignedDate)) return null
+  const slot = (timeSlot || "").trim()
+  if (!slot) return null
+
+  const lower = slot.toLowerCase()
+  if (lower.includes("morning")) return chicagoStartsAt(assignedDate, 9, 0)
+  if (lower.includes("evening")) return chicagoStartsAt(assignedDate, 19, 0)
+
+  const match = slot.match(/(\d{1,2}):(\d{2})\s*(am|pm)?/i)
+  if (!match) return null
+  let hour = Number(match[1])
+  const minute = Number(match[2])
+  const period = match[3]?.toLowerCase()
+  if (period === "pm" && hour < 12) hour += 12
+  if (period === "am" && hour === 12) hour = 0
+  if (!period && hour <= 7) {
+    // Bare afternoon times like "1:30" in activity slots are PM.
+    hour += 12
+  }
+  if (hour > 23 || minute > 59) return null
+  return chicagoStartsAt(assignedDate, hour, minute)
 }
 
 /** Latest registration id for this family email in the event year. */
@@ -183,6 +233,7 @@ export async function getFamilyVolunteering(
             prayerType,
             roleLabel: roleLabel(volunteerType, prayerType),
             scheduleStatus,
+            startsAt: resolveVolunteerStartsAt(assignedDate, timeSlot),
           }
         : null
 
@@ -242,6 +293,7 @@ export async function getFamilyVolunteering(
       timeSlot: assignment.time_slot,
       notes: assignment.notes,
       matchedName: assigned,
+      startsAt: resolveVolunteerStartsAt(assignment.assigned_date, assignment.time_slot),
     })
   }
 

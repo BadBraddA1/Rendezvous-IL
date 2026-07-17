@@ -1,15 +1,9 @@
 name: Android Build
 
+# Manual only — automatic runs on every push were failing and spamming
+# GitHub notifications. Trigger from Actions → Android Build → Run workflow.
 on:
-  push:
-    branches: [main]
-    paths:
-      - "android/**"
-      - ".github/workflows/android-build.yml"
-  pull_request:
-    paths:
-      - "android/**"
-      - ".github/workflows/android-build.yml"
+  workflow_dispatch:
 
 jobs:
   assemble-debug:

@@ -1,8 +1,10 @@
 package com.rendezvousil.app.ui.home
 
+import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rendezvousil.app.auth.AppSession
+import com.rendezvousil.app.notifications.VolunteerReminderService
 import com.rendezvousil.core.network.RendezvousRepository
 import com.rendezvousil.core.network.dto.FamilyVolunteeringResponse
 import com.rendezvousil.core.network.dto.WeatherPayload
@@ -10,11 +12,13 @@ import com.rendezvousil.core.schedule.MealMatcher
 import com.rendezvousil.core.schedule.ScheduleNowNext
 import com.rendezvousil.core.schedule.model.Announcement
 import com.rendezvousil.core.schedule.model.NowNextResult
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 data class HomeUiState(
     val chatUnreadTotal: Int = 0,
@@ -25,7 +29,9 @@ data class HomeUiState(
 class HomeViewModel(
     private val repository: RendezvousRepository,
     private val appSession: AppSession,
+    application: Application,
 ) : ViewModel() {
+    private val volunteerReminders = VolunteerReminderService(application)
     val liveAnnouncements: StateFlow<List<Announcement>> = repository.liveAnnouncements
     val weather: StateFlow<WeatherPayload?> = repository.weather
 
@@ -54,11 +60,12 @@ class HomeViewModel(
     private suspend fun loadVolunteering() {
         val client = appSession.authenticatedApiClient ?: run {
             _uiState.update { it.copy(volunteering = null) }
+            withContext(Dispatchers.Default) { volunteerReminders.sync(null) }
             return
         }
-        _uiState.update {
-            it.copy(volunteering = runCatching { client.getFamilyVolunteering() }.getOrNull())
-        }
+        val payload = runCatching { client.getFamilyVolunteering() }.getOrNull()
+        _uiState.update { it.copy(volunteering = payload) }
+        withContext(Dispatchers.Default) { volunteerReminders.sync(payload) }
     }
 
     private suspend fun loadChatUnread() {

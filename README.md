@@ -147,7 +147,7 @@ rendezvous-il/
 
 Native **SwiftUI** attendee hub in `ios/` (not a WebView shell). **Sign-in required** for almost everything — welcome screen, then Clerk, then tabs:
 
-- **Home (Live day board)** — now/next, weather, active announcements, next meal, chat unread, and **your volunteering** when you have assignments or pending lesson-topic actions (`GET /api/family/volunteering`)
+- **Home (Live day board)** — now/next, weather, active announcements, next meal, chat unread, and **your volunteering** when you have assignments or pending lesson-topic actions (`GET /api/family/volunteering`). Opening Home/Volunteering auto-schedules a **30-minute local reminder** before each assignment
 - **Schedule** — opens on today (Central Time) or the next upcoming day. **Happening now** highlight only when an event is actually in progress (Central Time) — not the next upcoming item. Empty announcements are hidden. Meals, worship leaders, event reminders (bell → local notification; prefs store the event so reminders still schedule if the shared snapshot is empty). Tap location → campus map
 - **Directory** — disk cache shows last-loaded families immediately, then refreshes in the background. Family detail matches the website: Father/Mother lines plus **Kids with ages**. Manage your family photo from **More → Directory photo**
 - **Map** — MapKit directions to campus + image venue map on site (geofence switch); More → Campus map
@@ -172,7 +172,7 @@ Native **Jetpack Compose** app in `android/` (Phases 1–5):
 - **Chat** — year group chat parity with iOS/web: channel list (unread badges, activity sort), thread (text, up to 6 photos, polls, announcements for mods, reactions behind smile menu, delete), Ably Pub/Sub + 4s HTTP poll fallback (`ably-android`)
 - **Schedule** — opens on today / next upcoming day; **Happening now** only for the in-progress event (Central Time); day picker, meals, volunteer slots, **event reminders** (bell icon), offline fallback; empty announcements hidden
 - **Directory** — on-device cache first, background refresh; Father/Mother + **Kids (ages)** like the website; family photo manage stays under More
-- **Volunteering** — `GET /api/family/volunteering`; Home card + More → Your volunteering (pending lesson-topic links + confirmed worship/special jobs). Hidden when empty
+- **Volunteering** — `GET /api/family/volunteering`; Home card + More → Your volunteering (pending lesson-topic links + confirmed worship/special jobs). Hidden when empty. Apps auto-schedule a **local push 30 minutes before** each worship/special assignment (`startsAt` from the API)
 - **Updates** — now/next (Central Time), weather, announcements when active (More → Live updates; not a bottom tab)
 - **More** — calculator, Bible Bowl, FAQ, About, **Clerk account**, directory manage, volunteering, **notifications & widgets**, **admin** (dashboard, user management, staff check-in)
 - **Admin** — mobile dashboard stats, staff check-in with QR scan, user CRUD (role-gated via Clerk session)

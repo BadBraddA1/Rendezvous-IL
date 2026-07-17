@@ -234,9 +234,12 @@ struct HomeView: View {
     private func loadVolunteering() async {
         guard let client = session.apiClient else {
             volunteering = nil
+            await VolunteerReminderService.sync(from: nil)
             return
         }
-        volunteering = try? await client.getFamilyVolunteering()
+        let payload = try? await client.getFamilyVolunteering()
+        volunteering = payload
+        await VolunteerReminderService.sync(from: payload)
     }
 
     private func loadChatUnread() async {

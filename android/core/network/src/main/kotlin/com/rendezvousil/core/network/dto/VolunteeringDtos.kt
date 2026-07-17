@@ -16,6 +16,7 @@ data class FamilyVolunteeringWorship(
     val prayerType: String? = null,
     val roleLabel: String = "",
     val scheduleStatus: String? = null,
+    val startsAt: String? = null,
 )
 
 @Serializable
@@ -44,6 +45,7 @@ data class FamilySpecialAssignment(
     val timeSlot: String? = null,
     val notes: String? = null,
     val matchedName: String = "",
+    val startsAt: String? = null,
 )
 
 @Serializable

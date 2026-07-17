@@ -683,6 +683,7 @@ struct FamilyVolunteeringWorship: Codable, Hashable, Sendable {
     let prayerType: String?
     let roleLabel: String
     let scheduleStatus: String?
+    let startsAt: String?
 }
 
 struct FamilyVolunteeringLesson: Codable, Hashable, Sendable {
@@ -708,6 +709,7 @@ struct FamilySpecialAssignment: Codable, Hashable, Identifiable, Sendable {
     let timeSlot: String?
     let notes: String?
     let matchedName: String
+    let startsAt: String?
 }
 
 struct FamilyVolunteeringSummary: Codable, Hashable, Sendable {

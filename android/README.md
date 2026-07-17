@@ -52,7 +52,7 @@ cd android
 ./gradlew :app:assembleDebug
 ```
 
-CI runs the same command on push/PR when `android/**` changes (see `.github/workflows/android-build.yml`).
+CI assemble is **manual only** (`workflow_dispatch` on `.github/workflows/android-build.yml`) so failed Actions runs don’t spam GitHub notifications on every push.
 
 ## Refresh bundled schedule
 
@@ -153,7 +153,7 @@ Core chat parity with iOS/web (CarPlay remains iOS-only):
 | Area | Details |
 |------|---------|
 | **Tabs** | Bottom bar: Home (live day board), **Chat**, Schedule, **Directory**, More — same primary surfaces as iOS |
-| **Volunteering** | Home card + More → Your volunteering via `GET /api/family/volunteering` (hidden when empty) |
+| **Volunteering** | Home card + More → Your volunteering via `GET /api/family/volunteering` (hidden when empty); auto local reminder 30m before each assignment |
 | **Chat list** | `ChatListScreen` — channels from `GET /api/chat/channels`, newest activity first, unread badges, pull-to-refresh |
 | **Thread** | `ChatThreadScreen` — messages, send text, up to 6 photos (multipart), polls + announcements (mods), reactions (`🦙👍❤️😂🙏` behind smile menu), delete own/mod |
 | **Realtime** | `AblyChatService` — `POST /api/ably/token`, channel `rendezvous:channel:{id}`, events `message` / `message_deleted` / `reaction` / `poll_updated`; HTTP poll every 4s if Ably fails |

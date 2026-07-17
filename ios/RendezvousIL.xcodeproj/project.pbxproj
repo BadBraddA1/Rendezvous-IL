@@ -51,6 +51,7 @@
 		A5C7F695E3ACBC367467F167 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17E9348A90094B82009B4CBD /* AboutView.swift */; };
 		A6695420B13B1E422B58B7AA /* UpdatesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41381ABB5514CB0C7608D0B0 /* UpdatesView.swift */; };
 		A9AEC700192817C9BB740EC4 /* DirectoryDataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DAEEF46A6CDDDEE3F2185E9 /* DirectoryDataStore.swift */; };
+		8637AD4609724681A8F211AB /* VolunteerReminderService.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD3550E631F54A35B1B13C69 /* VolunteerReminderService.swift */; };
 		AC921200D398D7BEA41C70E0 /* ScheduleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 613DC0E4AA30786A2A78BB63 /* ScheduleView.swift */; };
 		ADA22A3B77F9F98440833E10 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EE33E00CE0327288EBBC1EF /* ContentView.swift */; };
 		AFA8B01C44C837F91E7A0ED6 /* VenueMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FE407421254F1FD65DD9F86 /* VenueMapView.swift */; };
@@ -123,6 +124,7 @@
 		17E9348A90094B82009B4CBD /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
 		1A62644C156B0B0D6EADBF84 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
 		1DAEEF46A6CDDDEE3F2185E9 /* DirectoryDataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DirectoryDataStore.swift; sourceTree = "<group>"; };
+		FD3550E631F54A35B1B13C69 /* VolunteerReminderService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolunteerReminderService.swift; sourceTree = "<group>"; };
 		231641E3BB59E8082BBC04FE /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		237B5BF5B8B77520EE65C132 /* NotificationSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationSettingsView.swift; sourceTree = "<group>"; };
 		24CACB9C92690CC394EB341D /* PushRegistrationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushRegistrationService.swift; sourceTree = "<group>"; };
@@ -240,6 +242,7 @@
 				008D20E8BE6CD25A13CBA988 /* CampusLocationMonitor.swift */,
 				1A179EFCC46341308ACAF69D /* ChatDataStore.swift */,
 				1DAEEF46A6CDDDEE3F2185E9 /* DirectoryDataStore.swift */,
+				FD3550E631F54A35B1B13C69 /* VolunteerReminderService.swift */,
 				E1375EFD2C7FB2D5CFD77868 /* LiveActivityManager.swift */,
 				77C4EF056AAA489147049142 /* NotificationService.swift */,
 				24CACB9C92690CC394EB341D /* PushRegistrationService.swift */,
@@ -553,6 +556,7 @@
 				ADA22A3B77F9F98440833E10 /* ContentView.swift in Sources */,
 				25466A1634E763C60FEFFBFE /* DeepLinkRouter.swift in Sources */,
 				A9AEC700192817C9BB740EC4 /* DirectoryDataStore.swift in Sources */,
+				8637AD4609724681A8F211AB /* VolunteerReminderService.swift in Sources */,
 				709C33B84426E71DA13A5F19 /* DirectoryView.swift in Sources */,
 				D7D9A0E82A4FB69953072D2D /* EventReminderSheet.swift in Sources */,
 				43C393DA7DDE7C0CA8C161E8 /* FAQView.swift in Sources */,

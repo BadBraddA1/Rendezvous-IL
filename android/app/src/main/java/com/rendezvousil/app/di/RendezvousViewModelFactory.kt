@@ -36,9 +36,9 @@ class RendezvousViewModelFactory(
     override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
         return when {
             modelClass.isAssignableFrom(HomeViewModel::class.java) ->
-                HomeViewModel(repository, appSession) as T
+                HomeViewModel(repository, appSession, application) as T
             modelClass.isAssignableFrom(VolunteeringViewModel::class.java) ->
-                VolunteeringViewModel(appSession) as T
+                VolunteeringViewModel(appSession, application) as T
             modelClass.isAssignableFrom(ScheduleViewModel::class.java) ->
                 ScheduleViewModel(repository, reminderService) as T
             modelClass.isAssignableFrom(UpdatesViewModel::class.java) ->

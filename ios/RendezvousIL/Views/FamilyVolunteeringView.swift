@@ -121,8 +121,10 @@ struct FamilyVolunteeringView: View {
         isLoading = true
         defer { isLoading = false }
         do {
-            payload = try await client.getFamilyVolunteering()
+            let response = try await client.getFamilyVolunteering()
+            payload = response
             errorMessage = nil
+            await VolunteerReminderService.sync(from: response)
         } catch {
             if payload == nil {
                 errorMessage = error.localizedDescription
