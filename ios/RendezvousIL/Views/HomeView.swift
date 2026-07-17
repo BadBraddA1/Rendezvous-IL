@@ -219,16 +219,18 @@ struct HomeView: View {
 
     private func refreshBoard() async {
         async let updates: Void = repository.loadUpdates()
-        async let schedule: Void = {
-            if repository.schedule == nil {
-                await repository.loadScheduleBundle()
-            }
-            await repository.loadScheduleExtras()
-        }()
+        async let scheduleLoad: Void = loadScheduleForBoard()
         async let volunteeringTask: Void = loadVolunteering()
         async let chatTask: Void = loadChatUnread()
-        _ = await (updates, schedule(), volunteeringTask, chatTask)
+        _ = await (updates, scheduleLoad, volunteeringTask, chatTask)
         nextMealLine = computeNextMealLine()
+    }
+
+    private func loadScheduleForBoard() async {
+        if repository.schedule == nil {
+            await repository.loadScheduleBundle()
+        }
+        await repository.loadScheduleExtras()
     }
 
     private func loadVolunteering() async {
