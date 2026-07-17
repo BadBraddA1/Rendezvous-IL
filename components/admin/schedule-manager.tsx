@@ -171,6 +171,45 @@ export function ScheduleManager({ canManage, eventYear }: Props) {
     }
   }
 
+  const runTool = async (action: "key-dates" | "reminder-tests") => {
+    setBusyId(action)
+    try {
+      const res = await fetch("/api/admin/schedule/tools", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ year: eventYear, action }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || "Tool failed")
+      applyResponse(data)
+      if (action === "key-dates") {
+        toast({
+          title: "Registration key dates",
+          description: `Added ${data.inserted ?? 0}, already present ${data.skipped ?? 0}.`,
+        })
+      } else {
+        const lines = Array.isArray(data.events)
+          ? (data.events as { title: string; when: string }[])
+              .slice(0, 4)
+              .map((row) => `${row.title}: ${row.when}`)
+              .join(" · ")
+          : `${data.inserted ?? 0} test events added`
+        toast({
+          title: "Reminder test events ready",
+          description: `${lines}. Open the app Schedule, tap the bell, pick 5 min / at start.`,
+        })
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Could not run schedule tool.",
+        variant: "destructive",
+      })
+    } finally {
+      setBusyId(null)
+    }
+  }
+
   const startEdit = (event: ScheduleEvent | null, day?: string, eventDate?: string) => {
     setEditingId(event ? event.id : "new")
     setNewForDay(event ? null : (day ?? null))
@@ -527,25 +566,66 @@ export function ScheduleManager({ canManage, eventYear }: Props) {
             )}
             {canManage && editingId === "new" && editForm}
             {canManage && editingId !== "new" && (
-              <div className="mt-2">
+              <div className="mt-4 flex flex-wrap justify-center gap-2">
                 <Button variant="ghost" size="sm" onClick={() => startEdit(null)}>
                   <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
                   Or add events one at a time
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={busyId === "key-dates"}
+                  onClick={() => void runTool("key-dates")}
+                >
+                  Add reg open/close dates
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={busyId === "reminder-tests"}
+                  onClick={() => void runTool("reminder-tests")}
+                >
+                  Seed reminder test events
                 </Button>
               </div>
             )}
           </div>
         ) : (
           <>
-            {canManage &&
-              (editingId === "new" && newForDay === null ? (
-                editForm
-              ) : (
-                <Button variant="outline" size="sm" onClick={() => startEdit(null)}>
-                  <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
-                  Add event
+            {canManage && (
+              <div className="flex flex-wrap gap-2">
+                {editingId === "new" && newForDay === null ? (
+                  editForm
+                ) : (
+                  <Button variant="outline" size="sm" onClick={() => startEdit(null)}>
+                    <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
+                    Add event
+                  </Button>
+                )}
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={busyId === "key-dates"}
+                  onClick={() => void runTool("key-dates")}
+                >
+                  {busyId === "key-dates" && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+                  )}
+                  Add reg open/close dates
                 </Button>
-              ))}
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={busyId === "reminder-tests"}
+                  onClick={() => void runTool("reminder-tests")}
+                >
+                  {busyId === "reminder-tests" && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+                  )}
+                  Seed reminder test events
+                </Button>
+              </div>
+            )}
             {DAYS.map((day) => {
             const dayEvents = events.filter((event) => event.day === day && !event.event_date)
             return (

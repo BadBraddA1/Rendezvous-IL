@@ -517,12 +517,12 @@ export async function reorderScheduleEvents(
 
 /**
  * Seed a year from the static schedule (with inferred metadata). No-op if the
- * year already has rows so it can't duplicate. Returns rows inserted.
+ * year already has retreat-week rows (custom key dates don't block seeding).
  */
 export async function seedScheduleEvents(year: number): Promise<number> {
   await ensureScheduleEventsTable()
   const existing = await listScheduleEvents(year)
-  if (existing.length > 0) return 0
+  if (existing.some((row) => !row.event_date)) return 0
 
   let inserted = 0
   for (const day of staticPublicDays(year)) {
@@ -530,10 +530,10 @@ export async function seedScheduleEvents(year: number): Promise<number> {
       const event = day.events[index]
       await sql`
         INSERT INTO schedule_events (
-          event_year, day, sort_order, time, title, location, note,
+          event_year, day, event_date, sort_order, time, title, location, note,
           location_id, meal_type, volunteer_slot, link_href, show_weather
         ) VALUES (
-          ${year}, ${day.day}, ${index}, ${event.time}, ${event.title},
+          ${year}, ${day.day}, ${null}, ${index}, ${event.time}, ${event.title},
           ${event.location ?? null}, ${event.note ?? null},
           ${event.locationId ?? null}, ${event.mealType ?? null},
           ${event.volunteerSlot ?? null}, ${event.linkHref ?? null},
@@ -544,6 +544,168 @@ export async function seedScheduleEvents(year: number): Promise<number> {
     }
   }
   return inserted
+}
+
+const REGISTRATION_KEY_NOTE = "registration-key-date"
+const REMINDER_TEST_NOTE = "reminder-test"
+
+const REGISTRATION_KEY_DATES_BY_YEAR: Record<
+  number,
+  { opens: string; closes: string }
+> = {
+  2027: { opens: "2027-01-01", closes: "2027-04-15" },
+  2026: { opens: "2026-01-01", closes: "2026-04-15" },
+}
+
+/** Ensure Registration opens / closes key dates exist for the year (idempotent). */
+export async function ensureRegistrationKeyDates(
+  year: number,
+): Promise<{ inserted: number; skipped: number }> {
+  await ensureScheduleEventsTable()
+  const dates = REGISTRATION_KEY_DATES_BY_YEAR[year] ?? REGISTRATION_KEY_DATES_BY_YEAR[2027]
+  const specs = [
+    {
+      eventDate: dates.opens,
+      time: "12:01 AM",
+      title: "Registration opens",
+      note: "Online registration opens for Rendezvous (Central Time).",
+    },
+    {
+      eventDate: dates.closes,
+      time: "11:59 PM",
+      title: "Registration closes",
+      note: "Final registration deadline (Central Time).",
+    },
+  ]
+
+  let inserted = 0
+  let skipped = 0
+  for (const spec of specs) {
+    const [existing] = await sql`
+      SELECT id FROM schedule_events
+      WHERE event_year = ${year}
+        AND event_date = ${spec.eventDate}
+        AND title = ${spec.title}
+      LIMIT 1
+    `
+    if (existing) {
+      skipped++
+      continue
+    }
+    await createScheduleEvent(
+      {
+        day: weekdayFromIso(spec.eventDate),
+        eventDate: spec.eventDate,
+        time: spec.time,
+        title: spec.title,
+        location: null,
+        note: `${REGISTRATION_KEY_NOTE}. ${spec.note}`,
+        locationId: null,
+        mealType: null,
+        volunteerSlot: null,
+        linkHref: "/registration",
+        showWeather: false,
+      },
+      year,
+    )
+    inserted++
+  }
+  return { inserted, skipped }
+}
+
+function chicagoParts(date: Date): {
+  isoDate: string
+  hour: number
+  minute: number
+  timeLabel: string
+} {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Chicago",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  }).formatToParts(date)
+
+  const get = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((part) => part.type === type)?.value ?? ""
+
+  const year = get("year")
+  const month = get("month")
+  const day = get("day")
+  const hour12 = Number(get("hour"))
+  const minute = Number(get("minute"))
+  const dayPeriod = get("dayPeriod").toUpperCase()
+  let hour24 = hour12 % 12
+  if (dayPeriod === "PM") hour24 += 12
+  if (dayPeriod === "AM" && hour12 === 12) hour24 = 0
+
+  return {
+    isoDate: `${year}-${month}-${day}`,
+    hour: hour24,
+    minute,
+    timeLabel: formatTimeForDisplay(hour24, minute),
+  }
+}
+
+/**
+ * Replace reminder-test events with a few near-term slots (Central Time)
+ * so device reminders can be exercised (5 min / 15 min / 1 hr offsets).
+ */
+export async function seedReminderTestEvents(
+  year: number,
+): Promise<{ inserted: number; removed: number; events: { title: string; when: string }[] }> {
+  await ensureScheduleEventsTable()
+
+  const existing = await sql`
+    SELECT id FROM schedule_events
+    WHERE event_year = ${year}
+      AND note LIKE ${`${REMINDER_TEST_NOTE}%`}
+  `
+  for (const row of existing) {
+    await sql`DELETE FROM schedule_events WHERE id = ${Number(row.id)}`
+  }
+
+  const now = new Date()
+  // Offsets chosen so "5 min before", "15 min before", and "1 hour before" can still fire.
+  const offsetsMinutes = [8, 22, 70, 24 * 60 + 30]
+  const titles = [
+    "[Test] Reminder in ~8 minutes",
+    "[Test] Reminder in ~22 minutes",
+    "[Test] Reminder in ~70 minutes",
+    "[Test] Reminder tomorrow",
+  ]
+
+  const created: { title: string; when: string }[] = []
+  for (let index = 0; index < offsetsMinutes.length; index++) {
+    const at = new Date(now.getTime() + offsetsMinutes[index] * 60_000)
+    const parts = chicagoParts(at)
+    const title = titles[index]
+    await createScheduleEvent(
+      {
+        day: weekdayFromIso(parts.isoDate),
+        eventDate: parts.isoDate,
+        time: parts.timeLabel,
+        title,
+        location: "Reminder test",
+        note: `${REMINDER_TEST_NOTE}. Safe to delete — use Schedule bell → 5 min / 15 min / at start.`,
+        locationId: null,
+        mealType: null,
+        volunteerSlot: null,
+        linkHref: null,
+        showWeather: false,
+      },
+      year,
+    )
+    created.push({
+      title,
+      when: `${parts.isoDate} ${parts.timeLabel} CT`,
+    })
+  }
+
+  return { inserted: created.length, removed: existing.length, events: created }
 }
 
 // ---------------------------------------------------------------------------
@@ -594,6 +756,34 @@ export async function getPublicSchedule(
     const bucket = byDate.get(iso) ?? []
     bucket.push(row)
     byDate.set(iso, bucket)
+  }
+
+  // If only key dates / tests were added, still show the built-in retreat week.
+  const hasRetreatWeekRows = rows.some((row) => !row.event_date)
+  if (!hasRetreatWeekRows) {
+    for (const staticDay of staticPublicDays(year)) {
+      if (!byDate.has(staticDay.date)) {
+        byDate.set(
+          staticDay.date,
+          staticDay.events.map((event, index) => ({
+            id: -1000 - index,
+            event_year: year,
+            day: staticDay.weekday,
+            event_date: null,
+            sort_order: index,
+            time: event.time,
+            title: event.title,
+            location: event.location ?? null,
+            note: event.note ?? null,
+            location_id: event.locationId ?? null,
+            meal_type: event.mealType ?? null,
+            volunteer_slot: event.volunteerSlot ?? null,
+            link_href: event.linkHref ?? null,
+            show_weather: event.showWeather ? 1 : 0,
+          })),
+        )
+      }
+    }
   }
 
   const sortedDates = [...byDate.keys()].sort()
