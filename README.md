@@ -63,7 +63,7 @@ pnpm db:verify
 - Profile page shows **Your family** plus an **Family app access** roster (which emails are linked vs not signed up yet). Registration Family Info step explains that member emails grant app access.
 - Admin Family Directory cards list **Linked app accounts** and can remove non-primary members.
 - The site header account avatar (`UserMenuButton`) prefers the **family directory photo** when one is uploaded (`GET /api/family/directory`); otherwise it falls back to the Clerk profile image. Uploading or removing a photo on this page refreshes the header avatar immediately.
-- Profile edits do **not** write directly to Turso — they queue rows in `pending_family_changes` for admin approval at `/admin/pending-changes`.
+- Profile edits: **email + phone numbers save immediately** (family-level and per-member). Name, address, congregation, and member add/remove still queue in `pending_family_changes` for admin approval at `/admin/pending-changes`.
 - Member type / age group: adults and teens skip the age-group picker; children with a registration birthday get age group auto-calculated (`lib/member-age.ts`).
 - Admin roles: `admin`, `editor`, `viewer`, and **`checkin`** (check-in station only — web + iOS). Permissions live in `lib/clerk-auth.ts` (`getAdminPermissions`).
 - **`/admin/users`** — full user management (Clerk): create/delete users, assign roles, ban/unban, reset passwords, and track **last seen + platform** (`web` / `ios` / `android`) via `user_app_activity` and `POST /api/auth/activity`. Web admin UI at `/admin/users`; iOS **More → User management** (full admins only).

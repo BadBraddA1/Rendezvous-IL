@@ -14,17 +14,18 @@ import {
 } from "@/lib/family-membership"
 import { formatPhoneForStorage } from "@/lib/phone-format"
 
-const PROFILE_FIELDS = [
+/** Fields that still require admin approval. */
+const APPROVAL_PROFILE_FIELDS = [
   "family_last_name",
-  "email",
-  "husband_phone",
-  "wife_phone",
   "address",
   "city",
   "state",
   "zip",
   "home_congregation",
 ] as const
+
+/** Contact fields apply immediately (no pending queue). */
+const DIRECT_PROFILE_FIELDS = ["email", "husband_phone", "wife_phone"] as const
 
 function parseMemberData(value: unknown) {
   if (!value) return null
@@ -50,7 +51,49 @@ function normalizeProfileUpdates(updates: Record<string, unknown>) {
       normalized[field] = formatPhoneForStorage(String(normalized[field] ?? "")) ?? ""
     }
   }
+  if (normalized.email !== undefined) {
+    normalized.email = String(normalized.email ?? "")
+      .trim()
+      .toLowerCase()
+  }
   return normalized
+}
+
+async function applyDirectProfileFields(
+  familyId: number,
+  updates: Record<string, unknown>,
+  current: Record<string, unknown>,
+): Promise<string[]> {
+  const applied: string[] = []
+
+  if (updates.email !== undefined) {
+    const next = String(updates.email ?? "")
+    const prev = String(current.email ?? "")
+    if (next !== prev) {
+      await sql`UPDATE families SET email = ${next || null}, updated_at = CURRENT_TIMESTAMP WHERE id = ${familyId}`
+      applied.push("email")
+    }
+  }
+
+  if (updates.husband_phone !== undefined) {
+    const next = String(updates.husband_phone ?? "")
+    const prev = String(current.husband_phone ?? "")
+    if (next !== prev) {
+      await sql`UPDATE families SET husband_phone = ${next || null}, updated_at = CURRENT_TIMESTAMP WHERE id = ${familyId}`
+      applied.push("husband_phone")
+    }
+  }
+
+  if (updates.wife_phone !== undefined) {
+    const next = String(updates.wife_phone ?? "")
+    const prev = String(current.wife_phone ?? "")
+    if (next !== prev) {
+      await sql`UPDATE families SET wife_phone = ${next || null}, updated_at = CURRENT_TIMESTAMP WHERE id = ${familyId}`
+      applied.push("wife_phone")
+    }
+  }
+
+  return applied
 }
 
 // GET - Fetch family profile for the current user
@@ -103,7 +146,7 @@ export async function GET(request: Request) {
   }
 }
 
-// PUT - Submit profile changes for approval
+// PUT - Apply contact fields immediately; queue other profile fields for approval
 export async function PUT(request: Request) {
   try {
     const ctx = await authUserContext(request)
@@ -118,6 +161,12 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "Family not found" }, { status: 404 })
     }
 
+    const directApplied = await applyDirectProfileFields(
+      family.id,
+      updates,
+      family as unknown as Record<string, unknown>,
+    )
+
     const changes: {
       family_id: number
       clerk_user_id: string
@@ -127,7 +176,7 @@ export async function PUT(request: Request) {
       new_value: string
     }[] = []
 
-    for (const field of PROFILE_FIELDS) {
+    for (const field of APPROVAL_PROFILE_FIELDS) {
       if (updates[field] === undefined) continue
 
       const oldValue = String(family[field as keyof typeof family] ?? "")
@@ -155,13 +204,24 @@ export async function PUT(request: Request) {
       `
     }
 
+    const total = directApplied.length + changes.length
+    let message = "No changes detected"
+    if (directApplied.length > 0 && changes.length > 0) {
+      message = `Saved ${directApplied.length} contact change(s); ${changes.length} other change(s) submitted for approval`
+    } else if (directApplied.length > 0) {
+      message = `Saved ${directApplied.length} contact change(s)`
+    } else if (changes.length > 0) {
+      message = "Changes submitted for approval"
+    }
+
     return NextResponse.json({
       success: true,
-      message:
-        changes.length > 0
-          ? "Changes submitted for approval"
-          : "No changes detected",
-      changesCount: changes.length,
+      message,
+      changesCount: total,
+      directApplied,
+      pendingCount: changes.length,
+      // Keep callers that only check email/phone from treating them as pending.
+      skippedDirectFields: [...DIRECT_PROFILE_FIELDS],
     })
   } catch (error) {
     console.error("Error submitting profile changes:", error)

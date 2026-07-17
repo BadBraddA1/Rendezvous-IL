@@ -205,8 +205,10 @@ export default function FamilyProfilePage() {
         return
       }
 
-      if (data.changesCount > 0) {
-        setSuccessMessage(`${data.changesCount} change(s) submitted for admin approval`)
+      if (data.message) {
+        setSuccessMessage(data.message)
+      } else if (data.changesCount > 0) {
+        setSuccessMessage(`${data.changesCount} change(s) saved`)
       } else {
         setSuccessMessage("No changes detected — your profile is already up to date")
       }
@@ -335,8 +337,8 @@ export default function FamilyProfilePage() {
             <h1 className="text-section-title">Your family</h1>
             <p className="text-lead text-muted-foreground">
               {accountRole === "member"
-                ? "Shared family profile — edits still need admin approval"
-                : "Manage your family information"}
+                ? "Shared family profile — emails & phones save immediately; other edits need approval"
+                : "Emails & phones save immediately; other profile edits need admin approval"}
             </p>
           </div>
           {accountRole && (
@@ -483,11 +485,12 @@ export default function FamilyProfilePage() {
                     value={editedFamily.email || ""}
                     onChange={(e) => setEditedFamily({ ...editedFamily, email: e.target.value })}
                   />
+                  <p className="text-xs text-muted-foreground">Saves immediately — no admin approval.</p>
                 </div>
               </div>
               <p className="text-sm text-muted-foreground">
                 Add phone numbers on each family member below so the directory shows the right
-                person for each number.
+                person for each number. Member emails and phones also save immediately.
               </p>
             </div>
 
@@ -680,11 +683,11 @@ export default function FamilyProfilePage() {
               <AlertCircle className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
               <div className="space-y-1">
                 <p className="text-sm font-medium text-foreground">
-                  Changes require approval
+                  Most changes require approval
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  All profile changes are reviewed by an admin before being displayed on the attendee map. 
-                  You&apos;ll be notified once your changes are approved.
+                  Emails and phone numbers save right away. Name, address, congregation, and member
+                  add/remove still go to an admin before they show on the directory map.
                 </p>
               </div>
             </div>
@@ -813,8 +816,9 @@ function MemberDialog({
       <DialogHeader>
         <DialogTitle>{member ? "Edit Family Member" : "Add Family Member"}</DialogTitle>
         <DialogDescription>
-          {member ? "Update member information" : "Add a new member to your family"}. 
-          Changes will be submitted for admin approval.
+          {member
+            ? "Email and phone save immediately. Other member changes need admin approval."
+            : "Add a new member to your family — new members need admin approval."}
         </DialogDescription>
       </DialogHeader>
       <div className="space-y-4 py-4">
@@ -849,7 +853,8 @@ function MemberDialog({
                 placeholder="Lets this person sign in and join your family"
               />
               <p className="text-xs text-muted-foreground">
-                If they create an account with this email, they&apos;re linked to this family automatically.
+                Saves immediately. If they create an account with this email, they&apos;re linked to
+                this family automatically.
               </p>
             </div>
             <div className="space-y-2">
