@@ -30,11 +30,27 @@ const ScheduleMap = dynamic(
 )
 
 const DAY_LETTERS: Record<string, string> = {
+  Sunday: "Su",
   Monday: "M",
   Tuesday: "T",
   Wednesday: "W",
   Thursday: "Th",
   Friday: "F",
+  Saturday: "Sa",
+}
+
+function displayWeekday(day: PublicScheduleDay): string {
+  if (day.weekday) return day.weekday
+  if (/^\d{4}-\d{2}-\d{2}$/.test(day.day)) {
+    const date = new Date(`${day.day}T00:00:00.000Z`)
+    return date.toLocaleDateString("en-US", { weekday: "long", timeZone: "UTC" })
+  }
+  return day.day
+}
+
+function dayLetter(day: PublicScheduleDay): string {
+  const weekday = displayWeekday(day)
+  return DAY_LETTERS[weekday] ?? weekday.charAt(0)
 }
 
 const DAY_BADGE_CLASSES: Record<string, string> = {
@@ -230,6 +246,7 @@ export function ScheduleClient({ year, dateRangeLabel, days }: Props) {
               {days.map((day) => {
                 const dayId = day.day.toLowerCase()
                 const isActive = activeDay === dayId
+                const weekday = displayWeekday(day)
                 return (
                   <a
                     key={dayId}
@@ -241,9 +258,12 @@ export function ScheduleClient({ year, dateRangeLabel, days }: Props) {
                     }`}
                   >
                     <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground lg:h-10 lg:w-10">
-                      {DAY_LETTERS[day.day] ?? day.day.charAt(0)}
+                      {dayLetter(day)}
                     </div>
-                    <span className="text-xs font-medium lg:text-sm lg:whitespace-nowrap">{day.day}</span>
+                    <span className="text-xs font-medium lg:text-sm lg:whitespace-nowrap">
+                      {day.dateLabel}
+                      <span className="hidden text-muted-foreground lg:inline"> · {weekday}</span>
+                    </span>
                   </a>
                 )
               })}
@@ -259,10 +279,10 @@ export function ScheduleClient({ year, dateRangeLabel, days }: Props) {
                       DAY_BADGE_CLASSES[day.color] ?? DAY_BADGE_CLASSES.primary
                     }`}
                   >
-                    {DAY_LETTERS[day.day] ?? day.day.charAt(0)}
+                    {dayLetter(day)}
                   </div>
                   <h2 className="text-day-title">
-                    {day.dateLabel} ({day.day})
+                    {day.dateLabel} ({displayWeekday(day)})
                   </h2>
                 </div>
                 <dl className="space-y-4 md:space-y-6">

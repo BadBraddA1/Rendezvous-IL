@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server"
-import { buildLuItems, getPublicSchedule, scheduleDayDates } from "@/lib/event-schedule"
+import {
+  buildLuItems,
+  buildScheduleDayDatesMap,
+  getPublicSchedule,
+} from "@/lib/event-schedule"
 
 export const dynamic = "force-dynamic"
 
@@ -17,13 +21,15 @@ export async function GET() {
       draftNotice: "Based on the 2026 schedule — may change slightly for 2027",
       // Same shape the apps already parse (date = short label like "May 3"),
       // with the interactive extras included additively.
+      // Custom key-date days use an ISO `day` key (unique); weekday is additive.
       days: days.map((day) => ({
         day: day.day,
+        weekday: day.weekday,
         date: day.dateLabel,
         color: day.color,
         events: day.events,
       })),
-      dayDates: scheduleDayDates(EVENT_YEAR),
+      dayDates: buildScheduleDayDatesMap(EVENT_YEAR, days),
       luItems: buildLuItems(days),
     },
     {

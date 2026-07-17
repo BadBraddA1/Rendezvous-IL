@@ -19,6 +19,18 @@ import {
 export const SCHEDULE_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"] as const
 export type ScheduleDayName = (typeof SCHEDULE_DAYS)[number]
 
+/** All weekdays — custom-date events may land on Saturday/Sunday. */
+export const WEEKDAY_NAMES = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+] as const
+export type WeekdayName = (typeof WEEKDAY_NAMES)[number]
+
 export const MEAL_TYPES = ["breakfast", "lunch", "dinner"] as const
 export const VOLUNTEER_SLOTS = ["Morning Devotion", "Evening Devotion"] as const
 
@@ -38,7 +50,9 @@ export const SCHEDULE_LOCATION_IDS = [
 export type ScheduleEventRow = {
   id: number
   event_year: number
-  day: ScheduleDayName
+  day: string
+  /** ISO date for events outside the Mon–Fri retreat week (null = derive from day). */
+  event_date: string | null
   sort_order: number
   time: string
   title: string
@@ -52,7 +66,9 @@ export type ScheduleEventRow = {
 }
 
 export type ScheduleEventInput = {
-  day: ScheduleDayName
+  day: string
+  /** When set, event is pinned to this calendar date (registration opens, etc.). */
+  eventDate: string | null
   time: string
   title: string
   location: string | null
@@ -78,7 +94,10 @@ export type PublicScheduleEvent = {
 }
 
 export type PublicScheduleDay = {
-  day: ScheduleDayName
+  /** Weekday name for retreat days, or ISO date for custom-date days (unique key). */
+  day: string
+  /** Display weekday, e.g. "Saturday" */
+  weekday: string
   /** ISO date, e.g. "2027-05-03" */
   date: string
   /** Short label, e.g. "May 3" */
@@ -106,10 +125,10 @@ const MONTH_NAMES = [
   "July", "August", "September", "October", "November", "December",
 ]
 
-export function scheduleDayDates(year: number): Record<ScheduleDayName, string> {
+export function scheduleDayDates(year: number): Record<string, string> {
   const monday = EVENT_MONDAY[year] ?? EVENT_MONDAY[2027]
   const [y, m, d] = monday.split("-").map(Number)
-  const out = {} as Record<ScheduleDayName, string>
+  const out: Record<string, string> = {}
   SCHEDULE_DAYS.forEach((day, index) => {
     const date = new Date(Date.UTC(y, m - 1, d + index))
     out[day] = date.toISOString().slice(0, 10)
@@ -120,6 +139,41 @@ export function scheduleDayDates(year: number): Record<ScheduleDayName, string> 
 function dateLabelFromIso(iso: string): string {
   const [, m, d] = iso.split("-").map(Number)
   return `${MONTH_NAMES[m - 1]} ${d}`
+}
+
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/
+
+export function isIsoDate(value: string): boolean {
+  if (!ISO_DATE_RE.test(value)) return false
+  const date = new Date(`${value}T00:00:00.000Z`)
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value
+}
+
+export function weekdayFromIso(iso: string): WeekdayName {
+  const date = new Date(`${iso}T00:00:00.000Z`)
+  return WEEKDAY_NAMES[date.getUTCDay()]
+}
+
+/** Resolve the calendar date for a schedule row. */
+export function effectiveEventDate(
+  row: Pick<ScheduleEventRow, "day" | "event_date">,
+  year: number,
+): string | null {
+  if (row.event_date && isIsoDate(row.event_date)) return row.event_date
+  const week = scheduleDayDates(year)
+  return week[row.day] ?? null
+}
+
+/** dayDates map for apps: retreat weekdays + any custom ISO keys from the public days. */
+export function buildScheduleDayDatesMap(
+  year: number,
+  days: PublicScheduleDay[],
+): Record<string, string> {
+  const map = scheduleDayDates(year)
+  for (const day of days) {
+    map[day.day] = day.date
+  }
+  return map
 }
 
 // ---------------------------------------------------------------------------
@@ -212,6 +266,7 @@ export function staticPublicDays(year: number): PublicScheduleDay[] {
     const iso = dates[dayName]
     return {
       day: dayName,
+      weekday: dayName,
       date: iso,
       dateLabel: dateLabelFromIso(iso),
       color: DAY_COLORS[index % DAY_COLORS.length],
@@ -222,16 +277,39 @@ export function staticPublicDays(year: number): PublicScheduleDay[] {
 
 /** Validate an admin API request body into a ScheduleEventInput (null = invalid). */
 export function parseScheduleEventBody(body: Record<string, unknown>): ScheduleEventInput | null {
-  const day = typeof body.day === "string" ? body.day : ""
   const time = typeof body.time === "string" ? body.time.trim() : ""
   const title = typeof body.title === "string" ? body.title.trim() : ""
-  if (!SCHEDULE_DAYS.includes(day as ScheduleDayName) || !time || !title) return null
+  if (!time || !title) return null
+
+  const rawEventDate =
+    typeof body.eventDate === "string"
+      ? body.eventDate.trim()
+      : typeof body.event_date === "string"
+        ? body.event_date.trim()
+        : ""
+  const dayRaw = typeof body.day === "string" ? body.day.trim() : ""
+
+  let day: string
+  let eventDate: string | null = null
+
+  if (rawEventDate) {
+    if (!isIsoDate(rawEventDate)) return null
+    eventDate = rawEventDate
+    day = weekdayFromIso(rawEventDate)
+  } else if (SCHEDULE_DAYS.includes(dayRaw as ScheduleDayName)) {
+    day = dayRaw
+  } else if (dayRaw.toLowerCase() === "custom") {
+    return null
+  } else {
+    return null
+  }
 
   const str = (value: unknown) =>
     typeof value === "string" && value.trim() ? value.trim() : null
 
   return {
-    day: day as ScheduleDayName,
+    day,
+    eventDate,
     time,
     title,
     location: str(body.location),
@@ -271,21 +349,51 @@ export async function ensureScheduleEventsTable(): Promise<void> {
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     )
   `
+  try {
+    await sql.query("ALTER TABLE schedule_events ADD COLUMN event_date TEXT")
+  } catch {
+    // column already exists
+  }
   tableEnsured = true
 }
 
-const DAY_ORDER_SQL_INDEX: Record<ScheduleDayName, number> = {
+const DAY_ORDER_SQL_INDEX: Record<string, number> = {
+  Sunday: -1,
   Monday: 0,
   Tuesday: 1,
   Wednesday: 2,
   Thursday: 3,
   Friday: 4,
+  Saturday: 5,
 }
 
-function sortRows(rows: SqlRow[]): ScheduleEventRow[] {
-  return (rows as unknown as ScheduleEventRow[]).sort((a, b) => {
-    const dayDiff =
-      (DAY_ORDER_SQL_INDEX[a.day] ?? 99) - (DAY_ORDER_SQL_INDEX[b.day] ?? 99)
+function mapScheduleRow(row: SqlRow): ScheduleEventRow {
+  return {
+    id: Number(row.id),
+    event_year: Number(row.event_year),
+    day: String(row.day),
+    event_date: row.event_date != null && String(row.event_date).trim()
+      ? String(row.event_date)
+      : null,
+    sort_order: Number(row.sort_order),
+    time: String(row.time),
+    title: String(row.title),
+    location: row.location != null ? String(row.location) : null,
+    note: row.note != null ? String(row.note) : null,
+    location_id: row.location_id != null ? String(row.location_id) : null,
+    meal_type: row.meal_type != null ? String(row.meal_type) : null,
+    volunteer_slot: row.volunteer_slot != null ? String(row.volunteer_slot) : null,
+    link_href: row.link_href != null ? String(row.link_href) : null,
+    show_weather: Number(row.show_weather) || 0,
+  }
+}
+
+function sortRows(rows: ScheduleEventRow[], year: number): ScheduleEventRow[] {
+  return [...rows].sort((a, b) => {
+    const dateA = effectiveEventDate(a, year) ?? "9999-99-99"
+    const dateB = effectiveEventDate(b, year) ?? "9999-99-99"
+    if (dateA !== dateB) return dateA.localeCompare(dateB)
+    const dayDiff = (DAY_ORDER_SQL_INDEX[a.day] ?? 99) - (DAY_ORDER_SQL_INDEX[b.day] ?? 99)
     if (dayDiff !== 0) return dayDiff
     if (a.sort_order !== b.sort_order) return a.sort_order - b.sort_order
     return a.id - b.id
@@ -297,12 +405,15 @@ export async function listScheduleEvents(year: number): Promise<ScheduleEventRow
   const rows = await sql`
     SELECT * FROM schedule_events WHERE event_year = ${year}
   `
-  return sortRows(rows)
+  return sortRows(rows.map(mapScheduleRow), year)
 }
 
 function normalizeInput(input: ScheduleEventInput): ScheduleEventInput {
+  const eventDate =
+    input.eventDate && isIsoDate(input.eventDate) ? input.eventDate : null
   return {
-    day: input.day,
+    day: eventDate ? weekdayFromIso(eventDate) : input.day,
+    eventDate,
     time: input.time.trim(),
     title: input.title.trim(),
     location: input.location?.trim() || null,
@@ -321,18 +432,24 @@ export async function createScheduleEvent(
 ): Promise<void> {
   await ensureScheduleEventsTable()
   const clean = normalizeInput(input)
-  const maxRows = await sql`
-    SELECT COALESCE(MAX(sort_order), -1) AS max_order
-    FROM schedule_events
-    WHERE event_year = ${year} AND day = ${clean.day}
-  `
+  const maxRows = clean.eventDate
+    ? await sql`
+        SELECT COALESCE(MAX(sort_order), -1) AS max_order
+        FROM schedule_events
+        WHERE event_year = ${year} AND event_date = ${clean.eventDate}
+      `
+    : await sql`
+        SELECT COALESCE(MAX(sort_order), -1) AS max_order
+        FROM schedule_events
+        WHERE event_year = ${year} AND day = ${clean.day} AND event_date IS NULL
+      `
   const nextOrder = Number(maxRows[0]?.max_order ?? -1) + 1
   await sql`
     INSERT INTO schedule_events (
-      event_year, day, sort_order, time, title, location, note,
+      event_year, day, event_date, sort_order, time, title, location, note,
       location_id, meal_type, volunteer_slot, link_href, show_weather
     ) VALUES (
-      ${year}, ${clean.day}, ${nextOrder}, ${clean.time}, ${clean.title},
+      ${year}, ${clean.day}, ${clean.eventDate}, ${nextOrder}, ${clean.time}, ${clean.title},
       ${clean.location}, ${clean.note}, ${clean.locationId}, ${clean.mealType},
       ${clean.volunteerSlot}, ${clean.linkHref}, ${clean.showWeather ? 1 : 0}
     )
@@ -348,6 +465,7 @@ export async function updateScheduleEvent(
   await sql`
     UPDATE schedule_events SET
       day = ${clean.day},
+      event_date = ${clean.eventDate},
       time = ${clean.time},
       title = ${clean.title},
       location = ${clean.location},
@@ -370,16 +488,30 @@ export async function deleteScheduleEvent(id: number): Promise<void> {
 /** Persist a new order for one day's events (list of ids top-to-bottom). */
 export async function reorderScheduleEvents(
   year: number,
-  day: ScheduleDayName,
+  day: string,
   orderedIds: number[],
+  eventDate?: string | null,
 ): Promise<void> {
   await ensureScheduleEventsTable()
   for (let index = 0; index < orderedIds.length; index++) {
-    await sql`
-      UPDATE schedule_events
-      SET sort_order = ${index}, updated_at = datetime('now')
-      WHERE id = ${orderedIds[index]} AND event_year = ${year} AND day = ${day}
-    `
+    if (eventDate) {
+      await sql`
+        UPDATE schedule_events
+        SET sort_order = ${index}, updated_at = datetime('now')
+        WHERE id = ${orderedIds[index]}
+          AND event_year = ${year}
+          AND event_date = ${eventDate}
+      `
+    } else {
+      await sql`
+        UPDATE schedule_events
+        SET sort_order = ${index}, updated_at = datetime('now')
+        WHERE id = ${orderedIds[index]}
+          AND event_year = ${year}
+          AND day = ${day}
+          AND event_date IS NULL
+      `
+    }
   }
 }
 
@@ -452,19 +584,33 @@ export async function getPublicSchedule(
     return { source: "static", days: staticPublicDays(year) }
   }
 
-  const dates = scheduleDayDates(year)
-  const days: PublicScheduleDay[] = []
-  SCHEDULE_DAYS.forEach((dayName, index) => {
-    const dayRows = rows.filter((row) => row.day === dayName)
-    if (dayRows.length === 0) return
-    const iso = dates[dayName]
-    days.push({
-      day: dayName,
+  const weekDates = scheduleDayDates(year)
+  const weekIso = new Set(Object.values(weekDates))
+  const byDate = new Map<string, ScheduleEventRow[]>()
+
+  for (const row of rows) {
+    const iso = effectiveEventDate(row, year)
+    if (!iso) continue
+    const bucket = byDate.get(iso) ?? []
+    bucket.push(row)
+    byDate.set(iso, bucket)
+  }
+
+  const sortedDates = [...byDate.keys()].sort()
+  const days: PublicScheduleDay[] = sortedDates.map((iso, index) => {
+    const dayRows = byDate.get(iso) ?? []
+    const weekday = weekdayFromIso(iso)
+    const isRetreatDay = weekIso.has(iso) && SCHEDULE_DAYS.includes(weekday as ScheduleDayName)
+    return {
+      // Retreat week keeps Monday…Friday keys (apps already use these).
+      // Custom dates use the ISO string so multiple Saturdays never collide.
+      day: isRetreatDay ? weekday : iso,
+      weekday,
       date: iso,
       dateLabel: dateLabelFromIso(iso),
       color: DAY_COLORS[index % DAY_COLORS.length],
       events: dayRows.map(rowToPublicEvent),
-    })
+    }
   })
   return { source: "db", days }
 }
@@ -488,7 +634,7 @@ export function buildLuItems(days: PublicScheduleDay[]): LUScheduleItem[] {
       }
       items.push({
         date: day.date,
-        day: day.day,
+        day: day.weekday || day.day,
         time: event.time,
         startHour: parsed.startHour,
         startMinute: parsed.startMinute,
@@ -515,9 +661,11 @@ export function buildLuItems(days: PublicScheduleDay[]): LUScheduleItem[] {
     const goodNight = Math.min(Math.max(lastEnd, 22 * 60), 23 * 60 + 30)
     const hour = Math.floor(goodNight / 60)
     const minute = goodNight % 60
+    // Only add Good Night during the retreat Mon–Fri week, not for key dates.
+    if (!SCHEDULE_DAYS.includes(day.day as ScheduleDayName)) continue
     items.push({
       date: day.date,
-      day: day.day,
+      day: day.weekday || day.day,
       time: formatTimeForDisplay(hour, minute),
       startHour: hour,
       startMinute: minute,

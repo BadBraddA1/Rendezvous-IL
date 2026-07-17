@@ -50,7 +50,7 @@ export default async function PrintableSchedulePage() {
                 </div>
                 <div>
                   <h2 className="text-day-title print:text-lg">
-                    {day.dateLabel} ({day.day})
+                    {day.dateLabel} ({day.weekday || day.day})
                   </h2>
                 </div>
               </div>

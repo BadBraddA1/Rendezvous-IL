@@ -35,6 +35,7 @@ import {
 type ScheduleEvent = {
   id: number
   day: string
+  event_date: string | null
   sort_order: number
   time: string
   title: string
@@ -53,6 +54,7 @@ type Props = {
 }
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"] as const
+const CUSTOM_DAY = "Custom"
 
 const LOCATION_OPTIONS: { id: string; label: string }[] = [
   { id: "activities-center", label: "Activity Center" },
@@ -70,6 +72,7 @@ const NONE = "none"
 
 type FormState = {
   day: string
+  eventDate: string
   time: string
   title: string
   location: string
@@ -83,6 +86,7 @@ type FormState = {
 
 const EMPTY_FORM: FormState = {
   day: "Monday",
+  eventDate: "",
   time: "",
   title: "",
   location: "",
@@ -167,13 +171,14 @@ export function ScheduleManager({ canManage, eventYear }: Props) {
     }
   }
 
-  const startEdit = (event: ScheduleEvent | null, day?: string) => {
+  const startEdit = (event: ScheduleEvent | null, day?: string, eventDate?: string) => {
     setEditingId(event ? event.id : "new")
     setNewForDay(event ? null : (day ?? null))
     setForm(
       event
         ? {
-            day: event.day,
+            day: event.event_date ? CUSTOM_DAY : event.day,
+            eventDate: event.event_date ?? "",
             time: event.time,
             title: event.title,
             location: event.location ?? "",
@@ -184,12 +189,24 @@ export function ScheduleManager({ canManage, eventYear }: Props) {
             linkHref: event.link_href ?? "",
             showWeather: Boolean(event.show_weather),
           }
-        : { ...EMPTY_FORM, day: day ?? "Monday" },
+        : {
+            ...EMPTY_FORM,
+            day: day === CUSTOM_DAY || eventDate ? CUSTOM_DAY : (day ?? "Monday"),
+            eventDate: eventDate ?? "",
+          },
     )
   }
 
   const save = async () => {
     if (!form.time.trim() || !form.title.trim()) return
+    if (form.day === CUSTOM_DAY && !form.eventDate.trim()) {
+      toast({
+        title: "Pick a date",
+        description: "Custom key dates need a calendar date (e.g. registration opens).",
+        variant: "destructive",
+      })
+      return
+    }
     setBusyId("form")
     try {
       const isNew = editingId === "new"
@@ -199,7 +216,8 @@ export function ScheduleManager({ canManage, eventYear }: Props) {
           method: isNew ? "POST" : "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            day: form.day,
+            day: form.day === CUSTOM_DAY ? CUSTOM_DAY : form.day,
+            eventDate: form.day === CUSTOM_DAY ? form.eventDate : null,
             time: form.time,
             title: form.title,
             location: form.location,
@@ -220,7 +238,7 @@ export function ScheduleManager({ canManage, eventYear }: Props) {
       setForm(EMPTY_FORM)
       toast({
         title: isNew ? "Event added" : "Event updated",
-        description: `${form.day} ${form.time} — ${form.title}`,
+        description: `${form.day === CUSTOM_DAY ? form.eventDate : form.day} ${form.time} — ${form.title}`,
       })
     } catch (error) {
       toast({
@@ -234,7 +252,8 @@ export function ScheduleManager({ canManage, eventYear }: Props) {
   }
 
   const remove = async (event: ScheduleEvent) => {
-    if (!window.confirm(`Delete "${event.time} — ${event.title}" from ${event.day}?`)) return
+    const when = event.event_date || event.day
+    if (!window.confirm(`Delete "${event.time} — ${event.title}" from ${when}?`)) return
     setBusyId(`row-${event.id}`)
     try {
       const res = await fetch(`/api/admin/schedule/${event.id}?year=${eventYear}`, {
@@ -257,7 +276,11 @@ export function ScheduleManager({ canManage, eventYear }: Props) {
 
   const move = async (event: ScheduleEvent, direction: -1 | 1) => {
     if (!events) return
-    const dayEvents = events.filter((row) => row.day === event.day)
+    const dayEvents = events.filter((row) =>
+      event.event_date
+        ? row.event_date === event.event_date
+        : row.day === event.day && !row.event_date,
+    )
     const index = dayEvents.findIndex((row) => row.id === event.id)
     const swapWith = index + direction
     if (swapWith < 0 || swapWith >= dayEvents.length) return
@@ -273,6 +296,7 @@ export function ScheduleManager({ canManage, eventYear }: Props) {
         body: JSON.stringify({
           year: eventYear,
           day: event.day,
+          eventDate: event.event_date,
           orderedIds: reordered.map((row) => row.id),
         }),
       })
@@ -298,19 +322,43 @@ export function ScheduleManager({ canManage, eventYear }: Props) {
       <div className="grid gap-3 md:grid-cols-2">
         <div>
           <Label htmlFor="se-day">Day *</Label>
-          <Select value={form.day} onValueChange={(value) => setForm((p) => ({ ...p, day: value }))}>
+          <Select
+            value={form.day}
+            onValueChange={(value) =>
+              setForm((p) => ({
+                ...p,
+                day: value,
+                eventDate: value === CUSTOM_DAY ? p.eventDate : "",
+              }))
+            }
+          >
             <SelectTrigger id="se-day">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               {DAYS.map((day) => (
                 <SelectItem key={day} value={day}>
-                  {day}
+                  {day} (retreat week)
                 </SelectItem>
               ))}
+              <SelectItem value={CUSTOM_DAY}>Custom date (key date)</SelectItem>
             </SelectContent>
           </Select>
         </div>
+        {form.day === CUSTOM_DAY && (
+          <div>
+            <Label htmlFor="se-event-date">Calendar date *</Label>
+            <Input
+              id="se-event-date"
+              type="date"
+              value={form.eventDate}
+              onChange={(e) => setForm((p) => ({ ...p, eventDate: e.target.value }))}
+            />
+            <p className="mt-1 text-xs text-muted-foreground">
+              Use this for dates outside Mon–Fri of retreat week (e.g. registration opens).
+            </p>
+          </div>
+        )}
         <div>
           <Label htmlFor="se-time">Time *</Label>
           <Input
@@ -499,7 +547,7 @@ export function ScheduleManager({ canManage, eventYear }: Props) {
                 </Button>
               ))}
             {DAYS.map((day) => {
-            const dayEvents = events.filter((event) => event.day === day)
+            const dayEvents = events.filter((event) => event.day === day && !event.event_date)
             return (
               <section key={day} className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -618,6 +666,147 @@ export function ScheduleManager({ canManage, eventYear }: Props) {
               </section>
             )
             })}
+
+            {(() => {
+              const keyDates = [
+                ...new Set(
+                  events
+                    .filter((event) => event.event_date)
+                    .map((event) => event.event_date as string),
+                ),
+              ].sort()
+              return (
+                <section className="space-y-3 border-t pt-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-semibold">Key dates (outside retreat week)</h3>
+                      <p className="text-xs text-muted-foreground">
+                        Registration opens, deadlines, and other calendar dates before/after Mon–Fri.
+                      </p>
+                    </div>
+                    {canManage && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => startEdit(null, CUSTOM_DAY)}
+                      >
+                        <Plus className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
+                        Add key date
+                      </Button>
+                    )}
+                  </div>
+                  {canManage && editingId === "new" && newForDay === CUSTOM_DAY && editForm}
+                  {keyDates.length === 0 ? (
+                    <p className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
+                      No key dates yet. Add something like “Registration opens”.
+                    </p>
+                  ) : (
+                    keyDates.map((iso) => {
+                      const dayEvents = events.filter((event) => event.event_date === iso)
+                      const label = new Date(`${iso}T00:00:00.000Z`).toLocaleDateString("en-US", {
+                        weekday: "long",
+                        month: "long",
+                        day: "numeric",
+                        year: "numeric",
+                        timeZone: "UTC",
+                      })
+                      return (
+                        <div key={iso} className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <h4 className="text-sm font-medium">{label}</h4>
+                            {canManage && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => startEdit(null, CUSTOM_DAY, iso)}
+                              >
+                                <Plus className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
+                                Add
+                              </Button>
+                            )}
+                          </div>
+                          <ul className="divide-y rounded-md border">
+                            {dayEvents.map((event, index) => (
+                              <Fragment key={event.id}>
+                                <li className="flex items-start gap-3 p-3">
+                                  <span className="w-28 shrink-0 pt-0.5 text-sm font-medium text-primary md:w-36">
+                                    {event.time}
+                                  </span>
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-sm font-medium">{event.title}</p>
+                                    {event.note && (
+                                      <p className="text-xs italic text-muted-foreground">
+                                        {event.note}
+                                      </p>
+                                    )}
+                                  </div>
+                                  {canManage && (
+                                    <div className="flex shrink-0 items-center gap-0.5">
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8"
+                                        aria-label="Move up"
+                                        disabled={index === 0 || busyId === `row-${event.id}`}
+                                        onClick={() => void move(event, -1)}
+                                      >
+                                        <ArrowUp className="h-4 w-4" aria-hidden="true" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8"
+                                        aria-label="Move down"
+                                        disabled={
+                                          index === dayEvents.length - 1 ||
+                                          busyId === `row-${event.id}`
+                                        }
+                                        onClick={() => void move(event, 1)}
+                                      >
+                                        <ArrowDown className="h-4 w-4" aria-hidden="true" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8"
+                                        aria-label={`Edit ${event.title}`}
+                                        onClick={() => startEdit(event)}
+                                      >
+                                        <Pencil className="h-4 w-4" aria-hidden="true" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 text-destructive"
+                                        aria-label={`Delete ${event.title}`}
+                                        disabled={busyId === `row-${event.id}`}
+                                        onClick={() => void remove(event)}
+                                      >
+                                        {busyId === `row-${event.id}` ? (
+                                          <Loader2
+                                            className="h-4 w-4 animate-spin"
+                                            aria-hidden="true"
+                                          />
+                                        ) : (
+                                          <Trash2 className="h-4 w-4" aria-hidden="true" />
+                                        )}
+                                      </Button>
+                                    </div>
+                                  )}
+                                </li>
+                                {canManage && editingId === event.id && (
+                                  <li className="p-3">{editForm}</li>
+                                )}
+                              </Fragment>
+                            ))}
+                          </ul>
+                        </div>
+                      )
+                    })
+                  )}
+                </section>
+              )
+            })()}
           </>
         )}
       </CardContent>

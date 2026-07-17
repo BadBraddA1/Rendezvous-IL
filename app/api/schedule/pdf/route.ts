@@ -58,7 +58,7 @@ export async function GET() {
     // Day header
     doc.setFont("helvetica", "bold")
     doc.setFontSize(14)
-    doc.text(`${day.dateLabel} (${day.day})`, margin, yPos)
+    doc.text(`${day.dateLabel} (${day.weekday || day.day})`, margin, yPos)
     yPos += 2
     doc.setLineWidth(0.2)
     doc.line(margin, yPos, pageWidth - margin, yPos)
