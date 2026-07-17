@@ -33,7 +33,9 @@ class DirectoryViewModel(
             return _uiState.value.families.filter { family ->
                 val haystack = listOfNotNull(
                     family.family_last_name,
-                    family.home_congregation,
+                    family.city_state,
+                    family.city,
+                    family.state,
                     family.directory_blurb,
                     family.husband_first_name,
                     family.wife_first_name,

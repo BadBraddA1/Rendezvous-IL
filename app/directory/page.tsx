@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Camera, Church, Loader2, Mail, MapPin, MapPinned, Search, Users } from "lucide-react"
+import { Camera, Loader2, Mail, MapPin, MapPinned, Search, Users } from "lucide-react"
 import { DirectoryContactPhones } from "@/components/directory/directory-contact-phones"
 import { contactPhoneSearchHaystack } from "@/lib/directory-contacts"
 import type { DirectoryContactPhone } from "@/lib/directory-contacts"
@@ -40,6 +40,9 @@ type DirectoryFamily = {
   id: number
   family_last_name: string
   home_congregation: string | null
+  city: string | null
+  state: string | null
+  city_state: string | null
   photo_url: string | null
   directory_blurb: string | null
   husband_first_name: string | null
@@ -160,7 +163,9 @@ export default function DirectoryPage() {
     return families.filter((family) => {
       const haystack = [
         family.family_last_name,
-        family.home_congregation,
+        family.city_state,
+        family.city,
+        family.state,
         family.directory_blurb,
         family.husband_first_name,
         family.wife_first_name,
@@ -302,7 +307,7 @@ export default function DirectoryPage() {
                   <Input
                     value={search}
                     onChange={(event) => setSearch(event.target.value)}
-                    placeholder="Search families, congregation, or notes..."
+                    placeholder="Search families, city, or notes..."
                     className="min-h-11 pl-9"
                   />
                 </div>
@@ -327,13 +332,13 @@ export default function DirectoryPage() {
                 <div className="grid min-w-0 gap-5 sm:grid-cols-2 xl:grid-cols-3">
                   {filteredFamilies.map((family) => (
                     <Card key={family.id} className="gap-0 overflow-hidden py-0 shadow-sm">
-                      <div className="relative aspect-[4/3] bg-muted">
+                      <div className="relative aspect-[4/3] overflow-hidden bg-muted">
                         {family.photo_url ? (
                           <Image
                             src={family.photo_url}
                             alt={`${family.family_last_name} family`}
                             fill
-                            className="object-contain"
+                            className="object-cover"
                             sizes="(max-width: 768px) 100vw, 33vw"
                             unoptimized
                           />
@@ -406,10 +411,10 @@ export default function DirectoryPage() {
                               ))}
                           </div>
                         )}
-                        {family.home_congregation && (
+                        {family.city_state && (
                           <p className="flex items-start gap-2 text-sm text-muted-foreground">
-                            <Church className="mt-0.5 h-4 w-4 shrink-0" />
-                            <span className="min-w-0 break-words">{family.home_congregation}</span>
+                            <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
+                            <span className="min-w-0 break-words">{family.city_state}</span>
                           </p>
                         )}
                         {family.email && (
@@ -421,12 +426,6 @@ export default function DirectoryPage() {
                             >
                               {family.email}
                             </a>
-                          </p>
-                        )}
-                        {family.formatted_address && (
-                          <p className="flex items-start gap-2 text-sm text-muted-foreground">
-                            <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
-                            <span className="min-w-0 break-words">{family.formatted_address}</span>
                           </p>
                         )}
                         <DirectoryContactPhones contacts={family.contact_phones} className="space-y-1" />

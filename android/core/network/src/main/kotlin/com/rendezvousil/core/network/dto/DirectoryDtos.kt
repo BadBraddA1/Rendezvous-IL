@@ -14,6 +14,10 @@ data class DirectoryFamily(
     val id: Int,
     val family_last_name: String,
     val home_congregation: String? = null,
+    val city: String? = null,
+    val state: String? = null,
+    /** Prefers "City, ST" for directory cards. */
+    val city_state: String? = null,
     val photo_url: String? = null,
     val directory_blurb: String? = null,
     val husband_first_name: String? = null,
@@ -23,7 +27,20 @@ data class DirectoryFamily(
     val contact_phones: List<DirectoryContactPhone> = emptyList(),
     val member_count: Int = 0,
     val member_names: List<String> = emptyList(),
-)
+) {
+    val displayLocation: String?
+        get() {
+            city_state?.takeIf { it.isNotBlank() }?.let { return it }
+            val cityPart = city?.trim().orEmpty()
+            val statePart = state?.trim().orEmpty()
+            return when {
+                cityPart.isNotEmpty() && statePart.isNotEmpty() -> "$cityPart, $statePart"
+                cityPart.isNotEmpty() -> cityPart
+                statePart.isNotEmpty() -> statePart
+                else -> null
+            }
+        }
+}
 
 @Serializable
 data class DirectoryResponse(

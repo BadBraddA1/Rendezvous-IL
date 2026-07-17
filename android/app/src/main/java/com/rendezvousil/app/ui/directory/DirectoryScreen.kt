@@ -21,7 +21,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.People
@@ -347,10 +346,10 @@ private fun DirectoryFamilyCard(
                 overflow = TextOverflow.Ellipsis,
             )
 
-            family.home_congregation?.takeIf { it.isNotEmpty() }?.let { congregation ->
+            family.displayLocation?.let { location ->
                 DirectoryInfoRow(
-                    icon = { Icon(Icons.Default.Business, contentDescription = null) },
-                    text = congregation,
+                    icon = { Icon(Icons.Default.LocationOn, contentDescription = null) },
+                    text = location,
                 )
             }
 
@@ -368,13 +367,6 @@ private fun DirectoryFamilyCard(
                         text = email,
                     )
                 }
-            }
-
-            family.formatted_address?.takeIf { it.isNotEmpty() }?.let { address ->
-                DirectoryInfoRow(
-                    icon = { Icon(Icons.Default.LocationOn, contentDescription = null) },
-                    text = address,
-                )
             }
 
             family.contact_phones.forEach { contact ->

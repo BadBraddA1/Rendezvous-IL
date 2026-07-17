@@ -574,6 +574,10 @@ struct DirectoryFamily: Codable, Identifiable, Hashable, Sendable {
     let id: Int
     let family_last_name: String
     let home_congregation: String?
+    let city: String?
+    let state: String?
+    /// Prefers "City, ST" for directory cards.
+    let city_state: String?
     let photo_url: String?
     let directory_blurb: String?
     let husband_first_name: String?
@@ -583,6 +587,19 @@ struct DirectoryFamily: Codable, Identifiable, Hashable, Sendable {
     let contact_phones: [DirectoryContactPhone]
     let member_count: Int
     let member_names: [String]
+
+    /// Location line for cards: city/state when available.
+    var displayLocation: String? {
+        if let city_state, !city_state.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return city_state
+        }
+        let cityPart = city?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let statePart = state?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if !cityPart.isEmpty, !statePart.isEmpty { return "\(cityPart), \(statePart)" }
+        if !cityPart.isEmpty { return cityPart }
+        if !statePart.isEmpty { return statePart }
+        return nil
+    }
 }
 
 struct DirectoryResponse: Codable, Sendable {

@@ -20,7 +20,9 @@ struct DirectoryView: View {
         return base.filter { family in
             let haystack = [
                 family.family_last_name,
-                family.home_congregation,
+                family.city_state,
+                family.city,
+                family.state,
                 family.directory_blurb,
                 family.husband_first_name,
                 family.wife_first_name,
@@ -319,7 +321,9 @@ private struct DirectoryFamilyCard: View {
                     directoryPhotoPlaceholder
                 }
             }
+            .frame(maxWidth: .infinity)
             .frame(height: 140)
+            .clipped()
             .clipShape(RoundedRectangle(cornerRadius: 12))
 
             Text("\(family.family_last_name) Family")
@@ -327,8 +331,8 @@ private struct DirectoryFamilyCard: View {
                 .foregroundStyle(.primary)
                 .lineLimit(2)
 
-            if let congregation = family.home_congregation, !congregation.isEmpty {
-                Label(congregation, systemImage: "building.2")
+            if let location = family.displayLocation {
+                Label(location, systemImage: "mappin.and.ellipse")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
@@ -396,8 +400,8 @@ struct DirectoryFamilyDetailView: View {
                 }
 
                 detailSection(title: "Contact") {
-                    if let congregation = family.home_congregation, !congregation.isEmpty {
-                        Label(congregation, systemImage: "building.2")
+                    if let location = family.displayLocation {
+                        Label(location, systemImage: "mappin.and.ellipse")
                             .font(.subheadline)
                     }
                     if let email = family.email, !email.isEmpty, let url = URL(string: "mailto:\(email)") {
@@ -406,8 +410,9 @@ struct DirectoryFamilyDetailView: View {
                                 .font(.subheadline)
                         }
                     }
-                    if let address = family.formatted_address, !address.isEmpty {
-                        Label(address, systemImage: "mappin.and.ellipse")
+                    if let address = family.formatted_address, !address.isEmpty,
+                       address != family.displayLocation {
+                        Label(address, systemImage: "house")
                             .font(.subheadline)
                             .foregroundStyle(.primary)
                     }
@@ -458,6 +463,7 @@ struct DirectoryFamilyDetailView: View {
         }
         .frame(maxWidth: .infinity)
         .frame(height: 240)
+        .clipped()
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 

@@ -103,6 +103,10 @@ export type FamilyDirectoryEntry = {
   id: number
   family_last_name: string
   home_congregation: string | null
+  city: string | null
+  state: string | null
+  /** Prefers "City, ST" for directory cards. */
+  city_state: string | null
   photo_url: string | null
   directory_blurb: string | null
   husband_first_name: string | null
@@ -134,6 +138,17 @@ export function formatFamilyDirectoryAddress(parts: {
   const cityStateZip = [city, [state, zip].filter(Boolean).join(" ")].filter(Boolean).join(", ")
   const segments = [street, cityStateZip].filter(Boolean)
   return segments.length > 0 ? segments.join(", ") : null
+}
+
+/** Card-friendly location: "Springfield, IL" (no street / zip). */
+export function formatCityState(
+  city?: string | null,
+  state?: string | null,
+): string | null {
+  const cityPart = city?.trim() || ""
+  const statePart = state?.trim() || ""
+  if (cityPart && statePart) return `${cityPart}, ${statePart}`
+  return cityPart || statePart || null
 }
 
 export type FamilyDirectorySettings = {
@@ -526,10 +541,15 @@ async function attachDirectoryContactPhones(
 
 function mapDirectoryEntry(row: SqlRow): DirectoryEntryDraft {
   const photoUrl = row.photo_url ? String(row.photo_url).trim() : ""
+  const city = row.city ? String(row.city).trim() : ""
+  const state = row.state ? String(row.state).trim() : ""
   return {
     id: Number(row.id),
     family_last_name: String(row.family_last_name ?? ""),
     home_congregation: row.home_congregation ? String(row.home_congregation) : null,
+    city: city || null,
+    state: state || null,
+    city_state: formatCityState(city, state),
     photo_url: photoUrl || null,
     directory_blurb: row.directory_blurb ? String(row.directory_blurb) : null,
     husband_first_name: row.husband_first_name ? String(row.husband_first_name) : null,
@@ -537,8 +557,8 @@ function mapDirectoryEntry(row: SqlRow): DirectoryEntryDraft {
     email: row.email ? String(row.email) : null,
     formatted_address: formatFamilyDirectoryAddress({
       address: row.address ? String(row.address) : null,
-      city: row.city ? String(row.city) : null,
-      state: row.state ? String(row.state) : null,
+      city: city || null,
+      state: state || null,
       zip: row.zip ? String(row.zip) : null,
     }),
     legacy_husband_phone: row.husband_phone ? String(row.husband_phone).trim() : null,
