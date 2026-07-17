@@ -1,5 +1,6 @@
 package com.rendezvousil.app.ui.components
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -35,11 +36,20 @@ fun EventCard(
     volunteers: VolunteerScheduleSlot?,
     luItem: LUScheduleItem? = null,
     hasReminder: Boolean = false,
+    isHappeningNow: Boolean = false,
     onReminderClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     Surface(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .then(
+                if (isHappeningNow) {
+                    Modifier.border(2.dp, BrandColors.Lake, RoundedCornerShape(12.dp))
+                } else {
+                    Modifier
+                },
+            ),
         shape = RoundedCornerShape(12.dp),
         color = BrandColors.SecondaryGroupedBackground,
     ) {
@@ -47,6 +57,14 @@ fun EventCard(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
+            if (isHappeningNow) {
+                Text(
+                    text = "Happening now",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = BrandColors.CoralInk,
+                )
+            }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,

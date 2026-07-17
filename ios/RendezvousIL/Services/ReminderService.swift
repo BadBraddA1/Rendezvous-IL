@@ -11,16 +11,20 @@ final class ReminderService {
         load().first { $0.eventId == eventId }?.offset
     }
 
-    func setReminder(for item: LUScheduleItem, offset: EventReminderOffset?) async {
+    func setReminder(
+        for item: LUScheduleItem,
+        offset: EventReminderOffset?,
+        allItems: [LUScheduleItem]? = nil
+    ) async throws {
         var prefs = load().filter { $0.eventId != item.id }
         if let offset {
-            prefs.append(EventReminderPreference(eventId: item.id, offset: offset))
+            prefs.append(EventReminderPreference(eventId: item.id, offset: offset, item: item))
         }
         save(prefs)
-        await rescheduleAll(items: nil)
+        try await rescheduleAll(items: allItems)
     }
 
-    func rescheduleAll(items: [LUScheduleItem]?) async {
+    func rescheduleAll(items: [LUScheduleItem]?) async throws {
         let center = UNUserNotificationCenter.current()
         let pending = await center.pendingNotificationRequests()
         let reminderIds = pending
@@ -31,24 +35,31 @@ final class ReminderService {
         let prefs = load()
         guard !prefs.isEmpty else { return }
 
-        let luItems: [LUScheduleItem]
+        var itemMap: [String: LUScheduleItem] = [:]
         if let items {
-            luItems = items
-        } else if let snapshot = SharedScheduleStore.load() {
-            luItems = snapshot.luItems
-        } else {
-            return
+            for item in items { itemMap[item.id] = item }
+        }
+        if let snapshot = SharedScheduleStore.load() {
+            for item in snapshot.luItems where itemMap[item.id] == nil {
+                itemMap[item.id] = item
+            }
+        }
+        // Embedded copies keep reminders schedulable even if the snapshot is empty.
+        for pref in prefs {
+            if itemMap[pref.eventId] == nil, let embedded = pref.item {
+                itemMap[pref.eventId] = embedded
+            }
         }
 
-        let itemMap = Dictionary(uniqueKeysWithValues: luItems.map { ($0.id, $0) })
-
+        var lastError: Error?
         for pref in prefs {
             guard let item = itemMap[pref.eventId],
                   let fireDate = ScheduleNowNext.eventStartDate(for: item)
             else { continue }
 
             let triggerDate = fireDate.addingTimeInterval(TimeInterval(-pref.offset.rawValue * 60))
-            guard triggerDate > Date() else { continue }
+            let interval = triggerDate.timeIntervalSinceNow
+            guard interval > 1 else { continue }
 
             let content = UNMutableNotificationContent()
             content.title = pref.offset == .atStart ? item.title : "Up next: \(item.title)"
@@ -58,18 +69,31 @@ final class ReminderService {
             content.sound = .default
             content.userInfo = ["url": "rendezvousil://schedule"]
 
-            let components = Calendar.current.dateComponents(
-                [.year, .month, .day, .hour, .minute],
-                from: triggerDate
-            )
-            let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
+            // Near-term: time-interval (absolute). Far-term: calendar components in the
+            // user's local calendar derived from the absolute fire date.
+            let trigger: UNNotificationTrigger
+            if interval < 30 * 24 * 60 * 60 {
+                trigger = UNTimeIntervalNotificationTrigger(timeInterval: interval, repeats: false)
+            } else {
+                let components = Calendar.current.dateComponents(
+                    [.year, .month, .day, .hour, .minute, .second],
+                    from: triggerDate
+                )
+                trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
+            }
             let request = UNNotificationRequest(
                 identifier: "rendezvous-reminder-\(item.id)-\(pref.offset.rawValue)",
                 content: content,
                 trigger: trigger
             )
-            try? await center.add(request)
+            do {
+                try await center.add(request)
+            } catch {
+                lastError = error
+            }
         }
+
+        if let lastError { throw lastError }
     }
 
     private func load() -> [EventReminderPreference] {

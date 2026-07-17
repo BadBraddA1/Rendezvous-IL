@@ -11,7 +11,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
@@ -41,6 +43,7 @@ import com.rendezvousil.app.ui.components.EventCard
 import com.rendezvousil.app.notifications.ReminderService
 import com.rendezvousil.core.schedule.AssemblyMatcher
 import com.rendezvousil.core.schedule.MealMatcher
+import com.rendezvousil.core.schedule.ScheduleNowNext
 import com.rendezvousil.core.schedule.matchingLUItem
 import com.rendezvousil.core.schedule.model.Announcement
 import com.rendezvousil.core.schedule.model.LUScheduleItem
@@ -61,9 +64,32 @@ fun ScheduleScreen(
     val isLoading by viewModel.isLoadingSchedule.collectAsState()
     val error by viewModel.scheduleError.collectAsState()
     var selectedDayIndex by remember { mutableIntStateOf(0) }
+    var didAutoPosition by remember { mutableStateOf(false) }
     var isRefreshing by remember { mutableStateOf(false) }
     var reminderItem by remember { mutableStateOf<LUScheduleItem?>(null) }
     val scope = rememberCoroutineScope()
+    val listState = rememberLazyListState()
+
+    LaunchedEffect(schedule?.year, schedule?.days?.size) {
+        val payload = schedule ?: return@LaunchedEffect
+        if (payload.days.isEmpty() || didAutoPosition) return@LaunchedEffect
+        didAutoPosition = true
+        val focus = ScheduleNowNext.evaluate(payload.luItems).let { it.current ?: it.next }
+        val dayIndex = if (focus != null) {
+            payload.days.indexOfFirst { day ->
+                (payload.dayDates[day.day] ?: day.day) == focus.date
+            }.takeIf { it >= 0 }
+                ?: ScheduleNowNext.preferredDayIndex(payload.dayDates, payload.days)
+        } else {
+            ScheduleNowNext.preferredDayIndex(payload.dayDates, payload.days)
+        }
+        selectedDayIndex = dayIndex
+        val eventIndex = jumpTargetEventIndex(payload, dayIndex)
+        if (eventIndex != null) {
+            kotlinx.coroutines.delay(120)
+            listState.animateScrollToItem(index = eventIndex + 1)
+        }
+    }
 
     Scaffold(
         modifier = modifier,
@@ -102,6 +128,7 @@ fun ScheduleScreen(
                         announcements = announcements,
                         selectedDayIndex = selectedDayIndex,
                         onDaySelected = { selectedDayIndex = it },
+                        listState = listState,
                         mealFor = { date, event -> mealFor(viewModel, date, event) },
                         volunteersFor = { date, event -> volunteersFor(viewModel, date, event) },
                         reminderService = reminderService,
@@ -143,6 +170,7 @@ private fun ScheduleContent(
     announcements: List<Announcement>,
     selectedDayIndex: Int,
     onDaySelected: (Int) -> Unit,
+    listState: LazyListState,
     mealFor: (String, com.rendezvousil.core.schedule.model.ScheduleEvent) -> com.rendezvousil.core.schedule.model.Meal?,
     volunteersFor: (String, com.rendezvousil.core.schedule.model.ScheduleEvent) -> com.rendezvousil.core.schedule.model.VolunteerScheduleSlot?,
     reminderService: ReminderService,
@@ -162,14 +190,17 @@ private fun ScheduleContent(
         if (selectedDayIndex < schedule.days.size) {
             val day = schedule.days[selectedDayIndex]
             val isoDate = schedule.dayDates[day.day].orEmpty()
+            val nowNext = ScheduleNowNext.evaluate(schedule.luItems)
+            val happeningTitle = nowNext.current?.title
             LazyColumn(
+                state = listState,
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 item {
                     DayHeader(day = day, draftNotice = schedule.draftNotice)
                 }
-                items(day.events, key = { it.id }) { event ->
+                itemsIndexed(day.events, key = { _, event -> event.id }) { _, event ->
                     val luItem = matchingLUItem(event, isoDate, schedule.luItems)
                     var hasReminder by remember(luItem?.id) { mutableStateOf(false) }
                     LaunchedEffect(luItem?.id) {
@@ -182,12 +213,27 @@ private fun ScheduleContent(
                         volunteers = volunteersFor(isoDate, event),
                         luItem = luItem,
                         hasReminder = hasReminder,
+                        isHappeningNow = happeningTitle != null &&
+                            event.title == happeningTitle &&
+                            isoDate == nowNext.current?.date,
                         onReminderClick = luItem?.let { item -> { onReminderClick(item) } },
                     )
                 }
             }
         }
     }
+}
+
+/** Index of the current/next event within the selected day’s event list, if any. */
+private fun jumpTargetEventIndex(schedule: SchedulePayload, dayIndex: Int): Int? {
+    if (dayIndex !in schedule.days.indices) return null
+    val day = schedule.days[dayIndex]
+    val isoDate = schedule.dayDates[day.day].orEmpty()
+    val item = ScheduleNowNext.evaluate(schedule.luItems).let { it.current ?: it.next } ?: return null
+    if (item.date != isoDate) return null
+    return day.events.indexOfFirst { it.title == item.title && it.time == item.time }
+        .takeIf { it >= 0 }
+        ?: day.events.indexOfFirst { it.title == item.title }.takeIf { it >= 0 }
 }
 
 @Composable

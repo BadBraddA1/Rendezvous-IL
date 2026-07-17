@@ -6,7 +6,7 @@ import { Map, X, Printer, ExternalLink } from "lucide-react"
 import Link from "next/link"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
-import { useState, useRef, useCallback } from "react"
+import { useState, useRef, useCallback, useEffect } from "react"
 import { useFocusTrap } from "@/lib/use-focus-trap"
 import { Button } from "@/components/ui/button"
 import { VolunteerSchedule } from "@/components/volunteer-schedule"
@@ -16,6 +16,27 @@ import { MealMenu } from "@/components/meal-menu"
 import { ScheduleDataProvider } from "@/components/schedule/schedule-data-context"
 import { parseTimeString } from "@/lib/schedule-data"
 import type { PublicScheduleDay, PublicScheduleEvent } from "@/lib/event-schedule"
+
+/** Today's calendar date in America/Chicago as yyyy-MM-dd. */
+function chicagoISODate(now = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Chicago",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(now)
+}
+
+function preferredScheduleDay(days: PublicScheduleDay[]): PublicScheduleDay | null {
+  if (days.length === 0) return null
+  const today = chicagoISODate()
+  return (
+    days.find((day) => day.date === today) ??
+    days.find((day) => day.date >= today) ??
+    days[days.length - 1] ??
+    null
+  )
+}
 
 const ScheduleMap = dynamic(
   () => import("@/components/schedule-map").then((mod) => mod.ScheduleMap),
@@ -148,6 +169,23 @@ export function ScheduleClient({ year, dateRangeLabel, days }: Props) {
     setHighlightedLocation(locationId)
     setShowMap(true)
   }
+
+  // Open on today (Central Time), or the next upcoming day outside retreat week.
+  useEffect(() => {
+    const preferred = preferredScheduleDay(days)
+    if (!preferred) return
+    const dayId = preferred.day.toLowerCase()
+    setActiveDay(dayId)
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    // Wait a tick so the day sections are in the DOM.
+    const timer = window.setTimeout(() => {
+      document.getElementById(dayId)?.scrollIntoView({
+        behavior: reduceMotion ? "auto" : "smooth",
+        block: "start",
+      })
+    }, 80)
+    return () => window.clearTimeout(timer)
+  }, [days])
 
   const handleDayClick = (e: React.MouseEvent<HTMLAnchorElement>, day: string) => {
     e.preventDefault()

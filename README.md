@@ -145,7 +145,7 @@ rendezvous-il/
 Native **SwiftUI** attendee hub in `ios/` (not a WebView shell). **Sign-in required** for almost everything — welcome screen, then Clerk, then tabs:
 
 - **Home** — greeting, retreat shortcuts (schedule, map, chat, directory)
-- **Schedule** — week view, meals, worship leaders, event reminders (tap location → campus map)
+- **Schedule** — opens on today (Central Time) or the next upcoming day; **Jump to now** / **Today** scrolls to the in-progress event (highlighted) or the next one. Meals, worship leaders, event reminders (bell → local notification; prefs store the event so reminders still schedule if the shared snapshot is empty). Tap location → campus map
 - **Map** — MapKit directions to campus + image venue map on site (geofence switch); More → Campus map
 - **Chat** — year group chat (Ably)
 - **More** — directory, account, Bible Bowl, FAQ, notifications, admin/check-in for staff
@@ -164,7 +164,7 @@ Native admin APIs: `GET /api/admin/me`, `GET /api/admin/mobile/dashboard` (Beare
 Native **Jetpack Compose** app in `android/` (Phases 1–4):
 
 - **Home / Schedule / Updates / More** — 4-tab shell matching iOS
-- **Schedule** — day picker, meals, volunteer slots, **event reminders** (bell icon), offline fallback
+- **Schedule** — opens on today / next upcoming day and scrolls toward the current event; day picker, meals, volunteer slots, **event reminders** (bell icon), offline fallback
 - **Updates** — now/next (Central Time), weather, announcements
 - **More** — calculator, Bible Bowl, FAQ, About, **Clerk account**, **directory**, **notifications & widgets**, **admin** (dashboard, user management, staff check-in)
 - **Admin** — mobile dashboard stats, staff check-in with QR scan, user CRUD (role-gated via Clerk session)

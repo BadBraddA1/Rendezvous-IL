@@ -67,7 +67,7 @@ final class RendezvousRepository {
             lastScheduleRefresh = Date()
             ScheduleDataStore.saveCached(payload)
             await syncSharedSnapshot()
-            await ReminderService.shared.rescheduleAll(items: payload.luItems)
+            try? await ReminderService.shared.rescheduleAll(items: payload.luItems)
         } catch {
             if schedule == nil, let offline = ScheduleDataStore.bestOfflineSchedule() {
                 schedule = offline.schedule

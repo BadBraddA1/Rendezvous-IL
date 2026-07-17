@@ -151,9 +151,25 @@ enum ScheduleNowNext {
             }
 
             if nowMinutes >= start && nowMinutes < end {
-                current = item
+                // Prefer the event that started most recently when ranges overlap.
+                if let existing = current {
+                    let existingStart = existing.startHour * 60 + existing.startMinute
+                    if start >= existingStart { current = item }
+                } else {
+                    current = item
+                }
             } else if nowMinutes < start, next == nil {
                 next = item
+            }
+        }
+
+        // After a current event, keep next as the next later item the same day or later.
+        if let current, next == nil {
+            let currentStart = current.startHour * 60 + current.startMinute
+            next = items.first { item in
+                if item.date > current.date { return true }
+                if item.date < current.date { return false }
+                return item.startHour * 60 + item.startMinute > currentStart
             }
         }
 
@@ -164,19 +180,47 @@ enum ScheduleNowNext {
         return NowNextResult(current: current, next: next)
     }
 
-    /// Index into `schedule.days` for today during event week (Chicago), if any.
-    static func todayDayIndex(in schedule: SchedulePayload, now: Date = Date()) -> Int? {
+    /// Chicago calendar date as `yyyy-MM-dd`.
+    static func chicagoISODate(from now: Date = Date()) -> String {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = chicago
         let components = calendar.dateComponents([.year, .month, .day], from: now)
-        guard let year = components.year, let month = components.month, let day = components.day else {
-            return nil
-        }
-        let todayISO = String(format: "%04d-%02d-%02d", year, month, day)
+        let year = components.year ?? 0
+        let month = components.month ?? 0
+        let day = components.day ?? 0
+        return String(format: "%04d-%02d-%02d", year, month, day)
+    }
+
+    /// Index into `schedule.days` for today during event week (Chicago), if any.
+    static func todayDayIndex(in schedule: SchedulePayload, now: Date = Date()) -> Int? {
+        let todayISO = chicagoISODate(from: now)
         for (index, scheduleDay) in schedule.days.enumerated() {
-            if schedule.dayDates[scheduleDay.day] == todayISO {
+            if isoDate(for: scheduleDay, in: schedule) == todayISO {
                 return index
             }
+        }
+        return nil
+    }
+
+    /// Day to open on: today if in the schedule, otherwise the next upcoming day, else day 0.
+    static func preferredDayIndex(in schedule: SchedulePayload, now: Date = Date()) -> Int {
+        if let today = todayDayIndex(in: schedule, now: now) { return today }
+        let todayISO = chicagoISODate(from: now)
+        for (index, scheduleDay) in schedule.days.enumerated() {
+            if let iso = isoDate(for: scheduleDay, in: schedule), iso >= todayISO {
+                return index
+            }
+        }
+        return max(0, schedule.days.count - 1)
+    }
+
+    static func isoDate(for scheduleDay: ScheduleDay, in schedule: SchedulePayload) -> String? {
+        if let mapped = schedule.dayDates[scheduleDay.day], !mapped.isEmpty {
+            return mapped
+        }
+        // Custom-date days may use the ISO string as the day key.
+        if scheduleDay.day.range(of: #"^\d{4}-\d{2}-\d{2}$"#, options: .regularExpression) != nil {
+            return scheduleDay.day
         }
         return nil
     }
@@ -243,5 +287,6 @@ enum AssemblyMatcher {
 }
 
 func matchingLUItem(event: ScheduleEvent, isoDate: String, items: [LUScheduleItem]) -> LUScheduleItem? {
-    items.first { $0.date == isoDate && $0.title == event.title }
+    items.first { $0.date == isoDate && $0.title == event.title && $0.time == event.time }
+        ?? items.first { $0.date == isoDate && $0.title == event.title }
 }

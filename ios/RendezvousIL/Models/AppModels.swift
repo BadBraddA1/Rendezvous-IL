@@ -111,4 +111,12 @@ enum EventReminderOffset: Int, CaseIterable, Identifiable, Codable {
 struct EventReminderPreference: Codable, Equatable {
     let eventId: String
     let offset: EventReminderOffset
+    /// Snapshot of the event so reminders can be re-armed without the schedule snapshot.
+    let item: LUScheduleItem?
+
+    init(eventId: String, offset: EventReminderOffset, item: LUScheduleItem? = nil) {
+        self.eventId = eventId
+        self.offset = offset
+        self.item = item
+    }
 }

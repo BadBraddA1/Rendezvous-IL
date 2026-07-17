@@ -167,11 +167,15 @@ struct NotificationSettingsView: View {
         rescheduleMessage = nil
         defer { isRescheduling = false }
 
-        await ReminderService.shared.rescheduleAll(items: repository.schedule?.luItems)
-        let count = ReminderService.shared.savedReminderCount
-        rescheduleMessage = count > 0
-            ? "Scheduled \(count) reminder\(count == 1 ? "" : "s")."
-            : "No upcoming reminders to schedule."
+        do {
+            try await ReminderService.shared.rescheduleAll(items: repository.schedule?.luItems)
+            let count = ReminderService.shared.savedReminderCount
+            rescheduleMessage = count > 0
+                ? "Scheduled \(count) reminder\(count == 1 ? "" : "s")."
+                : "No upcoming reminders to schedule."
+        } catch {
+            rescheduleMessage = "Could not schedule reminders: \(error.localizedDescription)"
+        }
     }
 }
 

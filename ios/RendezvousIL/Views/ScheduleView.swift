@@ -4,6 +4,9 @@ struct ScheduleView: View {
     @Environment(RendezvousRepository.self) private var repository
     @State private var selectedDayIndex = 0
     @State private var scrollToEventId: String?
+    @State private var highlightedEventId: String?
+    /// Only auto-position once per schedule payload load.
+    @State private var didAutoPosition = false
 
     var body: some View {
         NavigationStack {
@@ -28,7 +31,7 @@ struct ScheduleView: View {
                     }
                     if let schedule = repository.schedule, jumpTarget(in: schedule) != nil {
                         Button("Jump to now") {
-                            jumpToNowNext(in: schedule)
+                            jumpToNowNext(in: schedule, userInitiated: true)
                         }
                         .font(.subheadline.weight(.semibold))
                     }
@@ -43,10 +46,14 @@ struct ScheduleView: View {
                 await repository.loadUpdates()
             }
             .onChange(of: repository.schedule?.year) { _, _ in
-                syncSelectedDay()
+                didAutoPosition = false
+                syncSelectedDay(autoScrollToNow: true)
+            }
+            .onChange(of: repository.schedule?.days.count) { _, _ in
+                syncSelectedDay(autoScrollToNow: !didAutoPosition)
             }
             .onAppear {
-                syncSelectedDay()
+                syncSelectedDay(autoScrollToNow: !didAutoPosition)
             }
         }
     }
@@ -84,21 +91,26 @@ struct ScheduleView: View {
                                     .padding(.vertical, 24)
                             } else {
                                 ForEach(day.events) { event in
+                                    let eventId = eventScrollId(isoDate: isoDate, event: event)
                                     EventCard(
                                         event: event,
                                         isoDate: isoDate,
                                         luItem: matchingLUItem(event: event, isoDate: isoDate, items: schedule.luItems),
+                                        allLuItems: schedule.luItems,
                                         meal: mealFor(event: event, isoDate: isoDate),
-                                        volunteers: volunteersFor(event: event, isoDate: isoDate)
+                                        volunteers: volunteersFor(event: event, isoDate: isoDate),
+                                        isHappeningNow: eventId == highlightedEventId
                                     )
-                                    .id(eventScrollId(isoDate: isoDate, event: event))
+                                    .id(eventId)
                                 }
                             }
                         }
                         .padding()
                     }
-                    .onChange(of: scrollToEventId) { _, eventId in
-                        guard let eventId else { return }
+                    .task(id: scrollToEventId) {
+                        guard let eventId = scrollToEventId else { return }
+                        // Wait for the selected day’s cards to mount after a day switch.
+                        try? await Task.sleep(nanoseconds: 150_000_000)
                         withAnimation(.easeInOut(duration: 0.35)) {
                             proxy.scrollTo(eventId, anchor: .top)
                         }
@@ -116,27 +128,28 @@ struct ScheduleView: View {
     /// Prefer the event happening now; otherwise the next upcoming event.
     private func jumpTarget(in schedule: SchedulePayload) -> (dayIndex: Int, eventId: String)? {
         let result = repository.nowNext()
+        // Always prefer the in-progress event when Jump to now / auto-position runs.
         guard let item = result.current ?? result.next else { return nil }
 
         for (index, day) in schedule.days.enumerated() {
-            let isoDate = schedule.dayDates[day.day] ?? ""
+            let isoDate = ScheduleNowNext.isoDate(for: day, in: schedule) ?? ""
             guard isoDate == item.date else { continue }
             if let event = day.events.first(where: { $0.title == item.title && $0.time == item.time })
                 ?? day.events.first(where: { $0.title == item.title }) {
                 return (index, eventScrollId(isoDate: isoDate, event: event))
             }
+            // LU-only items (e.g. Good Night) — land on the day header area.
             return (index, "schedule-top")
         }
         return nil
     }
 
-    private func jumpToNowNext(in schedule: SchedulePayload) {
+    private func jumpToNowNext(in schedule: SchedulePayload, userInitiated: Bool) {
         guard let target = jumpTarget(in: schedule) else { return }
         selectedDayIndex = target.dayIndex
-        // Allow the day list to render, then scroll.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-            scrollToEventId = target.eventId
-        }
+        highlightedEventId = target.eventId == "schedule-top" ? nil : target.eventId
+        scrollToEventId = target.eventId
+        if userInitiated { didAutoPosition = true }
     }
 
     private var offlineScheduleBanner: some View {
@@ -239,9 +252,7 @@ struct ScheduleView: View {
                 HStack {
                     Spacer()
                     Button("Today") {
-                        if let index = ScheduleNowNext.todayDayIndex(in: schedule) {
-                            selectedDayIndex = index
-                        }
+                        jumpToNowNext(in: schedule, userInitiated: true)
                     }
                     .font(.caption.weight(.semibold))
                     .buttonStyle(.bordered)
@@ -281,13 +292,17 @@ struct ScheduleView: View {
         .padding(.vertical, 8)
     }
 
-    private func syncSelectedDay() {
-        guard let schedule = repository.schedule else { return }
-        if let today = ScheduleNowNext.todayDayIndex(in: schedule) {
-            selectedDayIndex = today
-        } else {
-            selectedDayIndex = min(selectedDayIndex, max(0, schedule.days.count - 1))
+    private func syncSelectedDay(autoScrollToNow: Bool) {
+        guard let schedule = repository.schedule, !schedule.days.isEmpty else { return }
+        if didAutoPosition {
+            selectedDayIndex = min(selectedDayIndex, schedule.days.count - 1)
+            return
         }
+        selectedDayIndex = ScheduleNowNext.preferredDayIndex(in: schedule)
+        didAutoPosition = true
+        guard autoScrollToNow else { return }
+        // Scroll to the in-progress (or next) event once the day list is ready.
+        jumpToNowNext(in: schedule, userInitiated: false)
     }
 
     private var announcementsBanner: some View {
@@ -339,13 +354,23 @@ private struct EventCard: View {
     let event: ScheduleEvent
     let isoDate: String
     let luItem: LUScheduleItem?
+    let allLuItems: [LUScheduleItem]
     let meal: Meal?
     let volunteers: VolunteerScheduleSlot?
+    var isHappeningNow: Bool = false
 
     @State private var showReminderSheet = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
+            if isHappeningNow {
+                Text("Happening now")
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(BrandColors.coralInk)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(BrandColors.coral.opacity(0.2), in: Capsule())
+            }
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 10) {
                     eventBody
@@ -366,10 +391,17 @@ private struct EventCard: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
-        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color(.secondarySystemGroupedBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(isHappeningNow ? BrandColors.lake : Color.clear, lineWidth: 2)
+                )
+        )
         .sheet(isPresented: $showReminderSheet) {
             if let luItem {
-                EventReminderSheet(item: luItem)
+                EventReminderSheet(item: luItem, allItems: allLuItems)
             }
         }
     }

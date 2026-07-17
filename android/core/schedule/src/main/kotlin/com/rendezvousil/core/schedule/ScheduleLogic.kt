@@ -43,9 +43,24 @@ object ScheduleNowNext {
             }
 
             if (nowMinutes >= start && nowMinutes < end) {
-                current = item
+                val existing = current
+                if (existing == null || start >= existing.startHour * 60 + existing.startMinute) {
+                    current = item
+                }
             } else if (nowMinutes < start && next == null) {
                 next = item
+            }
+        }
+
+        val currentItem = current
+        if (currentItem != null && next == null) {
+            val currentStart = currentItem.startHour * 60 + currentItem.startMinute
+            next = items.firstOrNull { item ->
+                when {
+                    item.date > currentItem.date -> true
+                    item.date < currentItem.date -> false
+                    else -> item.startHour * 60 + item.startMinute > currentStart
+                }
             }
         }
 
@@ -54,6 +69,38 @@ object ScheduleNowNext {
         }
 
         return NowNextResult(current = current, next = next)
+    }
+
+    fun chicagoISODate(now: Instant = Instant.now()): String {
+        val zoned = ZonedDateTime.ofInstant(now, chicago)
+        return String.format("%04d-%02d-%02d", zoned.year, zoned.monthValue, zoned.dayOfMonth)
+    }
+
+    fun todayDayIndex(
+        dayDates: Map<String, String>,
+        days: List<com.rendezvousil.core.schedule.model.ScheduleDay>,
+        now: Instant = Instant.now(),
+    ): Int? {
+        val todayISO = chicagoISODate(now)
+        days.forEachIndexed { index, day ->
+            val iso = dayDates[day.day] ?: day.day.takeIf { it.matches(Regex("""\d{4}-\d{2}-\d{2}""")) }
+            if (iso == todayISO) return index
+        }
+        return null
+    }
+
+    fun preferredDayIndex(
+        dayDates: Map<String, String>,
+        days: List<com.rendezvousil.core.schedule.model.ScheduleDay>,
+        now: Instant = Instant.now(),
+    ): Int {
+        todayDayIndex(dayDates, days, now)?.let { return it }
+        val todayISO = chicagoISODate(now)
+        days.forEachIndexed { index, day ->
+            val iso = dayDates[day.day] ?: day.day.takeIf { it.matches(Regex("""\d{4}-\d{2}-\d{2}""")) }
+            if (iso != null && iso >= todayISO) return index
+        }
+        return (days.size - 1).coerceAtLeast(0)
     }
 
     fun eventStartInstant(item: LUScheduleItem): Instant? {
@@ -102,4 +149,6 @@ fun matchingLUItem(
     event: ScheduleEvent,
     isoDate: String,
     items: List<LUScheduleItem>,
-): LUScheduleItem? = items.firstOrNull { it.date == isoDate && it.title == event.title }
+): LUScheduleItem? =
+    items.firstOrNull { it.date == isoDate && it.title == event.title && it.time == event.time }
+        ?: items.firstOrNull { it.date == isoDate && it.title == event.title }

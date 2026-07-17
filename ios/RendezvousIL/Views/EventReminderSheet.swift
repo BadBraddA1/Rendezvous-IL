@@ -2,9 +2,11 @@ import SwiftUI
 
 struct EventReminderSheet: View {
     let item: LUScheduleItem
+    var allItems: [LUScheduleItem] = []
     @Environment(\.dismiss) private var dismiss
     @State private var selected: EventReminderOffset?
     @State private var errorMessage: String?
+    @State private var isSaving = false
 
     var body: some View {
         NavigationStack {
@@ -54,6 +56,7 @@ struct EventReminderSheet: View {
                     Button("Save") {
                         Task { await save() }
                     }
+                    .disabled(isSaving)
                 }
             }
             .onAppear {
@@ -64,12 +67,16 @@ struct EventReminderSheet: View {
     }
 
     private func save() async {
+        isSaving = true
+        defer { isSaving = false }
+
+        await NotificationService.shared.refreshAuthorizationStatus()
         let granted: Bool
         if NotificationService.shared.authorizationStatus == .notDetermined {
             granted = await NotificationService.shared.requestPermissions()
         } else {
-            granted = NotificationService.shared.authorizationStatus == .authorized
-                || NotificationService.shared.authorizationStatus == .provisional
+            let status = NotificationService.shared.authorizationStatus
+            granted = status == .authorized || status == .provisional || status == .ephemeral
         }
 
         guard granted else {
@@ -78,8 +85,15 @@ struct EventReminderSheet: View {
         }
 
         do {
-            await ReminderService.shared.setReminder(for: item, offset: selected)
+            let scheduleItems = allItems.isEmpty ? [item] : allItems
+            try await ReminderService.shared.setReminder(
+                for: item,
+                offset: selected,
+                allItems: scheduleItems
+            )
             dismiss()
+        } catch {
+            errorMessage = "Could not schedule reminder. Try again from More → Notifications."
         }
     }
 }
