@@ -12,6 +12,11 @@ type ChatPageClientProps = {
   isAdmin?: boolean
 }
 
+function formatUnread(count: number): string {
+  if (count <= 0) return ""
+  return count > 99 ? "99+" : String(count)
+}
+
 export function ChatPageClient({ currentUserId, isAdmin = false }: ChatPageClientProps) {
   const [channels, setChannels] = useState<ChatChannelSummary[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -40,6 +45,18 @@ export function ChatPageClient({ currentUserId, isAdmin = false }: ChatPageClien
 
     void load()
   }, [])
+
+  // Opening a thread marks it read on the server; clear the badge immediately in the list.
+  useEffect(() => {
+    if (!selectedId) return
+    setChannels((prev) =>
+      prev.map((channel) =>
+        channel.id === selectedId && (channel.unread_count ?? 0) > 0
+          ? { ...channel, unread_count: 0 }
+          : channel,
+      ),
+    )
+  }, [selectedId])
 
   const selected = channels.find((channel) => channel.id === selectedId) ?? null
   const selectedCanModerate = Boolean(isAdmin || selected?.can_moderate)
@@ -77,6 +94,8 @@ export function ChatPageClient({ currentUserId, isAdmin = false }: ChatPageClien
               channel.channel_type === "year" && channel.event_year
                 ? `Rendezvous ${channel.event_year}`
                 : channel.name
+            const unread = channel.unread_count ?? 0
+            const unreadLabel = formatUnread(unread)
             return (
               <Button
                 key={channel.id}
@@ -88,15 +107,37 @@ export function ChatPageClient({ currentUserId, isAdmin = false }: ChatPageClien
                 )}
                 onClick={() => setSelectedId(channel.id)}
               >
-                <div className="min-w-0">
-                  <p className="truncate font-medium">{label}</p>
-                  {channel.last_message_preview ? (
-                    <p className="truncate text-xs text-muted-foreground">
-                      {channel.last_message_preview}
+                <div className="flex min-w-0 w-full items-start gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p
+                      className={cn(
+                        "truncate",
+                        unread > 0 ? "font-semibold" : "font-medium",
+                      )}
+                    >
+                      {label}
                     </p>
-                  ) : (
-                    <p className="text-xs text-muted-foreground">No messages yet</p>
-                  )}
+                    {channel.last_message_preview ? (
+                      <p
+                        className={cn(
+                          "truncate text-xs",
+                          unread > 0 ? "text-foreground/80" : "text-muted-foreground",
+                        )}
+                      >
+                        {channel.last_message_preview}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">No messages yet</p>
+                    )}
+                  </div>
+                  {unreadLabel ? (
+                    <span
+                      className="mt-0.5 inline-flex min-w-5 shrink-0 items-center justify-center rounded-full bg-primary px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-primary-foreground"
+                      aria-label={`${unread} unread`}
+                    >
+                      {unreadLabel}
+                    </span>
+                  ) : null}
                 </div>
               </Button>
             )

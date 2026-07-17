@@ -10,6 +10,7 @@ struct ChatChannelSummary: Codable, Identifiable, Hashable {
     let is_test: Bool
     let last_message_preview: String?
     let last_message_at: String?
+    let unread_count: Int?
     let can_moderate: Bool?
 
     var displayTitle: String {
@@ -20,6 +21,14 @@ struct ChatChannelSummary: Codable, Identifiable, Hashable {
     }
 
     var canModerate: Bool { can_moderate == true }
+
+    var unreadCount: Int { max(0, unread_count ?? 0) }
+
+    var unreadBadgeText: String? {
+        let count = unreadCount
+        guard count > 0 else { return nil }
+        return count > 99 ? "99+" : String(count)
+    }
 }
 
 struct ChatChannelsResponse: Decodable {

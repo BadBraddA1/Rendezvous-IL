@@ -8,6 +8,7 @@ import {
   Loader2,
   Megaphone,
   Send,
+  SmilePlus,
   Trash2,
   X,
 } from "lucide-react"
@@ -22,6 +23,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { chatChannelName } from "@/lib/ably-channels"
 import { CHAT_REACTION_EMOJIS, MAX_CHAT_PHOTOS_PER_MESSAGE } from "@/lib/chat/reactions"
 import { useAblyChannel } from "@/lib/use-ably-channel"
@@ -566,35 +573,48 @@ export function ChatThread({
                   ) : null}
 
                   <div className="mt-2 flex flex-wrap items-center gap-1">
-                    {message.reactions.map((reaction) => (
-                      <button
-                        key={`${message.id}-${reaction.emoji}`}
-                        type="button"
-                        className={cn(
-                          "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs",
-                          reaction.reacted_by_me
-                            ? "border-primary/50 bg-primary/15"
-                            : "border-border/60 bg-background/50",
-                        )}
-                        onClick={() => void toggleReaction(message.id, reaction.emoji)}
-                      >
-                        <span>{reaction.emoji}</span>
-                        <span className="tabular-nums">{reaction.count}</span>
-                      </button>
-                    ))}
-                    <div className="inline-flex gap-0.5 rounded-full border border-border/50 bg-background/40 p-0.5 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100">
-                      {CHAT_REACTION_EMOJIS.map((emoji) => (
+                    {message.reactions.length > 0
+                      ? message.reactions.map((reaction) => (
+                          <button
+                            key={`${message.id}-${reaction.emoji}`}
+                            type="button"
+                            className={cn(
+                              "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs",
+                              reaction.reacted_by_me
+                                ? "border-primary/50 bg-primary/15"
+                                : "border-border/60 bg-background/50",
+                            )}
+                            onClick={() => void toggleReaction(message.id, reaction.emoji)}
+                          >
+                            <span>{reaction.emoji}</span>
+                            <span className="tabular-nums">{reaction.count}</span>
+                          </button>
+                        ))
+                      : null}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
                         <button
-                          key={emoji}
                           type="button"
-                          className="rounded-full px-1.5 py-0.5 text-sm hover:bg-muted"
-                          onClick={() => void toggleReaction(message.id, emoji)}
-                          aria-label={`React with ${emoji}`}
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground/70 transition hover:bg-muted hover:text-foreground data-[state=open]:bg-muted data-[state=open]:text-foreground"
+                          aria-label="Add reaction"
                         >
-                          {emoji}
+                          <SmilePlus className="h-3.5 w-3.5" />
                         </button>
-                      ))}
-                    </div>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align={mine ? "end" : "start"} className="min-w-0 p-1">
+                        <div className="flex gap-0.5">
+                          {CHAT_REACTION_EMOJIS.map((emoji) => (
+                            <DropdownMenuItem
+                              key={emoji}
+                              className="cursor-pointer px-2 py-1.5 text-base"
+                              onSelect={() => void toggleReaction(message.id, emoji)}
+                            >
+                              {emoji}
+                            </DropdownMenuItem>
+                          ))}
+                        </div>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
               </div>

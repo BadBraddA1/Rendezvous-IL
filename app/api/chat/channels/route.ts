@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { listMemberChatChannels, userCanModerateChannel } from "@/lib/chat/channels"
 import { chatDemoContextFromRequest, listDemoTestChannels } from "@/lib/chat/demo"
+import { attachUnreadCountsAndSort } from "@/lib/chat/reads"
 import { authUserContext, getCurrentAdmin } from "@/lib/clerk-auth"
 
 export const dynamic = "force-dynamic"
@@ -10,7 +11,8 @@ export async function GET(request: Request) {
   if (demo) {
     try {
       const channels = await listDemoTestChannels()
-      const enriched = channels.map((channel) => ({
+      const withUnread = await attachUnreadCountsAndSort(channels, demo.userId)
+      const enriched = withUnread.map((channel) => ({
         ...channel,
         can_moderate: false,
       }))
@@ -37,8 +39,9 @@ export async function GET(request: Request) {
   try {
     const admin = await getCurrentAdmin(request)
     const channels = await listMemberChatChannels(ctx.userId, ctx.email, Boolean(admin))
+    const withUnread = await attachUnreadCountsAndSort(channels, ctx.userId)
     const enriched = await Promise.all(
-      channels.map(async (channel) => ({
+      withUnread.map(async (channel) => ({
         ...channel,
         can_moderate: await userCanModerateChannel(channel.id, ctx.userId, Boolean(admin)),
       })),

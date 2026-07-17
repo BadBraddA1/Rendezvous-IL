@@ -4,6 +4,7 @@ import { userCanModerateChannel } from "@/lib/chat/channels"
 import { chatDemoContextFromRequest } from "@/lib/chat/demo"
 import { uploadChatPhoto, validateChatPhoto } from "@/lib/chat/photo-storage"
 import { MAX_CHAT_PHOTOS_PER_MESSAGE } from "@/lib/chat/reactions"
+import { markChannelRead } from "@/lib/chat/reads"
 import { authUserContext, getCurrentAdmin } from "@/lib/clerk-auth"
 
 type Params = { params: Promise<{ id: string }> }
@@ -46,6 +47,9 @@ export async function GET(request: Request, { params }: Params) {
       cursor,
       limit,
     })
+
+    // Opening the thread clears the unread badge for this channel.
+    await markChannelRead(channelId, ctx.userId)
 
     return NextResponse.json({ ...result, can_moderate: canModerate })
   } catch (error) {

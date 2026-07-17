@@ -49,6 +49,7 @@ enum AppStoreScreenshotMode {
             is_test: false,
             last_message_preview: "Looking forward to seeing everyone at the lake!",
             last_message_at: ISO8601DateFormatter().string(from: Date().addingTimeInterval(-3600)),
+            unread_count: 3,
             can_moderate: false
         ),
         ChatChannelSummary(
@@ -61,6 +62,7 @@ enum AppStoreScreenshotMode {
             is_test: false,
             last_message_preview: "Thanks for another great week.",
             last_message_at: ISO8601DateFormatter().string(from: Date().addingTimeInterval(-86_400)),
+            unread_count: 0,
             can_moderate: false
         ),
     ]

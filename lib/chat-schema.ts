@@ -78,6 +78,15 @@ export async function ensureChatSchema(): Promise<void> {
     )
   `)
 
+  await sql.query(`
+    CREATE TABLE IF NOT EXISTS chat_channel_reads (
+      channel_id TEXT NOT NULL,
+      clerk_user_id TEXT NOT NULL,
+      last_read_at TEXT NOT NULL,
+      PRIMARY KEY (channel_id, clerk_user_id)
+    )
+  `)
+
   for (const statement of [
     `ALTER TABLE chat_channel_members ADD COLUMN role TEXT NOT NULL DEFAULT 'member'`,
     `ALTER TABLE chat_messages ADD COLUMN image_url TEXT`,
@@ -106,6 +115,11 @@ export async function ensureChatSchema(): Promise<void> {
   await sql.query(`
     CREATE INDEX IF NOT EXISTS idx_chat_message_reactions_message
     ON chat_message_reactions (message_id)
+  `)
+
+  await sql.query(`
+    CREATE INDEX IF NOT EXISTS idx_chat_channel_reads_user
+    ON chat_channel_reads (clerk_user_id)
   `)
 
   for (const year of REGISTRATION_EVENT_YEARS) {

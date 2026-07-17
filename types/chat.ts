@@ -28,6 +28,8 @@ export interface ChatChannelSummary {
   is_test: boolean
   last_message_preview: string | null
   last_message_at: string | null
+  /** Messages from others since the user last opened this channel. */
+  unread_count?: number
   member_count?: number
   /** Current user can moderate this channel (site admin or channel mod). */
   can_moderate?: boolean

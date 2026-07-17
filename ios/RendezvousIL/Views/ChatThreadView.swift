@@ -314,44 +314,46 @@ struct ChatThreadView: View {
     }
 
     private func reactionBar(for message: ChatMessage) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
+        HStack(spacing: 6) {
             if !message.reactionList.isEmpty {
-                HStack(spacing: 6) {
-                    ForEach(message.reactionList, id: \.emoji) { reaction in
-                        Button {
-                            Task { await toggleReaction(messageId: message.id, emoji: reaction.emoji) }
-                        } label: {
-                            HStack(spacing: 2) {
-                                Text(reaction.emoji)
-                                Text("\(reaction.count)")
-                                    .font(.caption2.monospacedDigit())
-                            }
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(
-                                Capsule().fill(
-                                    reaction.reacted_by_me
-                                        ? BrandColors.lake.opacity(0.25)
-                                        : Color.secondary.opacity(0.12)
-                                )
-                            )
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-            }
-            HStack(spacing: 4) {
-                ForEach(ChatReactionEmoji.all, id: \.self) { emoji in
+                ForEach(message.reactionList, id: \.emoji) { reaction in
                     Button {
-                        Task { await toggleReaction(messageId: message.id, emoji: emoji) }
+                        Task { await toggleReaction(messageId: message.id, emoji: reaction.emoji) }
                     } label: {
-                        Text(emoji)
-                            .font(.body)
-                            .padding(4)
+                        HStack(spacing: 2) {
+                            Text(reaction.emoji)
+                            Text("\(reaction.count)")
+                                .font(.caption2.monospacedDigit())
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(
+                            Capsule().fill(
+                                reaction.reacted_by_me
+                                    ? BrandColors.lake.opacity(0.25)
+                                    : Color.secondary.opacity(0.12)
+                            )
+                        )
                     }
                     .buttonStyle(.plain)
                 }
             }
+
+            Menu {
+                ForEach(ChatReactionEmoji.all, id: \.self) { emoji in
+                    Button(emoji) {
+                        Task { await toggleReaction(messageId: message.id, emoji: emoji) }
+                    }
+                }
+            } label: {
+                Image(systemName: "face.smiling")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .padding(6)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Add reaction")
         }
     }
 
@@ -801,6 +803,7 @@ struct ChatThreadView: View {
             is_test: false,
             last_message_preview: nil,
             last_message_at: nil,
+            unread_count: 0,
             can_moderate: false
         ))
     }

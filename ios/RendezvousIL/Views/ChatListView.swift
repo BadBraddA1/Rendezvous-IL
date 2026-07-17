@@ -58,6 +58,10 @@ struct ChatListView: View {
             }
             .navigationDestination(for: ChatChannelSummary.self) { channel in
                 ChatThreadView(channel: channel)
+                    .onDisappear {
+                        // Refresh badges/order after the thread marks messages read.
+                        Task { await load(force: true) }
+                    }
             }
         }
     }
@@ -65,34 +69,45 @@ struct ChatListView: View {
     private var channelList: some View {
         List(channels) { channel in
             NavigationLink(value: channel) {
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack {
-                        Text(channel.displayTitle)
-                            .font(.headline)
-                        if channel.is_test {
-                            Text("Test")
-                                .font(.caption2.weight(.semibold))
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(Color.secondary.opacity(0.15))
-                                .clipShape(Capsule())
+                HStack(alignment: .top, spacing: 10) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack {
+                            Text(channel.displayTitle)
+                                .font(channel.unreadCount > 0 ? .headline.weight(.semibold) : .headline)
+                            if channel.is_test {
+                                Text("Test")
+                                    .font(.caption2.weight(.semibold))
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(Color.secondary.opacity(0.15))
+                                    .clipShape(Capsule())
+                            }
+                            Spacer()
+                            if let at = channel.last_message_at, !at.isEmpty {
+                                Text(ChatMessageFormatting.relativeTime(at))
+                                    .font(.caption2)
+                                    .foregroundStyle(.tertiary)
+                            }
                         }
-                        Spacer()
-                        if let at = channel.last_message_at, !at.isEmpty {
-                            Text(ChatMessageFormatting.relativeTime(at))
-                                .font(.caption2)
-                                .foregroundStyle(.tertiary)
+                        if let preview = channel.last_message_preview, !preview.isEmpty {
+                            Text(preview)
+                                .font(.subheadline)
+                                .foregroundStyle(channel.unreadCount > 0 ? .primary : .secondary)
+                                .lineLimit(2)
+                        } else {
+                            Text("No messages yet — say hello!")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
                         }
                     }
-                    if let preview = channel.last_message_preview, !preview.isEmpty {
-                        Text(preview)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(2)
-                    } else {
-                        Text("No messages yet — say hello!")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                    if let badge = channel.unreadBadgeText {
+                        Text(badge)
+                            .font(.caption2.weight(.bold).monospacedDigit())
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 7)
+                            .padding(.vertical, 3)
+                            .background(BrandColors.lake, in: Capsule())
+                            .accessibilityLabel("\(channel.unreadCount) unread")
                     }
                 }
                 .padding(.vertical, 4)
