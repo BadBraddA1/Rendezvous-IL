@@ -3,8 +3,24 @@
  * Links Clerk users to family records and registration history
  */
 
-import { auth, currentUser } from "@clerk/nextjs/server"
+import { auth } from "@clerk/nextjs/server"
 import { sql } from "@/lib/db"
+import {
+  ensureFamilyMembershipSchema,
+  findConflictingMembershipFamilyId,
+  findFamilyIdByMemberEmail,
+  getMembershipByClerkId,
+  normalizeEmail,
+  syncPrimaryFamilyMembership,
+  upsertFamilyAccountMember,
+  type FamilyAccountRole,
+} from "@/lib/family-membership"
+
+export type { FamilyAccountRole }
+
+function asFamily(row: Record<string, unknown> | null | undefined): Family | null {
+  return row ? (row as unknown as Family) : null
+}
 
 export interface Family {
   id: number
@@ -55,8 +71,10 @@ export interface FamilyMember {
 }
 
 /**
- * Resolve a family for a signed-in Clerk user: by clerk_user_id, then email.
- * Optionally links an unlinked family row to this Clerk account.
+ * Resolve a family for a signed-in Clerk user:
+ * 1) family_account_members / families.clerk_user_id
+ * 2) primary families.email match (claim unlinked primary)
+ * 3) registration / profile member email match (join as member)
  */
 export async function resolveFamilyForUser(
   clerkUserId: string,
@@ -64,21 +82,104 @@ export async function resolveFamilyForUser(
   options?: { autoLink?: boolean },
 ): Promise<Family | null> {
   const autoLink = options?.autoLink ?? true
+  await ensureFamilyMembershipSchema()
 
-  const byClerk = await getFamilyByClerkId(clerkUserId)
-  if (byClerk) return byClerk
-
-  if (!email) return null
-
-  const byEmail = await getFamilyByEmail(email)
-  if (!byEmail) return null
-
-  if (autoLink && !byEmail.clerk_user_id) {
-    await linkFamilyToClerk(byEmail.id, clerkUserId)
-    return { ...byEmail, clerk_user_id: clerkUserId }
+  const membership = await getMembershipByClerkId(clerkUserId)
+  if (membership) {
+    const family = await getFamilyById(membership.family_id)
+    if (family) return family
   }
 
-  return byEmail
+  const byClerk = await getFamilyByClerkId(clerkUserId)
+  if (byClerk) {
+    if (autoLink) {
+      await syncPrimaryFamilyMembership(byClerk.id, clerkUserId, byClerk.email ?? email)
+    }
+    return byClerk
+  }
+
+  const normalized = normalizeEmail(email)
+  if (!normalized) return null
+
+  const byEmail = await getFamilyByEmail(normalized)
+  if (byEmail) {
+    if (byEmail.clerk_user_id && byEmail.clerk_user_id !== clerkUserId) {
+      // Primary slot taken — still allow member join if this email is listed on members.
+    } else if (autoLink) {
+      await linkFamilyToClerk(byEmail.id, clerkUserId)
+      return { ...byEmail, clerk_user_id: clerkUserId }
+    } else {
+      return byEmail
+    }
+  }
+
+  if (!autoLink) return null
+
+  const memberMatch = await findFamilyIdByMemberEmail(normalized)
+  if (!memberMatch) return null
+
+  const conflict = await findConflictingMembershipFamilyId(clerkUserId, memberMatch.family_id)
+  if (conflict != null) {
+    console.warn(
+      `[Family Auth] Clerk user ${clerkUserId} already linked to family ${conflict}; not auto-joining ${memberMatch.family_id}`,
+    )
+    return null
+  }
+
+  // If this email is the family's primary email and unlinked, claim primary instead.
+  const target = await getFamilyById(memberMatch.family_id)
+  if (!target) return null
+
+  const targetPrimaryEmail = normalizeEmail(target.email)
+  if (targetPrimaryEmail === normalized && !target.clerk_user_id) {
+    await linkFamilyToClerk(target.id, clerkUserId)
+    return { ...target, clerk_user_id: clerkUserId }
+  }
+
+  if (target.clerk_user_id === clerkUserId) {
+    await syncPrimaryFamilyMembership(target.id, clerkUserId, normalized)
+    return target
+  }
+
+  await upsertFamilyAccountMember({
+    familyId: target.id,
+    clerkUserId,
+    email: normalized,
+    role: "member",
+    source: "registration_member",
+  })
+
+  return target
+}
+
+export async function getFamilyById(familyId: number): Promise<Family | null> {
+  try {
+    const [family] = await sql`
+      SELECT * FROM families
+      WHERE id = ${familyId}
+      LIMIT 1
+    `
+    return asFamily(family)
+  } catch (error) {
+    console.error("[Family Auth] Error fetching family by id:", error)
+    return null
+  }
+}
+
+/** Role for this Clerk user on the given family (null if not a member). */
+export async function getFamilyRoleForUser(
+  familyId: number,
+  clerkUserId: string,
+): Promise<FamilyAccountRole | null> {
+  await ensureFamilyMembershipSchema()
+  const membership = await getMembershipByClerkId(clerkUserId)
+  if (!membership || membership.family_id !== familyId) {
+    // Legacy: families.clerk_user_id without membership row yet
+    const family = await getFamilyById(familyId)
+    if (family?.clerk_user_id === clerkUserId) return "primary"
+    return null
+  }
+  return membership.role
 }
 
 /**
@@ -187,13 +288,19 @@ export async function getCurrentFamily(): Promise<Family | null> {
   }
 
   try {
+    await ensureFamilyMembershipSchema()
+    const membership = await getMembershipByClerkId(userId)
+    if (membership) {
+      return getFamilyById(membership.family_id)
+    }
+
     const [family] = await sql`
       SELECT * FROM families 
       WHERE clerk_user_id = ${userId}
       LIMIT 1
     `
 
-    return family || null
+    return asFamily(family)
   } catch (error) {
     console.error("[Family Auth] Error fetching family:", error)
     return null
@@ -211,7 +318,7 @@ export async function getFamilyByClerkId(clerkUserId: string): Promise<Family | 
       LIMIT 1
     `
 
-    return family || null
+    return asFamily(family)
   } catch (error) {
     console.error("[Family Auth] Error fetching family by Clerk ID:", error)
     return null
@@ -231,7 +338,7 @@ export async function getFamilyByEmail(email: string): Promise<Family | null> {
       LIMIT 1
     `
 
-    return family || null
+    return asFamily(family)
   } catch (error) {
     console.error("[Family Auth] Error fetching family by email:", error)
     return null
@@ -251,7 +358,7 @@ export async function getUnlinkedFamilyByEmail(email: string): Promise<Family | 
       LIMIT 1
     `
 
-    return family || null
+    return asFamily(family)
   } catch (error) {
     console.error("[Family Auth] Error fetching unlinked family by email:", error)
     return null
@@ -259,15 +366,29 @@ export async function getUnlinkedFamilyByEmail(email: string): Promise<Family | 
 }
 
 /**
- * Link a family to a Clerk user
+ * Link a family to a Clerk user as the primary account holder.
  */
 export async function linkFamilyToClerk(familyId: number, clerkUserId: string): Promise<boolean> {
   try {
-    await sql`
-      UPDATE families 
-      SET clerk_user_id = ${clerkUserId}, updated_at = NOW()
-      WHERE id = ${familyId}
-    `
+    const family = await getFamilyById(familyId)
+    if (!family) return false
+
+    if (family.clerk_user_id && family.clerk_user_id !== clerkUserId) {
+      console.warn(
+        `[Family Auth] Family ${familyId} already linked to ${family.clerk_user_id}; not reclaiming for ${clerkUserId}`,
+      )
+      return false
+    }
+
+    const conflict = await findConflictingMembershipFamilyId(clerkUserId, familyId)
+    if (conflict != null) {
+      console.warn(
+        `[Family Auth] Clerk user ${clerkUserId} already linked to family ${conflict}; not linking family ${familyId}`,
+      )
+      return false
+    }
+
+    await syncPrimaryFamilyMembership(familyId, clerkUserId, family.email)
     return true
   } catch (error) {
     console.error("[Family Auth] Error linking family:", error)
@@ -292,7 +413,7 @@ export async function getFamilyRegistrations(familyEmail: string): Promise<Regis
       ORDER BY r.created_at DESC
     `
 
-    return registrations
+    return registrations as unknown as Registration[]
   } catch (error) {
     console.error("[Family Auth] Error fetching registrations:", error)
     return []
@@ -311,7 +432,7 @@ export async function getFamilyMembers(familyId: number): Promise<FamilyMember[]
       ORDER BY date_of_birth ASC
     `
 
-    return members
+    return members as unknown as FamilyMember[]
   } catch (error) {
     console.error("[Family Auth] Error fetching family members:", error)
     return []

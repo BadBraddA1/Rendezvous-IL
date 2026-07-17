@@ -33,6 +33,11 @@ function normalizeMemberPayload(memberData: Record<string, unknown>) {
     normalized.phone = formatPhoneForStorage(String(normalized.phone ?? "")) ?? ""
   }
 
+  if (normalized.email !== undefined) {
+    const email = String(normalized.email ?? "").trim().toLowerCase()
+    normalized.email = email || ""
+  }
+
   return normalized
 }
 

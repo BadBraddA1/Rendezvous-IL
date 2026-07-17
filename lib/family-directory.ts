@@ -8,6 +8,10 @@ import {
   type DirectoryContactPhone,
 } from "@/lib/directory-contacts"
 import { formatPhoneForStorage } from "@/lib/phone-format"
+import {
+  ensureFamilyMembershipSchema,
+  familyHasRegistrationForYearViaMembership,
+} from "@/lib/family-membership"
 
 let directorySchemaReady: Promise<void> | null = null
 
@@ -17,6 +21,7 @@ export async function ensureFamilyDirectorySchema(): Promise<void> {
     directorySchemaReady = runFamilyDirectoryMigrations()
   }
   await directorySchemaReady
+  await ensureFamilyMembershipSchema()
 }
 
 async function runFamilyDirectoryMigrations() {
@@ -244,6 +249,10 @@ export async function userHasRegistrationForYear(
   year: RegistrationEventYear,
 ): Promise<boolean> {
   await ensureFamilyDirectorySchema()
+
+  if (await familyHasRegistrationForYearViaMembership(clerkUserId, year)) {
+    return true
+  }
 
   if (email && (await hasLegacyRegistrationForYear(email, year))) {
     return true

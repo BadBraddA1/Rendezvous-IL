@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server"
 import { currentUser } from "@clerk/nextjs/server"
 import { sql } from "@/lib/db"
-import { resolveFamilyForUser, type Family } from "@/lib/family-auth"
+import {
+  getFamilyRoleForUser,
+  resolveFamilyForUser,
+  type Family,
+} from "@/lib/family-auth"
 import { canAccessExpressRegistrationPreview } from "@/lib/registration-access"
 
 /**
@@ -9,6 +13,8 @@ import { canAccessExpressRegistrationPreview } from "@/lib/registration-access"
  * by Clerk id first, then by email (auto-linking unlinked rows). Using only
  * getCurrentFamily() here made the API 401 with "Not authenticated" for
  * admins whose family row was matched by email but linked to a stale Clerk id.
+ *
+ * Express registration / payment is primary-account-only.
  */
 async function ensureExpressTable(): Promise<void> {
   await sql`
@@ -26,7 +32,9 @@ async function ensureExpressTable(): Promise<void> {
   `
 }
 
-async function getFamilyForRequest(): Promise<
+async function getFamilyForRequest(options?: {
+  requirePrimary?: boolean
+}): Promise<
   { error: NextResponse; family?: undefined } | { family: Family; error?: undefined }
 > {
   const user = await currentUser()
@@ -41,6 +49,21 @@ async function getFamilyForRequest(): Promise<
         { error: "No linked family profile — run a test registration first" },
         { status: 404 },
       ),
+    }
+  }
+
+  if (options?.requirePrimary) {
+    const role = await getFamilyRoleForUser(family.id, user.id)
+    if (role !== "primary") {
+      return {
+        error: NextResponse.json(
+          {
+            error:
+              "Only the primary family account can submit or change registration. Ask the account holder, or update your shared family profile instead.",
+          },
+          { status: 403 },
+        ),
+      }
     }
   }
 
@@ -80,7 +103,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Express registration preview is not available" }, { status: 403 })
     }
 
-    const { family, error } = await getFamilyForRequest()
+    const { family, error } = await getFamilyForRequest({ requirePrimary: true })
     if (error) return error
 
     await ensureExpressTable()
@@ -140,7 +163,7 @@ export async function DELETE() {
       return NextResponse.json({ error: "Express registration preview is not available" }, { status: 403 })
     }
 
-    const { family, error } = await getFamilyForRequest()
+    const { family, error } = await getFamilyForRequest({ requirePrimary: true })
     if (error) return error
 
     await ensureExpressTable()

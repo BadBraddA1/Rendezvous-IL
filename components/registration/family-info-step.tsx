@@ -469,6 +469,10 @@ export function FamilyInfoStep({ data, updateData }: Props) {
                         Father and mother must use different email addresses.
                       </p>
                     )}
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Used for signatures and app access — if they sign in with this email, they join
+                      your family account (shared directory profile and year chats).
+                    </p>
                   </div>
                   <div>
                     <Label htmlFor={`memberPhone-${member.id}`}>Phone (optional)</Label>

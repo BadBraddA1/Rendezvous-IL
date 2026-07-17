@@ -177,9 +177,26 @@ CREATE TABLE IF NOT EXISTS family_members_v2 (
   age_group TEXT,
   grade TEXT,
   phone TEXT,
+  email TEXT,
   special_needs INTEGER DEFAULT 0,
   notes TEXT
 );
+
+CREATE TABLE IF NOT EXISTS family_account_members (
+  id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+  family_id INTEGER NOT NULL,
+  clerk_user_id TEXT NOT NULL UNIQUE,
+  email TEXT,
+  role TEXT NOT NULL DEFAULT 'member',
+  source TEXT NOT NULL DEFAULT 'registration_member',
+  linked_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_family_account_members_family
+  ON family_account_members (family_id);
+
+CREATE INDEX IF NOT EXISTS idx_family_account_members_email
+  ON family_account_members (email);
 
 CREATE TABLE IF NOT EXISTS signature_requests (
   id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,

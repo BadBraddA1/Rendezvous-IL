@@ -1,5 +1,9 @@
 import { sql, type SqlRow } from "@/lib/db"
 import { ensureFamilyDirectorySchema, isFamilyDirectoryListed } from "@/lib/family-directory"
+import {
+  ensureFamilyMembershipSchema,
+  type FamilyAccountMember,
+} from "@/lib/family-membership"
 import { formatPhoneForStorage } from "@/lib/phone-format"
 import type { RegistrationEventYear } from "@/lib/registration-event-years"
 import { isMissingSqliteColumn } from "@/lib/sqlite-errors"
@@ -37,6 +41,7 @@ export type AdminDirectoryFamily = {
   directory_blurb: string | null
   registration_id: number | null
   members: AdminDirectoryMember[]
+  account_members: FamilyAccountMember[]
 }
 
 function mapMember(row: SqlRow): AdminDirectoryMember {
@@ -57,6 +62,7 @@ export async function listAdminDirectoryFamilies(
   year: RegistrationEventYear,
 ): Promise<AdminDirectoryFamily[]> {
   await ensureFamilyDirectorySchema()
+  await ensureFamilyMembershipSchema()
 
   const familyRows = await sql`
     SELECT
@@ -113,11 +119,44 @@ export async function listAdminDirectoryFamilies(
     membersByEmail.set(email, bucket)
   }
 
+  const familyIds = familyRows.map((row) => Number(row.id))
+  const accountMembersByFamily = new Map<number, FamilyAccountMember[]>()
+  if (familyIds.length > 0) {
+    const placeholders = familyIds.map(() => "?").join(", ")
+    const accountRows = await sql.query(
+      `SELECT * FROM family_account_members
+       WHERE family_id IN (${placeholders})
+       ORDER BY
+         CASE WHEN role = 'primary' THEN 0 ELSE 1 END,
+         linked_at ASC`,
+      familyIds,
+    )
+    for (const row of accountRows) {
+      const familyId = Number(row.family_id)
+      const role = String(row.role || "member") === "primary" ? "primary" : "member"
+      const sourceRaw = String(row.source || "registration_member")
+      const source =
+        sourceRaw === "primary_email" || sourceRaw === "admin" ? sourceRaw : "registration_member"
+      const list = accountMembersByFamily.get(familyId) ?? []
+      list.push({
+        id: Number(row.id),
+        family_id: familyId,
+        clerk_user_id: String(row.clerk_user_id),
+        email: row.email != null ? String(row.email) : null,
+        role,
+        source,
+        linked_at: String(row.linked_at ?? ""),
+      })
+      accountMembersByFamily.set(familyId, list)
+    }
+  }
+
   return familyRows.map((row) => {
     const email = row.email ? String(row.email).toLowerCase() : ""
     const bucket = email ? membersByEmail.get(email) : undefined
+    const familyId = Number(row.id)
     return {
-      id: Number(row.id),
+      id: familyId,
       family_last_name: String(row.family_last_name ?? ""),
       husband_first_name: row.husband_first_name ? String(row.husband_first_name) : null,
       wife_first_name: row.wife_first_name ? String(row.wife_first_name) : null,
@@ -132,6 +171,7 @@ export async function listAdminDirectoryFamilies(
       directory_blurb: row.directory_blurb ? String(row.directory_blurb) : null,
       registration_id: bucket?.registrationId ?? null,
       members: bucket?.members ?? [],
+      account_members: accountMembersByFamily.get(familyId) ?? [],
     }
   })
 }

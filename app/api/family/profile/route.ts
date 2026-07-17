@@ -3,10 +3,15 @@ import { sql } from "@/lib/db"
 import { authUserContext } from "@/lib/clerk-auth"
 import {
   getFamilyMembersV2,
+  getFamilyRoleForUser,
   getRegistrationBirthdayHints,
   resolveFamilyForUser,
 } from "@/lib/family-auth"
 import { getFamilyDirectorySettings } from "@/lib/family-directory"
+import {
+  listFamilyAccountMembers,
+  listFamilyLoginInvites,
+} from "@/lib/family-membership"
 import { formatPhoneForStorage } from "@/lib/phone-format"
 
 const PROFILE_FIELDS = [
@@ -80,11 +85,17 @@ export async function GET(request: Request) {
     }))
 
     const directory = await getFamilyDirectorySettings(family.id)
+    const accountRole = (await getFamilyRoleForUser(family.id, ctx.userId)) ?? "member"
+    const accountMembers = await listFamilyAccountMembers(family.id)
+    const loginInvites = await listFamilyLoginInvites(family.id)
 
     return NextResponse.json({
       family: { ...family, members, ...directory },
       pendingChanges,
       registrationBirthdays,
+      accountRole,
+      accountMembers,
+      loginInvites,
     })
   } catch (error) {
     console.error("Error fetching family profile:", error)

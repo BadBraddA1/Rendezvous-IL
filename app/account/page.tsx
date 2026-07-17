@@ -2,11 +2,10 @@ import { currentUser } from "@clerk/nextjs/server"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import {
-  getCurrentFamily,
   getExpressRegistrationData,
-  getFamilyByEmail,
   getFamilyRegistrations,
-  linkFamilyToClerk,
+  getFamilyRoleForUser,
+  resolveFamilyForUser,
 } from "@/lib/family-auth"
 import { canAccessExpressRegistrationPreview } from "@/lib/registration-access"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -38,25 +37,16 @@ export default async function AccountPage() {
   }
 
   const userEmail = user.emailAddresses[0]?.emailAddress
+  const family = await resolveFamilyForUser(user.id, userEmail)
+  const accountRole = family ? await getFamilyRoleForUser(family.id, user.id) : null
+  const isPrimary = accountRole === "primary"
 
-  // Try to get linked family
-  let family = await getCurrentFamily()
-
-  // If no linked family, try to find and link by email
-  if (!family && userEmail) {
-    const matchedFamily = await getFamilyByEmail(userEmail)
-    if (matchedFamily) {
-      // If family exists but isn't linked to anyone, link it to this user
-      if (!matchedFamily.clerk_user_id) {
-        await linkFamilyToClerk(matchedFamily.id, user.id)
-      }
-      // Use the matched family regardless (it might be linked to this user already)
-      family = matchedFamily
-    }
-  }
-
-  // Get registration history
-  const registrations = userEmail ? await getFamilyRegistrations(userEmail) : []
+  // Registration history follows the family's primary email (shared for all members).
+  const registrations = family?.email
+    ? await getFamilyRegistrations(family.email)
+    : userEmail
+      ? await getFamilyRegistrations(userEmail)
+      : []
   const expressPreviewEnabled = await canAccessExpressRegistrationPreview()
 
   return (
@@ -73,38 +63,61 @@ export default async function AccountPage() {
 
         {/* Quick Actions */}
         <div className="grid gap-4 sm:grid-cols-2">
-          <Card className="border-primary/20 bg-primary/5">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-widget-heading">
-                <Calendar className="h-5 w-5 text-primary" />
-                Register for 2027
-              </CardTitle>
-              <CardDescription>
-                {expressPreviewEnabled
-                  ? "Preview express registration with your saved family profile"
-                  : registrations.length > 0
-                    ? "Use express registration with your saved info when it opens"
-                    : "Start your registration for Rendezvous 2027"}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {expressPreviewEnabled ? (
+          {isPrimary || !family ? (
+            <Card className="border-primary/20 bg-primary/5">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-widget-heading">
+                  <Calendar className="h-5 w-5 text-primary" />
+                  Register for 2027
+                </CardTitle>
+                <CardDescription>
+                  {expressPreviewEnabled
+                    ? "Preview express registration with your saved family profile"
+                    : registrations.length > 0
+                      ? "Use express registration with your saved info when it opens"
+                      : "Start your registration for Rendezvous 2027"}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {expressPreviewEnabled ? (
+                  <Button asChild className="w-full">
+                    <Link href="/account/express-registration">
+                      Test express registration
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                  </Button>
+                ) : (
+                  <Button asChild className="w-full">
+                    <Link href={registrations.length > 0 ? "/registration?express=true" : "/registration"}>
+                      {registrations.length > 0 ? "Express Registration" : "Start Registration"}
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="border-primary/20 bg-primary/5">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-widget-heading">
+                  <Users className="h-5 w-5 text-primary" />
+                  Family member access
+                </CardTitle>
+                <CardDescription>
+                  You&apos;re linked to the {family.family_last_name} family. Registration stays with the primary
+                  account — you share the directory profile and year chats.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
                 <Button asChild className="w-full">
-                  <Link href="/account/express-registration">
-                    Test express registration
+                  <Link href="/account/profile">
+                    View your family
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
-              ) : (
-                <Button asChild className="w-full">
-                  <Link href={registrations.length > 0 ? "/registration?express=true" : "/registration"}>
-                    {registrations.length > 0 ? "Express Registration" : "Start Registration"}
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
 
           {family && (
             <Card>
@@ -188,7 +201,9 @@ export default async function AccountPage() {
                 {family.family_last_name} Family
               </CardTitle>
               <CardDescription>
-                Your linked family profile
+                {isPrimary
+                  ? "Your linked family profile (primary account)"
+                  : "Your linked family profile (shared member access)"}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">

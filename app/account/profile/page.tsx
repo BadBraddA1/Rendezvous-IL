@@ -79,8 +79,16 @@ interface FamilyMember {
   grade?: string
   gender: string
   phone?: string | null
+  email?: string | null
   special_needs?: boolean
   notes?: string
+}
+
+interface LoginInvite {
+  email: string
+  label: string | null
+  linked: boolean
+  clerk_user_id: string | null
 }
 
 interface Family {
@@ -137,6 +145,8 @@ export default function FamilyProfilePage() {
     directory_blurb: null,
     photo_updated_at: null,
   })
+  const [accountRole, setAccountRole] = useState<"primary" | "member" | null>(null)
+  const [loginInvites, setLoginInvites] = useState<LoginInvite[]>([])
 
   useEffect(() => {
     if (isLoaded && user) {
@@ -159,6 +169,8 @@ export default function FamilyProfilePage() {
       setFamily(data.family)
       setPendingChanges(data.pendingChanges || [])
       setRegistrationBirthdays(data.registrationBirthdays || [])
+      setAccountRole(data.accountRole === "primary" || data.accountRole === "member" ? data.accountRole : null)
+      setLoginInvites(Array.isArray(data.loginInvites) ? data.loginInvites : [])
       if (data.family) {
         setEditedFamily(data.family)
         setDirectorySettings({
@@ -320,10 +332,52 @@ export default function FamilyProfilePage() {
             </Button>
           </Link>
           <div className="flex-1">
-            <h1 className="text-section-title">Family Profile</h1>
-            <p className="text-lead text-muted-foreground">Manage your family information</p>
+            <h1 className="text-section-title">Your family</h1>
+            <p className="text-lead text-muted-foreground">
+              {accountRole === "member"
+                ? "Shared family profile — edits still need admin approval"
+                : "Manage your family information"}
+            </p>
           </div>
+          {accountRole && (
+            <Badge variant={accountRole === "primary" ? "default" : "secondary"}>
+              {accountRole === "primary" ? "Primary account" : "Family member"}
+            </Badge>
+          )}
         </div>
+
+        {loginInvites.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-widget-heading">
+                <Users className="h-5 w-5" />
+                Family app access
+              </CardTitle>
+              <CardDescription>
+                People whose emails are on this family can sign in and share the same directory profile and year chats.
+                Registration stays with the primary account.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {loginInvites.map((invite) => (
+                <div
+                  key={invite.email}
+                  className="flex items-center justify-between gap-3 rounded-lg border p-3"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{invite.label || invite.email}</p>
+                    {invite.label && (
+                      <p className="truncate text-sm text-muted-foreground">{invite.email}</p>
+                    )}
+                  </div>
+                  <Badge variant={invite.linked ? "default" : "outline"}>
+                    {invite.linked ? "Linked" : "Not signed up yet"}
+                  </Badge>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Success Message */}
         {successMessage && (
@@ -558,6 +612,7 @@ export default function FamilyProfilePage() {
                             <span>{formatAgeGroupLabel(member.age_group)}</span>
                           )}
                           {member.grade && <span>• Grade {member.grade}</span>}
+                          {member.email && <span>• {member.email}</span>}
                           {member.phone && <span>• {member.phone}</span>}
                         </div>
                       </div>
@@ -658,6 +713,7 @@ function MemberDialog({
     age_group: "adult",
     gender: "",
     phone: "",
+    email: "",
     grade: "",
     special_needs: false,
     notes: "",
@@ -782,22 +838,37 @@ function MemberDialog({
         </div>
 
         {(formData.member_type === "adult" || formData.member_type === "teen") && (
-          <div className="space-y-2">
-            <Label htmlFor="memberPhone">Phone (for directory)</Label>
-            <Input
-              id="memberPhone"
-              type="tel"
-              value={formData.phone || ""}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              onBlur={(e) => {
-                const formatted = formatPhoneNumber(e.target.value) || e.target.value
-                if (formatted !== (formData.phone || "")) {
-                  setFormData({ ...formData, phone: formatted })
-                }
-              }}
-              placeholder="Shown on the family directory with this member's name"
-            />
-          </div>
+          <>
+            <div className="space-y-2">
+              <Label htmlFor="memberEmail">Login email (optional)</Label>
+              <Input
+                id="memberEmail"
+                type="email"
+                value={formData.email || ""}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                placeholder="Lets this person sign in and join your family"
+              />
+              <p className="text-xs text-muted-foreground">
+                If they create an account with this email, they&apos;re linked to this family automatically.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="memberPhone">Phone (for directory)</Label>
+              <Input
+                id="memberPhone"
+                type="tel"
+                value={formData.phone || ""}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                onBlur={(e) => {
+                  const formatted = formatPhoneNumber(e.target.value) || e.target.value
+                  if (formatted !== (formData.phone || "")) {
+                    setFormData({ ...formData, phone: formatted })
+                  }
+                }}
+                placeholder="Shown on the family directory with this member's name"
+              />
+            </div>
+          </>
         )}
 
         {hasBirthday && classifiedFromBirthday && (

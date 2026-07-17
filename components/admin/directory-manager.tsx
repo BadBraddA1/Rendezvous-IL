@@ -135,6 +135,7 @@ export function DirectoryManager({ canManage, eventYear }: Props) {
   const [memberEditId, setMemberEditId] = useState<number | null>(null)
   const [memberForm, setMemberForm] = useState<MemberForm | null>(null)
   const [saving, setSaving] = useState(false)
+  const [accountBusyId, setAccountBusyId] = useState<string | null>(null)
   const photoInputRef = useRef<HTMLInputElement>(null)
   const [photoBusy, setPhotoBusy] = useState(false)
 
@@ -283,6 +284,27 @@ export function DirectoryManager({ canManage, eventYear }: Props) {
     setBulkMembers((prev) => ({ ...prev, [id]: { ...prev[id], ...updates } }))
   }
 
+  const removeAccountMember = async (familyId: number, clerkUserId: string) => {
+    setAccountBusyId(clerkUserId)
+    setError(null)
+    setNotice(null)
+    try {
+      const res = await fetch(`/api/admin/families/${familyId}/account-members`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clerk_user_id: clerkUserId }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Failed to remove linked account")
+      setNotice("Removed linked family account member.")
+      await load()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to remove linked account")
+    } finally {
+      setAccountBusyId(null)
+    }
+  }
+
   const startEdit = (family: AdminDirectoryFamily) => {
     setEditingId(family.id)
     setForm(familyToForm(family))
@@ -386,7 +408,10 @@ export function DirectoryManager({ canManage, eventYear }: Props) {
           family.email ?? "",
           family.husband_first_name ?? "",
           family.wife_first_name ?? "",
-          ...family.members.map((m) => `${m.first_name} ${m.last_name}`),
+          ...family.members.map((m) => `${m.first_name} ${m.last_name} ${m.email ?? ""}`),
+          ...(family.account_members ?? []).map(
+            (m) => `${m.email ?? ""} ${m.clerk_user_id} ${m.role}`,
+          ),
         ]
           .join(" ")
           .toLowerCase()
@@ -674,6 +699,54 @@ export function DirectoryManager({ canManage, eventYear }: Props) {
                     )}
                   </div>
                 )}
+
+                <div>
+                  <p className="mb-2 text-sm font-medium text-muted-foreground">
+                    Linked app accounts ({family.account_members?.length ?? 0})
+                  </p>
+                  {(family.account_members?.length ?? 0) === 0 ? (
+                    <p className="mb-4 text-sm text-muted-foreground">
+                      No Clerk accounts linked yet. Member emails on the registration can auto-join when they sign in.
+                    </p>
+                  ) : (
+                    <div className="mb-4 space-y-2">
+                      {family.account_members.map((account) => (
+                        <div
+                          key={account.clerk_user_id}
+                          className="flex items-start justify-between gap-3 rounded-lg border p-3"
+                        >
+                          <div className="min-w-0">
+                            <p className="break-all text-sm font-medium">
+                              {account.email || account.clerk_user_id}
+                            </p>
+                            <div className="mt-1 flex flex-wrap gap-2">
+                              <Badge variant={account.role === "primary" ? "default" : "secondary"}>
+                                {account.role}
+                              </Badge>
+                              <Badge variant="outline">{account.source.replace(/_/g, " ")}</Badge>
+                            </div>
+                          </div>
+                          {canManage && account.role !== "primary" && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-destructive hover:text-destructive"
+                              disabled={accountBusyId === account.clerk_user_id}
+                              onClick={() => void removeAccountMember(family.id, account.clerk_user_id)}
+                            >
+                              {accountBusyId === account.clerk_user_id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" aria-hidden="true" />
+                              )}
+                              <span className="sr-only">Remove linked account</span>
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
                 <div>
                   <p className="mb-2 text-sm font-medium text-muted-foreground">
