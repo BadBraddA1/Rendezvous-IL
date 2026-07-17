@@ -96,6 +96,9 @@ function weatherHour(time: string): number {
 type Props = {
   year: number
   dateRangeLabel: string
+  location: string
+  /** Empty = hide the draft/disclaimer banner (admin-controlled). */
+  draftNotice: string
   days: PublicScheduleDay[]
 }
 
@@ -159,7 +162,7 @@ function ScheduleEventRow({
   )
 }
 
-export function ScheduleClient({ year, dateRangeLabel, days }: Props) {
+export function ScheduleClient({ year, dateRangeLabel, location, draftNotice, days }: Props) {
   const [activeDay, setActiveDay] = useState<string>("")
   const [showMap, setShowMap] = useState(false)
   const [highlightedLocation, setHighlightedLocation] = useState<string | null>(null)
@@ -217,13 +220,15 @@ export function ScheduleClient({ year, dateRangeLabel, days }: Props) {
       >
         <header className="mb-6 text-center md:mb-12">
           <h1 className="text-page-title mb-3 text-balance md:mb-4">Rendezvous {year} schedule</h1>
-          <p className="schedule-draft-notice" role="note">
-            <span aria-hidden="true">⚠</span>
-            <span>Based on the {year - 1} schedule — may change slightly for {year}</span>
-          </p>
+          {draftNotice ? (
+            <p className="schedule-draft-notice" role="note">
+              <span aria-hidden="true">⚠</span>
+              <span>{draftNotice}</span>
+            </p>
+          ) : null}
           <p className="text-lead text-muted-foreground">{dateRangeLabel}</p>
           <p className="mt-1 text-balance text-sm text-muted-foreground md:text-base">
-            Lake Williamson Christian Center, Carlinville, IL
+            {location}
           </p>
           <div className="mt-5 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
             <Button type="button" onClick={() => setShowMap(true)} className="h-11 gap-2">

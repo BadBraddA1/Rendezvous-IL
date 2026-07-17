@@ -317,11 +317,13 @@ private fun DayHeader(day: ScheduleDay, draftNotice: String) {
             fontWeight = FontWeight.SemiBold,
             color = BrandColors.Lake,
         )
-        Text(
-            text = draftNotice,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        if (draftNotice.isNotBlank()) {
+            Text(
+                text = draftNotice,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 

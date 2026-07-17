@@ -1,4 +1,5 @@
 import { getPublicSchedule } from "@/lib/event-schedule"
+import { getScheduleMeta } from "@/lib/schedule-meta"
 import { ScheduleClient } from "./schedule-client"
 
 export const dynamic = "force-dynamic"
@@ -10,23 +11,18 @@ export const metadata = {
 
 const EVENT_YEAR = 2027
 
-function dateRangeLabel(days: { dateLabel: string }[], year: number): string {
-  if (days.length === 0) return String(year)
-  const first = days[0].dateLabel
-  const last = days[days.length - 1].dateLabel
-  const [firstMonth] = first.split(" ")
-  const [lastMonth, lastDay] = last.split(" ")
-  if (firstMonth === lastMonth) return `${first}–${lastDay}, ${year}`
-  return `${first} – ${last}, ${year}`
-}
-
 export default async function SchedulePage() {
-  const { days } = await getPublicSchedule(EVENT_YEAR)
+  const [{ days }, meta] = await Promise.all([
+    getPublicSchedule(EVENT_YEAR),
+    getScheduleMeta(EVENT_YEAR),
+  ])
 
   return (
     <ScheduleClient
       year={EVENT_YEAR}
-      dateRangeLabel={dateRangeLabel(days, EVENT_YEAR)}
+      dateRangeLabel={meta.dateRange}
+      location={meta.location}
+      draftNotice={meta.draftNotice}
       days={days}
     />
   )

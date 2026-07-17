@@ -48,6 +48,12 @@ type ScheduleEvent = {
   show_weather: number
 }
 
+type ScheduleMeta = {
+  dateRange: string
+  location: string
+  draftNotice: string
+}
+
 type Props = {
   canManage: boolean
   eventYear: number
@@ -107,12 +113,19 @@ export function ScheduleManager({ canManage, eventYear }: Props) {
   const [newForDay, setNewForDay] = useState<string | null>(null)
   const [form, setForm] = useState<FormState>(EMPTY_FORM)
   const [busyId, setBusyId] = useState<string | null>(null)
+  const [meta, setMeta] = useState<ScheduleMeta>({
+    dateRange: "",
+    location: "",
+    draftNotice: "",
+  })
+  const [metaDirty, setMetaDirty] = useState(false)
   const { toast } = useToast()
   const formRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     setEvents(null)
     setEditingId(null)
+    setMetaDirty(false)
   }, [eventYear])
 
   // The form renders inline (top of card for adds, under the row for edits) —
@@ -126,10 +139,20 @@ export function ScheduleManager({ canManage, eventYear }: Props) {
   const fetchEvents = useCallback(async () => {
     setFetchError(null)
     try {
-      const res = await fetch(`/api/admin/schedule?year=${eventYear}`)
-      if (!res.ok) throw new Error(`Could not load the schedule (${res.status})`)
-      const data = await res.json()
+      const [eventsRes, metaRes] = await Promise.all([
+        fetch(`/api/admin/schedule?year=${eventYear}`),
+        fetch(`/api/admin/schedule/meta?year=${eventYear}`),
+      ])
+      if (!eventsRes.ok) throw new Error(`Could not load the schedule (${eventsRes.status})`)
+      const data = await eventsRes.json()
       setEvents(Array.isArray(data.events) ? data.events : [])
+      if (metaRes.ok) {
+        const metaData = await metaRes.json()
+        if (metaData.meta) {
+          setMeta(metaData.meta as ScheduleMeta)
+          setMetaDirty(false)
+        }
+      }
     } catch (error) {
       console.error("[schedule-manager] Fetch failed:", error)
       setEvents([])
@@ -140,6 +163,33 @@ export function ScheduleManager({ canManage, eventYear }: Props) {
   useEffect(() => {
     void fetchEvents()
   }, [fetchEvents])
+
+  const saveMeta = async () => {
+    setBusyId("meta")
+    try {
+      const res = await fetch("/api/admin/schedule/meta", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ year: eventYear, ...meta }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || "Could not save header")
+      if (data.meta) setMeta(data.meta as ScheduleMeta)
+      setMetaDirty(false)
+      toast({
+        title: "Schedule header saved",
+        description: "Website and apps pick this up on the next refresh — no App Store update needed.",
+      })
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Could not save header.",
+        variant: "destructive",
+      })
+    } finally {
+      setBusyId(null)
+    }
+  }
 
   const applyResponse = (data: { events?: unknown }) => {
     if (Array.isArray(data.events)) setEvents(data.events as ScheduleEvent[])
@@ -533,11 +583,78 @@ export function ScheduleManager({ canManage, eventYear }: Props) {
         </CardTitle>
         <CardDescription>
           Everything here drives the public schedule page, the printable version, the PDF
-          download, and the mobile apps. Until this list has events, those pages show the
-          built-in schedule.
+          download, and the mobile apps. Header text and the daily events update live — no
+          App Store release needed. Until this list has events, apps may show the bundled
+          offline fallback.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        <div className="space-y-3 rounded-lg border bg-muted/30 p-4">
+          <div>
+            <p className="text-sm font-medium">Schedule header (website + apps)</p>
+            <p className="text-xs text-muted-foreground">
+              Leave the draft notice blank to hide it. Changes go out on the next app/website
+              refresh.
+            </p>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="schedule-date-range">Date range</Label>
+              <Input
+                id="schedule-date-range"
+                value={meta.dateRange}
+                disabled={!canManage}
+                onChange={(e) => {
+                  setMeta((m) => ({ ...m, dateRange: e.target.value }))
+                  setMetaDirty(true)
+                }}
+                placeholder="May 3–7, 2027"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="schedule-location">Location</Label>
+              <Input
+                id="schedule-location"
+                value={meta.location}
+                disabled={!canManage}
+                onChange={(e) => {
+                  setMeta((m) => ({ ...m, location: e.target.value }))
+                  setMetaDirty(true)
+                }}
+                placeholder="Lake Williamson Christian Center, Carlinville, IL"
+              />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="schedule-draft-notice">Draft / disclaimer notice (optional)</Label>
+            <Input
+              id="schedule-draft-notice"
+              value={meta.draftNotice}
+              disabled={!canManage}
+              onChange={(e) => {
+                setMeta((m) => ({ ...m, draftNotice: e.target.value }))
+                setMetaDirty(true)
+              }}
+              placeholder="Leave blank to hide — e.g. Based on last year’s schedule…"
+            />
+          </div>
+          {canManage && (
+            <div className="flex justify-end">
+              <Button
+                type="button"
+                size="sm"
+                disabled={!metaDirty || busyId === "meta"}
+                onClick={() => void saveMeta()}
+              >
+                {busyId === "meta" && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+                )}
+                Save header
+              </Button>
+            </div>
+          )}
+        </div>
+
         {events === null ? (
           <AdminListSkeleton rows={6} label="Loading schedule" />
         ) : fetchError ? (
