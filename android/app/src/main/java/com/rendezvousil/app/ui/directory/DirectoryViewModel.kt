@@ -1,8 +1,10 @@
 package com.rendezvousil.app.ui.directory
 
+import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rendezvousil.app.auth.AppSession
+import com.rendezvousil.app.directory.DirectoryDataStore
 import com.rendezvousil.core.network.dto.DirectoryFamily
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,12 +19,15 @@ data class DirectoryUiState(
     val families: List<DirectoryFamily> = emptyList(),
     val searchQuery: String = "",
     val isLoading: Boolean = false,
+    val isRefreshing: Boolean = false,
     val errorMessage: String? = null,
 )
 
 class DirectoryViewModel(
     private val appSession: AppSession,
+    application: Application,
 ) : ViewModel() {
+    private val cache = DirectoryDataStore(application)
     private val _uiState = MutableStateFlow(DirectoryUiState())
     val uiState: StateFlow<DirectoryUiState> = _uiState.asStateFlow()
 
@@ -49,13 +54,14 @@ class DirectoryViewModel(
         }
 
     init {
+        hydrateFromCache()
         viewModelScope.launch {
             appSession.isSignedInFlow.collect { signedIn ->
                 _uiState.update { it.copy(isSignedIn = signedIn) }
                 if (signedIn) {
-                    loadEnabledYears()
+                    loadEnabledYears(forceNetwork = false)
                     if (_uiState.value.enabledYears.isNotEmpty()) {
-                        loadDirectory()
+                        loadDirectory(forceNetwork = false)
                     }
                 }
             }
@@ -72,7 +78,7 @@ class DirectoryViewModel(
     fun onYearSelected(year: Int) {
         if (year == _uiState.value.selectedYear) return
         _uiState.update { it.copy(selectedYear = year) }
-        loadDirectory()
+        loadDirectory(forceNetwork = false)
     }
 
     fun tryAlternateYear() {
@@ -87,27 +93,51 @@ class DirectoryViewModel(
             appSession.refreshAuth()
             _uiState.update { it.copy(isSignedIn = appSession.isSignedIn) }
             if (appSession.isSignedIn) {
-                loadEnabledYears()
+                loadEnabledYears(forceNetwork = true)
                 if (_uiState.value.enabledYears.isNotEmpty()) {
-                    loadDirectory()
+                    loadDirectory(forceNetwork = true)
                 }
             }
         }
     }
 
-    private fun loadEnabledYears() {
+    private fun hydrateFromCache() {
+        val years = cache.loadYears()?.takeIf { it.isNotEmpty() } ?: listOf(2026)
+        val selected = if (years.contains(_uiState.value.selectedYear)) {
+            _uiState.value.selectedYear
+        } else {
+            years.first()
+        }
+        val families = cache.loadFamilies(selected).orEmpty()
+        _uiState.update {
+            it.copy(
+                enabledYears = years,
+                selectedYear = selected,
+                families = families,
+                isLoading = false,
+                errorMessage = null,
+            )
+        }
+    }
+
+    private fun loadEnabledYears(forceNetwork: Boolean) {
         viewModelScope.launch {
-            val client = appSession.authenticatedApiClient
-            if (client == null) {
-                _uiState.update {
-                    it.copy(enabledYears = listOf(2026), selectedYear = 2026)
+            if (!forceNetwork) {
+                cache.loadYears()?.takeIf { it.isNotEmpty() }?.let { years ->
+                    val selected = if (years.contains(_uiState.value.selectedYear)) {
+                        _uiState.value.selectedYear
+                    } else {
+                        years.first()
+                    }
+                    _uiState.update { it.copy(enabledYears = years, selectedYear = selected) }
                 }
-                return@launch
             }
 
+            val client = appSession.authenticatedApiClient ?: return@launch
             try {
                 val response = client.getDirectoryYears()
                 val years = response.years.ifEmpty { listOf(2026) }
+                cache.saveYears(years)
                 val selectedYear = if (years.contains(_uiState.value.selectedYear)) {
                     _uiState.value.selectedYear
                 } else {
@@ -117,34 +147,69 @@ class DirectoryViewModel(
                     it.copy(enabledYears = years, selectedYear = selectedYear)
                 }
             } catch (_: Exception) {
-                _uiState.update {
-                    it.copy(enabledYears = listOf(2026), selectedYear = 2026)
+                if (_uiState.value.enabledYears.isEmpty()) {
+                    _uiState.update {
+                        it.copy(enabledYears = listOf(2026), selectedYear = 2026)
+                    }
                 }
             }
         }
     }
 
-    private fun loadDirectory() {
+    private fun loadDirectory(forceNetwork: Boolean) {
         viewModelScope.launch {
-            val client = appSession.authenticatedApiClient ?: return@launch
-            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-            try {
-                val response = client.getDirectory(_uiState.value.selectedYear)
+            val year = _uiState.value.selectedYear
+            val cached = cache.loadFamilies(year).orEmpty()
+            if (!forceNetwork && cached.isNotEmpty()) {
                 _uiState.update {
                     it.copy(
+                        families = cached,
                         isLoading = false,
-                        families = response.families,
                         errorMessage = null,
                     )
                 }
-            } catch (error: Exception) {
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        families = emptyList(),
-                        errorMessage = error.message ?: "Could not load directory",
-                    )
-                }
+                refreshDirectoryInBackground(showErrorsWhenEmpty = false)
+                return@launch
+            }
+
+            if (_uiState.value.families.isEmpty()) {
+                _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            }
+            refreshDirectoryInBackground(showErrorsWhenEmpty = true)
+        }
+    }
+
+    private suspend fun refreshDirectoryInBackground(showErrorsWhenEmpty: Boolean) {
+        val client = appSession.authenticatedApiClient ?: run {
+            _uiState.update { it.copy(isLoading = false) }
+            return
+        }
+        val year = _uiState.value.selectedYear
+        _uiState.update { it.copy(isRefreshing = true) }
+        try {
+            val response = client.getDirectory(year)
+            cache.saveFamilies(year, response.families)
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    isRefreshing = false,
+                    families = response.families,
+                    errorMessage = null,
+                )
+            }
+        } catch (error: Exception) {
+            val keepCached = _uiState.value.families.isNotEmpty() && !showErrorsWhenEmpty
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    isRefreshing = false,
+                    families = if (keepCached) it.families else emptyList(),
+                    errorMessage = if (keepCached) {
+                        null
+                    } else {
+                        error.message ?: "Could not load directory"
+                    },
+                )
             }
         }
     }

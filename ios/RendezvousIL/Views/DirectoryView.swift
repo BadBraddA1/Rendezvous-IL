@@ -50,23 +50,25 @@ struct DirectoryView: View {
         .navigationDestination(for: DirectoryFamily.self) { family in
             DirectoryFamilyDetailView(family: family)
         }
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                NavigationLink {
-                    FamilyDirectoryManageView()
-                } label: {
-                    Label("Your photo", systemImage: "camera.fill")
-                }
-            }
-        }
         .refreshable {
             await loadEnabledYears(forceNetwork: true)
             await loadDirectory(forceNetwork: true)
         }
         .task {
+            // Show disk cache immediately even before the session token is ready.
+            hydrateFromCache()
             await loadEnabledYears(forceNetwork: false)
             if !enabledYears.isEmpty {
                 await loadDirectory(forceNetwork: false)
+            }
+        }
+        .onChange(of: session.isSignedIn) { _, signedIn in
+            guard signedIn else { return }
+            Task {
+                await loadEnabledYears(forceNetwork: false)
+                if !enabledYears.isEmpty {
+                    await loadDirectory(forceNetwork: false)
+                }
             }
         }
     }
@@ -123,11 +125,6 @@ struct DirectoryView: View {
                             }
                             .buttonStyle(.bordered)
                         }
-                        NavigationLink("Manage your family photo") {
-                            FamilyDirectoryManageView()
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .tint(BrandColors.lake)
                     }
                     .padding()
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -140,11 +137,6 @@ struct DirectoryView: View {
                         Text(search.isEmpty ? "No families listed for \(String(year)) yet." : "No families match your search.")
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
-                        NavigationLink("Add your family photo") {
-                            FamilyDirectoryManageView()
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .tint(BrandColors.lake)
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 32)
@@ -174,6 +166,20 @@ struct DirectoryView: View {
                 }
             }
             .padding()
+        }
+    }
+
+    private func hydrateFromCache() {
+        if let cached = DirectoryDataStore.loadYears(), !cached.isEmpty {
+            enabledYears = cached
+            if !cached.contains(year) {
+                year = cached[0]
+            }
+        }
+        if let cachedFamilies = DirectoryDataStore.loadFamilies(year: year), !cachedFamilies.isEmpty {
+            families = cachedFamilies
+            errorMessage = nil
+            isLoading = false
         }
     }
 
@@ -226,16 +232,18 @@ struct DirectoryView: View {
             return
         }
 
-        guard session.apiClient != nil else { return }
-
         let cached = DirectoryDataStore.loadFamilies(year: year) ?? []
         if !forceNetwork, !cached.isEmpty {
             families = cached
             errorMessage = nil
             isLoading = false
-            await refreshDirectoryInBackground()
+            if session.apiClient != nil {
+                await refreshDirectoryInBackground()
+            }
             return
         }
+
+        guard session.apiClient != nil else { return }
 
         if families.isEmpty {
             isLoading = true

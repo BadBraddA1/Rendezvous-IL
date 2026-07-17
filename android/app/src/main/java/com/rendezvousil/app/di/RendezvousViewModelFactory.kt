@@ -44,7 +44,7 @@ class RendezvousViewModelFactory(
             modelClass.isAssignableFrom(ChatThreadViewModel::class.java) ->
                 ChatThreadViewModel(appSession, application, extras.createSavedStateHandle()) as T
             modelClass.isAssignableFrom(DirectoryViewModel::class.java) ->
-                DirectoryViewModel(appSession) as T
+                DirectoryViewModel(appSession, application) as T
             modelClass.isAssignableFrom(DirectoryManageViewModel::class.java) ->
                 DirectoryManageViewModel(appSession, application.contentResolver) as T
             modelClass.isAssignableFrom(AdminDashboardViewModel::class.java) ->

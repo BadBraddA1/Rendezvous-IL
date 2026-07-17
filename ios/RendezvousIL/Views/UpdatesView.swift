@@ -73,26 +73,17 @@ struct UpdatesView: View {
 
     @ViewBuilder
     private var announcementsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("Announcements")
-                    .font(.headline)
-                Spacer()
-                if !repository.liveAnnouncements.isEmpty {
+        if !repository.liveAnnouncements.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text("Announcements")
+                        .font(.headline)
+                    Spacer()
                     Text("\(repository.liveAnnouncements.count)")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
                 }
-            }
 
-            if repository.liveAnnouncements.isEmpty {
-                Text("No active announcements right now.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .padding()
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
-            } else {
                 ForEach(repository.liveAnnouncements) { item in
                     VStack(alignment: .leading, spacing: 6) {
                         HStack {

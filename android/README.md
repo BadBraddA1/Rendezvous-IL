@@ -161,7 +161,8 @@ Core chat parity with iOS/web (CarPlay remains iOS-only):
 | **API** | `ApiClient` chat helpers + DTOs in `core/network/.../dto/ChatDtos.kt` |
 | **Deps** | `io.ably:ably-android` (Pub/Sub, not `@ably/chat`) |
 | **Directory** | Address opens Maps; phones under member names with Call / Text |
-| **Schedule** | Refreshes on app resume so admin edits appear without force-stop |
+| **Schedule** | Refreshes on app resume so admin edits appear without force-stop; “happening now” only for the in-progress Central Time event |
+| **Directory** | Disk cache (`DirectoryDataStore`) shows last list instantly, then refreshes in background |
 
 ## Project layout
 

@@ -3,9 +3,7 @@ import SwiftUI
 struct ScheduleView: View {
     @Environment(RendezvousRepository.self) private var repository
     @State private var selectedDayIndex = 0
-    @State private var scrollToEventId: String?
-    @State private var highlightedEventId: String?
-    /// Only auto-position once per schedule payload load.
+    /// Only auto-pick the preferred day once per schedule payload load.
     @State private var didAutoPosition = false
 
     var body: some View {
@@ -29,12 +27,6 @@ struct ScheduleView: View {
                     if repository.isRefreshingSchedule || repository.isLoadingUpdates {
                         ProgressView()
                     }
-                    if let schedule = repository.schedule, jumpTarget(in: schedule) != nil {
-                        Button("Jump to now") {
-                            jumpToNowNext(in: schedule, userInitiated: true)
-                        }
-                        .font(.subheadline.weight(.semibold))
-                    }
                 }
             }
             .refreshable {
@@ -47,13 +39,13 @@ struct ScheduleView: View {
             }
             .onChange(of: repository.schedule?.year) { _, _ in
                 didAutoPosition = false
-                syncSelectedDay(autoScrollToNow: true)
+                syncSelectedDay()
             }
             .onChange(of: repository.schedule?.days.count) { _, _ in
-                syncSelectedDay(autoScrollToNow: !didAutoPosition)
+                syncSelectedDay()
             }
             .onAppear {
-                syncSelectedDay(autoScrollToNow: !didAutoPosition)
+                syncSelectedDay()
             }
         }
     }
@@ -74,82 +66,40 @@ struct ScheduleView: View {
             if selectedDayIndex < schedule.days.count {
                 let day = schedule.days[selectedDayIndex]
                 let isoDate = schedule.dayDates[day.day] ?? ""
+                let happeningNow = repository.nowNext().current
 
-                ScrollViewReader { proxy in
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 20) {
-                            liveUpdatesSection
-                                .id("schedule-top")
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
+                        liveUpdatesSection
 
-                            header(for: day, schedule: schedule)
+                        header(for: day, schedule: schedule)
 
-                            if day.events.isEmpty {
-                                Text("No events listed for this day.")
-                                    .font(.subheadline)
-                                    .foregroundStyle(.secondary)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 24)
-                            } else {
-                                ForEach(day.events) { event in
-                                    let eventId = eventScrollId(isoDate: isoDate, event: event)
-                                    EventCard(
-                                        event: event,
-                                        isoDate: isoDate,
-                                        luItem: matchingLUItem(event: event, isoDate: isoDate, items: schedule.luItems),
-                                        allLuItems: schedule.luItems,
-                                        meal: mealFor(event: event, isoDate: isoDate),
-                                        volunteers: volunteersFor(event: event, isoDate: isoDate),
-                                        isHappeningNow: eventId == highlightedEventId
-                                    )
-                                    .id(eventId)
-                                }
+                        if day.events.isEmpty {
+                            Text("No events listed for this day.")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 24)
+                        } else {
+                            ForEach(day.events) { event in
+                                EventCard(
+                                    event: event,
+                                    isoDate: isoDate,
+                                    luItem: matchingLUItem(event: event, isoDate: isoDate, items: schedule.luItems),
+                                    allLuItems: schedule.luItems,
+                                    meal: mealFor(event: event, isoDate: isoDate),
+                                    volunteers: volunteersFor(event: event, isoDate: isoDate),
+                                    isHappeningNow: happeningNow.map {
+                                        $0.date == isoDate && $0.title == event.title
+                                    } ?? false
+                                )
                             }
                         }
-                        .padding()
                     }
-                    .task(id: scrollToEventId) {
-                        guard let eventId = scrollToEventId else { return }
-                        // Wait for the selected day’s cards to mount after a day switch.
-                        try? await Task.sleep(nanoseconds: 150_000_000)
-                        withAnimation(.easeInOut(duration: 0.35)) {
-                            proxy.scrollTo(eventId, anchor: .top)
-                        }
-                        scrollToEventId = nil
-                    }
+                    .padding()
                 }
             }
         }
-    }
-
-    private func eventScrollId(isoDate: String, event: ScheduleEvent) -> String {
-        "\(isoDate)|\(event.time)|\(event.title)"
-    }
-
-    /// Prefer the event happening now; otherwise the next upcoming event.
-    private func jumpTarget(in schedule: SchedulePayload) -> (dayIndex: Int, eventId: String)? {
-        let result = repository.nowNext()
-        // Always prefer the in-progress event when Jump to now / auto-position runs.
-        guard let item = result.current ?? result.next else { return nil }
-
-        for (index, day) in schedule.days.enumerated() {
-            let isoDate = ScheduleNowNext.isoDate(for: day, in: schedule) ?? ""
-            guard isoDate == item.date else { continue }
-            if let event = day.events.first(where: { $0.title == item.title && $0.time == item.time })
-                ?? day.events.first(where: { $0.title == item.title }) {
-                return (index, eventScrollId(isoDate: isoDate, event: event))
-            }
-            // LU-only items (e.g. Good Night) — land on the day header area.
-            return (index, "schedule-top")
-        }
-        return nil
-    }
-
-    private func jumpToNowNext(in schedule: SchedulePayload, userInitiated: Bool) {
-        guard let target = jumpTarget(in: schedule) else { return }
-        selectedDayIndex = target.dayIndex
-        highlightedEventId = target.eventId == "schedule-top" ? nil : target.eventId
-        scrollToEventId = target.eventId
-        if userInitiated { didAutoPosition = true }
     }
 
     private var offlineScheduleBanner: some View {
@@ -215,17 +165,10 @@ struct ScheduleView: View {
 
     @ViewBuilder
     private var liveAnnouncementsBlock: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Announcements")
-                .font(.headline)
-            if repository.liveAnnouncements.isEmpty {
-                Text("No active announcements right now.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .padding()
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
-            } else {
+        if !repository.liveAnnouncements.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Announcements")
+                    .font(.headline)
                 ForEach(repository.liveAnnouncements) { item in
                     VStack(alignment: .leading, spacing: 6) {
                         HStack {
@@ -247,52 +190,37 @@ struct ScheduleView: View {
     }
 
     private func dayPicker(_ schedule: SchedulePayload) -> some View {
-        VStack(spacing: 8) {
-            if ScheduleNowNext.todayDayIndex(in: schedule) != nil {
-                HStack {
-                    Spacer()
-                    Button("Today") {
-                        jumpToNowNext(in: schedule, userInitiated: true)
-                    }
-                    .font(.caption.weight(.semibold))
-                    .buttonStyle(.bordered)
-                    .tint(BrandColors.lake)
-                }
-                .padding(.horizontal)
-            }
-
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(Array(schedule.days.enumerated()), id: \.offset) { index, day in
-                        Button {
-                            selectedDayIndex = index
-                        } label: {
-                            VStack(spacing: 4) {
-                                Text(String(day.day.prefix(3)))
-                                    .font(.caption.weight(.bold))
-                                Text(day.date)
-                                    .font(.caption2)
-                                    .lineLimit(1)
-                            }
-                            .frame(minWidth: 64, minHeight: 56)
-                            .padding(.horizontal, 6)
-                            .background(
-                                selectedDayIndex == index ? BrandColors.lake : Color(.secondarySystemGroupedBackground),
-                                in: RoundedRectangle(cornerRadius: 12)
-                            )
-                            .foregroundStyle(selectedDayIndex == index ? .white : .primary)
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(Array(schedule.days.enumerated()), id: \.offset) { index, day in
+                    Button {
+                        selectedDayIndex = index
+                    } label: {
+                        VStack(spacing: 4) {
+                            Text(String(day.day.prefix(3)))
+                                .font(.caption.weight(.bold))
+                            Text(day.date)
+                                .font(.caption2)
+                                .lineLimit(1)
                         }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("\(day.day), \(day.date)")
+                        .frame(minWidth: 64, minHeight: 56)
+                        .padding(.horizontal, 6)
+                        .background(
+                            selectedDayIndex == index ? BrandColors.lake : Color(.secondarySystemGroupedBackground),
+                            in: RoundedRectangle(cornerRadius: 12)
+                        )
+                        .foregroundStyle(selectedDayIndex == index ? .white : .primary)
                     }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("\(day.day), \(day.date)")
                 }
-                .padding(.horizontal)
             }
+            .padding(.horizontal)
         }
         .padding(.vertical, 8)
     }
 
-    private func syncSelectedDay(autoScrollToNow: Bool) {
+    private func syncSelectedDay() {
         guard let schedule = repository.schedule, !schedule.days.isEmpty else { return }
         if didAutoPosition {
             selectedDayIndex = min(selectedDayIndex, schedule.days.count - 1)
@@ -300,9 +228,6 @@ struct ScheduleView: View {
         }
         selectedDayIndex = ScheduleNowNext.preferredDayIndex(in: schedule)
         didAutoPosition = true
-        guard autoScrollToNow else { return }
-        // Scroll to the in-progress (or next) event once the day list is ready.
-        jumpToNowNext(in: schedule, userInitiated: false)
     }
 
     private var announcementsBanner: some View {

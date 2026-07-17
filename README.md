@@ -148,7 +148,8 @@ rendezvous-il/
 Native **SwiftUI** attendee hub in `ios/` (not a WebView shell). **Sign-in required** for almost everything — welcome screen, then Clerk, then tabs:
 
 - **Home** — greeting, retreat shortcuts (schedule, map, chat, directory)
-- **Schedule** — opens on today (Central Time) or the next upcoming day; **Jump to now** / **Today** scrolls to the in-progress event (highlighted) or the next one. Meals, worship leaders, event reminders (bell → local notification; prefs store the event so reminders still schedule if the shared snapshot is empty). Tap location → campus map
+- **Schedule** — opens on today (Central Time) or the next upcoming day. **Happening now** highlight only when an event is actually in progress (Central Time) — not the next upcoming item. Empty announcements are hidden. Meals, worship leaders, event reminders (bell → local notification; prefs store the event so reminders still schedule if the shared snapshot is empty). Tap location → campus map
+- **Directory** — disk cache shows last-loaded families immediately, then refreshes in the background (avoids empty flash after a hard reset). Manage your family photo from **More → Account / Directory photo**, not a camera button on the browse list
 - **Map** — MapKit directions to campus + image venue map on site (geofence switch); More → Campus map
 - **Chat** — year group chat (Ably)
 - **More** — directory, account, Bible Bowl, FAQ, notifications, admin/check-in for staff
@@ -168,8 +169,9 @@ Native **Jetpack Compose** app in `android/` (Phases 1–5):
 
 - **Home / Chat / Schedule / Directory / More** — 5-tab shell aligned with iOS (CarPlay / campus map stay iOS-ahead)
 - **Chat** — year group chat parity with iOS/web: channel list (unread badges, activity sort), thread (text, up to 6 photos, polls, announcements for mods, reactions behind smile menu, delete), Ably Pub/Sub + 4s HTTP poll fallback (`ably-android`)
-- **Schedule** — opens on today / next upcoming day and scrolls toward the current event; day picker, meals, volunteer slots, **event reminders** (bell icon), offline fallback
-- **Updates** — now/next (Central Time), weather, announcements (Home quick link + More → Live updates; not a bottom tab)
+- **Schedule** — opens on today / next upcoming day; **Happening now** only for the in-progress event (Central Time); day picker, meals, volunteer slots, **event reminders** (bell icon), offline fallback; empty announcements hidden
+- **Directory** — on-device cache first, background refresh; family photo manage stays under More
+- **Updates** — now/next (Central Time), weather, announcements when active (Home quick link + More → Live updates; not a bottom tab)
 - **More** — calculator, Bible Bowl, FAQ, About, **Clerk account**, directory manage, **notifications & widgets**, **admin** (dashboard, user management, staff check-in)
 - **Admin** — mobile dashboard stats, staff check-in with QR scan, user CRUD (role-gated via Clerk session)
 - **Push** — FCM organizer broadcasts + chat; `POST /api/push/register` with `platform: "android"`

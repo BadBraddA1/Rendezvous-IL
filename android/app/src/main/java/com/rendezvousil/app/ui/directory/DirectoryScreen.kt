@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -31,7 +32,6 @@ import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -68,7 +68,7 @@ fun DirectoryScreen(
     viewModel: DirectoryViewModel,
     onBack: (() -> Unit)? = null,
     onNavigateToAccount: () -> Unit,
-    onNavigateToManage: () -> Unit,
+    onNavigateToManage: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -152,7 +152,7 @@ fun DirectoryScreen(
                     )
 
                     when {
-                        uiState.isLoading -> {
+                        uiState.isLoading && uiState.families.isEmpty() -> {
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -170,14 +170,13 @@ fun DirectoryScreen(
                                 }
                             }
                         }
-                        uiState.errorMessage != null -> {
+                        uiState.errorMessage != null && uiState.families.isEmpty() -> {
                             ErrorDirectoryCard(
                                 message = uiState.errorMessage.orEmpty(),
                                 alternateYear = uiState.enabledYears.firstOrNull {
                                     it != uiState.selectedYear
                                 },
                                 onTryAlternateYear = viewModel::tryAlternateYear,
-                                onNavigateToManage = onNavigateToManage,
                                 modifier = Modifier.padding(top = 16.dp),
                             )
                         }
@@ -195,22 +194,36 @@ fun DirectoryScreen(
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                                 Text(
-                                    text = "No families listed for ${uiState.selectedYear} yet.",
+                                    text = if (uiState.searchQuery.isBlank()) {
+                                        "No families listed for ${uiState.selectedYear} yet."
+                                    } else {
+                                        "No families match your search."
+                                    },
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
-                                Button(onClick = onNavigateToManage) {
-                                    Text("Add your family photo")
-                                }
                             }
                         }
                         else -> {
-                            Text(
-                                text = "${filteredFamilies.size} families",
-                                modifier = Modifier.padding(vertical = 12.dp),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 12.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    text = "${filteredFamilies.size} families",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                if (uiState.isRefreshing) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(14.dp),
+                                        strokeWidth = 2.dp,
+                                    )
+                                }
+                            }
                             LazyVerticalGrid(
                                 columns = GridCells.Adaptive(minSize = 160.dp),
                                 contentPadding = PaddingValues(bottom = 16.dp),
@@ -282,7 +295,6 @@ private fun ErrorDirectoryCard(
     message: String,
     alternateYear: Int?,
     onTryAlternateYear: () -> Unit,
-    onNavigateToManage: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Surface(
@@ -303,9 +315,6 @@ private fun ErrorDirectoryCard(
                 OutlinedButton(onClick = onTryAlternateYear) {
                     Text("Try Rendezvous $alternateYear")
                 }
-            }
-            Button(onClick = onNavigateToManage) {
-                Text("Manage your family photo")
             }
         }
     }

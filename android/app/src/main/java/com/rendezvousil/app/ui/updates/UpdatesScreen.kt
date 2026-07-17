@@ -73,7 +73,9 @@ fun UpdatesScreen(
             ) {
                 NowNextSection(nowNext = nowNext)
                 WeatherSection(weather = weather?.current)
-                AnnouncementsSection(announcements = announcements)
+                if (announcements.isNotEmpty()) {
+                    AnnouncementsSection(announcements = announcements)
+                }
             }
         }
     }
@@ -199,41 +201,33 @@ private fun AnnouncementsSection(announcements: List<Announcement>) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("Announcements", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
 
-        if (announcements.isEmpty()) {
-            Text(
-                text = "No active announcements right now.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        } else {
-            announcements.forEach { item ->
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    color = BrandColors.SecondaryGroupedBackground,
+        announcements.forEach { item ->
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = BrandColors.SecondaryGroupedBackground,
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                        ) {
-                            Text(
-                                text = item.title,
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                modifier = Modifier.weight(1f),
-                            )
-                            PriorityBadge(priority = item.priority)
-                        }
                         Text(
-                            text = item.message,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            text = item.title,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.weight(1f),
                         )
+                        PriorityBadge(priority = item.priority)
                     }
+                    Text(
+                        text = item.message,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
         }
