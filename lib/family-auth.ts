@@ -71,10 +71,82 @@ export interface FamilyMember {
 }
 
 /**
+ * Create (or return) a families row from the latest registration for this email.
+ * Covers accounts that registered before a families row existed / Clerk webhook missed.
+ */
+export async function ensureFamilyFromRegistrationEmail(
+  email: string,
+  clerkUserId?: string,
+): Promise<Family | null> {
+  const normalized = normalizeEmail(email)
+  if (!normalized) return null
+
+  const existing = await getFamilyByEmail(normalized)
+  if (existing) return existing
+
+  try {
+    const [registration] = await sql`
+      SELECT
+        family_last_name, email, address, city, state, zip,
+        husband_phone, wife_phone, home_congregation, years_homeschooling
+      FROM registrations
+      WHERE LOWER(email) = ${normalized}
+      ORDER BY created_at DESC
+      LIMIT 1
+    `
+    if (!registration) return null
+
+    await sql`
+      INSERT INTO families (
+        family_last_name,
+        email,
+        clerk_user_id,
+        address,
+        city,
+        state,
+        zip,
+        husband_phone,
+        wife_phone,
+        home_congregation,
+        years_homeschooling,
+        created_at,
+        updated_at
+      ) VALUES (
+        ${String(registration.family_last_name || "Family")},
+        ${normalized},
+        ${clerkUserId ?? null},
+        ${registration.address != null ? String(registration.address) : null},
+        ${registration.city != null ? String(registration.city) : null},
+        ${registration.state != null ? String(registration.state) : null},
+        ${registration.zip != null ? String(registration.zip) : null},
+        ${registration.husband_phone != null ? String(registration.husband_phone) : null},
+        ${registration.wife_phone != null ? String(registration.wife_phone) : null},
+        ${registration.home_congregation != null ? String(registration.home_congregation) : null},
+        ${registration.years_homeschooling != null ? Number(registration.years_homeschooling) : null},
+        CURRENT_TIMESTAMP,
+        CURRENT_TIMESTAMP
+      )
+    `
+
+    const created = await getFamilyByEmail(normalized)
+    if (created && clerkUserId) {
+      await syncPrimaryFamilyMembership(created.id, clerkUserId, normalized)
+      return { ...created, clerk_user_id: clerkUserId }
+    }
+    return created
+  } catch (error) {
+    console.error("[Family Auth] Error ensuring family from registration:", error)
+    // Race: another request may have inserted the same email.
+    return getFamilyByEmail(normalized)
+  }
+}
+
+/**
  * Resolve a family for a signed-in Clerk user:
  * 1) family_account_members / families.clerk_user_id
- * 2) primary families.email match (claim unlinked primary)
- * 3) registration / profile member email match (join as member)
+ * 2) primary families.email match (claim unlinked / reclaim stale primary)
+ * 3) create families row from registration history when missing
+ * 4) registration / profile member email match (join as member)
  */
 export async function resolveFamilyForUser(
   clerkUserId: string,
@@ -101,38 +173,59 @@ export async function resolveFamilyForUser(
   const normalized = normalizeEmail(email)
   if (!normalized) return null
 
-  const byEmail = await getFamilyByEmail(normalized)
+  let byEmail = await getFamilyByEmail(normalized)
+  if (!byEmail && autoLink) {
+    byEmail = await ensureFamilyFromRegistrationEmail(normalized, clerkUserId)
+    if (byEmail?.clerk_user_id === clerkUserId) return byEmail
+  }
+
   if (byEmail) {
-    if (byEmail.clerk_user_id && byEmail.clerk_user_id !== clerkUserId) {
-      // Primary slot taken — still allow member join if this email is listed on members.
-    } else if (autoLink) {
-      await linkFamilyToClerk(byEmail.id, clerkUserId)
-      return { ...byEmail, clerk_user_id: clerkUserId }
-    } else {
+    const primaryEmail = normalizeEmail(byEmail.email)
+    // Same login email as the family primary = this person owns the account.
+    // Reclaim stale clerk_user_id links (deleted/recreated Clerk users).
+    if (autoLink && primaryEmail === normalized) {
+      if (!byEmail.clerk_user_id || byEmail.clerk_user_id !== clerkUserId) {
+        const conflict = await findConflictingMembershipFamilyId(clerkUserId, byEmail.id)
+        if (conflict != null) {
+          console.warn(
+            `[Family Auth] Clerk user ${clerkUserId} already linked to family ${conflict}; not reclaiming ${byEmail.id}`,
+          )
+          return byEmail
+        }
+        await syncPrimaryFamilyMembership(byEmail.id, clerkUserId, normalized)
+        return { ...byEmail, clerk_user_id: clerkUserId }
+      }
       return byEmail
     }
+
+    if (autoLink && !byEmail.clerk_user_id) {
+      await linkFamilyToClerk(byEmail.id, clerkUserId)
+      return { ...byEmail, clerk_user_id: clerkUserId }
+    }
+
+    if (!autoLink) return byEmail
   }
 
   if (!autoLink) return null
 
   const memberMatch = await findFamilyIdByMemberEmail(normalized)
-  if (!memberMatch) return null
+  if (!memberMatch) return byEmail
 
   const conflict = await findConflictingMembershipFamilyId(clerkUserId, memberMatch.family_id)
   if (conflict != null) {
     console.warn(
       `[Family Auth] Clerk user ${clerkUserId} already linked to family ${conflict}; not auto-joining ${memberMatch.family_id}`,
     )
-    return null
+    return byEmail
   }
 
   // If this email is the family's primary email and unlinked, claim primary instead.
   const target = await getFamilyById(memberMatch.family_id)
-  if (!target) return null
+  if (!target) return byEmail
 
   const targetPrimaryEmail = normalizeEmail(target.email)
-  if (targetPrimaryEmail === normalized && !target.clerk_user_id) {
-    await linkFamilyToClerk(target.id, clerkUserId)
+  if (targetPrimaryEmail === normalized) {
+    await syncPrimaryFamilyMembership(target.id, clerkUserId, normalized)
     return { ...target, clerk_user_id: clerkUserId }
   }
 
@@ -367,18 +460,13 @@ export async function getUnlinkedFamilyByEmail(email: string): Promise<Family | 
 
 /**
  * Link a family to a Clerk user as the primary account holder.
+ * Reclaims a stale primary link when the caller already owns the family email
+ * (handled by callers via syncPrimaryFamilyMembership for email matches).
  */
 export async function linkFamilyToClerk(familyId: number, clerkUserId: string): Promise<boolean> {
   try {
     const family = await getFamilyById(familyId)
     if (!family) return false
-
-    if (family.clerk_user_id && family.clerk_user_id !== clerkUserId) {
-      console.warn(
-        `[Family Auth] Family ${familyId} already linked to ${family.clerk_user_id}; not reclaiming for ${clerkUserId}`,
-      )
-      return false
-    }
 
     const conflict = await findConflictingMembershipFamilyId(clerkUserId, familyId)
     if (conflict != null) {
@@ -386,6 +474,12 @@ export async function linkFamilyToClerk(familyId: number, clerkUserId: string): 
         `[Family Auth] Clerk user ${clerkUserId} already linked to family ${conflict}; not linking family ${familyId}`,
       )
       return false
+    }
+
+    if (family.clerk_user_id && family.clerk_user_id !== clerkUserId) {
+      console.warn(
+        `[Family Auth] Family ${familyId} already linked to ${family.clerk_user_id}; reclaiming for ${clerkUserId}`,
+      )
     }
 
     await syncPrimaryFamilyMembership(familyId, clerkUserId, family.email)

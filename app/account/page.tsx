@@ -262,20 +262,31 @@ export default async function AccountPage() {
                 No Family Profile Linked
               </CardTitle>
               <CardDescription>
-                Your account isn&apos;t linked to a family profile yet
+                {registrations.length > 0
+                  ? "We found your registration history, but this login isn’t linked to a family profile yet."
+                  : "Your account isn’t linked to a family profile yet"}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                If you&apos;ve registered before, your account will be automatically linked 
-                when you sign up with the same email address used during registration.
-              </p>
-              <p className="text-sm text-muted-foreground">
-                If this is your first time, complete a registration to create your family profile.
-              </p>
+              {registrations.length > 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Refresh this page once — we auto-link from the email on your registration. If it still
+                  doesn’t connect, you’re signed in with a different email than the one used to register.
+                </p>
+              ) : (
+                <>
+                  <p className="text-sm text-muted-foreground">
+                    If you&apos;ve registered before, your account will be automatically linked when you
+                    sign up with the same email address used during registration.
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    If this is your first time, complete a registration to create your family profile.
+                  </p>
+                </>
+              )}
               <Button asChild>
-                <Link href="/registration">
-                  Start Registration
+                <Link href={registrations.length > 0 ? "/account" : "/registration"}>
+                  {registrations.length > 0 ? "Try linking again" : "Start Registration"}
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
