@@ -145,6 +145,16 @@ The repo already has `ios/ci_scripts/ci_post_clone.sh` (runs XcodeGen + optional
    - **Start condition:** Branch changes on `main`, and/or **Manual start**
 6. **Environment** (optional): add secret `CLERK_PUBLISHABLE_KEY` only if you need to override `Config.xcconfig`. Production builds usually use the committed live key.
 7. **Signing:** use **Automatically manage signing** with team **F5HPRRCC5H** (same as local). Xcode Cloud manages certificates/profiles in App Store Connect → Users and Access → Integrations → Xcode Cloud.
+
+**Required App IDs** (Identifiers → App IDs), all team **F5HPRRCC5H**:
+
+| Bundle ID | Purpose |
+|-----------|---------|
+| `com.rendezvousil.braddcorp.app` | Main app |
+| `com.rendezvousil.braddcorp.app.widgets` | Widgets / Live Activities |
+| `com.rendezvousil.braddcorp.app.notification-service` | Notification Service Extension (rich chat photo push) |
+
+If export fails with `Automatic signing cannot register bundle identifier …notification-service`, create that App ID on [developer.apple.com/account](https://developer.apple.com/account/resources/identifiers/list) (or via App Store Connect API) and re-run the Cloud build. Archive can succeed while export fails when an extension App ID is missing.
 8. Save, then **Start Build** (or push to `main` if you enabled that).
 
 Bump `CURRENT_PROJECT_VERSION` in `ios/project.yml` before each ship (Cloud archives whatever is on the branch). After a green build, the build appears under **App Store Connect → TestFlight** like a local upload.
