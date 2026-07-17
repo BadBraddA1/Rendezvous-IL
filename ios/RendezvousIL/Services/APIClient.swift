@@ -219,14 +219,14 @@ actor APIClient {
         channelId: String,
         body: String,
         isAnnouncement: Bool = false,
-        imageData: Data? = nil
+        imageDataList: [Data] = []
     ) async throws -> ChatMessageResponse {
-        if let imageData {
+        if !imageDataList.isEmpty {
             return try await uploadChatMessage(
                 channelId: channelId,
                 body: body,
                 isAnnouncement: isAnnouncement,
-                imageData: imageData
+                imageDataList: imageDataList
             )
         }
         return try await post(
@@ -235,11 +235,41 @@ actor APIClient {
         )
     }
 
+    func createChatPoll(
+        channelId: String,
+        question: String,
+        options: [String]
+    ) async throws -> ChatMessageResponse {
+        try await post(
+            "/api/chat/channels/\(channelId)/messages",
+            body: ChatCreatePollBody(
+                kind: "poll",
+                body: question,
+                poll_question: question,
+                poll_options: options
+            )
+        )
+    }
+
+    func voteOnChatPoll(messageId: String, optionIndex: Int) async throws -> ChatVoteResponse {
+        try await post(
+            "/api/chat/messages/\(messageId)/vote",
+            body: ChatVoteBody(option_index: optionIndex)
+        )
+    }
+
+    func toggleChatReaction(messageId: String, emoji: String) async throws -> ChatReactionResponse {
+        try await post(
+            "/api/chat/messages/\(messageId)/reactions",
+            body: ChatReactionBody(emoji: emoji)
+        )
+    }
+
     private func uploadChatMessage(
         channelId: String,
         body: String,
         isAnnouncement: Bool,
-        imageData: Data
+        imageDataList: [Data]
     ) async throws -> ChatMessageResponse {
         let boundary = "Boundary-\(UUID().uuidString)"
         var data = Data()
@@ -250,11 +280,14 @@ actor APIClient {
         }
         appendField(name: "body", value: body)
         appendField(name: "is_announcement", value: isAnnouncement ? "true" : "false")
-        data.append("--\(boundary)\r\n".data(using: .utf8)!)
-        data.append("Content-Disposition: form-data; name=\"photo\"; filename=\"chat-photo.jpg\"\r\n".data(using: .utf8)!)
-        data.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
-        data.append(imageData)
-        data.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
+        for (index, imageData) in imageDataList.enumerated() {
+            data.append("--\(boundary)\r\n".data(using: .utf8)!)
+            data.append("Content-Disposition: form-data; name=\"photo\"; filename=\"chat-photo-\(index).jpg\"\r\n".data(using: .utf8)!)
+            data.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
+            data.append(imageData)
+            data.append("\r\n".data(using: .utf8)!)
+        }
+        data.append("--\(boundary)--\r\n".data(using: .utf8)!)
 
         let url = AppConfig.url(for: "/api/chat/channels/\(channelId)/messages")
         var request = URLRequest(url: url)

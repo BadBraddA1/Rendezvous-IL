@@ -31,7 +31,7 @@ async function attachLastMessage(summaries: ChatChannelSummary[]): Promise<ChatC
   const ids = summaries.map((c) => c.id)
   const placeholders = ids.map(() => "?").join(", ")
   const rows = await sql.query(
-    `SELECT channel_id, body, image_url, created_at
+    `SELECT channel_id, body, image_url, image_urls, kind, poll_question, created_at
      FROM chat_messages
      WHERE deleted_at IS NULL
        AND channel_id IN (${placeholders})
@@ -39,13 +39,26 @@ async function attachLastMessage(summaries: ChatChannelSummary[]): Promise<ChatC
     ids,
   )
 
-  const latestByChannel = new Map<string, { body: string; image_url: string | null; created_at: string }>()
+  const latestByChannel = new Map<
+    string,
+    {
+      body: string
+      image_url: string | null
+      image_urls: string | null
+      kind: string
+      poll_question: string | null
+      created_at: string
+    }
+  >()
   for (const row of rows) {
     const channelId = String(row.channel_id)
     if (!latestByChannel.has(channelId)) {
       latestByChannel.set(channelId, {
         body: String(row.body ?? ""),
         image_url: row.image_url != null ? String(row.image_url) : null,
+        image_urls: row.image_urls != null ? String(row.image_urls) : null,
+        kind: String(row.kind || "text"),
+        poll_question: row.poll_question != null ? String(row.poll_question) : null,
         created_at: String(row.created_at),
       })
     }
@@ -54,8 +67,22 @@ async function attachLastMessage(summaries: ChatChannelSummary[]): Promise<ChatC
   return summaries.map((channel) => {
     const latest = latestByChannel.get(channel.id)
     if (!latest) return channel
+    let photoCount = 0
+    if (latest.image_urls) {
+      try {
+        const parsed = JSON.parse(latest.image_urls) as unknown
+        if (Array.isArray(parsed)) photoCount = parsed.length
+      } catch {
+        photoCount = latest.image_url ? 1 : 0
+      }
+    } else if (latest.image_url) {
+      photoCount = 1
+    }
     const preview =
-      latest.body.trim() || (latest.image_url ? "Sent a photo" : "")
+      latest.kind === "poll"
+        ? `Poll: ${latest.poll_question?.trim() || latest.body.trim() || "New poll"}`
+        : latest.body.trim() ||
+          (photoCount > 1 ? `Sent ${photoCount} photos` : photoCount === 1 ? "Sent a photo" : "")
     return {
       ...channel,
       last_message_preview: preview.slice(0, 120),

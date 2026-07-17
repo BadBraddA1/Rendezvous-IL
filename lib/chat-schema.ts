@@ -48,15 +48,43 @@ export async function ensureChatSchema(): Promise<void> {
       sender_avatar_url TEXT,
       body TEXT NOT NULL DEFAULT '',
       image_url TEXT,
+      image_urls TEXT,
+      kind TEXT NOT NULL DEFAULT 'text',
+      poll_question TEXT,
+      poll_options TEXT,
       is_announcement INTEGER NOT NULL DEFAULT 0,
       deleted_at TEXT,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `)
 
+  await sql.query(`
+    CREATE TABLE IF NOT EXISTS chat_poll_votes (
+      message_id TEXT NOT NULL,
+      clerk_user_id TEXT NOT NULL,
+      option_index INTEGER NOT NULL,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (message_id, clerk_user_id)
+    )
+  `)
+
+  await sql.query(`
+    CREATE TABLE IF NOT EXISTS chat_message_reactions (
+      message_id TEXT NOT NULL,
+      clerk_user_id TEXT NOT NULL,
+      emoji TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (message_id, clerk_user_id, emoji)
+    )
+  `)
+
   for (const statement of [
     `ALTER TABLE chat_channel_members ADD COLUMN role TEXT NOT NULL DEFAULT 'member'`,
     `ALTER TABLE chat_messages ADD COLUMN image_url TEXT`,
+    `ALTER TABLE chat_messages ADD COLUMN image_urls TEXT`,
+    `ALTER TABLE chat_messages ADD COLUMN kind TEXT NOT NULL DEFAULT 'text'`,
+    `ALTER TABLE chat_messages ADD COLUMN poll_question TEXT`,
+    `ALTER TABLE chat_messages ADD COLUMN poll_options TEXT`,
   ]) {
     try {
       await sql.query(statement)
@@ -68,6 +96,16 @@ export async function ensureChatSchema(): Promise<void> {
   await sql.query(`
     CREATE INDEX IF NOT EXISTS idx_chat_messages_channel_created
     ON chat_messages (channel_id, created_at DESC)
+  `)
+
+  await sql.query(`
+    CREATE INDEX IF NOT EXISTS idx_chat_poll_votes_message
+    ON chat_poll_votes (message_id)
+  `)
+
+  await sql.query(`
+    CREATE INDEX IF NOT EXISTS idx_chat_message_reactions_message
+    ON chat_message_reactions (message_id)
   `)
 
   for (const year of REGISTRATION_EVENT_YEARS) {

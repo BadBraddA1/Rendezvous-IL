@@ -12,8 +12,9 @@ function getAblyRest(): Ably.Rest | null {
   return restClient
 }
 
-export async function publishChatMessage(
+export async function publishChatEvent(
   channelId: string,
+  event: "message" | "message_deleted" | "reaction" | "poll_updated",
   payload: Record<string, unknown>,
 ): Promise<void> {
   const ably = getAblyRest()
@@ -22,7 +23,15 @@ export async function publishChatMessage(
     return
   }
   const channel = ably.channels.get(chatChannelName(channelId))
-  await channel.publish("message", payload)
+  await channel.publish(event, payload)
+}
+
+/** @deprecated Prefer publishChatEvent("message", …) */
+export async function publishChatMessage(
+  channelId: string,
+  payload: Record<string, unknown>,
+): Promise<void> {
+  await publishChatEvent(channelId, "message", payload)
 }
 
 export async function createChatAblyTokenRequest(

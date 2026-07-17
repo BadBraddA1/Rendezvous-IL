@@ -25,6 +25,7 @@ export function useAblyChannel({
   getTokenRef.current = getTokenRequest
 
   const [status, setStatus] = useState<AblyConnectionStatus>("idle")
+  const eventKey = Array.isArray(event) ? event.join(",") : String(event ?? "message")
 
   useEffect(() => {
     if (!channelName) {
@@ -36,6 +37,7 @@ export function useAblyChannel({
     let channel: RealtimeChannel | null = null
     let cancelled = false
     setStatus("connecting")
+    const events = eventKey.split(",").filter(Boolean)
 
     ;(async () => {
       try {
@@ -76,7 +78,6 @@ export function useAblyChannel({
         }
 
         channel = client.channels.get(channelName)
-        const events = Array.isArray(event) ? event : [event]
         for (const name of events) {
           channel.subscribe(name, (msg) => {
             onMessageRef.current(msg)
@@ -84,13 +85,13 @@ export function useAblyChannel({
         }
 
         // Attach explicitly so we don't miss messages while auth completes.
-        channel.attach((err) => {
+        try {
+          await channel.attach()
+        } catch (err) {
           if (cancelled) return
-          if (err) {
-            console.warn("[useAblyChannel] attach failed:", err)
-            setStatus("failed")
-          }
-        })
+          console.warn("[useAblyChannel] attach failed:", err)
+          setStatus("failed")
+        }
       } catch (err) {
         console.warn("[useAblyChannel] connection failed:", err)
         if (!cancelled) setStatus("failed")
@@ -107,7 +108,7 @@ export function useAblyChannel({
       }
       client?.close()
     }
-  }, [channelName, event])
+  }, [channelName, eventKey])
 
   return status
 }

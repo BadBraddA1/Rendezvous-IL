@@ -18,17 +18,17 @@ export async function DELETE(request: Request, { params }: Params) {
 
   try {
     const admin = demo ? null : await getCurrentAdmin(request)
-    const deleted = await deleteChannelMessage({
+    const result = await deleteChannelMessage({
       messageId,
       clerkUserId: ctx.userId,
       isAdmin: Boolean(admin),
     })
 
-    if (!deleted) {
+    if (!result.deleted) {
       return NextResponse.json({ error: "Message not found" }, { status: 404 })
     }
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true, channel_id: result.channelId })
   } catch (error) {
     console.error("[chat/messages/delete] error:", error)
     const message = error instanceof Error ? error.message : "Failed to delete message"

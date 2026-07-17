@@ -77,7 +77,14 @@ enum AppStoreScreenshotMode {
                 sender_avatar_url: nil,
                 body: "Welcome to year chat — share ride ideas and encouragement here.",
                 image_url: nil,
+                image_urls: nil,
+                kind: "text",
                 is_announcement: true,
+                poll_question: nil,
+                poll_options: nil,
+                poll_counts: nil,
+                my_vote: nil,
+                reactions: [],
                 created_at: iso.string(from: base.addingTimeInterval(-7200))
             ),
             ChatMessage(
@@ -88,7 +95,14 @@ enum AppStoreScreenshotMode {
                 sender_avatar_url: nil,
                 body: "Looking forward to seeing everyone at the lake!",
                 image_url: nil,
+                image_urls: nil,
+                kind: "text",
                 is_announcement: false,
+                poll_question: nil,
+                poll_options: nil,
+                poll_counts: nil,
+                my_vote: nil,
+                reactions: [ChatReactionSummary(emoji: "🦙", count: 3, reacted_by_me: false)],
                 created_at: iso.string(from: base.addingTimeInterval(-3600))
             ),
         ]

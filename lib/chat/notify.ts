@@ -97,14 +97,23 @@ export async function notifyChatMessagePush(input: {
 
     const title = input.message.is_announcement
       ? `Announcement · ${input.channelTitle}`
-      : input.channelTitle
+      : input.message.kind === "poll"
+        ? `Poll · ${input.channelTitle}`
+        : input.channelTitle
     const imageUrl =
       typeof input.message.image_url === "string" && input.message.image_url.trim()
         ? input.message.image_url.trim()
         : undefined
+    const photoCount = Array.isArray(input.message.image_urls)
+      ? input.message.image_urls.length
+      : imageUrl
+        ? 1
+        : 0
     const preview =
-      input.message.body.trim() ||
-      (imageUrl ? "Sent a photo" : "")
+      input.message.kind === "poll"
+        ? input.message.poll_question?.trim() || input.message.body.trim() || "New poll"
+        : input.message.body.trim() ||
+          (photoCount > 1 ? `Sent ${photoCount} photos` : photoCount === 1 ? "Sent a photo" : "")
     const body = input.message.is_announcement
       ? preview.slice(0, 160)
       : `${input.message.sender_display_name}: ${preview}`.slice(0, 160)
@@ -162,5 +171,72 @@ export async function notifyChatMessagePush(input: {
     }
   } catch (error) {
     console.error("[chat/notify] push failed:", error)
+  }
+}
+
+/**
+ * Push a reaction notification to the message author only (not the channel).
+ */
+export async function notifyChatReactionPush(input: {
+  channelId: string
+  authorClerkId: string
+  actorDisplayName: string
+  emoji: string
+}): Promise<void> {
+  try {
+    await ensurePushSchema()
+    const recipient = input.authorClerkId
+    if (!recipient) return
+
+    const title = "New reaction"
+    const body = `${input.actorDisplayName} reacted ${input.emoji} to your message`.slice(0, 160)
+    const deepLink = `rendezvousil://chat`
+    const webUrl = "https://rendezvousil.com/chat"
+
+    if (isApnsConfigured()) {
+      const rows = await sql`
+        SELECT token FROM ios_device_tokens
+        WHERE is_active = 1
+          AND environment = ${defaultApnsEnvironment()}
+          AND clerk_user_id = ${recipient}
+      `
+      const tokens = rows.map((r) => String(r.token)).filter(Boolean)
+      if (tokens.length > 0) {
+        const results = await sendApnsAlerts(tokens, {
+          title,
+          body,
+          url: deepLink,
+          threadId: `chat-${input.channelId}`,
+        })
+        for (const f of results.filter((r) => !r.success)) {
+          if (f.reason?.includes("BadDeviceToken") || f.reason?.includes("Unregistered")) {
+            await sql`UPDATE ios_device_tokens SET is_active = 0 WHERE token = ${f.deviceToken}`
+          }
+        }
+      }
+    }
+
+    if (isFcmConfigured()) {
+      const rows = await sql`
+        SELECT token FROM android_device_tokens
+        WHERE is_active = 1
+          AND clerk_user_id = ${recipient}
+      `
+      const tokens = rows.map((r) => String(r.token)).filter(Boolean)
+      if (tokens.length > 0) {
+        const results = await sendFcmAlerts(tokens, {
+          title,
+          body,
+          url: webUrl,
+        })
+        for (const f of results.filter((r) => !r.success)) {
+          if (isPermanentFcmTokenFailure(f.reason)) {
+            await sql`UPDATE android_device_tokens SET is_active = 0 WHERE token = ${f.deviceToken}`
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error("[chat/notify] reaction push failed:", error)
   }
 }

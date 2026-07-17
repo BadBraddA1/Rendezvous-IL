@@ -26,6 +26,12 @@ struct ChatChannelsResponse: Decodable {
     let channels: [ChatChannelSummary]
 }
 
+struct ChatReactionSummary: Codable, Hashable {
+    let emoji: String
+    let count: Int
+    let reacted_by_me: Bool
+}
+
 struct ChatMessage: Codable, Identifiable, Hashable {
     let id: String
     let channel_id: String
@@ -34,8 +40,25 @@ struct ChatMessage: Codable, Identifiable, Hashable {
     let sender_avatar_url: String?
     let body: String
     let image_url: String?
+    let image_urls: [String]?
+    let kind: String?
     let is_announcement: Bool
+    let poll_question: String?
+    let poll_options: [String]?
+    let poll_counts: [Int]?
+    let my_vote: Int?
+    let reactions: [ChatReactionSummary]?
     let created_at: String
+
+    var isPoll: Bool { kind == "poll" }
+
+    var photoURLs: [String] {
+        if let image_urls, !image_urls.isEmpty { return image_urls }
+        if let image_url, !image_url.isEmpty { return [image_url] }
+        return []
+    }
+
+    var reactionList: [ChatReactionSummary] { reactions ?? [] }
 }
 
 struct ChatMessagesResponse: Decodable {
@@ -52,6 +75,53 @@ struct ChatMessageResponse: Decodable {
 struct ChatSendMessageBody: Encodable {
     let body: String
     let is_announcement: Bool
+}
+
+struct ChatCreatePollBody: Encodable {
+    let kind: String
+    let body: String
+    let poll_question: String
+    let poll_options: [String]
+}
+
+struct ChatVoteBody: Encodable {
+    let option_index: Int
+}
+
+struct ChatVoteResponse: Decodable {
+    let poll: ChatPollUpdate
+}
+
+struct ChatPollUpdate: Decodable {
+    let message_id: String
+    let channel_id: String
+    let poll_counts: [Int]
+    let my_vote: Int?
+}
+
+struct ChatReactionBody: Encodable {
+    let emoji: String
+}
+
+struct ChatReactionResponse: Decodable {
+    let reaction: ChatReactionUpdate
+}
+
+struct ChatReactionUpdate: Decodable {
+    let message_id: String
+    let channel_id: String
+    let reactions: [ChatReactionSummary]
+    let actor_clerk_id: String
+    let added: Bool?
+}
+
+struct ChatMessageDeletedPayload: Decodable {
+    let id: String
+    let channel_id: String?
+}
+
+enum ChatReactionEmoji {
+    static let all = ["🦙", "👍", "❤️", "😂", "🙏"]
 }
 
 struct AblyTokenResponse: Decodable {

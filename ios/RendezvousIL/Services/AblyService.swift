@@ -1,6 +1,13 @@
 import Foundation
 @preconcurrency import Ably
 
+enum ChatRealtimeEvent {
+    case message(ChatMessage)
+    case deleted(id: String)
+    case reaction(ChatReactionUpdate)
+    case pollUpdated(messageId: String, counts: [Int], voterClerkId: String?)
+}
+
 @MainActor
 final class AblyService {
     private var client: ARTRealtime?
@@ -31,7 +38,7 @@ final class AblyService {
         _ = client?.connection.on { _ in }
     }
 
-    func subscribe(channelId: String, onMessage: @escaping @MainActor (ChatMessage) -> Void) {
+    func subscribe(channelId: String, onEvent: @escaping @MainActor (ChatRealtimeEvent) -> Void) {
         guard let client else { return }
         let channelName = "rendezvous:channel:\(channelId)"
         if let existing = channels[channelName] {
@@ -48,7 +55,37 @@ final class AblyService {
                   let chatMessage = try? JSONDecoder().decode(ChatMessage.self, from: jsonData)
             else { return }
             Task { @MainActor in
-                onMessage(chatMessage)
+                onEvent(.message(chatMessage))
+            }
+        }
+
+        channel.subscribe("message_deleted") { message in
+            guard let data = message.data as? [String: Any],
+                  let id = data["id"] as? String
+            else { return }
+            Task { @MainActor in
+                onEvent(.deleted(id: id))
+            }
+        }
+
+        channel.subscribe("reaction") { message in
+            guard let data = message.data as? [String: Any],
+                  let jsonData = try? JSONSerialization.data(withJSONObject: data),
+                  let update = try? JSONDecoder().decode(ChatReactionUpdate.self, from: jsonData)
+            else { return }
+            Task { @MainActor in
+                onEvent(.reaction(update))
+            }
+        }
+
+        channel.subscribe("poll_updated") { message in
+            guard let data = message.data as? [String: Any],
+                  let messageId = data["message_id"] as? String,
+                  let counts = data["poll_counts"] as? [Int]
+            else { return }
+            let voter = data["voter_clerk_id"] as? String
+            Task { @MainActor in
+                onEvent(.pollUpdated(messageId: messageId, counts: counts, voterClerkId: voter))
             }
         }
     }
