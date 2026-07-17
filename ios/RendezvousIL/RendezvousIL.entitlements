@@ -3,9 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>aps-environment</key>
-	<string>development</string>
-	<key>com.apple.developer.carplay-driving-task</key>
-	<true/>
+	<string>$(APS_ENVIRONMENT)</string>
 	<key>com.apple.developer.associated-domains</key>
 	<array>
 		<string>webcredentials:clerk.rendezvousil.com</string>
@@ -13,5 +11,7 @@
 		<string>webcredentials:rendezvousil.com</string>
 		<string>applinks:rendezvousil.com</string>
 	</array>
+	<key>com.apple.developer.carplay-driving-task</key>
+	<true/>
 </dict>
 </plist>

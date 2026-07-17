@@ -29,7 +29,8 @@ targets:
     entitlements:
       path: RendezvousIL/RendezvousIL.entitlements
       properties:
-        aps-environment: development
+        # Build setting APS_ENVIRONMENT: Debug=development, Release=production.
+        aps-environment: $(APS_ENVIRONMENT)
         com.apple.developer.carplay-driving-task: true
         com.apple.developer.associated-domains:
           - webcredentials:clerk.rendezvousil.com
@@ -55,9 +56,16 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.rendezvousil.braddcorp.app
         PRODUCT_NAME: Rendezvous IL
         MARKETING_VERSION: "2.0.6"
-        CURRENT_PROJECT_VERSION: "206"
+        CURRENT_PROJECT_VERSION: "207"
+        DEVELOPMENT_TEAM: F5HPRRCC5H
+        CODE_SIGN_STYLE: Automatic
         INFOPLIST_FILE: RendezvousIL/Info.plist
         CODE_SIGN_ENTITLEMENTS: RendezvousIL/RendezvousIL.entitlements
+      configs:
+        Debug:
+          APS_ENVIRONMENT: development
+        Release:
+          APS_ENVIRONMENT: production
 
   RendezvousILWidgets:
     type: app-extension
@@ -72,7 +80,9 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.rendezvousil.braddcorp.app.widgets
         PRODUCT_NAME: RendezvousILWidgets
         MARKETING_VERSION: "2.0.6"
-        CURRENT_PROJECT_VERSION: "206"
+        CURRENT_PROJECT_VERSION: "207"
+        DEVELOPMENT_TEAM: F5HPRRCC5H
+        CODE_SIGN_STYLE: Automatic
         INFOPLIST_KEY_CFBundleDisplayName: Rendezvous Widgets
         INFOPLIST_KEY_NSSupportsLiveActivities: YES
         GENERATE_INFOPLIST_FILE: YES
@@ -92,7 +102,9 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.rendezvousil.braddcorp.app.notification-service
         PRODUCT_NAME: RendezvousILNotificationService
         MARKETING_VERSION: "2.0.6"
-        CURRENT_PROJECT_VERSION: "206"
+        CURRENT_PROJECT_VERSION: "207"
+        DEVELOPMENT_TEAM: F5HPRRCC5H
+        CODE_SIGN_STYLE: Automatic
         INFOPLIST_KEY_CFBundleDisplayName: Rendezvous Notifications
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_FILE: RendezvousILNotificationService/Info.plist
