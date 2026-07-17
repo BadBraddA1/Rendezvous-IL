@@ -1,7 +1,10 @@
 package com.rendezvousil.app.ui.chat
 
 import android.content.ContentResolver
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
+import java.io.ByteArrayOutputStream
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -662,13 +665,42 @@ private fun PollDialog(
 
 private fun readPhoto(resolver: ContentResolver, uri: Uri): PendingChatPhoto? {
     return runCatching {
-        val mime = resolver.getType(uri) ?: "image/jpeg"
-        val bytes = resolver.openInputStream(uri)?.use { it.readBytes() } ?: return null
-        if (bytes.isEmpty()) return null
+        val raw = resolver.openInputStream(uri)?.use { it.readBytes() } ?: return null
+        if (raw.isEmpty()) return null
+        val compressed = compressChatPhoto(raw)
         PendingChatPhoto(
             id = UUID.randomUUID().toString(),
-            bytes = bytes,
-            mimeType = mime,
+            bytes = compressed,
+            mimeType = "image/jpeg",
         )
     }.getOrNull()
+}
+
+/** Downscale + JPEG compress before upload (matches iOS ~1600px / 0.82 quality). */
+private fun compressChatPhoto(bytes: ByteArray, maxDimension: Int = 1600, quality: Int = 82): ByteArray {
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+    val longest = maxOf(bounds.outWidth, bounds.outHeight).coerceAtLeast(1)
+    var sample = 1
+    while (longest / sample > maxDimension * 2) sample *= 2
+
+    val options = BitmapFactory.Options().apply { inSampleSize = sample }
+    val decoded = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options) ?: return bytes
+    val scale = minOf(1f, maxDimension.toFloat() / maxOf(decoded.width, decoded.height))
+    val width = (decoded.width * scale).toInt().coerceAtLeast(1)
+    val height = (decoded.height * scale).toInt().coerceAtLeast(1)
+    val resized = if (width == decoded.width && height == decoded.height) {
+        decoded
+    } else {
+        Bitmap.createScaledBitmap(decoded, width, height, true).also {
+            if (it !== decoded) decoded.recycle()
+        }
+    }
+    return try {
+        val out = ByteArrayOutputStream()
+        if (!resized.compress(Bitmap.CompressFormat.JPEG, quality, out)) bytes
+        else out.toByteArray().takeIf { it.isNotEmpty() } ?: bytes
+    } finally {
+        resized.recycle()
+    }
 }

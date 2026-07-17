@@ -6,7 +6,10 @@ import androidx.lifecycle.viewModelScope
 import com.rendezvousil.app.auth.AppSession
 import com.rendezvousil.app.notifications.VolunteerReminderService
 import com.rendezvousil.core.network.RendezvousRepository
+import com.rendezvousil.core.network.dto.FamilyCheckInResponse
 import com.rendezvousil.core.network.dto.FamilyVolunteeringResponse
+import com.rendezvousil.core.network.dto.HomeBoardConfig
+import com.rendezvousil.core.network.dto.HomeBoardSection
 import com.rendezvousil.core.network.dto.WeatherPayload
 import com.rendezvousil.core.schedule.MealMatcher
 import com.rendezvousil.core.schedule.ScheduleNowNext
@@ -21,10 +24,21 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 data class HomeUiState(
+    val board: HomeBoardConfig? = null,
+    val checkIn: FamilyCheckInResponse? = null,
     val chatUnreadTotal: Int = 0,
     val nextMealLine: String? = null,
     val volunteering: FamilyVolunteeringResponse? = null,
-)
+) {
+    val sections: List<HomeBoardSection>
+        get() = board?.sections?.filter { it.enabled }
+            ?: defaultSections()
+}
+
+private fun defaultSections(): List<HomeBoardSection> = listOf(
+    "header", "check_in", "now_next", "weather",
+    "announcements", "next_meal", "chat", "volunteering",
+).map { HomeBoardSection(id = it, type = it, enabled = true) }
 
 class HomeViewModel(
     private val repository: RendezvousRepository,
@@ -51,10 +65,27 @@ class HomeViewModel(
                 repository.loadScheduleBundle()
             }
             repository.loadScheduleExtras()
+            loadHomeBoard()
+            loadCheckIn()
             loadVolunteering()
             loadChatUnread()
             _uiState.update { it.copy(nextMealLine = computeNextMealLine()) }
         }
+    }
+
+    private suspend fun loadHomeBoard() {
+        val client = appSession.authenticatedApiClient ?: return
+        val board = runCatching { client.getHomeBoard() }.getOrNull() ?: return
+        _uiState.update { it.copy(board = board) }
+    }
+
+    private suspend fun loadCheckIn() {
+        val client = appSession.authenticatedApiClient ?: run {
+            _uiState.update { it.copy(checkIn = null) }
+            return
+        }
+        val payload = runCatching { client.getFamilyCheckIn() }.getOrNull()
+        _uiState.update { it.copy(checkIn = payload) }
     }
 
     private suspend fun loadVolunteering() {

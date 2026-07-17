@@ -211,6 +211,14 @@ actor APIClient {
         try await get("/api/family/volunteering?year=\(year)")
     }
 
+    func getHomeBoard(year: Int = AppConfig.eventYear) async throws -> HomeBoardConfig {
+        try await get("/api/home-board?year=\(year)")
+    }
+
+    func getFamilyCheckIn(year: Int = AppConfig.eventYear) async throws -> FamilyCheckInResponse {
+        try await get("/api/family/check-in?year=\(year)")
+    }
+
     func getChatChannels() async throws -> ChatChannelsResponse {
         try await get("/api/chat/channels")
     }
@@ -225,17 +233,26 @@ actor APIClient {
         isAnnouncement: Bool = false,
         imageDataList: [Data] = []
     ) async throws -> ChatMessageResponse {
-        if !imageDataList.isEmpty {
-            return try await uploadChatMessage(
-                channelId: channelId,
-                body: body,
-                isAnnouncement: isAnnouncement,
-                imageDataList: imageDataList
+        // Upload each photo separately, then send JSON with image_urls.
+        // Avoids Vercel 413 when multiple photos exceed the ~4.5 MB body limit.
+        var imageUrls: [String] = []
+        for (index, imageData) in imageDataList.enumerated() {
+            let uploaded: ChatPhotoUploadResponse = try await uploadMultipart(
+                "/api/chat/channels/\(channelId)/photos",
+                fieldName: "photo",
+                fileData: imageData,
+                filename: "chat-photo-\(index).jpg",
+                mimeType: "image/jpeg"
             )
+            imageUrls.append(uploaded.url)
         }
         return try await post(
             "/api/chat/channels/\(channelId)/messages",
-            body: ChatSendMessageBody(body: body, is_announcement: isAnnouncement)
+            body: ChatSendMessageBody(
+                body: body,
+                is_announcement: isAnnouncement,
+                image_urls: imageUrls.isEmpty ? nil : imageUrls
+            )
         )
     }
 
@@ -267,49 +284,6 @@ actor APIClient {
             "/api/chat/messages/\(messageId)/reactions",
             body: ChatReactionBody(emoji: emoji)
         )
-    }
-
-    private func uploadChatMessage(
-        channelId: String,
-        body: String,
-        isAnnouncement: Bool,
-        imageDataList: [Data]
-    ) async throws -> ChatMessageResponse {
-        let boundary = "Boundary-\(UUID().uuidString)"
-        var data = Data()
-        func appendField(name: String, value: String) {
-            data.append("--\(boundary)\r\n".data(using: .utf8)!)
-            data.append("Content-Disposition: form-data; name=\"\(name)\"\r\n\r\n".data(using: .utf8)!)
-            data.append("\(value)\r\n".data(using: .utf8)!)
-        }
-        appendField(name: "body", value: body)
-        appendField(name: "is_announcement", value: isAnnouncement ? "true" : "false")
-        for (index, imageData) in imageDataList.enumerated() {
-            data.append("--\(boundary)\r\n".data(using: .utf8)!)
-            data.append("Content-Disposition: form-data; name=\"photo\"; filename=\"chat-photo-\(index).jpg\"\r\n".data(using: .utf8)!)
-            data.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
-            data.append(imageData)
-            data.append("\r\n".data(using: .utf8)!)
-        }
-        data.append("--\(boundary)--\r\n".data(using: .utf8)!)
-
-        let url = AppConfig.url(for: "/api/chat/channels/\(channelId)/messages")
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
-        request.setValue("RendezvousIL-iOS/1.0", forHTTPHeaderField: "User-Agent")
-        if let chatDemoCode {
-            request.setValue(chatDemoCode, forHTTPHeaderField: "X-Chat-Demo-Code")
-        }
-        if let tokenProvider {
-            let token = try await tokenProvider()
-            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        }
-        request.httpBody = data
-
-        let (responseData, response) = try await session.data(for: request)
-        try Self.throwIfFailed(response: response, data: responseData)
-        return try decoder.decode(ChatMessageResponse.self, from: responseData)
     }
 
     func deleteChatMessage(messageId: String) async throws {

@@ -84,6 +84,17 @@ struct ChatMessageResponse: Decodable {
 struct ChatSendMessageBody: Encodable {
     let body: String
     let is_announcement: Bool
+    let image_urls: [String]?
+
+    init(body: String, is_announcement: Bool, image_urls: [String]? = nil) {
+        self.body = body
+        self.is_announcement = is_announcement
+        self.image_urls = image_urls
+    }
+}
+
+struct ChatPhotoUploadResponse: Decodable {
+    let url: String
 }
 
 struct ChatCreatePollBody: Encodable {

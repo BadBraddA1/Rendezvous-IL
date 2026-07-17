@@ -16,6 +16,7 @@ import com.rendezvousil.core.network.dto.ChatChannelsResponse
 import com.rendezvousil.core.network.dto.ChatCreatePollBody
 import com.rendezvousil.core.network.dto.ChatMessageResponse
 import com.rendezvousil.core.network.dto.ChatMessagesResponse
+import com.rendezvousil.core.network.dto.ChatPhotoUploadResponse
 import com.rendezvousil.core.network.dto.ChatReactionBody
 import com.rendezvousil.core.network.dto.ChatReactionResponse
 import com.rendezvousil.core.network.dto.ChatSendMessageBody
@@ -29,11 +30,13 @@ import com.rendezvousil.core.network.dto.CheckInSubmitBody
 import com.rendezvousil.core.network.dto.CheckInUndoResponse
 import com.rendezvousil.core.network.dto.DirectoryResponse
 import com.rendezvousil.core.network.dto.FamilyVolunteeringResponse
+import com.rendezvousil.core.network.dto.FamilyCheckInResponse
 import com.rendezvousil.core.network.dto.DirectoryYearsResponse
 import com.rendezvousil.core.network.dto.FamilyDirectorySettings
 import com.rendezvousil.core.network.dto.FamilyDirectorySettingsBody
 import com.rendezvousil.core.network.dto.FamilyDirectorySettingsEnvelope
 import com.rendezvousil.core.network.dto.FamilyDirectorySettingsResponse
+import com.rendezvousil.core.network.dto.HomeBoardConfig
 import com.rendezvousil.core.network.dto.MealsResponse
 import com.rendezvousil.core.network.dto.RatesPayload
 import com.rendezvousil.core.network.dto.ScheduleAnnouncementsResponse
@@ -107,6 +110,12 @@ interface RendezvousApi {
 
     @GET("api/family/volunteering")
     suspend fun getFamilyVolunteering(@Query("year") year: Int): FamilyVolunteeringResponse
+
+    @GET("api/home-board")
+    suspend fun getHomeBoard(@Query("year") year: Int): HomeBoardConfig
+
+    @GET("api/family/check-in")
+    suspend fun getFamilyCheckIn(@Query("year") year: Int): FamilyCheckInResponse
 }
 
 class ApiClient private constructor(
@@ -228,6 +237,12 @@ class ApiClient private constructor(
 
     suspend fun getFamilyVolunteering(year: Int = AppConfig.EVENT_YEAR): FamilyVolunteeringResponse =
         apiCall { api.getFamilyVolunteering(year) }
+
+    suspend fun getHomeBoard(year: Int = AppConfig.EVENT_YEAR): HomeBoardConfig =
+        apiCall { api.getHomeBoard(year) }
+
+    suspend fun getFamilyCheckIn(year: Int = AppConfig.EVENT_YEAR): FamilyCheckInResponse =
+        apiCall { api.getFamilyCheckIn(year) }
 
     suspend fun getFamilyDirectorySettings(): FamilyDirectorySettings {
         val envelope = apiCall { api.getFamilyDirectorySettings() }
@@ -380,32 +395,58 @@ class ApiClient private constructor(
         body = ChatSendMessageBody(body = body, is_announcement = isAnnouncement),
     )
 
+    suspend fun uploadChatPhoto(
+        channelId: String,
+        bytes: ByteArray,
+        mimeType: String,
+        filename: String = "chat-photo.jpg",
+    ): ChatPhotoUploadResponse {
+        val multipart = MultipartBody.Builder()
+            .setType(MultipartBody.FORM)
+            .addFormDataPart(
+                "photo",
+                filename,
+                bytes.toRequestBody(mimeType.toMediaType()),
+            )
+            .build()
+        val request = Request.Builder()
+            .url(urlFor("api/chat/channels/$channelId/photos"))
+            .post(multipart)
+            .build()
+        return executeJsonRequest(request)
+    }
+
+    /**
+     * Upload each photo separately, then send the message as JSON with image_urls.
+     * Avoids Vercel 413 when multiple photos exceed the ~4.5 MB body limit.
+     */
     suspend fun sendChatMessageWithPhotos(
         channelId: String,
         body: String,
         isAnnouncement: Boolean,
         photos: List<Pair<ByteArray, String>>,
     ): ChatMessageResponse {
-        val multipart = MultipartBody.Builder().setType(MultipartBody.FORM)
-            .addFormDataPart("body", body)
-            .addFormDataPart("is_announcement", if (isAnnouncement) "true" else "false")
-        photos.forEachIndexed { index, (bytes, mime) ->
+        val imageUrls = photos.mapIndexed { index, (bytes, mime) ->
             val ext = when {
                 mime.contains("png") -> "png"
                 mime.contains("webp") -> "webp"
                 else -> "jpg"
             }
-            multipart.addFormDataPart(
-                "photo",
-                "chat-photo-$index.$ext",
-                bytes.toRequestBody(mime.toMediaType()),
-            )
+            uploadChatPhoto(
+                channelId = channelId,
+                bytes = bytes,
+                mimeType = mime,
+                filename = "chat-photo-$index.$ext",
+            ).url
         }
-        val request = Request.Builder()
-            .url(urlFor("api/chat/channels/$channelId/messages"))
-            .post(multipart.build())
-            .build()
-        return executeJsonRequest(request)
+        return postJson(
+            path = "api/chat/channels/$channelId/messages",
+            body = ChatSendMessageBody(
+                body = body,
+                is_announcement = isAnnouncement,
+                image_urls = imageUrls,
+            ),
+        )
     }
 
     suspend fun createChatPoll(

@@ -105,6 +105,7 @@ pnpm db:verify
 - **Realtime** via Ably Pub/Sub (`rendezvous:channel:{id}`), not `@ably/chat`. Events: `message`, `message_deleted`, `reaction`, `poll_updated`. Token at `POST /api/ably/token`. HTTP poll every 4s is the fallback when Ably is disconnected. Tables: `chat_channels`, `chat_channel_members`, `chat_messages`, `chat_poll_votes`, `chat_message_reactions`, `chat_channel_reads` (lazy-created by `lib/chat-schema.ts`).
 - **Channel list:** Sorted by newest message first. Each channel includes `unread_count` (messages from others since you last opened it; first visit only counts the last 7 days). Opening a thread (`GET …/messages`) marks the channel read. Badges show on web `/chat`, iOS `ChatListView`, and Android `ChatListScreen`.
 - **Timestamps:** SQLite `CURRENT_TIMESTAMP` is UTC without a `Z`; the API normalizes `created_at` / `last_message_at` to ISO-8601 UTC (`lib/chat/timestamps.ts`) so web, iOS, and Android don’t show times several hours off. New messages also store an explicit ISO `created_at`.
+- **Photos:** Clients **compress** images (~1600px JPEG) and upload **one photo at a time** via `POST /api/chat/channels/[id]/photos`, then send the message as JSON with `image_urls`. That avoids Vercel’s ~4.5 MB request body limit (HTTP 413) when attaching multiple camera photos. Legacy multipart multi-file on `…/messages` still works for a single photo.
 - **Member UI:** `/chat` (web), iOS **Chat** tab (`ChatListView` / `ChatThreadView`), and Android **Chat** tab (`ChatListScreen` / `ChatThreadScreen`). Requires Clerk sign-in + registration for year channels. Members can send **up to 6 photos** per message (Blob storage) with composer previews; tap a photo to enlarge (pinch-zoom on iOS). Channel lists + threads are **disk-cached** on iOS/Android for instant open, then refresh in the background. New messages send APNs/FCM to other channel members **and all linked family accounts** registered for that year (`lib/chat/notify.ts` → `family_account_members` + primary `families.clerk_user_id`). Photo messages include the image URL in the push payload: Android shows a big-picture preview via FCM; iOS needs the **Notification Service Extension** (`RendezvousILNotificationService`, app build **2.0.6+**) which downloads the image when `mutable-content` is set. Release archives use `aps-environment=production` via `APS_ENVIRONMENT` (Debug stays `development`) so Xcode Cloud App Store / Ad Hoc export can sign.
 - **Polls:** Site admins and channel moderators can create polls (2–6 options). Anyone in the channel can vote (one vote per user, changeable). Live counts via Ably `poll_updated`. No extra push beyond the initial “new poll” message notify.
 - **Reactions:** Fixed set `🦙 👍 ❤️ 😂 🙏` on any message (text, photo, announcement, poll). The picker stays behind a smile control (web dropdown / iOS menu / Android dropdown); existing reaction chips still show when someone has reacted. Toggle via `POST /api/chat/messages/[id]/reactions`. Push goes **only to the message author** (not the whole channel).
@@ -112,7 +113,14 @@ pnpm db:verify
 - **iOS chat demo flag:** `-ChatDemo` (optional code override) sends `X-Chat-Demo-Code` matching Vercel `CHAT_DEMO_CODE` and lists only active admin **test** channels — change rooms anytime under Admin → Year Chat.
 - **Demo Chat seed:** `node scripts/seed-demo-chat.mjs` (with Turso env) creates/updates the `demo-chat` test channel with 20 sample messages. Re-run anytime to refresh.
 - **Admin:** `/admin/chat` (nav: Communication → Year Chat) — create **test/custom** channels, pick members, **Make mod / Remove mod**, chat from the web. Year channels auto-include registered families.
-- API: `GET /api/chat/channels`, `GET/POST /api/chat/channels/[id]/messages`, `DELETE /api/chat/messages/[id]`, `POST /api/chat/messages/[id]/vote`, `POST /api/chat/messages/[id]/reactions`; admin `GET/POST/PATCH/DELETE /api/admin/chat/channels`, `GET /api/admin/chat/people`, `GET/POST/DELETE /api/admin/chat/channels/[id]/members`.
+- API: `GET /api/chat/channels`, `GET/POST /api/chat/channels/[id]/messages`, `POST /api/chat/channels/[id]/photos` (single photo → `{ url }`), `DELETE /api/chat/messages/[id]`, `POST /api/chat/messages/[id]/vote`, `POST /api/chat/messages/[id]/reactions`; admin `GET/POST/PATCH/DELETE /api/admin/chat/channels`, `GET /api/admin/chat/people`, `GET/POST/DELETE /api/admin/chat/channels/[id]/members`.
+
+## App Home board (remote config)
+
+- **Admin → Event → Home board** (`/admin/home-board`) — reorder Today sections, show/hide them, and add **banner** cards (title/body/link). Stored in `app_settings` as `home_board_{year}` (same pattern as schedule header meta).
+- **Public API:** `GET /api/home-board?year=` (short CDN cache; admin save revalidates). Unknown section types are skipped so future apps stay forward-compatible.
+- **Family check-in card:** `GET /api/family/check-in?year=` returns registration check-in / lodging / room keys for the signed-in family (read-only; staff still check people in via admin).
+- **Apps:** iOS `HomeView` and Android `HomeScreen` render sections in config order. Empty weather/announcements/volunteering/meal still hide themselves even when enabled.
 
 ## Scripts
 
@@ -147,7 +155,7 @@ rendezvous-il/
 
 Native **SwiftUI** attendee hub in `ios/` (not a WebView shell). **Sign-in required** for almost everything — welcome screen, then Clerk, then tabs:
 
-- **Home (Live day board)** — now/next, weather, active announcements, next meal, chat unread, and **your volunteering** when you have assignments or pending lesson-topic actions (`GET /api/family/volunteering`). Opening Home/Volunteering auto-schedules a **30-minute local reminder** before each assignment
+- **Home (Live day board)** — sections ordered by Admin → Home board (`GET /api/home-board`): header, **check-in status** (`GET /api/family/check-in`), now/next, weather, announcements, next meal, chat unread, volunteering, plus optional banners. Opening Home/Volunteering auto-schedules a **30-minute local reminder** before each assignment
 - **Schedule** — opens on today (Central Time) or the next upcoming day. **Happening now** highlight only when an event is actually in progress (Central Time) — not the next upcoming item. Empty announcements are hidden. Meals, worship leaders, event reminders (bell → local notification; prefs store the event so reminders still schedule if the shared snapshot is empty). Tap location → campus map
 - **Directory** — disk cache shows last-loaded families immediately, then refreshes in the background. Family detail matches the website: Father/Mother lines plus **Kids with ages**. Manage your family photo from **More → Directory photo**
 - **Map** — MapKit directions to campus + image venue map on site (geofence switch); More → Campus map
@@ -168,7 +176,7 @@ Native admin APIs: `GET /api/admin/me`, `GET /api/admin/mobile/dashboard` (Beare
 
 Native **Jetpack Compose** app in `android/` (Phases 1–5):
 
-- **Home / Chat / Schedule / Directory / More** — 5-tab shell aligned with iOS (CarPlay / campus map stay iOS-ahead). Home is a **Live day board** (now/next, weather, announcements, meal, chat unread, volunteering when relevant)
+- **Home / Chat / Schedule / Directory / More** — 5-tab shell aligned with iOS (CarPlay / campus map stay iOS-ahead). Home is a **Live day board** driven by `GET /api/home-board` (check-in, now/next, weather, announcements, meal, chat, volunteering, banners)
 - **Chat** — year group chat parity with iOS/web: channel list (unread badges, activity sort), thread (text, up to 6 photos, polls, announcements for mods, reactions behind smile menu, delete), Ably Pub/Sub + 4s HTTP poll fallback (`ably-android`)
 - **Schedule** — opens on today / next upcoming day; **Happening now** only for the in-progress event (Central Time); day picker, meals, volunteer slots, **event reminders** (bell icon), offline fallback; empty announcements hidden
 - **Directory** — on-device cache first, background refresh; Father/Mother + **Kids (ages)** like the website; family photo manage stays under More

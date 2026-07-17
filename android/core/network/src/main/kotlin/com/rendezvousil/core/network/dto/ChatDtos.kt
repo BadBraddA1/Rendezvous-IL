@@ -93,6 +93,12 @@ data class ChatMessageResponse(
 data class ChatSendMessageBody(
     val body: String,
     val is_announcement: Boolean = false,
+    val image_urls: List<String>? = null,
+)
+
+@Serializable
+data class ChatPhotoUploadResponse(
+    val url: String,
 )
 
 @Serializable

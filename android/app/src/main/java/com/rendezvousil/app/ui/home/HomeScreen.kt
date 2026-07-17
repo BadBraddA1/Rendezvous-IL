@@ -40,7 +40,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.rendezvousil.app.theme.BrandColors
 import com.rendezvousil.core.network.AppConfig
+import com.rendezvousil.core.network.dto.FamilyCheckInResponse
 import com.rendezvousil.core.network.dto.FamilyVolunteeringResponse
+import com.rendezvousil.core.network.dto.HomeBoardSection
 import com.rendezvousil.core.network.dto.WeatherCurrent
 import com.rendezvousil.core.schedule.model.Announcement
 import com.rendezvousil.core.schedule.model.NowNextResult
@@ -87,41 +89,71 @@ fun HomeScreen(
                     .padding(horizontal = 20.dp, vertical = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(20.dp),
             ) {
-                HeaderCard()
-                NowNextCard(nowNext = nowNext, onOpenSchedule = onNavigateToSchedule)
-                weather?.current?.let { WeatherCard(current = it) }
-                if (announcements.isNotEmpty()) {
-                    AnnouncementsCard(announcements = announcements.take(3))
-                }
-                uiState.nextMealLine?.let { meal ->
-                    ActionCard(
-                        title = "Next meal",
-                        subtitle = meal,
-                        icon = { Icon(Icons.Default.Restaurant, null, tint = BrandColors.Coral) },
-                        onClick = onNavigateToSchedule,
-                    )
-                }
-                ActionCard(
-                    title = "Chat",
-                    subtitle = if (uiState.chatUnreadTotal > 0) {
-                        "${uiState.chatUnreadTotal} unread"
-                    } else {
-                        "Open year chat"
-                    },
-                    badge = uiState.chatUnreadTotal.takeIf { it > 0 }?.toString(),
-                    icon = {
-                        Icon(Icons.AutoMirrored.Filled.Chat, null, tint = BrandColors.Coral)
-                    },
-                    onClick = onNavigateToChat,
-                )
-                uiState.volunteering?.takeIf { it.hasContent }?.let { volunteering ->
-                    VolunteeringCard(
-                        volunteering = volunteering,
-                        onClick = onNavigateToVolunteering,
+                uiState.sections.forEach { section ->
+                    HomeBoardSectionView(
+                        section = section,
+                        nowNext = nowNext,
+                        weatherCurrent = weather?.current,
+                        announcements = announcements,
+                        uiState = uiState,
+                        onNavigateToSchedule = onNavigateToSchedule,
+                        onNavigateToChat = onNavigateToChat,
+                        onNavigateToVolunteering = onNavigateToVolunteering,
                     )
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun HomeBoardSectionView(
+    section: HomeBoardSection,
+    nowNext: NowNextResult,
+    weatherCurrent: WeatherCurrent?,
+    announcements: List<Announcement>,
+    uiState: HomeUiState,
+    onNavigateToSchedule: () -> Unit,
+    onNavigateToChat: () -> Unit,
+    onNavigateToVolunteering: () -> Unit,
+) {
+    when (section.type) {
+        "header" -> HeaderCard()
+        "check_in" -> uiState.checkIn?.let { CheckInCard(it) }
+        "now_next" -> NowNextCard(nowNext = nowNext, onOpenSchedule = onNavigateToSchedule)
+        "weather" -> weatherCurrent?.let { WeatherCard(current = it) }
+        "announcements" -> if (announcements.isNotEmpty()) {
+            AnnouncementsCard(announcements = announcements.take(3))
+        }
+        "next_meal" -> uiState.nextMealLine?.let { meal ->
+            ActionCard(
+                title = "Next meal",
+                subtitle = meal,
+                icon = { Icon(Icons.Default.Restaurant, null, tint = BrandColors.Coral) },
+                onClick = onNavigateToSchedule,
+            )
+        }
+        "chat" -> ActionCard(
+            title = "Chat",
+            subtitle = if (uiState.chatUnreadTotal > 0) {
+                "${uiState.chatUnreadTotal} unread"
+            } else {
+                "Open year chat"
+            },
+            badge = uiState.chatUnreadTotal.takeIf { it > 0 }?.toString(),
+            icon = {
+                Icon(Icons.AutoMirrored.Filled.Chat, null, tint = BrandColors.Coral)
+            },
+            onClick = onNavigateToChat,
+        )
+        "volunteering" -> uiState.volunteering?.takeIf { it.hasContent }?.let { volunteering ->
+            VolunteeringCard(
+                volunteering = volunteering,
+                onClick = onNavigateToVolunteering,
+            )
+        }
+        "banner" -> BannerCard(section)
+        else -> Unit
     }
 }
 
@@ -138,6 +170,104 @@ private fun HeaderCard() {
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+    }
+}
+
+@Composable
+private fun CheckInCard(checkIn: FamilyCheckInResponse) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text("Check-in", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            color = BrandColors.SecondaryGroupedBackground,
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                when {
+                    !checkIn.hasRegistration -> Text(
+                        "No registration linked for ${checkIn.eventYear}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    checkIn.checkedIn -> {
+                        Text(
+                            "Checked in",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = BrandColors.Lake,
+                        )
+                        checkIn.lodgingLabel?.let {
+                            Text(it, style = MaterialTheme.typography.bodyMedium)
+                        }
+                        if (checkIn.roomKeys.isNotEmpty()) {
+                            Text(
+                                "Room keys: ${checkIn.roomKeys.joinToString(", ")}",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                    else -> {
+                        Text(
+                            "Not checked in yet",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        checkIn.lodgingLabel?.let {
+                            Text(
+                                it,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BannerCard(section: HomeBoardSection) {
+    val title = section.title?.trim().orEmpty()
+    val body = section.body?.trim().orEmpty()
+    if (title.isEmpty() && body.isEmpty()) return
+    val context = LocalContext.current
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        color = BrandColors.LakeLight.copy(alpha = 0.45f),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            if (title.isNotEmpty()) {
+                Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+            }
+            if (body.isNotEmpty()) {
+                Text(
+                    body,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            val linkUrl = section.linkUrl?.trim().orEmpty()
+            if (linkUrl.isNotEmpty()) {
+                androidx.compose.material3.TextButton(
+                    onClick = {
+                        runCatching {
+                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(linkUrl)))
+                        }
+                    },
+                ) {
+                    Text(section.linkLabel?.takeIf { it.isNotBlank() } ?: "Learn more")
+                }
+            }
+        }
     }
 }
 

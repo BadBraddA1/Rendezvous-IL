@@ -31,6 +31,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { chatChannelName } from "@/lib/ably-channels"
+import { compressChatPhotoForUpload } from "@/lib/chat/compress-photo-client"
 import { CHAT_REACTION_EMOJIS, MAX_CHAT_PHOTOS_PER_MESSAGE } from "@/lib/chat/reactions"
 import { useAblyChannel } from "@/lib/use-ably-channel"
 import type {
@@ -267,25 +268,46 @@ export function ChatThread({
     setIsSending(true)
     setError(null)
     try {
-      let response: Response
+      let imageUrls: string[] = []
       if (pendingPhotos.length > 0) {
-        const form = new FormData()
-        form.set("body", body)
-        form.set("is_announcement", isAnnouncement ? "true" : "false")
+        // Upload one photo per request to stay under Vercel's ~4.5 MB body limit.
         for (const photo of pendingPhotos) {
-          form.append("photo", photo.file)
+          const compressed = await compressChatPhotoForUpload(photo.file)
+          const form = new FormData()
+          form.set(
+            "photo",
+            compressed instanceof File
+              ? compressed
+              : new File([compressed], photo.file.name.replace(/\.\w+$/, ".jpg") || "chat-photo.jpg", {
+                  type: "image/jpeg",
+                }),
+          )
+          const uploadRes = await fetch(`/api/chat/channels/${channel.id}/photos`, {
+            method: "POST",
+            body: form,
+          })
+          const data = (await uploadRes.json().catch(() => ({}))) as {
+            url?: string
+            error?: string
+          }
+          if (!uploadRes.ok || !data.url) {
+            throw new Error(
+              typeof data.error === "string" ? data.error : "Could not upload photo",
+            )
+          }
+          imageUrls.push(data.url)
         }
-        response = await fetch(`/api/chat/channels/${channel.id}/messages`, {
-          method: "POST",
-          body: form,
-        })
-      } else {
-        response = await fetch(`/api/chat/channels/${channel.id}/messages`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ body, is_announcement: isAnnouncement }),
-        })
       }
+
+      const response = await fetch(`/api/chat/channels/${channel.id}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          body,
+          is_announcement: isAnnouncement,
+          ...(imageUrls.length > 0 ? { image_urls: imageUrls } : {}),
+        }),
+      })
       if (!response.ok) {
         const data = await response.json().catch(() => ({}))
         throw new Error(data.error || "Failed to send message")

@@ -1,27 +1,36 @@
 import Clerk
 import SwiftUI
 
-/// Live day board — now/next, weather, announcements, meal, chat, volunteering.
+/// Live day board — sections ordered remotely via Admin → Home board.
 struct HomeView: View {
     @Environment(AppSession.self) private var session
     @Environment(RendezvousRepository.self) private var repository
     @Binding var selectedTab: AppTab
 
+    @State private var board: HomeBoardConfig?
+    @State private var checkIn: FamilyCheckInResponse?
     @State private var volunteering: FamilyVolunteeringResponse?
     @State private var chatUnreadTotal = 0
     @State private var nextMealLine: String?
+
+    private var sections: [HomeBoardSection] {
+        if let board {
+            return board.sections.filter(\.enabled)
+        }
+        // Offline / first paint defaults match server defaults.
+        return [
+            "header", "check_in", "now_next", "weather",
+            "announcements", "next_meal", "chat", "volunteering",
+        ].map { HomeBoardSection(id: $0, type: $0, enabled: true, title: nil, body: nil, linkUrl: nil, linkLabel: nil) }
+    }
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    headerCard
-                    nowNextBlock
-                    weatherBlock
-                    announcementsBlock
-                    nextMealBlock
-                    chatBlock
-                    volunteeringBlock
+                    ForEach(sections) { section in
+                        sectionView(section)
+                    }
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 32)
@@ -30,7 +39,38 @@ struct HomeView: View {
             .navigationTitle("Today")
             .navigationBarTitleDisplayMode(.large)
             .refreshable { await refreshBoard() }
-            .task { await refreshBoard() }
+            .task {
+                if let cached = HomeBoardDataStore.load(year: AppConfig.eventYear) {
+                    board = cached
+                }
+                await refreshBoard()
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func sectionView(_ section: HomeBoardSection) -> some View {
+        switch section.type {
+        case "header":
+            headerCard
+        case "check_in":
+            checkInBlock
+        case "now_next":
+            nowNextBlock
+        case "weather":
+            weatherBlock
+        case "announcements":
+            announcementsBlock
+        case "next_meal":
+            nextMealBlock
+        case "chat":
+            chatBlock
+        case "volunteering":
+            volunteeringBlock
+        case "banner":
+            bannerBlock(section)
+        default:
+            EmptyView()
         }
     }
 
@@ -48,6 +88,80 @@ struct HomeView: View {
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    @ViewBuilder
+    private var checkInBlock: some View {
+        if let checkIn {
+            VStack(alignment: .leading, spacing: 8) {
+                sectionTitle("Check-in")
+                VStack(alignment: .leading, spacing: 6) {
+                    if !checkIn.hasRegistration {
+                        Text("No registration linked for \(checkIn.eventYear)")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    } else if checkIn.checkedIn {
+                        Label("Checked in", systemImage: "checkmark.circle.fill")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(BrandColors.lake)
+                        if let lodging = checkIn.lodgingLabel {
+                            Text(lodging)
+                                .font(.subheadline)
+                        }
+                        if !checkIn.roomKeys.isEmpty {
+                            Text("Room keys: \(checkIn.roomKeys.joined(separator: ", "))")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        if let at = checkIn.checkedInAt, !at.isEmpty {
+                            Text(formatCheckInTime(at))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    } else {
+                        Text("Not checked in yet")
+                            .font(.subheadline.weight(.semibold))
+                        if let lodging = checkIn.lodgingLabel {
+                            Text(lodging)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding()
+                .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func bannerBlock(_ section: HomeBoardSection) -> some View {
+        let title = section.title?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let body = section.body?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if !title.isEmpty || !body.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                if !title.isEmpty {
+                    Text(title)
+                        .font(.headline)
+                }
+                if !body.isEmpty {
+                    Text(body)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                if let urlString = section.linkUrl,
+                   let url = URL(string: urlString),
+                   !urlString.isEmpty {
+                    Link(section.linkLabel?.isEmpty == false ? section.linkLabel! : "Learn more", destination: url)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(BrandColors.lake)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding()
+            .background(BrandColors.lakeLight.opacity(0.45), in: RoundedRectangle(cornerRadius: 12))
+        }
     }
 
     @ViewBuilder
@@ -217,13 +331,43 @@ struct HomeView: View {
             .font(.headline)
     }
 
+    private func formatCheckInTime(_ value: String) -> String {
+        let iso = ISO8601DateFormatter()
+        iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let date = iso.date(from: value)
+            ?? ISO8601DateFormatter().date(from: value)
+        guard let date else { return "Checked in \(value)" }
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        return "Checked in \(formatter.string(from: date))"
+    }
+
     private func refreshBoard() async {
         async let updates: Void = repository.loadUpdates()
         async let scheduleLoad: Void = loadScheduleForBoard()
+        async let boardTask: Void = loadHomeBoard()
+        async let checkInTask: Void = loadCheckIn()
         async let volunteeringTask: Void = loadVolunteering()
         async let chatTask: Void = loadChatUnread()
-        _ = await (updates, scheduleLoad, volunteeringTask, chatTask)
+        _ = await (updates, scheduleLoad, boardTask, checkInTask, volunteeringTask, chatTask)
         nextMealLine = computeNextMealLine()
+    }
+
+    private func loadHomeBoard() async {
+        guard let client = session.apiClient else { return }
+        if let config = try? await client.getHomeBoard() {
+            board = config
+            HomeBoardDataStore.save(config, year: config.eventYear)
+        }
+    }
+
+    private func loadCheckIn() async {
+        guard let client = session.apiClient else {
+            checkIn = nil
+            return
+        }
+        checkIn = try? await client.getFamilyCheckIn()
     }
 
     private func loadScheduleForBoard() async {
@@ -278,6 +422,6 @@ struct HomeView: View {
 
 #Preview {
     HomeView(selectedTab: .constant(.home))
-        .environment(RendezvousRepository())
         .environment(AppSession())
+        .environment(RendezvousRepository())
 }
