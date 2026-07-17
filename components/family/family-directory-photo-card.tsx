@@ -143,7 +143,8 @@ export function FamilyDirectoryPhotoCard({ settings, onChange, eventYear = 2027 
         </CardTitle>
         <CardDescription>
           Registered {eventYear} families are listed in the attendee directory by default. Add an
-          optional photo and note here, or opt out if you prefer not to appear.
+          optional photo and note here, or opt out if you prefer not to appear. Large camera photos
+          are resized automatically so they display evenly in the directory.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">

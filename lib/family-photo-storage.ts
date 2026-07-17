@@ -1,5 +1,5 @@
 import { del, put } from "@vercel/blob"
-import { photoExtensionForType } from "@/lib/family-directory"
+import { normalizeDirectoryPhoto } from "@/lib/family-photo-process"
 
 export function isBlobStorageConfigured(): boolean {
   return Boolean(process.env.BLOB_READ_WRITE_TOKEN)
@@ -8,7 +8,7 @@ export function isBlobStorageConfigured(): boolean {
 export async function uploadFamilyPhoto(
   familyId: number,
   bytes: ArrayBuffer,
-  contentType: string,
+  _contentType: string,
 ): Promise<string> {
   if (!isBlobStorageConfigured()) {
     throw new Error(
@@ -16,9 +16,9 @@ export async function uploadFamilyPhoto(
     )
   }
 
-  const extension = photoExtensionForType(contentType)
+  const { buffer, contentType, extension } = await normalizeDirectoryPhoto(bytes)
   const pathname = `family-photos/${familyId}-${Date.now()}.${extension}`
-  const blob = await put(pathname, Buffer.from(bytes), {
+  const blob = await put(pathname, buffer, {
     access: "public",
     contentType,
     addRandomSuffix: false,

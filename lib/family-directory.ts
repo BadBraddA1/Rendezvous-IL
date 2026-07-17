@@ -166,7 +166,7 @@ export function validateFamilyPhoto(file: { type: string; size: number }) {
     return "Please upload a JPG, PNG, or WebP image."
   }
   if (file.size > MAX_PHOTO_BYTES) {
-    return "Photo must be 5 MB or smaller."
+    return "Photo must be 5 MB or smaller. Large camera photos are resized automatically after upload."
   }
   return null
 }

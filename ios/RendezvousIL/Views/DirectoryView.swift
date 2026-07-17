@@ -303,28 +303,30 @@ private struct DirectoryFamilyCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Group {
-                if let photoUrl = family.photo_url, !photoUrl.isEmpty, let url = URL(string: photoUrl) {
-                    AsyncImage(url: url) { phase in
-                        switch phase {
-                        case .success(let image):
-                            image
-                                .resizable()
-                                .scaledToFill()
-                        case .failure, .empty:
-                            directoryPhotoPlaceholder
-                        @unknown default:
-                            directoryPhotoPlaceholder
+            // Overlay + clip keeps huge camera uploads from expanding the card
+            // before AsyncImage finishes laying out.
+            Color.clear
+                .aspectRatio(4 / 3, contentMode: .fit)
+                .overlay {
+                    if let photoUrl = family.photo_url, !photoUrl.isEmpty, let url = URL(string: photoUrl) {
+                        AsyncImage(url: url) { phase in
+                            switch phase {
+                            case .success(let image):
+                                image
+                                    .resizable()
+                                    .scaledToFill()
+                            case .failure, .empty:
+                                directoryPhotoPlaceholder
+                            @unknown default:
+                                directoryPhotoPlaceholder
+                            }
                         }
+                    } else {
+                        directoryPhotoPlaceholder
                     }
-                } else {
-                    directoryPhotoPlaceholder
                 }
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: 140)
-            .clipped()
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .contentShape(RoundedRectangle(cornerRadius: 12))
 
             Text("\(family.family_last_name) Family")
                 .font(.headline)
@@ -443,28 +445,29 @@ struct DirectoryFamilyDetailView: View {
     }
 
     private var photo: some View {
-        Group {
-            if let photoUrl = family.photo_url, !photoUrl.isEmpty, let url = URL(string: photoUrl) {
-                AsyncImage(url: url) { phase in
-                    switch phase {
-                    case .success(let image):
-                        image
-                            .resizable()
-                            .scaledToFill()
-                    case .failure, .empty:
-                        directoryPhotoPlaceholder
-                    @unknown default:
-                        directoryPhotoPlaceholder
+        Color.clear
+            .aspectRatio(4 / 3, contentMode: .fit)
+            .frame(maxHeight: 240)
+            .overlay {
+                if let photoUrl = family.photo_url, !photoUrl.isEmpty, let url = URL(string: photoUrl) {
+                    AsyncImage(url: url) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .scaledToFill()
+                        case .failure, .empty:
+                            directoryPhotoPlaceholder
+                        @unknown default:
+                            directoryPhotoPlaceholder
+                        }
                     }
+                } else {
+                    directoryPhotoPlaceholder
                 }
-            } else {
-                directoryPhotoPlaceholder
             }
-        }
-        .frame(maxWidth: .infinity)
-        .frame(height: 240)
-        .clipped()
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .contentShape(RoundedRectangle(cornerRadius: 16))
     }
 
     @ViewBuilder
