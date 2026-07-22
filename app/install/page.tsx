@@ -1,180 +1,89 @@
-"use client"
-
+import Link from "next/link"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { MainContent } from "@/components/main-content"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Apple, Smartphone, Share, MoreVertical, Plus, Download, CheckCircle2, Bell } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import {
+  IOS_APP_STORE_URL,
+  ANDROID_APP_LIVE,
+  ANDROID_PLAY_STORE_URL,
+} from "@/lib/native-app-store"
+import {
+  Apple,
+  Smartphone,
+  Calendar,
+  MessageSquare,
+  Users,
+  Bell,
+  CheckCircle2,
+} from "lucide-react"
 
-function StepNumber({ num }: { num: number }) {
+export const metadata = {
+  title: "Get the App | Rendezvous IL",
+  description:
+    "Download the Rendezvous IL app for iPhone and iPad. Android is still in the works.",
+}
+
+function AppStoreBadge({ href }: { href: string }) {
   return (
-    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
-      {num}
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="focus-ring inline-flex min-h-11 items-center justify-center gap-3 rounded-lg bg-foreground px-5 py-3 text-background transition-opacity hover:opacity-90"
+      aria-label="Download on the App Store"
+    >
+      <Apple className="h-7 w-7 shrink-0" aria-hidden="true" />
+      <span className="text-left leading-tight">
+        <span className="block text-[10px] font-medium uppercase tracking-wide opacity-80">
+          Download on the
+        </span>
+        <span className="block text-lg font-semibold">App Store</span>
+      </span>
+    </a>
+  )
+}
+
+function AndroidComingSoon() {
+  return (
+    <div
+      className="inline-flex min-h-11 items-center justify-center gap-3 rounded-lg border border-border bg-muted/40 px-5 py-3 text-muted-foreground"
+      aria-label="Android app still in the works"
+    >
+      <Smartphone className="h-7 w-7 shrink-0" aria-hidden="true" />
+      <span className="text-left leading-tight">
+        <span className="block text-[10px] font-medium uppercase tracking-wide">
+          Google Play
+        </span>
+        <span className="block text-lg font-semibold text-foreground">Still in the works</span>
+      </span>
     </div>
   )
 }
 
-function IOSInstructions() {
-  return (
-    <Card className="border-border/50 bg-card">
-      <CardHeader className="border-b border-border/50 bg-surface-tint">
-        <CardTitle className="flex items-center gap-3 text-subheading">
-          <Apple className="h-7 w-7" />
-          iPhone / iPad (Safari)
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="p-6">
-        <ol className="space-y-6">
-          <li className="flex gap-4">
-            <StepNumber num={1} />
-            <div>
-              <p className="font-medium text-foreground">Open Safari</p>
-              <p className="text-sm text-muted-foreground">
-                Make sure you&apos;re using Safari (not Chrome or another browser). This feature only works in Safari on iOS.
-              </p>
-            </div>
-          </li>
-          <li className="flex gap-4">
-            <StepNumber num={2} />
-            <div>
-              <p className="font-medium text-foreground">Navigate to the schedule</p>
-              <p className="text-sm text-muted-foreground">
-                Go to <span className="font-mono text-primary">rendezvousil.com/schedule</span>
-              </p>
-            </div>
-          </li>
-          <li className="flex gap-4">
-            <StepNumber num={3} />
-            <div>
-              <p className="font-medium text-foreground">Tap the Share button</p>
-              <p className="text-sm text-muted-foreground">
-                Look for the share icon at the bottom of the screen (square with an arrow pointing up).
-              </p>
-              <div className="mt-2 inline-flex items-center gap-2 rounded-md border border-border bg-muted/50 px-3 py-2">
-                <Share className="h-5 w-5 text-primary" />
-                <span className="text-sm">Share</span>
-              </div>
-            </div>
-          </li>
-          <li className="flex gap-4">
-            <StepNumber num={4} />
-            <div>
-              <p className="font-medium text-foreground">Scroll down and tap &quot;Add to Home Screen&quot;</p>
-              <p className="text-sm text-muted-foreground">
-                You may need to scroll down in the share menu to find this option.
-              </p>
-              <div className="mt-2 inline-flex items-center gap-2 rounded-md border border-border bg-muted/50 px-3 py-2">
-                <Plus className="h-5 w-5 text-primary" />
-                <span className="text-sm">Add to Home Screen</span>
-              </div>
-            </div>
-          </li>
-          <li className="flex gap-4">
-            <StepNumber num={5} />
-            <div>
-              <p className="font-medium text-foreground">Tap &quot;Add&quot;</p>
-              <p className="text-sm text-muted-foreground">
-                You can customize the name if you&apos;d like, then tap Add in the top right corner.
-              </p>
-            </div>
-          </li>
-          <li className="flex gap-4">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-success text-primary-foreground">
-              <CheckCircle2 className="h-5 w-5" aria-hidden="true" />
-            </div>
-            <div>
-              <p className="font-medium text-success">Done!</p>
-              <p className="text-sm text-muted-foreground">
-                The Rendezvous schedule will now appear on your home screen like an app. Tap it anytime for quick access!
-              </p>
-            </div>
-          </li>
-        </ol>
-      </CardContent>
-    </Card>
-  )
-}
-
-function AndroidInstructions() {
-  return (
-    <Card className="border-border/50 bg-card">
-      <CardHeader className="border-b border-border/50 bg-surface-tint">
-        <CardTitle className="flex items-center gap-3 text-subheading">
-          <Smartphone className="h-7 w-7" />
-          Android (Chrome)
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="p-6">
-        <ol className="space-y-6">
-          <li className="flex gap-4">
-            <StepNumber num={1} />
-            <div>
-              <p className="font-medium text-foreground">Open Chrome</p>
-              <p className="text-sm text-muted-foreground">
-                This works best in Google Chrome, but may also work in other browsers like Samsung Internet.
-              </p>
-            </div>
-          </li>
-          <li className="flex gap-4">
-            <StepNumber num={2} />
-            <div>
-              <p className="font-medium text-foreground">Navigate to the schedule</p>
-              <p className="text-sm text-muted-foreground">
-                Go to <span className="font-mono text-primary">rendezvousil.com/schedule</span>
-              </p>
-            </div>
-          </li>
-          <li className="flex gap-4">
-            <StepNumber num={3} />
-            <div>
-              <p className="font-medium text-foreground">Tap the menu button</p>
-              <p className="text-sm text-muted-foreground">
-                Look for the three vertical dots in the top right corner of Chrome.
-              </p>
-              <div className="mt-2 inline-flex items-center gap-2 rounded-md border border-border bg-muted/50 px-3 py-2">
-                <MoreVertical className="h-5 w-5 text-primary" />
-                <span className="text-sm">Menu</span>
-              </div>
-            </div>
-          </li>
-          <li className="flex gap-4">
-            <StepNumber num={4} />
-            <div>
-              <p className="font-medium text-foreground">Tap &quot;Add to Home screen&quot; or &quot;Install app&quot;</p>
-              <p className="text-sm text-muted-foreground">
-                The wording may vary slightly depending on your Android version.
-              </p>
-              <div className="mt-2 inline-flex items-center gap-2 rounded-md border border-border bg-muted/50 px-3 py-2">
-                <Download className="h-5 w-5 text-primary" />
-                <span className="text-sm">Add to Home screen</span>
-              </div>
-            </div>
-          </li>
-          <li className="flex gap-4">
-            <StepNumber num={5} />
-            <div>
-              <p className="font-medium text-foreground">Confirm by tapping &quot;Add&quot;</p>
-              <p className="text-sm text-muted-foreground">
-                You can edit the name if you want, then tap Add to confirm.
-              </p>
-            </div>
-          </li>
-          <li className="flex gap-4">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-success text-primary-foreground">
-              <CheckCircle2 className="h-5 w-5" aria-hidden="true" />
-            </div>
-            <div>
-              <p className="font-medium text-success">Done!</p>
-              <p className="text-sm text-muted-foreground">
-                The Rendezvous schedule will now appear on your home screen. Tap it anytime for instant access!
-              </p>
-            </div>
-          </li>
-        </ol>
-      </CardContent>
-    </Card>
-  )
-}
+const highlights = [
+  {
+    title: "Live schedule",
+    description: "Today’s events, meals, and reminders — always up to date.",
+    icon: Calendar,
+  },
+  {
+    title: "Year chat",
+    description: "Message your event year with photos, polls, and reactions.",
+    icon: MessageSquare,
+  },
+  {
+    title: "Family directory",
+    description: "Find other families and keep your card current.",
+    icon: Users,
+  },
+  {
+    title: "Push updates",
+    description: "Announcements and chat alerts while you’re on campus.",
+    icon: Bell,
+  },
+]
 
 export default function InstallPage() {
   return (
@@ -186,20 +95,63 @@ export default function InstallPage() {
           <div className="container mx-auto px-6">
             <div className="mx-auto max-w-4xl text-center">
               <h1 className="text-page-title mb-4 text-balance text-secondary-foreground">
-                Add to Home Screen
+                Get the Rendezvous IL app
               </h1>
               <p className="text-balance text-lg text-secondary-foreground/70">
-                Get quick access to the Rendezvous schedule right from your phone&apos;s home screen - no app store needed!
+                Schedule, chat, directory, and check-in for retreat week — on your phone.
               </p>
             </div>
           </div>
         </section>
 
-        <section className="py-12 md:py-20">
+        <section className="py-12 md:py-16">
           <div className="container mx-auto px-6">
-            <div className="mx-auto max-w-3xl space-y-8">
-              <IOSInstructions />
-              <AndroidInstructions />
+            <div className="mx-auto grid max-w-3xl gap-6 md:grid-cols-2">
+              <Card className="border-border/50 bg-card">
+                <CardHeader className="border-b border-border/50 bg-surface-tint">
+                  <CardTitle className="flex items-center gap-3 text-subheading">
+                    <Apple className="h-6 w-6" aria-hidden="true" />
+                    iPhone &amp; iPad
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-4 p-6">
+                  <p className="flex items-center gap-2 text-sm text-success">
+                    <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />
+                    Live on the App Store
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Free to download. Sign in with the same account you use on
+                    rendezvousil.com.
+                  </p>
+                  <AppStoreBadge href={IOS_APP_STORE_URL} />
+                </CardContent>
+              </Card>
+
+              <Card className="border-border/50 bg-card">
+                <CardHeader className="border-b border-border/50 bg-surface-tint">
+                  <CardTitle className="flex items-center gap-3 text-subheading">
+                    <Smartphone className="h-6 w-6" aria-hidden="true" />
+                    Android
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-4 p-6">
+                  <p className="text-sm font-medium text-brand-coral-ink">Still in the works</p>
+                  <p className="text-sm text-muted-foreground">
+                    The Android app is under active development. Until it ships,
+                    use the website on your phone for schedule, registration, and
+                    account tools.
+                  </p>
+                  {ANDROID_APP_LIVE && ANDROID_PLAY_STORE_URL ? (
+                    <Button asChild size="lg" className="min-h-11 w-fit">
+                      <a href={ANDROID_PLAY_STORE_URL} target="_blank" rel="noopener noreferrer">
+                        Get it on Google Play
+                      </a>
+                    </Button>
+                  ) : (
+                    <AndroidComingSoon />
+                  )}
+                </CardContent>
+              </Card>
             </div>
           </div>
         </section>
@@ -207,39 +159,35 @@ export default function InstallPage() {
         <section className="border-t bg-muted/30 py-12 md:py-16">
           <div className="container mx-auto px-6">
             <div className="mx-auto max-w-3xl">
-              <h2 className="text-section-title mb-4 text-balance text-center">
-                Why Add to Home Screen?
+              <h2 className="text-section-title mb-8 text-balance text-center">
+                What’s in the app
               </h2>
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-                <div className="rounded-lg border border-border/50 bg-card p-5 text-center shadow-sm">
-                  <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                    <Smartphone className="h-6 w-6 text-primary" />
+              <div className="grid gap-6 sm:grid-cols-2">
+                {highlights.map(({ title, description, icon: Icon }) => (
+                  <div key={title} className="flex gap-4">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                      <Icon className="h-5 w-5 text-primary" aria-hidden="true" />
+                    </div>
+                    <div>
+                      <h3 className="mb-1 font-semibold">{title}</h3>
+                      <p className="text-sm text-muted-foreground">{description}</p>
+                    </div>
                   </div>
-                  <h3 className="mb-1 font-semibold">Quick Access</h3>
-                  <p className="text-sm text-muted-foreground">One tap to see the schedule - no typing URLs</p>
-                </div>
-                <div className="rounded-lg border border-border/50 bg-card p-5 text-center shadow-sm">
-                  <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                    <Bell className="h-6 w-6 text-primary" />
-                  </div>
-                  <h3 className="mb-1 font-semibold">Push Notifications</h3>
-                  <p className="text-sm text-muted-foreground">Get alerts for schedule changes and announcements</p>
-                </div>
-                <div className="rounded-lg border border-border/50 bg-card p-5 text-center shadow-sm">
-                  <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                    <Download className="h-6 w-6 text-primary" />
-                  </div>
-                  <h3 className="mb-1 font-semibold">No Download</h3>
-                  <p className="text-sm text-muted-foreground">Works instantly without using storage space</p>
-                </div>
-                <div className="rounded-lg border border-border/50 bg-card p-5 text-center shadow-sm">
-                  <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                    <CheckCircle2 className="h-6 w-6 text-primary" />
-                  </div>
-                  <h3 className="mb-1 font-semibold">Always Updated</h3>
-                  <p className="text-sm text-muted-foreground">See real-time changes and announcements</p>
-                </div>
+                ))}
               </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="py-12 md:py-16">
+          <div className="container mx-auto px-6">
+            <div className="mx-auto max-w-2xl text-center">
+              <p className="mb-4 text-muted-foreground">
+                Prefer the browser? The full site works on any phone.
+              </p>
+              <Button asChild variant="outline" size="lg" className="min-h-11">
+                <Link href="/schedule">View schedule on the web</Link>
+              </Button>
             </div>
           </div>
         </section>

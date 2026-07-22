@@ -9,6 +9,7 @@ import { ExternalLink } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { MuxVideoPlayer } from "@/components/mux-video-player"
+import { IOS_APP_STORE_URL } from "@/lib/native-app-store"
 
 type FaqItem = {
   id: string
@@ -73,6 +74,28 @@ const faqItems: FaqItem[] = [
     question: "Can we bring our own food?",
     answer:
       "All meals are provided and included in your registration. However, if you have specific dietary needs or allergies, please note them during registration and we'll do our best to accommodate you. You're welcome to bring snacks for your family.",
+  },
+  {
+    id: "mobile-app",
+    question: "Is there a mobile app?",
+    answer: (
+      <>
+        Yes — the Rendezvous IL app is live on the{" "}
+        <a
+          href={IOS_APP_STORE_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="focus-ring rounded-sm font-medium text-primary hover:underline"
+        >
+          App Store
+        </a>{" "}
+        for iPhone and iPad. Android is still in the works. See{" "}
+        <Link href="/install" className="focus-ring rounded-sm font-medium text-primary hover:underline">
+          Get the app
+        </Link>{" "}
+        for details.
+      </>
+    ),
   },
   {
     id: "video-captions",

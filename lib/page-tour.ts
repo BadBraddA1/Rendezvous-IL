@@ -14,7 +14,7 @@ export const PAGE_TOUR_ROUTES: PageTourRoute[] = [
   { path: "/calculator", label: "Calculator", group: "public" },
   { path: "/map2026", label: "Attendee Map", group: "public" },
   { path: "/registration", label: "Registration", group: "public" },
-  { path: "/install", label: "Install PWA", group: "public" },
+  { path: "/install", label: "Get the App", group: "public" },
   { path: "/scrabble", label: "Scrabble", group: "public" },
   { path: "/scrabble-rules", label: "Scrabble Rules", group: "public" },
   { path: "/privacy", label: "Privacy", group: "public" },
