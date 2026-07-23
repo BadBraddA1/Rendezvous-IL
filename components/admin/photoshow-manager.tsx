@@ -15,6 +15,7 @@ import { AdminConfirmDialog } from "./admin-confirm-dialog"
 import { AdminListSkeleton, AdminRetryButton } from "./admin-panel-states"
 import type { ChatPhotoshowChannel } from "@/lib/live-updates/chat-photoshow"
 import type { PhotoshowPhoto } from "@/lib/live-updates/photoshow-shared"
+import { LIVE_UPDATES_ROOM_SUGGESTIONS, withRoomQuery } from "@/lib/live-updates/rooms"
 
 export function PhotoshowManager({ canEdit }: { canEdit: boolean }) {
   const [photos, setPhotos] = useState<PhotoshowPhoto[]>([])
@@ -26,6 +27,7 @@ export function PhotoshowManager({ canEdit }: { canEdit: boolean }) {
   const [file, setFile] = useState<File | null>(null)
   const [deletePending, setDeletePending] = useState<PhotoshowPhoto | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [tvRoom, setTvRoom] = useState("")
   const { toast } = useToast()
 
   const fetchData = useCallback(async () => {
@@ -144,11 +146,16 @@ export function PhotoshowManager({ canEdit }: { canEdit: boolean }) {
     }
   }
 
+  const tvPathFor = (path: string) => withRoomQuery(path, tvRoom)
+
   const copyTvUrl = async (path: string) => {
-    const url = `https://rendezvousil.com${path}`
+    const url = `https://rendezvousil.com${tvPathFor(path)}`
     try {
       await navigator.clipboard.writeText(url)
-      toast({ title: "TV link copied" })
+      toast({
+        title: "TV link copied",
+        description: tvRoom.trim() ? `Room: ${tvRoom.trim()}` : undefined,
+      })
     } catch {
       toast({ title: "Could not copy", description: url, variant: "destructive" })
     }
@@ -168,9 +175,30 @@ export function PhotoshowManager({ canEdit }: { canEdit: boolean }) {
           <CardDescription>
             Every chat gets its own slideshow from photos people post in that channel. Point a
             room TV at that chat&apos;s link — new chat photos show up within about a minute.
+            Optionally set a room name so the screen shows where people are.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="tv-room">Room on TV links (optional)</Label>
+            <Input
+              id="tv-room"
+              list="photoshow-room-suggestions"
+              value={tvRoom}
+              onChange={(e) => setTvRoom(e.target.value)}
+              placeholder="e.g. Activities Center"
+              maxLength={80}
+            />
+            <datalist id="photoshow-room-suggestions">
+              {LIVE_UPDATES_ROOM_SUGGESTIONS.map((room) => (
+                <option key={room} value={room} />
+              ))}
+            </datalist>
+            <p className="text-xs text-muted-foreground">
+              Copied / preview links include <code>?room=…</code> so the TV shows “This screen ·
+              …” You can also assign rooms later under Admin → Displays.
+            </p>
+          </div>
           {loading ? (
             <AdminListSkeleton rows={2} />
           ) : fetchError ? (
@@ -182,7 +210,9 @@ export function PhotoshowManager({ canEdit }: { canEdit: boolean }) {
             <p className="text-sm text-muted-foreground">No chat channels yet.</p>
           ) : (
             <div className="space-y-2">
-              {chatChannels.map((channel) => (
+              {chatChannels.map((channel) => {
+                const path = tvPathFor(channel.tv_path)
+                return (
                 <div
                   key={channel.id}
                   className="flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between"
@@ -202,7 +232,7 @@ export function PhotoshowManager({ canEdit }: { canEdit: boolean }) {
                         : `${channel.photo_count} photo${channel.photo_count === 1 ? "" : "s"}`}
                     </p>
                     <code className="block break-all text-xs text-muted-foreground">
-                      {channel.tv_path}
+                      {path}
                     </code>
                   </div>
                   <div className="flex shrink-0 flex-wrap gap-2">
@@ -216,14 +246,14 @@ export function PhotoshowManager({ canEdit }: { canEdit: boolean }) {
                       Copy TV link
                     </Button>
                     <Button type="button" variant="secondary" size="sm" asChild>
-                      <Link href={channel.tv_path} target="_blank" rel="noreferrer">
+                      <Link href={path} target="_blank" rel="noreferrer">
                         <ExternalLink className="mr-2 h-4 w-4" />
                         Preview
                       </Link>
                     </Button>
                   </div>
                 </div>
-              ))}
+              )})}
               {chatsWithPhotos.length === 0 && (
                 <p className="pt-1 text-sm text-muted-foreground">
                   Photos appear here after someone posts an image in chat.

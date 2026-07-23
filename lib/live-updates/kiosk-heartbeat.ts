@@ -39,15 +39,17 @@ export type HeartbeatPayload = {
   hostname?: string
   lastView: ViewType
   buildVersion?: string
+  roomLabel?: string
 }
 
-export async function postHeartbeat(payload: HeartbeatPayload): Promise<void> {
+export async function postHeartbeat(payload: HeartbeatPayload): Promise<{ roomLabel: string | null } | void> {
   const body: Record<string, string> = {
     deviceId: payload.deviceId,
     lastView: payload.lastView,
   }
   if (payload.hostname) body.hostname = payload.hostname
   if (payload.buildVersion) body.buildVersion = payload.buildVersion
+  if (payload.roomLabel) body.roomLabel = payload.roomLabel
 
   const res = await fetch("/api/live-updates/heartbeat", {
     method: "POST",
@@ -55,6 +57,12 @@ export async function postHeartbeat(payload: HeartbeatPayload): Promise<void> {
     body: JSON.stringify(body),
   })
   if (!res.ok) throw new Error(`heartbeat ${res.status}`)
+  try {
+    const data = await res.json()
+    return { roomLabel: typeof data.roomLabel === "string" ? data.roomLabel : null }
+  } catch {
+    return
+  }
 }
 
 export function saveOfflineSnapshot(snapshot: Omit<OfflineSnapshot, "timestamp">): void {

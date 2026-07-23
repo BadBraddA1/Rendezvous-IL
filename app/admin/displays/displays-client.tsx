@@ -4,9 +4,11 @@ import { useCallback, useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Loader2, Monitor, RefreshCw } from "lucide-react"
 import { toast } from "sonner"
+import { LIVE_UPDATES_ROOM_SUGGESTIONS } from "@/lib/live-updates/rooms"
 
 type DisplayStatus = "online" | "stale" | "offline"
 
@@ -18,6 +20,7 @@ interface DisplayRow {
   kioskUrl: string | null
   buildVersion: string | null
   userAgent: string | null
+  roomLabel: string | null
   firstSeenAt: string
   lastSeenAt: string
   updatedAt: string
@@ -72,6 +75,8 @@ function statusBadge(status: DisplayStatus) {
 export function DisplaysClient() {
   const [displays, setDisplays] = useState<DisplayRow[]>([])
   const [loading, setLoading] = useState(true)
+  const [roomDrafts, setRoomDrafts] = useState<Record<string, string>>({})
+  const [savingId, setSavingId] = useState<string | null>(null)
 
   const fetchDisplays = useCallback(async (showSpinner = true) => {
     if (showSpinner) setLoading(true)
@@ -80,7 +85,18 @@ export function DisplaysClient() {
       const response = await fetch("/api/admin/displays")
       const data = await response.json()
       if (!response.ok) throw new Error(data.error || "Failed to load displays")
-      setDisplays(data.displays || [])
+      const next = (data.displays || []) as DisplayRow[]
+      setDisplays(next)
+      setRoomDrafts((prev) => {
+        const merged: Record<string, string> = {}
+        for (const display of next) {
+          merged[display.deviceId] =
+            prev[display.deviceId] !== undefined
+              ? prev[display.deviceId]
+              : display.roomLabel ?? ""
+        }
+        return merged
+      })
     } catch (error) {
       console.error("Error fetching displays:", error)
       toast.error("Failed to load displays")
@@ -101,6 +117,26 @@ export function DisplaysClient() {
     return () => window.clearInterval(interval)
   }, [fetchDisplays])
 
+  const saveRoom = async (deviceId: string) => {
+    setSavingId(deviceId)
+    try {
+      const roomLabel = (roomDrafts[deviceId] ?? "").trim()
+      const response = await fetch("/api/admin/displays", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ deviceId, roomLabel: roomLabel || null }),
+      })
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) throw new Error(data.error || "Failed to save room")
+      toast.success(roomLabel ? `Room set to ${roomLabel}` : "Room cleared")
+      void fetchDisplays(false)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to save room")
+    } finally {
+      setSavingId(null)
+    }
+  }
+
   if (loading) {
     return (
       <Card>
@@ -120,7 +156,8 @@ export function DisplaysClient() {
             Live Update Displays
           </h1>
           <p className="text-lead text-muted-foreground mt-1">
-            Raspberry Pi kiosks ping every minute. Online = seen within 5 minutes.
+            Assign each Pi/TV to a room so the screen shows where people are. Online = seen within
+            5 minutes.
           </p>
         </div>
         <Button variant="outline" onClick={() => fetchDisplays()} disabled={loading}>
@@ -136,8 +173,9 @@ export function DisplaysClient() {
             Fleet ({displays.length})
           </CardTitle>
           <CardDescription>
-            Auto-refreshes every 30 seconds. Displays post heartbeats to{" "}
-            <code className="text-xs">POST /api/live-updates/heartbeat</code>.
+            Set a room name per device — it appears on the TV so families know they&apos;re in the
+            right place. You can also put <code className="text-xs">?room=Activities+Center</code>{" "}
+            in the kiosk URL.
           </CardDescription>
         </CardHeader>
         <CardContent className="overflow-x-auto">
@@ -145,6 +183,7 @@ export function DisplaysClient() {
             <TableHeader>
               <TableRow>
                 <TableHead>Device</TableHead>
+                <TableHead>Room</TableHead>
                 <TableHead>Hostname</TableHead>
                 <TableHead>IP</TableHead>
                 <TableHead>Current view</TableHead>
@@ -153,26 +192,67 @@ export function DisplaysClient() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {displays.map((display) => (
-                <TableRow key={display.deviceId}>
-                  <TableCell className="font-mono text-sm">{display.deviceId}</TableCell>
-                  <TableCell>{display.hostname || "—"}</TableCell>
-                  <TableCell className="font-mono text-sm text-muted-foreground">
-                    {display.ip || "—"}
-                  </TableCell>
-                  <TableCell>{display.lastView || "—"}</TableCell>
-                  <TableCell className="text-muted-foreground whitespace-nowrap">
-                    {formatRelativeTime(display.lastSeenAt)}
-                  </TableCell>
-                  <TableCell>{statusBadge(display.status)}</TableCell>
-                </TableRow>
-              ))}
+              {displays.map((display) => {
+                const draft = roomDrafts[display.deviceId] ?? ""
+                const dirty = draft.trim() !== (display.roomLabel ?? "").trim()
+                return (
+                  <TableRow key={display.deviceId}>
+                    <TableCell className="font-mono text-sm">{display.deviceId}</TableCell>
+                    <TableCell className="min-w-[14rem]">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                        <Input
+                          list="lu-room-suggestions"
+                          value={draft}
+                          onChange={(e) =>
+                            setRoomDrafts((prev) => ({
+                              ...prev,
+                              [display.deviceId]: e.target.value,
+                            }))
+                          }
+                          placeholder="e.g. Activities Center"
+                          maxLength={80}
+                          className="h-9 min-w-[10rem]"
+                        />
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant={dirty ? "default" : "outline"}
+                          disabled={savingId === display.deviceId || !dirty}
+                          onClick={() => void saveRoom(display.deviceId)}
+                        >
+                          {savingId === display.deviceId ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            "Save"
+                          )}
+                        </Button>
+                      </div>
+                    </TableCell>
+                    <TableCell>{display.hostname || "—"}</TableCell>
+                    <TableCell className="font-mono text-sm text-muted-foreground">
+                      {display.ip || "—"}
+                    </TableCell>
+                    <TableCell>{display.lastView || "—"}</TableCell>
+                    <TableCell className="text-muted-foreground whitespace-nowrap">
+                      {formatRelativeTime(display.lastSeenAt)}
+                    </TableCell>
+                    <TableCell>{statusBadge(display.status)}</TableCell>
+                  </TableRow>
+                )
+              })}
             </TableBody>
           </Table>
 
+          <datalist id="lu-room-suggestions">
+            {LIVE_UPDATES_ROOM_SUGGESTIONS.map((room) => (
+              <option key={room} value={room} />
+            ))}
+          </datalist>
+
           {displays.length === 0 && (
             <div className="text-center py-12 text-muted-foreground">
-              No displays have checked in yet.
+              No displays have checked in yet. Open a kiosk URL with{" "}
+              <code className="text-xs">?kiosk=1&amp;device=pi-ac</code> first.
             </div>
           )}
         </CardContent>

@@ -29,6 +29,7 @@ import {
   postHeartbeat,
   saveOfflineSnapshot,
 } from "@/lib/live-updates/kiosk-heartbeat"
+import { normalizeRoomLabel } from "@/lib/live-updates/rooms"
 import { getCentralTime, scheduleMinuteKey as toScheduleMinuteKey } from "@/lib/live-updates/time"
 import {
   ZOOM_STORAGE_KEY,
@@ -74,6 +75,7 @@ export function LiveUpdatesShell() {
   const fixedView = parseViewQueryParam(searchParams.get("view"))
   /** When set with view=photoshow, feed slides from that chat’s posted photos. */
   const photoshowChannelId = searchParams.get("channel")?.trim() || null
+  const roomFromUrl = normalizeRoomLabel(searchParams.get("room"))
   const deviceId = resolveDeviceId(searchParams.get("device"))
   const hostname = resolveHostname(searchParams.get("hostname"))
 
@@ -83,6 +85,7 @@ export function LiveUpdatesShell() {
   const [viewZoom, setViewZoom] = useState<Record<string, number>>({})
   // Hide the bottom control bar for a cleaner TV display. Toggle with "H" key.
   const [showControls, setShowControls] = useState(!kioskMode)
+  const [roomLabel, setRoomLabel] = useState<string | null>(roomFromUrl)
 
   // Hydrate zoom prefs from localStorage on mount
   useEffect(() => {
@@ -354,6 +357,36 @@ export function LiveUpdatesShell() {
     return () => clearInterval(interval)
   }, [currentView, isAutoRotating, viewZoom, showControls])
 
+  // Keep URL ?room= in sync; also load admin-assigned room for this device.
+  useEffect(() => {
+    if (roomFromUrl) setRoomLabel(roomFromUrl)
+  }, [roomFromUrl])
+
+  useEffect(() => {
+    if (!deviceId || roomFromUrl) return
+    let cancelled = false
+    const load = async () => {
+      try {
+        const res = await fetch(
+          `/api/live-updates/display?device=${encodeURIComponent(deviceId)}`,
+          { cache: "no-store" },
+        )
+        if (!res.ok) return
+        const data = await res.json()
+        const label = normalizeRoomLabel(
+          typeof data.roomLabel === "string" ? data.roomLabel : null,
+        )
+        if (!cancelled && label) setRoomLabel(label)
+      } catch {
+        // keep last known label
+      }
+    }
+    void load()
+    return () => {
+      cancelled = true
+    }
+  }, [deviceId, roomFromUrl])
+
   // Kiosk fleet heartbeat — POST device/view every 60s when ?kiosk=1.
   useEffect(() => {
     if (!kioskMode || !deviceId) return
@@ -371,12 +404,16 @@ export function LiveUpdatesShell() {
             // buildVersion stays optional
           }
         }
-        await postHeartbeat({
+        const result = await postHeartbeat({
           deviceId,
           hostname,
           lastView: currentView,
           buildVersion,
+          roomLabel: roomFromUrl ?? undefined,
         })
+        if (!roomFromUrl && result?.roomLabel) {
+          setRoomLabel(result.roomLabel)
+        }
       } catch {
         // ignore transient network failures
       }
@@ -385,7 +422,7 @@ export function LiveUpdatesShell() {
     sendHeartbeat()
     const interval = setInterval(sendHeartbeat, 60 * 1000)
     return () => clearInterval(interval)
-  }, [kioskMode, deviceId, hostname, currentView])
+  }, [kioskMode, deviceId, hostname, currentView, roomFromUrl])
 
   // Fetch weather
   useEffect(() => {
@@ -734,7 +771,7 @@ export function LiveUpdatesShell() {
 
   return (
     <div
-      className={`live-updates-shell flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden text-[oklch(0.96_0.01_178)] ${
+      className={`live-updates-shell relative flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden text-[oklch(0.96_0.01_178)] ${
         photoshowOnly ? "bg-black" : ""
       }`}
     >
@@ -746,6 +783,22 @@ export function LiveUpdatesShell() {
           Connection lost — showing last saved data
         </div>
       )}
+
+      {roomLabel && (
+        <div
+          className={`pointer-events-none absolute z-40 ${
+            photoshowOnly
+              ? "left-4 top-4 sm:left-6 sm:top-6"
+              : "left-4 top-[4.75rem] sm:left-8 sm:top-[5.25rem]"
+          }`}
+        >
+          <div className="rounded-md border border-white/20 bg-black/55 px-3 py-1.5 text-sm font-semibold tracking-wide text-white shadow-sm backdrop-blur-sm sm:text-base">
+            <span className="opacity-70">This screen · </span>
+            {roomLabel}
+          </div>
+        </div>
+      )}
+
       {/* Header  -  kept minimal: a tiny logo + the clock. Everything else
           (WiFi, branding tagline, etc.) was removed so the views below get
           maximum vertical space and aren't competing with header noise.
@@ -830,6 +883,7 @@ export function LiveUpdatesShell() {
               photos={photoshowPhotos}
               immersive={photoshowOnly}
               fromChat={Boolean(photoshowChannelId)}
+              roomLabel={roomLabel}
             />
           )}
         </ViewTransition>

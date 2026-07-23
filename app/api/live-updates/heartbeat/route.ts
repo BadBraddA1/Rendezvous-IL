@@ -44,12 +44,14 @@ export async function POST(request: Request) {
       kioskUrl: typeof body.kioskUrl === "string" ? body.kioskUrl : null,
       buildVersion: typeof body.buildVersion === "string" ? body.buildVersion : null,
       userAgent: request.headers.get("user-agent"),
+      roomLabel: typeof body.roomLabel === "string" ? body.roomLabel : null,
     })
 
     return NextResponse.json({
       ok: true,
       deviceId: result.deviceId,
       lastSeenAt: result.lastSeenAt,
+      roomLabel: result.roomLabel,
     })
   } catch (error) {
     console.error("[live-updates/heartbeat] error:", error)
