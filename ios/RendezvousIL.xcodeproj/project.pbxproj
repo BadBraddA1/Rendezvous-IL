@@ -17,9 +17,11 @@
 		24929EF0C42582C37426D063 /* RegistrationCountdownView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10BA3D6FED0463578297010C /* RegistrationCountdownView.swift */; };
 		24E12CA3875598177849853F /* Ably in Frameworks */ = {isa = PBXBuildFile; productRef = 8BFDB483F89DC80A4A25F1E1 /* Ably */; };
 		25466A1634E763C60FEFFBFE /* DeepLinkRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61C09630FEAE09AF651F5F52 /* DeepLinkRouter.swift */; };
+		2A2F58835393A7A8ABBA240C /* YearFormatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEB53092D2478D412AD3114E /* YearFormatting.swift */; };
 		2ACE50E6E5E5B06D71FAC262 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0F8D6E375BBF9376F2E488A /* NotificationService.swift */; };
 		2C056AEC8FAB8F9E82406A37 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77C4EF056AAA489147049142 /* NotificationService.swift */; };
 		2F6E869CFEF9C6EBB7FEA808 /* PushRegistrationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24CACB9C92690CC394EB341D /* PushRegistrationService.swift */; };
+		2FA1CB47C5AD31BCC19C006D /* ChatDataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFAD31AE0B70D848AA02648A /* ChatDataStore.swift */; };
 		3E7640855ECDE62A00948E3B /* CalculatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 690D7795EC8B080C69972765 /* CalculatorView.swift */; };
 		40D57A631FD567741CAF09D1 /* ScheduleShared.swift in Sources */ = {isa = PBXBuildFile; fileRef = 092E3DF0A72BACCECEE03E35 /* ScheduleShared.swift */; };
 		4126E9AE149320ED218045AB /* RendezvousWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5827AB9131F3A63DC2A47844 /* RendezvousWidgets.swift */; };
@@ -31,10 +33,14 @@
 		51ED2EABA9D44315EABB8AAA /* ChatListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2B21229B8C516E3A062368E /* ChatListView.swift */; };
 		5635A4E0BBB120EA3599E770 /* AppSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 466D237AE8A926FC5CADD2F6 /* AppSession.swift */; };
 		56D096FAE066C36B12EDC251 /* AdminDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C481A10CBFA7092E0BDAC5AA /* AdminDashboardView.swift */; };
+		59F95F230F6B56C64AA99218 /* HomeBoardModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64179816F2B892D24E404042 /* HomeBoardModels.swift */; };
 		5BAF46E2ACA9E65CA42DFFA7 /* WelcomeHubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F12213D5157AC4235B6DE75 /* WelcomeHubView.swift */; };
+		64C312B89BE0793B46BA318F /* FamilyVolunteeringView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E75E2F787CFD5C0C443F208 /* FamilyVolunteeringView.swift */; };
 		66742AE51B59989BF039B477 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A62644C156B0B0D6EADBF84 /* APIClient.swift */; };
 		709C33B84426E71DA13A5F19 /* DirectoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDFCA925CF2F46C536CF5593 /* DirectoryView.swift */; };
 		73318A87943BEA4B8F1893F9 /* venue-map.json in Resources */ = {isa = PBXBuildFile; fileRef = 02E3AB80D204DA8640DDA2E4 /* venue-map.json */; };
+		737230A76DDE9FEDE4B66B51 /* VolunteerReminderService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4297DFF22E728AAA08368FF3 /* VolunteerReminderService.swift */; };
+		748AA24E1EAA9DFD4C151A9D /* ChatPhotoViewer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0224F790B72595846190F6C8 /* ChatPhotoViewer.swift */; };
 		7568F6D233AF16EAEA555420 /* BibleBowlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BDA213F53DB325886659882 /* BibleBowlView.swift */; };
 		7DA728921F342EA02A46E62B /* AdminUserModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BF3FBBFCE2EF235B3B1F1D9 /* AdminUserModels.swift */; };
 		8101634629AF3C73A1E2EE29 /* AppStoreScreenshotMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DDBF4B4F010F7A0FFA06C77 /* AppStoreScreenshotMode.swift */; };
@@ -47,11 +53,11 @@
 		9AFC09B1C3BFA8FB6D3A70F3 /* CampusLocationMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 008D20E8BE6CD25A13CBA988 /* CampusLocationMonitor.swift */; };
 		A1C531FA1B839739791C34BE /* FamilyDirectoryManageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13FDED7BA671DC4135511810 /* FamilyDirectoryManageView.swift */; };
 		A24919D11C464AEF4CC1FD46 /* AblyService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41FB932F01023F1967486D44 /* AblyService.swift */; };
+		A2618CC5253AF40696E61355 /* YearFormatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEB53092D2478D412AD3114E /* YearFormatting.swift */; };
 		A500969739655BF5628136F0 /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D1AD3F114E29E028A68BB4E /* AppConfig.swift */; };
 		A5C7F695E3ACBC367467F167 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17E9348A90094B82009B4CBD /* AboutView.swift */; };
 		A6695420B13B1E422B58B7AA /* UpdatesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41381ABB5514CB0C7608D0B0 /* UpdatesView.swift */; };
 		A9AEC700192817C9BB740EC4 /* DirectoryDataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DAEEF46A6CDDDEE3F2185E9 /* DirectoryDataStore.swift */; };
-		8637AD4609724681A8F211AB /* VolunteerReminderService.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD3550E631F54A35B1B13C69 /* VolunteerReminderService.swift */; };
 		AC921200D398D7BEA41C70E0 /* ScheduleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 613DC0E4AA30786A2A78BB63 /* ScheduleView.swift */; };
 		ADA22A3B77F9F98440833E10 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EE33E00CE0327288EBBC1EF /* ContentView.swift */; };
 		AFA8B01C44C837F91E7A0ED6 /* VenueMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FE407421254F1FD65DD9F86 /* VenueMapView.swift */; };
@@ -67,14 +73,10 @@
 		E34D277B093C78B4B9F4368E /* CarPlaySceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 567CD5A88BC1074C79EF3891 /* CarPlaySceneDelegate.swift */; };
 		E684A3B3E7C19748BB83302B /* ChatFormatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA42AAF64E35D2BC5008BA39 /* ChatFormatting.swift */; };
 		E9A3538651056E006A467139 /* ChatThreadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33566839E96130B158BA3681 /* ChatThreadView.swift */; };
-		4C99537D81ED4DF7A5E2D3B9 /* ChatPhotoViewer.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCFA54C5EC4C4DFB9D1C823C /* ChatPhotoViewer.swift */; };
-		7ADF3AD959DB44BE9ACA89F3 /* FamilyVolunteeringView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A58CDE63E144644905D014F /* FamilyVolunteeringView.swift */; };
-		90AD442DC2704D0D8DFA6351 /* ChatDataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A179EFCC46341308ACAF69D /* ChatDataStore.swift */; };
 		EB813C8733397959B05BC1E9 /* AdminUsersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D039A64635C0EF6FF3B6D3E3 /* AdminUsersView.swift */; };
+		F088695FBE1CEAF5040CB93F /* HomeBoardDataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F69A3152020B03D79A56028C /* HomeBoardDataStore.swift */; };
 		F31031239434555D31490B94 /* LiveActivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1375EFD2C7FB2D5CFD77868 /* LiveActivityManager.swift */; };
 		F3C879A023201FC4FC71526E /* ChatModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E4BCFAB9A88FD07F6BC8449 /* ChatModels.swift */; };
-		0A985194058E42349FB34785 /* HomeBoardModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E65AEF8C3754119972F4938 /* HomeBoardModels.swift */; };
-		8D9154EC78CB4CACAD90262A /* HomeBoardDataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62852DDD75854825A3977DF6 /* HomeBoardDataStore.swift */; };
 		F479995288779FDB1AC64AA0 /* GlassCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFF734E540241619F176611A /* GlassCard.swift */; };
 		F64EE8546EE1937D9C940FD5 /* AppModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED599FD2D648050CE74D667A /* AppModels.swift */; };
 		F763B88C4136397DCED07719 /* BundledContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE395596786297E49CC999A2 /* BundledContent.swift */; };
@@ -116,6 +118,7 @@
 
 /* Begin PBXFileReference section */
 		008D20E8BE6CD25A13CBA988 /* CampusLocationMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CampusLocationMonitor.swift; sourceTree = "<group>"; };
+		0224F790B72595846190F6C8 /* ChatPhotoViewer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatPhotoViewer.swift; sourceTree = "<group>"; };
 		02E3AB80D204DA8640DDA2E4 /* venue-map.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "venue-map.json"; sourceTree = "<group>"; };
 		07C50D82EE938B688ECCFCD4 /* RendezvousRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RendezvousRepository.swift; sourceTree = "<group>"; };
 		092E3DF0A72BACCECEE03E35 /* ScheduleShared.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleShared.swift; sourceTree = "<group>"; };
@@ -126,35 +129,31 @@
 		17E9348A90094B82009B4CBD /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
 		1A62644C156B0B0D6EADBF84 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
 		1DAEEF46A6CDDDEE3F2185E9 /* DirectoryDataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DirectoryDataStore.swift; sourceTree = "<group>"; };
-		FD3550E631F54A35B1B13C69 /* VolunteerReminderService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolunteerReminderService.swift; sourceTree = "<group>"; };
 		231641E3BB59E8082BBC04FE /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		237B5BF5B8B77520EE65C132 /* NotificationSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationSettingsView.swift; sourceTree = "<group>"; };
 		24CACB9C92690CC394EB341D /* PushRegistrationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushRegistrationService.swift; sourceTree = "<group>"; };
 		2C5BE204DD92D7E4E4B07B02 /* RendezvousILApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RendezvousILApp.swift; sourceTree = "<group>"; };
 		2CEDA5C3A5976DD05DF7BE70 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
-		2A58CDE63E144644905D014F /* FamilyVolunteeringView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FamilyVolunteeringView.swift; sourceTree = "<group>"; };
 		2F638B68D8B10FEB8E35D061 /* RendezvousIL.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RendezvousIL.entitlements; sourceTree = "<group>"; };
 		33566839E96130B158BA3681 /* ChatThreadView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatThreadView.swift; sourceTree = "<group>"; };
-		BCFA54C5EC4C4DFB9D1C823C /* ChatPhotoViewer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatPhotoViewer.swift; sourceTree = "<group>"; };
-		1A179EFCC46341308ACAF69D /* ChatDataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatDataStore.swift; sourceTree = "<group>"; };
 		37B9B084751C0C1099D59FE7 /* MoreView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoreView.swift; sourceTree = "<group>"; };
 		3C35CE790071A3642C52762C /* RendezvousILWidgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RendezvousILWidgets.entitlements; sourceTree = "<group>"; };
 		41381ABB5514CB0C7608D0B0 /* UpdatesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdatesView.swift; sourceTree = "<group>"; };
 		41FB932F01023F1967486D44 /* AblyService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AblyService.swift; sourceTree = "<group>"; };
+		4297DFF22E728AAA08368FF3 /* VolunteerReminderService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolunteerReminderService.swift; sourceTree = "<group>"; };
 		466D237AE8A926FC5CADD2F6 /* AppSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSession.swift; sourceTree = "<group>"; };
 		470F82732BB7CA2F2667959E /* AccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountView.swift; sourceTree = "<group>"; };
 		4BF3FBBFCE2EF235B3B1F1D9 /* AdminUserModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminUserModels.swift; sourceTree = "<group>"; };
 		4D1AD3F114E29E028A68BB4E /* AppConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfig.swift; sourceTree = "<group>"; };
 		4DDBF4B4F010F7A0FFA06C77 /* AppStoreScreenshotMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStoreScreenshotMode.swift; sourceTree = "<group>"; };
 		4E4BCFAB9A88FD07F6BC8449 /* ChatModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatModels.swift; sourceTree = "<group>"; };
-		6E65AEF8C3754119972F4938 /* HomeBoardModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeBoardModels.swift; sourceTree = "<group>"; };
-		62852DDD75854825A3977DF6 /* HomeBoardDataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeBoardDataStore.swift; sourceTree = "<group>"; };
 		5079917DD576A66F72E89EF5 /* BrandColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrandColors.swift; sourceTree = "<group>"; };
 		567CD5A88BC1074C79EF3891 /* CarPlaySceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarPlaySceneDelegate.swift; sourceTree = "<group>"; };
 		5827AB9131F3A63DC2A47844 /* RendezvousWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RendezvousWidgets.swift; sourceTree = "<group>"; };
 		5F12213D5157AC4235B6DE75 /* WelcomeHubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeHubView.swift; sourceTree = "<group>"; };
 		613DC0E4AA30786A2A78BB63 /* ScheduleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleView.swift; sourceTree = "<group>"; };
 		61C09630FEAE09AF651F5F52 /* DeepLinkRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepLinkRouter.swift; sourceTree = "<group>"; };
+		64179816F2B892D24E404042 /* HomeBoardModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeBoardModels.swift; sourceTree = "<group>"; };
 		690D7795EC8B080C69972765 /* CalculatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalculatorView.swift; sourceTree = "<group>"; };
 		6A9479596A7254615613D0C2 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		773D9EE7847452C39057563C /* ScheduleDataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleDataStore.swift; sourceTree = "<group>"; };
@@ -163,6 +162,7 @@
 		7E803E192474632267A01C74 /* RendezvousILWidgets.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = RendezvousILWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		8BDA213F53DB325886659882 /* BibleBowlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BibleBowlView.swift; sourceTree = "<group>"; };
 		8DD2170CD6154F19D976FE7A /* ClerkAuthSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClerkAuthSheet.swift; sourceTree = "<group>"; };
+		8E75E2F787CFD5C0C443F208 /* FamilyVolunteeringView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FamilyVolunteeringView.swift; sourceTree = "<group>"; };
 		8EE33E00CE0327288EBBC1EF /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		925104CC717795170B3F3923 /* ReminderService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderService.swift; sourceTree = "<group>"; };
 		A296DCF541E135FC128C1E7A /* FAQView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FAQView.swift; sourceTree = "<group>"; };
@@ -172,6 +172,7 @@
 		B29FB9D8B2258141B88927CA /* RendezvousILNotificationService.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RendezvousILNotificationService.entitlements; sourceTree = "<group>"; };
 		B9ABB515A2E6B2757302E7F3 /* CarPlayDataProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarPlayDataProvider.swift; sourceTree = "<group>"; };
 		BDFCA925CF2F46C536CF5593 /* DirectoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DirectoryView.swift; sourceTree = "<group>"; };
+		BEB53092D2478D412AD3114E /* YearFormatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YearFormatting.swift; sourceTree = "<group>"; };
 		C081E03DADF196CFEE5740DD /* RendezvousActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RendezvousActivityAttributes.swift; sourceTree = "<group>"; };
 		C481A10CBFA7092E0BDAC5AA /* AdminDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminDashboardView.swift; sourceTree = "<group>"; };
 		C9DDD133CDB46828BF6E765E /* EventReminderSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventReminderSheet.swift; sourceTree = "<group>"; };
@@ -187,11 +188,13 @@
 		ED599FD2D648050CE74D667A /* AppModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModels.swift; sourceTree = "<group>"; };
 		EE0D1FB46943E94BD0904482 /* RendezvousIL.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = RendezvousIL.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		EFF734E540241619F176611A /* GlassCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassCard.swift; sourceTree = "<group>"; };
+		F69A3152020B03D79A56028C /* HomeBoardDataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeBoardDataStore.swift; sourceTree = "<group>"; };
 		F7E5B9C3FB21EACB9FD34C8B /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		F93DC358023809E27C05FF3B /* AppEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironment.swift; sourceTree = "<group>"; };
 		F96773E3A3A26024702E5D84 /* VenueMapModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VenueMapModels.swift; sourceTree = "<group>"; };
 		FCDBD34429936681124138B5 /* schedule-fallback.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "schedule-fallback.json"; sourceTree = "<group>"; };
-		"TEMP_4994F9B8-5A20-495D-A871-F7EAEAEAF432" /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
+		FFAD31AE0B70D848AA02648A /* ChatDataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatDataStore.swift; sourceTree = "<group>"; };
+		"TEMP_0F49C0FB-0F9F-4DCF-AA38-BA6F50DAA353" /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -217,16 +220,16 @@
 				8BDA213F53DB325886659882 /* BibleBowlView.swift */,
 				690D7795EC8B080C69972765 /* CalculatorView.swift */,
 				E2B21229B8C516E3A062368E /* ChatListView.swift */,
+				0224F790B72595846190F6C8 /* ChatPhotoViewer.swift */,
 				33566839E96130B158BA3681 /* ChatThreadView.swift */,
-				BCFA54C5EC4C4DFB9D1C823C /* ChatPhotoViewer.swift */,
 				A8B82CB3618AEAA7A00515AB /* CheckInQRScannerView.swift */,
 				B27D1FB23F519523E3C7AE87 /* CheckInView.swift */,
 				BDFCA925CF2F46C536CF5593 /* DirectoryView.swift */,
 				C9DDD133CDB46828BF6E765E /* EventReminderSheet.swift */,
 				13FDED7BA671DC4135511810 /* FamilyDirectoryManageView.swift */,
+				8E75E2F787CFD5C0C443F208 /* FamilyVolunteeringView.swift */,
 				A296DCF541E135FC128C1E7A /* FAQView.swift */,
 				2CEDA5C3A5976DD05DF7BE70 /* HomeView.swift */,
-				2A58CDE63E144644905D014F /* FamilyVolunteeringView.swift */,
 				37B9B084751C0C1099D59FE7 /* MoreView.swift */,
 				237B5BF5B8B77520EE65C132 /* NotificationSettingsView.swift */,
 				613DC0E4AA30786A2A78BB63 /* ScheduleView.swift */,
@@ -244,16 +247,16 @@
 				466D237AE8A926FC5CADD2F6 /* AppSession.swift */,
 				CE395596786297E49CC999A2 /* BundledContent.swift */,
 				008D20E8BE6CD25A13CBA988 /* CampusLocationMonitor.swift */,
-				1A179EFCC46341308ACAF69D /* ChatDataStore.swift */,
+				FFAD31AE0B70D848AA02648A /* ChatDataStore.swift */,
 				1DAEEF46A6CDDDEE3F2185E9 /* DirectoryDataStore.swift */,
-				62852DDD75854825A3977DF6 /* HomeBoardDataStore.swift */,
-				FD3550E631F54A35B1B13C69 /* VolunteerReminderService.swift */,
+				F69A3152020B03D79A56028C /* HomeBoardDataStore.swift */,
 				E1375EFD2C7FB2D5CFD77868 /* LiveActivityManager.swift */,
 				77C4EF056AAA489147049142 /* NotificationService.swift */,
 				24CACB9C92690CC394EB341D /* PushRegistrationService.swift */,
 				925104CC717795170B3F3923 /* ReminderService.swift */,
 				07C50D82EE938B688ECCFCD4 /* RendezvousRepository.swift */,
 				773D9EE7847452C39057563C /* ScheduleDataStore.swift */,
+				4297DFF22E728AAA08368FF3 /* VolunteerReminderService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -263,6 +266,7 @@
 			children = (
 				C081E03DADF196CFEE5740DD /* RendezvousActivityAttributes.swift */,
 				092E3DF0A72BACCECEE03E35 /* ScheduleShared.swift */,
+				BEB53092D2478D412AD3114E /* YearFormatting.swift */,
 			);
 			path = Shared;
 			sourceTree = "<group>";
@@ -346,7 +350,7 @@
 				4D1AD3F114E29E028A68BB4E /* AppConfig.swift */,
 				ED599FD2D648050CE74D667A /* AppModels.swift */,
 				4E4BCFAB9A88FD07F6BC8449 /* ChatModels.swift */,
-				6E65AEF8C3754119972F4938 /* HomeBoardModels.swift */,
+				64179816F2B892D24E404042 /* HomeBoardModels.swift */,
 				F96773E3A3A26024702E5D84 /* VenueMapModels.swift */,
 			);
 			path = Models;
@@ -385,10 +389,10 @@
 			path = RendezvousIL;
 			sourceTree = "<group>";
 		};
-		"TEMP_169ABBAA-D2D9-4AC8-9E2D-AB1902FBDD21" /* ios */ = {
+		"TEMP_0BA7B222-1975-4F2E-AF7C-ADE73778D072" /* ios */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_4994F9B8-5A20-495D-A871-F7EAEAEAF432" /* Config.xcconfig */,
+				"TEMP_0F49C0FB-0F9F-4DCF-AA38-BA6F50DAA353" /* Config.xcconfig */,
 			);
 			path = ios;
 			sourceTree = "<group>";
@@ -548,28 +552,27 @@
 				9AFC09B1C3BFA8FB6D3A70F3 /* CampusLocationMonitor.swift in Sources */,
 				8BF585E509998F0FAB97B470 /* CarPlayDataProvider.swift in Sources */,
 				E34D277B093C78B4B9F4368E /* CarPlaySceneDelegate.swift in Sources */,
+				2FA1CB47C5AD31BCC19C006D /* ChatDataStore.swift in Sources */,
 				0096B6D5331F9F0E8FF3CB84 /* ChatDemoMode.swift in Sources */,
 				E684A3B3E7C19748BB83302B /* ChatFormatting.swift in Sources */,
 				51ED2EABA9D44315EABB8AAA /* ChatListView.swift in Sources */,
 				F3C879A023201FC4FC71526E /* ChatModels.swift in Sources */,
-				0A985194058E42349FB34785 /* HomeBoardModels.swift in Sources */,
-				8D9154EC78CB4CACAD90262A /* HomeBoardDataStore.swift in Sources */,
+				748AA24E1EAA9DFD4C151A9D /* ChatPhotoViewer.swift in Sources */,
 				E9A3538651056E006A467139 /* ChatThreadView.swift in Sources */,
-				4C99537D81ED4DF7A5E2D3B9 /* ChatPhotoViewer.swift in Sources */,
-				7ADF3AD959DB44BE9ACA89F3 /* FamilyVolunteeringView.swift in Sources */,
-				90AD442DC2704D0D8DFA6351 /* ChatDataStore.swift in Sources */,
 				43BD0772D15AB8DEBBBF9D40 /* CheckInQRScannerView.swift in Sources */,
 				D946492B75289CE18C0C4AF7 /* CheckInView.swift in Sources */,
 				C064E3A1770F545A45AC837B /* ClerkAuthSheet.swift in Sources */,
 				ADA22A3B77F9F98440833E10 /* ContentView.swift in Sources */,
 				25466A1634E763C60FEFFBFE /* DeepLinkRouter.swift in Sources */,
 				A9AEC700192817C9BB740EC4 /* DirectoryDataStore.swift in Sources */,
-				8637AD4609724681A8F211AB /* VolunteerReminderService.swift in Sources */,
 				709C33B84426E71DA13A5F19 /* DirectoryView.swift in Sources */,
 				D7D9A0E82A4FB69953072D2D /* EventReminderSheet.swift in Sources */,
 				43C393DA7DDE7C0CA8C161E8 /* FAQView.swift in Sources */,
 				A1C531FA1B839739791C34BE /* FamilyDirectoryManageView.swift in Sources */,
+				64C312B89BE0793B46BA318F /* FamilyVolunteeringView.swift in Sources */,
 				F479995288779FDB1AC64AA0 /* GlassCard.swift in Sources */,
+				F088695FBE1CEAF5040CB93F /* HomeBoardDataStore.swift in Sources */,
+				59F95F230F6B56C64AA99218 /* HomeBoardModels.swift in Sources */,
 				FF1AD4CD38FD1EA57B8F36A6 /* HomeView.swift in Sources */,
 				F31031239434555D31490B94 /* LiveActivityManager.swift in Sources */,
 				001F6BE14BDAF1A0A6F00A2C /* MoreView.swift in Sources */,
@@ -589,7 +592,9 @@
 				A6695420B13B1E422B58B7AA /* UpdatesView.swift in Sources */,
 				0355F432B0E93344589A9241 /* VenueMapModels.swift in Sources */,
 				AFA8B01C44C837F91E7A0ED6 /* VenueMapView.swift in Sources */,
+				737230A76DDE9FEDE4B66B51 /* VolunteerReminderService.swift in Sources */,
 				5BAF46E2ACA9E65CA42DFFA7 /* WelcomeHubView.swift in Sources */,
+				A2618CC5253AF40696E61355 /* YearFormatting.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -600,6 +605,7 @@
 				49286F0D8C03FD5E8CA4B77F /* RendezvousActivityAttributes.swift in Sources */,
 				4126E9AE149320ED218045AB /* RendezvousWidgets.swift in Sources */,
 				CF3382D8A42D8FE19E83FF6F /* ScheduleShared.swift in Sources */,
+				2A2F58835393A7A8ABBA240C /* YearFormatting.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -688,7 +694,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = RendezvousILNotificationService/RendezvousILNotificationService.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 208;
+				CURRENT_PROJECT_VERSION = 209;
 				DEVELOPMENT_TEAM = F5HPRRCC5H;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = RendezvousILNotificationService/Info.plist;
@@ -708,7 +714,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = RendezvousILWidgets/RendezvousILWidgets.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 208;
+				CURRENT_PROJECT_VERSION = 209;
 				DEVELOPMENT_TEAM = F5HPRRCC5H;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = RendezvousILWidgets/Info.plist;
@@ -730,14 +736,14 @@
 		};
 		7ADBCEC1B448B95857681847 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_4994F9B8-5A20-495D-A871-F7EAEAEAF432" /* Config.xcconfig */;
+			baseConfigurationReference = "TEMP_0F49C0FB-0F9F-4DCF-AA38-BA6F50DAA353" /* Config.xcconfig */;
 			buildSettings = {
 				APS_ENVIRONMENT = production;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = RendezvousIL/RendezvousIL.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 208;
+				CURRENT_PROJECT_VERSION = 209;
 				DEVELOPMENT_TEAM = F5HPRRCC5H;
 				INFOPLIST_FILE = RendezvousIL/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -814,7 +820,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = RendezvousILWidgets/RendezvousILWidgets.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 208;
+				CURRENT_PROJECT_VERSION = 209;
 				DEVELOPMENT_TEAM = F5HPRRCC5H;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = RendezvousILWidgets/Info.plist;
@@ -839,7 +845,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = RendezvousILNotificationService/RendezvousILNotificationService.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 208;
+				CURRENT_PROJECT_VERSION = 209;
 				DEVELOPMENT_TEAM = F5HPRRCC5H;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = RendezvousILNotificationService/Info.plist;
@@ -856,14 +862,14 @@
 		};
 		F8122583B54F4443475E1AD8 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_4994F9B8-5A20-495D-A871-F7EAEAEAF432" /* Config.xcconfig */;
+			baseConfigurationReference = "TEMP_0F49C0FB-0F9F-4DCF-AA38-BA6F50DAA353" /* Config.xcconfig */;
 			buildSettings = {
 				APS_ENVIRONMENT = development;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = RendezvousIL/RendezvousIL.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 208;
+				CURRENT_PROJECT_VERSION = 209;
 				DEVELOPMENT_TEAM = F5HPRRCC5H;
 				INFOPLIST_FILE = RendezvousIL/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
