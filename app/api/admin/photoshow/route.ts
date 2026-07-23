@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { getCurrentAdmin, getAdminPermissions } from "@/lib/clerk-auth"
+import { listChatPhotoshowChannels } from "@/lib/live-updates/chat-photoshow"
 import {
   createPhotoshowPhoto,
   listAllPhotoshowPhotos,
@@ -17,8 +18,11 @@ export async function GET(request: Request) {
   }
 
   try {
-    const photos = await listAllPhotoshowPhotos()
-    return NextResponse.json({ photos })
+    const [photos, chatChannels] = await Promise.all([
+      listAllPhotoshowPhotos(),
+      listChatPhotoshowChannels(),
+    ])
+    return NextResponse.json({ photos, chatChannels })
   } catch (error) {
     console.error("[admin/photoshow] GET error:", error)
     return NextResponse.json({ error: "Failed to load photos" }, { status: 500 })

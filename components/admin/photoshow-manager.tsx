@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react"
 import Image from "next/image"
+import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,13 +10,15 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
-import { ArrowDown, ArrowUp, Images, Loader2, Trash2, Upload } from "lucide-react"
+import { ArrowDown, ArrowUp, Copy, ExternalLink, Images, Loader2, MessageSquare, Trash2, Upload } from "lucide-react"
 import { AdminConfirmDialog } from "./admin-confirm-dialog"
 import { AdminListSkeleton, AdminRetryButton } from "./admin-panel-states"
+import type { ChatPhotoshowChannel } from "@/lib/live-updates/chat-photoshow"
 import type { PhotoshowPhoto } from "@/lib/live-updates/photoshow-shared"
 
 export function PhotoshowManager({ canEdit }: { canEdit: boolean }) {
   const [photos, setPhotos] = useState<PhotoshowPhoto[]>([])
+  const [chatChannels, setChatChannels] = useState<ChatPhotoshowChannel[]>([])
   const [loading, setLoading] = useState(true)
   const [fetchError, setFetchError] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
@@ -33,8 +36,10 @@ export function PhotoshowManager({ canEdit }: { canEdit: boolean }) {
       if (!res.ok) throw new Error(`Could not load photos (${res.status})`)
       const data = await res.json()
       setPhotos(Array.isArray(data.photos) ? data.photos : [])
+      setChatChannels(Array.isArray(data.chatChannels) ? data.chatChannels : [])
     } catch (error) {
       setPhotos([])
+      setChatChannels([])
       setFetchError(error instanceof Error ? error.message : "Could not load photos")
     } finally {
       setLoading(false)
@@ -139,19 +144,105 @@ export function PhotoshowManager({ canEdit }: { canEdit: boolean }) {
     }
   }
 
+  const copyTvUrl = async (path: string) => {
+    const url = `https://rendezvousil.com${path}`
+    try {
+      await navigator.clipboard.writeText(url)
+      toast({ title: "TV link copied" })
+    } catch {
+      toast({ title: "Could not copy", description: url, variant: "destructive" })
+    }
+  }
+
   const activeCount = photos.filter((p) => p.is_active).length
+  const chatsWithPhotos = chatChannels.filter((c) => c.photo_count > 0)
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Images className="h-5 w-5" />
-            Room photoshow
+            <MessageSquare className="h-5 w-5" />
+            Chat photoshows
           </CardTitle>
           <CardDescription>
-            Photos rotate on Live Updates (program boards) and can run full-screen on room TVs.
-            Active slides: <strong>{activeCount}</strong>
+            Every chat gets its own slideshow from photos people post in that channel. Point a
+            room TV at that chat&apos;s link — new chat photos show up within about a minute.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {loading ? (
+            <AdminListSkeleton rows={2} />
+          ) : fetchError ? (
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">{fetchError}</p>
+              <AdminRetryButton onRetry={() => void fetchData()} label="Reload" />
+            </div>
+          ) : chatChannels.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No chat channels yet.</p>
+          ) : (
+            <div className="space-y-2">
+              {chatChannels.map((channel) => (
+                <div
+                  key={channel.id}
+                  className="flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div className="min-w-0 space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-medium">{channel.name}</span>
+                      {channel.channel_type === "year" && channel.event_year != null && (
+                        <Badge variant="secondary">{channel.event_year}</Badge>
+                      )}
+                      {channel.is_test && <Badge variant="outline">Test</Badge>}
+                      {!channel.is_active && <Badge variant="outline">Inactive</Badge>}
+                    </div>
+                    <p className="text-sm text-muted-foreground tabular-nums">
+                      {channel.photo_count === 0
+                        ? "No photos yet"
+                        : `${channel.photo_count} photo${channel.photo_count === 1 ? "" : "s"}`}
+                    </p>
+                    <code className="block break-all text-xs text-muted-foreground">
+                      {channel.tv_path}
+                    </code>
+                  </div>
+                  <div className="flex shrink-0 flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => void copyTvUrl(channel.tv_path)}
+                    >
+                      <Copy className="mr-2 h-4 w-4" />
+                      Copy TV link
+                    </Button>
+                    <Button type="button" variant="secondary" size="sm" asChild>
+                      <Link href={channel.tv_path} target="_blank" rel="noreferrer">
+                        <ExternalLink className="mr-2 h-4 w-4" />
+                        Preview
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              ))}
+              {chatsWithPhotos.length === 0 && (
+                <p className="pt-1 text-sm text-muted-foreground">
+                  Photos appear here after someone posts an image in chat.
+                </p>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Images className="h-5 w-5" />
+            Manual room photoshow
+          </CardTitle>
+          <CardDescription>
+            Curated slides for Live Updates program boards (and a shared room TV). Separate from
+            chat feeds. Active slides: <strong>{activeCount}</strong>
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -161,8 +252,8 @@ export function PhotoshowManager({ canEdit }: { canEdit: boolean }) {
               photoshow appears automatically when at least one photo is active.
             </p>
             <p>
-              <strong className="text-foreground">Dedicated room slideshow</strong> (replaces a
-              laptop slideshow): point the Pi/TV at
+              <strong className="text-foreground">Dedicated room slideshow</strong> (manual uploads
+              only):
             </p>
             <code className="block break-all rounded bg-background px-3 py-2 text-xs text-foreground">
               https://rendezvousil.com/live-updates?kiosk=1&amp;view=photoshow
@@ -213,15 +304,10 @@ export function PhotoshowManager({ canEdit }: { canEdit: boolean }) {
 
       {loading ? (
         <AdminListSkeleton rows={3} />
-      ) : fetchError ? (
-        <div className="space-y-2">
-          <p className="text-sm text-muted-foreground">{fetchError}</p>
-          <AdminRetryButton onRetry={() => void fetchData()} label="Reload" />
-        </div>
-      ) : photos.length === 0 ? (
+      ) : fetchError ? null : photos.length === 0 ? (
         <Card>
           <CardContent className="py-10 text-center text-muted-foreground">
-            No photos yet. Upload a few to replace the room slideshows.
+            No manual photos yet. Upload above, or use a chat photoshow link instead.
           </CardContent>
         </Card>
       ) : (

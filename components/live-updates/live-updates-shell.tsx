@@ -72,6 +72,8 @@ export function LiveUpdatesShell() {
   const syncFromServer = searchParams.get("sync") === "1"
   const kioskMode = searchParams.get("kiosk") === "1"
   const fixedView = parseViewQueryParam(searchParams.get("view"))
+  /** When set with view=photoshow, feed slides from that chat’s posted photos. */
+  const photoshowChannelId = searchParams.get("channel")?.trim() || null
   const deviceId = resolveDeviceId(searchParams.get("device"))
   const hostname = resolveHostname(searchParams.get("hostname"))
 
@@ -424,11 +426,14 @@ export function LiveUpdatesShell() {
     return () => clearInterval(interval)
   }, [kioskMode])
 
-  // Photoshow slides — poll so admin uploads reach room TVs without a reload.
+  // Photoshow slides — admin uploads, or ?channel=… for that chat’s photos.
   useEffect(() => {
     const fetchPhotos = async () => {
       try {
-        const res = await fetch("/api/live-updates/photos", { cache: "no-store" })
+        const qs = photoshowChannelId
+          ? `?channel=${encodeURIComponent(photoshowChannelId)}`
+          : ""
+        const res = await fetch(`/api/live-updates/photos${qs}`, { cache: "no-store" })
         if (!res.ok) throw new Error(`photos ${res.status}`)
         const data = await res.json()
         if (Array.isArray(data.photos)) {
@@ -442,7 +447,7 @@ export function LiveUpdatesShell() {
     const pollMs = kioskMode ? 30 * 1000 : 60 * 1000
     const interval = setInterval(fetchPhotos, pollMs)
     return () => clearInterval(interval)
-  }, [kioskMode])
+  }, [kioskMode, photoshowChannelId])
 
   // Keep offline snapshot currentView in sync when rotating locally.
   useEffect(() => {
