@@ -1,5 +1,10 @@
 "use client"
 
+/**
+ * PLANNED: Remove search-by-family-name-or-email from check-in.
+ * Keep QR scan + code entry only (see README “Planned — check-in lookup”).
+ */
+
 import { useState, useEffect, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"

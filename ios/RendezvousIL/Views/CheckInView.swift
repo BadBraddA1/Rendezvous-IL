@@ -1,6 +1,8 @@
 import SwiftUI
 import UIKit
 
+/// PLANNED: Remove search-by-family-name-or-email from check-in.
+/// Keep QR scan + code entry only (see root README “Planned — check-in lookup”).
 struct CheckInView: View {
     @Environment(AppSession.self) private var session
 

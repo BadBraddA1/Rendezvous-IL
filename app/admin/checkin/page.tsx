@@ -20,7 +20,10 @@ export default async function CheckinPage() {
         <div className="admin-container admin-container--compact">
           <header className="admin-page-header">
             <h1 className="text-section-title text-balance">Check-In Station</h1>
-            <p className="text-lead text-muted-foreground">Scan a QR code, enter a code, or search by name</p>
+            <p className="text-lead text-muted-foreground">
+              Scan a QR code, enter a code, or search by name
+              {/* PLANNED: drop name/email search — QR + code only */}
+            </p>
           </header>
           <CheckinStation />
         </div>
