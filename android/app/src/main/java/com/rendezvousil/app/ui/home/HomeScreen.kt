@@ -188,7 +188,8 @@ private fun CheckInCard(checkIn: FamilyCheckInResponse) {
             ) {
                 when {
                     !checkIn.hasRegistration -> Text(
-                        "No registration linked for ${checkIn.eventYear}",
+                        checkIn.message
+                            ?: "No registration linked for ${checkIn.eventYear}",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

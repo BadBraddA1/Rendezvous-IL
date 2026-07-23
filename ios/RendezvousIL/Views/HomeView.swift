@@ -97,7 +97,8 @@ struct HomeView: View {
                 sectionTitle("Check-in")
                 VStack(alignment: .leading, spacing: 6) {
                     if !checkIn.hasRegistration {
-                        Text("No registration linked for \(checkIn.eventYear)")
+                        // String(year) avoids SwiftUI locale grouping ("2,027").
+                        Text(checkIn.message ?? "No registration linked for \(String(checkIn.eventYear))")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     } else if checkIn.checkedIn {
