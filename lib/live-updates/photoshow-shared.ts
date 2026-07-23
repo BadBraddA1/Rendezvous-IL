@@ -1,7 +1,7 @@
 import { LIVE_UPDATES_ROTATION_EPOCH_MS } from "@/lib/live-updates/display-state"
 
 /** Seconds each photo stays on screen (all TVs stay in sync via epoch). */
-export const PHOTOSHOW_INTERVAL_MS = 8_000
+export const PHOTOSHOW_INTERVAL_MS = 5_000
 
 export interface PhotoshowPhoto {
   id: string

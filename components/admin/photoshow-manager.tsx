@@ -258,7 +258,7 @@ export function PhotoshowManager({ canEdit }: { canEdit: boolean }) {
             <code className="block break-all rounded bg-background px-3 py-2 text-xs text-foreground">
               https://rendezvousil.com/live-updates?kiosk=1&amp;view=photoshow
             </code>
-            <p>All screens stay on the same photo at the same time (8 seconds each).</p>
+            <p>All screens stay on the same photo at the same time (5 seconds each).</p>
           </div>
 
           {canEdit && (
