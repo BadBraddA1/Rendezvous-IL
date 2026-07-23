@@ -25,7 +25,8 @@ export function PhotoshowView({
 
   useEffect(() => {
     if (photos.length <= 1) return
-    const id = window.setInterval(() => setTick((n) => n + 1), 1000)
+    // Tick often enough to catch the 5s epoch bucket change promptly.
+    const id = window.setInterval(() => setTick((n) => n + 1), 250)
     return () => window.clearInterval(id)
   }, [photos.length])
 
@@ -132,8 +133,12 @@ export function PhotoshowView({
         ) : null}
       </div>
 
-      {photos.length > 1 && !immersive && (
-        <div className="pointer-events-none absolute bottom-3 right-4 text-sm tabular-nums text-white/50">
+      {photos.length > 1 && (
+        <div
+          className={`pointer-events-none absolute bottom-3 right-4 tabular-nums drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)] ${
+            immersive ? "text-base text-white/80 sm:text-lg" : "text-sm text-white/50"
+          }`}
+        >
           {index + 1} / {photos.length}
           <span className="sr-only">
             , advances every {Math.round(PHOTOSHOW_INTERVAL_MS / 1000)} seconds

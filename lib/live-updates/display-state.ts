@@ -13,8 +13,18 @@ export const LIVE_UPDATES_BASE_VIEWS: ViewType[] = [
 
 export const LIVE_UPDATES_ROTATE_INTERVAL_MS = 15_000
 
-/** Monday 2027-05-03 00:00 America/Chicago — shared rotation epoch for all Pis. */
-export const LIVE_UPDATES_ROTATION_EPOCH_MS = new Date("2027-05-03T00:00:00-05:00").getTime()
+/**
+ * Shared rotation epoch for all Pis / room TVs.
+ * Must be in the past so elapsed time advances (a future epoch freezes every
+ * board on index 0 — photoshow and auto-rotate both stuck).
+ */
+export const LIVE_UPDATES_ROTATION_EPOCH_MS = new Date("2026-01-01T00:00:00-06:00").getTime()
+
+function rotationElapsedMs(serverNowMs: number, epochMs: number): number {
+  // If misconfigured into the future, fall back so screens still advance.
+  const epoch = epochMs > serverNowMs ? new Date("2020-01-01T00:00:00Z").getTime() : epochMs
+  return Math.max(0, serverNowMs - epoch)
+}
 
 export interface LiveUpdatesDisplayState {
   serverTime: string
@@ -69,10 +79,10 @@ export function computeRotationIndex(
     return { viewIndex: 0, nextRotateAtMs: serverNowMs + rotateMs }
   }
 
-  const elapsed = Math.max(0, serverNowMs - epochMs)
+  const elapsed = rotationElapsedMs(serverNowMs, epochMs)
   const bucket = Math.floor(elapsed / rotateMs)
   const viewIndex = bucket % viewCount
-  const nextRotateAtMs = epochMs + (bucket + 1) * rotateMs
+  const nextRotateAtMs = serverNowMs - (elapsed % rotateMs) + rotateMs
 
   return { viewIndex, nextRotateAtMs }
 }
