@@ -41,16 +41,24 @@ export function PhotoshowView({
 
   if (!photo) {
     return (
-      <div className="relative flex h-full min-h-[50dvh] w-full items-center justify-center">
-        <div className="lu-panel relative flex w-full max-w-2xl flex-col items-center justify-center p-12">
-          <Images className="lu-text-meal mb-6 h-24 w-24 opacity-60" />
-          <h2 className="lu-type-board-lg lu-text-meal relative opacity-80">No photos yet</h2>
+      <div
+        className={
+          immersive
+            ? "absolute inset-0 flex items-center justify-center bg-black px-8"
+            : "relative flex h-full min-h-[50dvh] w-full items-center justify-center px-6"
+        }
+      >
+        <div className="relative flex w-full max-w-4xl flex-col items-center justify-center text-center">
+          <Images className="mb-8 h-20 w-20 text-white/80 sm:h-28 sm:w-28" strokeWidth={1.5} />
+          <h2 className="text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl">
+            No photos yet
+          </h2>
           {roomLabel && (
-            <p className="lu-text-secondary mt-2 text-center text-base font-semibold tracking-wide">
+            <p className="mt-4 text-2xl font-semibold tracking-wide text-white sm:text-3xl">
               This screen · {roomLabel}
             </p>
           )}
-          <p className="lu-text-secondary mt-3 max-w-xl text-center text-lg leading-relaxed">
+          <p className="mt-6 max-w-3xl text-xl leading-relaxed text-white sm:text-2xl lg:text-3xl">
             {fromChat
               ? "Send photos in the group chat and they’ll appear on this screen within about a minute."
               : "Send photos in the group chat (or add slides in Admin → Photoshow) to show them on this screen."}
@@ -83,26 +91,28 @@ export function PhotoshowView({
           <img
             src={photo.image_url}
             alt={photo.caption || "Rendezvous photoshow"}
-            className={`h-full w-full object-contain animate-in fade-in-0 duration-700 ${
-              immersive ? "absolute inset-0" : ""
-            }`}
+            className={
+              immersive
+                ? "absolute inset-0 h-full w-full object-cover animate-in fade-in-0 duration-700"
+                : "h-full w-full object-contain animate-in fade-in-0 duration-700"
+            }
             decoding="async"
             onError={() => {
               setBrokenIds((prev) => ({ ...prev, [photo.id]: true }))
             }}
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center px-6 text-center text-white/70">
+          <div className="flex h-full w-full items-center justify-center px-6 text-center text-2xl font-semibold text-white">
             Could not load this photo
           </div>
         )}
         {photo.caption && !imageFailed && (
           <div
-            className={`absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent px-6 pb-6 pt-16 sm:px-10 sm:pb-8 ${
+            className={`absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/70 to-transparent px-6 pb-8 pt-24 sm:px-12 sm:pb-10 ${
               immersive ? "" : "rounded-b-[inherit]"
             }`}
           >
-            <p className="text-balance text-center text-xl font-semibold text-white sm:text-2xl lg:text-3xl">
+            <p className="text-balance text-center text-2xl font-bold text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] sm:text-3xl lg:text-4xl">
               {photo.caption}
             </p>
           </div>

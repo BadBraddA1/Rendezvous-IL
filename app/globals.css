@@ -1012,6 +1012,17 @@
   }
 }
 
+/* Live Updates / photoshow kiosk — fill the browser and hide site chrome */
+body.lu-kiosk-mode {
+  overflow: hidden !important;
+  background: #000 !important;
+}
+
+body.lu-kiosk-mode .skip-link,
+body.lu-display-mode button[aria-label="Back to top"] {
+  display: none !important;
+}
+
 /* Brand dark shell — live updates display board, silent mode, etc. */
 .brand-dark-shell,
 .live-updates-shell {

@@ -86,6 +86,8 @@ export function LiveUpdatesShell() {
   // Hide the bottom control bar for a cleaner TV display. Toggle with "H" key.
   const [showControls, setShowControls] = useState(!kioskMode)
   const [roomLabel, setRoomLabel] = useState<string | null>(roomFromUrl)
+  const [blackout, setBlackout] = useState(false)
+  const [photoshowChrome, setPhotoshowChrome] = useState(false)
 
   // Hydrate zoom prefs from localStorage on mount
   useEffect(() => {
@@ -317,13 +319,38 @@ export function LiveUpdatesShell() {
   }, [fixedView])
 
   // Pi kiosk: attempt fullscreen on load (Chromium kiosk allows without gesture).
+  // Retry a few times — some devices only allow it after paint / interaction.
   useEffect(() => {
     if (!kioskMode || typeof document === "undefined") return
-    const timer = window.setTimeout(() => {
+    let attempts = 0
+    const tryFullscreen = () => {
+      if (document.fullscreenElement) return
       document.documentElement.requestFullscreen?.().catch(() => {})
-    }, 500)
+      attempts += 1
+      if (attempts < 4) window.setTimeout(tryFullscreen, 800 * attempts)
+    }
+    const timer = window.setTimeout(tryFullscreen, 200)
     return () => window.clearTimeout(timer)
   }, [kioskMode])
+
+  // Hide site chrome (back-to-top, etc.) while the TV board is up.
+  useEffect(() => {
+    if (typeof document === "undefined") return
+    document.body.classList.add("lu-display-mode")
+    if (kioskMode || photoshowOnly) {
+      document.body.classList.add("lu-kiosk-mode")
+    }
+    return () => {
+      document.body.classList.remove("lu-display-mode", "lu-kiosk-mode")
+    }
+  }, [kioskMode, photoshowOnly])
+
+  // Auto-hide photoshow on-screen controls after a few seconds.
+  useEffect(() => {
+    if (!photoshowOnly || !photoshowChrome || blackout) return
+    const timer = window.setTimeout(() => setPhotoshowChrome(false), 4000)
+    return () => window.clearTimeout(timer)
+  }, [photoshowOnly, photoshowChrome, blackout])
 
   useEffect(() => {
     let initialVersion: string | null = null
@@ -744,11 +771,22 @@ export function LiveUpdatesShell() {
         case "F":
           toggleFullscreen()
           break
+        case "b":
+        case "B":
+          setBlackout((prev) => !prev)
+          break
+        case "Escape":
+          if (blackout) {
+            setBlackout(false)
+            e.preventDefault()
+          }
+          break
         case "h":
         case "H":
           setShowControls(prev => !prev)
           break
         case "ArrowRight":
+          if (blackout || photoshowOnly) break
           setCurrentView(prev => {
             const currentIndex = availableViews.indexOf(prev)
             const nextIndex = (currentIndex + 1) % availableViews.length
@@ -756,6 +794,7 @@ export function LiveUpdatesShell() {
           })
           break
         case "ArrowLeft":
+          if (blackout || photoshowOnly) break
           setCurrentView(prev => {
             const currentIndex = availableViews.indexOf(prev)
             const prevIndex = (currentIndex - 1 + availableViews.length) % availableViews.length
@@ -767,15 +806,29 @@ export function LiveUpdatesShell() {
 
     window.addEventListener("keydown", handleKeyDown)
     return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [toggleFullscreen, availableViews, announcements.length, hasVolunteerData, fixedView, photoshowPhotos.length])
+  }, [
+    toggleFullscreen,
+    availableViews,
+    announcements.length,
+    hasVolunteerData,
+    fixedView,
+    photoshowPhotos.length,
+    blackout,
+    photoshowOnly,
+  ])
 
   return (
     <div
-      className={`live-updates-shell relative flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden text-[oklch(0.96_0.01_178)] ${
-        photoshowOnly ? "bg-black" : ""
-      }`}
+      className={`live-updates-shell relative flex flex-col overflow-hidden text-[oklch(0.96_0.01_178)] ${
+        photoshowOnly || kioskMode
+          ? "fixed inset-0 z-[60] h-[100dvh] max-h-[100dvh] w-screen max-w-[100vw]"
+          : "h-[100dvh] max-h-[100dvh]"
+      } ${photoshowOnly ? "bg-black" : ""}`}
+      onClick={() => {
+        if (photoshowOnly && !blackout) setPhotoshowChrome(true)
+      }}
     >
-      {isOffline && (
+      {isOffline && !blackout && (
         <div
           role="status"
           className="fixed inset-x-0 top-0 z-50 bg-amber-600 px-4 py-2 text-center text-sm font-semibold text-white sm:text-base"
@@ -784,18 +837,57 @@ export function LiveUpdatesShell() {
         </div>
       )}
 
-      {roomLabel && (
+      {roomLabel && !blackout && (
         <div
           className={`pointer-events-none absolute z-40 ${
             photoshowOnly
-              ? "left-4 top-4 sm:left-6 sm:top-6"
+              ? "left-5 top-5 sm:left-8 sm:top-8"
               : "left-4 top-[4.75rem] sm:left-8 sm:top-[5.25rem]"
           }`}
         >
-          <div className="rounded-md border border-white/20 bg-black/55 px-3 py-1.5 text-sm font-semibold tracking-wide text-white shadow-sm backdrop-blur-sm sm:text-base">
-            <span className="opacity-70">This screen · </span>
+          <div className="rounded-lg border-2 border-white/40 bg-black/80 px-4 py-2.5 text-lg font-bold tracking-wide text-white shadow-[0_2px_16px_rgba(0,0,0,0.7)] sm:px-5 sm:py-3 sm:text-2xl lg:text-3xl">
+            <span className="font-semibold text-white/85">This screen · </span>
             {roomLabel}
           </div>
+        </div>
+      )}
+
+      {blackout && (
+        <button
+          type="button"
+          className="fixed inset-0 z-[90] cursor-default bg-black"
+          aria-label="Screen blacked out. Press B or tap to wake."
+          onClick={() => setBlackout(false)}
+        >
+          <span className="sr-only">Tap or press B to wake screen</span>
+        </button>
+      )}
+
+      {photoshowOnly && photoshowChrome && !blackout && (
+        <div className="absolute inset-x-0 bottom-0 z-50 flex flex-wrap items-center justify-center gap-3 bg-gradient-to-t from-black via-black/80 to-transparent px-4 pb-6 pt-16 sm:gap-4 sm:pb-8">
+          <button
+            type="button"
+            className="min-h-14 rounded-lg border-2 border-white/50 bg-black/80 px-5 py-3 text-lg font-bold text-white shadow-lg sm:min-h-16 sm:px-6 sm:text-xl"
+            onClick={(e) => {
+              e.stopPropagation()
+              setBlackout(true)
+              setPhotoshowChrome(false)
+            }}
+          >
+            Blackout
+            <span className="ml-2 text-base font-semibold text-white/70">(B)</span>
+          </button>
+          <button
+            type="button"
+            className="min-h-14 rounded-lg border-2 border-white/50 bg-black/80 px-5 py-3 text-lg font-bold text-white shadow-lg sm:min-h-16 sm:px-6 sm:text-xl"
+            onClick={(e) => {
+              e.stopPropagation()
+              toggleFullscreen()
+            }}
+          >
+            {isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+            <span className="ml-2 text-base font-semibold text-white/70">(F)</span>
+          </button>
         </div>
       )}
 
@@ -803,7 +895,7 @@ export function LiveUpdatesShell() {
           (WiFi, branding tagline, etc.) was removed so the views below get
           maximum vertical space and aren't competing with header noise.
           Dedicated photoshow mode hides chrome for a true room slideshow. */}
-      {!photoshowOnly && (
+      {!photoshowOnly && !blackout && (
       <header className="site-chrome-top shrink-0 flex items-center justify-between gap-3 border-b border-primary/20 px-4 py-3 sm:gap-6 sm:px-8 sm:py-4">
         <div className="flex items-center gap-3 min-w-0 shrink">
           <div className="relative h-11 w-11 shrink-0 rounded-lg bg-white/5 border border-primary/20 p-1.5 flex items-center justify-center">
