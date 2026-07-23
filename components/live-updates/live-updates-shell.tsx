@@ -775,13 +775,20 @@ export function LiveUpdatesShell() {
       {/* Main Content */}
       <main
         id="main-content"
-        className={`flex flex-1 items-center justify-center overflow-y-auto overflow-x-hidden [contain:layout_style_paint] ${
+        className={`relative flex min-h-0 flex-1 items-center justify-center overflow-y-auto overflow-x-hidden [contain:layout_style_paint] ${
           photoshowOnly
             ? "p-0 lg:overflow-hidden"
             : "p-4 sm:p-8 lg:overflow-hidden lg:p-12"
         }`}
       >
-        <ViewTransition viewKey={currentView} className="w-full h-full flex items-center justify-center">
+        <ViewTransition
+          viewKey={currentView}
+          className={
+            photoshowOnly
+              ? "absolute inset-0"
+              : "flex h-full w-full items-center justify-center"
+          }
+        >
           {currentView === "all" && (
             <AllView 
               weather={weather} 
