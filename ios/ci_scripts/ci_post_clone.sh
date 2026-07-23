@@ -9,6 +9,34 @@ cd "$IOS_ROOT"
 
 echo "==> ios root: $IOS_ROOT"
 
+# --- Build gate (ios/ci_scripts/xcode-cloud.env) ---
+# Set XCODE_CLOUD_BUILDS_ENABLED=1 when ready to ship; keep 0 to abort early.
+GATE_FILE="$SCRIPT_DIR/xcode-cloud.env"
+ENABLED=1
+if [ -f "$GATE_FILE" ]; then
+  ENABLED="$(
+    grep -E '^[[:space:]]*XCODE_CLOUD_BUILDS_ENABLED=' "$GATE_FILE" \
+      | tail -n 1 \
+      | cut -d= -f2- \
+      | tr -d '[:space:]'
+  )"
+  [ -n "$ENABLED" ] || ENABLED=1
+fi
+case "$ENABLED" in
+  1|true|TRUE|yes|YES|on|ON) ;;
+  *)
+    echo ""
+    echo "============================================================"
+    echo "Xcode Cloud builds are PAUSED (XCODE_CLOUD_BUILDS_ENABLED=$ENABLED)"
+    echo "Edit ios/ci_scripts/xcode-cloud.env → set =1, commit + push"
+    echo "when you want TestFlight again (or Manual Start after flipping)."
+    echo "One-off skip without editing the file: commit message [ci skip]"
+    echo "============================================================"
+    echo ""
+    exit 1
+    ;;
+esac
+
 # Optional: override Clerk key from Xcode Cloud environment secret.
 if [ -n "${CLERK_PUBLISHABLE_KEY:-}" ]; then
   cat > "$IOS_ROOT/Config.local.xcconfig" <<EOF

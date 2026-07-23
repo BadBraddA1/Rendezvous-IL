@@ -148,6 +148,31 @@ The repo already has `ios/ci_scripts/ci_post_clone.sh` (runs XcodeGen + optional
 6. **Environment** (optional): add secret `CLERK_PUBLISHABLE_KEY` only if you need to override `Config.xcconfig`. Production builds usually use the committed live key.
 7. **Signing:** use **Automatically manage signing** with team **F5HPRRCC5H** (same as local). Xcode Cloud manages certificates/profiles in App Store Connect → Users and Access → Integrations → Xcode Cloud.
 
+#### Pause / resume Cloud builds (gate file)
+
+Edit **`ios/ci_scripts/xcode-cloud.env`**:
+
+```bash
+XCODE_CLOUD_BUILDS_ENABLED=0   # pause — ci_post_clone exits early (no archive/TestFlight)
+XCODE_CLOUD_BUILDS_ENABLED=1   # allow Cloud builds again
+```
+
+Commit + push after flipping. While paused, pushes still start a Cloud run but it stops in **Post-Clone** with a clear “PAUSED” message (saves archive minutes).
+
+One-off skip without editing the file: put **`[ci skip]`** in the commit message (Apple start-condition skip).
+
+#### “Preparing build for App Store Connect failed”
+
+Compile/archive usually **succeed**; the failure is **ASC auth during TestFlight prepare/upload**:
+
+`Unable to authenticate with App Store Connect` / `Failed to find an account with App Store Connect access for team F5HPRRCC5H`
+
+Fix in App Store Connect (not code):
+
+1. **Users and Access → Integrations → Xcode Cloud** — confirm the product/repo link is healthy; reconnect GitHub if needed.
+2. Ensure the Apple ID used for Xcode Cloud has **App Manager** (or Admin / Account Holder) on the Rendezvous IL app.
+3. In Xcode: **Settings → Accounts** — re-sign the team, then **Product → Xcode Cloud → Manage Workflows** and start a **Manual** build once `XCODE_CLOUD_BUILDS_ENABLED=1`.
+
 **Required App IDs** (Identifiers → App IDs), all team **F5HPRRCC5H**:
 
 | Bundle ID | Purpose |
