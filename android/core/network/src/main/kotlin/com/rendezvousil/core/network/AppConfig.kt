@@ -13,4 +13,7 @@ object AppConfig {
     const val VOLUNTEER_WEEK_TO = "2027-05-07"
 
     const val USER_AGENT = "RendezvousIL-Android/1.0"
+
+    /** Plain digits — use for any UI that shows [EVENT_YEAR]. */
+    val eventYearLabel: String get() = YearFormatting.label(EVENT_YEAR)
 }

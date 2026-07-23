@@ -57,7 +57,7 @@ private fun NextEventWidgetContent(
         horizontalAlignment = Alignment.Start,
     ) {
         Text(
-            text = "Rendezvous ${snapshot?.eventYear ?: 2027}",
+            text = "Rendezvous ${(snapshot?.eventYear ?: 2027).toString()}",
             style = TextStyle(
                 fontWeight = FontWeight.Medium,
                 color = WidgetBrandColors.Lake,

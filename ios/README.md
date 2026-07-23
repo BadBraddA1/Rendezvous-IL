@@ -20,6 +20,8 @@ Native SwiftUI **attendee community hub** for [rendezvousil.com](https://rendezv
 | **Staff check-in** | Check-In role — More → Check-in station (camera QR scan, code entry, search, keep-display-alive toggle, room keys, undo) |
 | **Admin** | Dashboard stats + quick links; user management CRUD for full admins (search, ban, password reset) |
 
+**Event years in UI:** always use `YearFormatting.label(_:)` / `rendezvousTitle(_:)` in `Shared/YearFormatting.swift` (or `AppConfig.eventYearLabel`). Never put a raw `Int` year into SwiftUI `Text("… \(year)")` — `LocalizedStringKey` locale-formats it as `2,027`.
+
 ## Requirements
 
 - Xcode 16+ (iOS 17)

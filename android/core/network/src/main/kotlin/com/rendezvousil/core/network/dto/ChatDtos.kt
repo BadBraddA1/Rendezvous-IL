@@ -1,5 +1,6 @@
 package com.rendezvousil.core.network.dto
 
+import com.rendezvousil.core.network.YearFormatting
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -18,7 +19,7 @@ data class ChatChannelSummary(
 ) {
     val displayTitle: String
         get() = if (channel_type == "year" && event_year != null) {
-            "Rendezvous $event_year"
+            YearFormatting.rendezvousTitle(event_year)
         } else {
             name
         }

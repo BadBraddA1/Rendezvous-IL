@@ -87,7 +87,7 @@ struct DirectoryView: View {
                 if enabledYears.count > 1 {
                     Picker("Event year", selection: $year) {
                         ForEach(enabledYears, id: \.self) { enabledYear in
-                            Text("Rendezvous \(String(enabledYear))").tag(enabledYear)
+                            Text(YearFormatting.rendezvousTitle(enabledYear)).tag(enabledYear)
                         }
                     }
                     .pickerStyle(.segmented)
@@ -119,7 +119,7 @@ struct DirectoryView: View {
                         }
                         .buttonStyle(.bordered)
                         if let alternateYear = enabledYears.first(where: { $0 != year }) {
-                            Button("Try Rendezvous \(String(alternateYear))") {
+                            Button("Try \(YearFormatting.rendezvousTitle(alternateYear))") {
                                 year = alternateYear
                                 Task { await loadDirectory(forceNetwork: false) }
                             }
@@ -134,7 +134,7 @@ struct DirectoryView: View {
                         Image(systemName: "person.3.fill")
                             .font(.largeTitle)
                             .foregroundStyle(.secondary)
-                        Text(search.isEmpty ? "No families listed for \(String(year)) yet." : "No families match your search.")
+                        Text(search.isEmpty ? "No families listed for \(YearFormatting.label(year)) yet." : "No families match your search.")
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
                     }
@@ -283,7 +283,7 @@ struct DirectoryView: View {
                     } else if status.isAdmin != true,
                               status.directoryAccess?[String(year)] == false {
                         errorMessage =
-                            "No registration for Rendezvous \(String(year)) is linked to \(status.email ?? "this account")."
+                            "No registration for \(YearFormatting.rendezvousTitle(year)) is linked to \(status.email ?? "this account")."
                     }
                 }
             }

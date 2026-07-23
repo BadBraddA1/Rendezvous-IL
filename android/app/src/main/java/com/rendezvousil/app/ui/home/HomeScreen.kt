@@ -40,6 +40,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.rendezvousil.app.theme.BrandColors
 import com.rendezvousil.core.network.AppConfig
+import com.rendezvousil.core.network.YearFormatting
 import com.rendezvousil.core.network.dto.FamilyCheckInResponse
 import com.rendezvousil.core.network.dto.FamilyVolunteeringResponse
 import com.rendezvousil.core.network.dto.HomeBoardSection
@@ -189,7 +190,7 @@ private fun CheckInCard(checkIn: FamilyCheckInResponse) {
                 when {
                     !checkIn.hasRegistration -> Text(
                         checkIn.message
-                            ?: "No registration linked for ${checkIn.eventYear}",
+                            ?: "No registration linked for ${YearFormatting.label(checkIn.eventYear)}",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

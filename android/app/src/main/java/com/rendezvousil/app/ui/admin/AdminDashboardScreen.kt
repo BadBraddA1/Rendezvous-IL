@@ -72,6 +72,7 @@ import com.rendezvousil.app.auth.AppSession
 import com.rendezvousil.app.auth.WebLinks
 import com.rendezvousil.app.di.RendezvousViewModelFactory
 import com.rendezvousil.app.theme.BrandColors
+import com.rendezvousil.core.network.YearFormatting
 import com.rendezvousil.core.network.dto.AdminDashboardResponse
 import com.rendezvousil.core.network.dto.AdminDashboardSummary
 import com.rendezvousil.core.network.dto.AdminLodgingBreakdown
@@ -370,7 +371,7 @@ private fun HeroSection(payload: AdminDashboardResponse) {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "Rendezvous ${payload.summary.eventYear}",
+                    text = YearFormatting.rendezvousTitle(payload.summary.eventYear),
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = BrandColors.Lake,

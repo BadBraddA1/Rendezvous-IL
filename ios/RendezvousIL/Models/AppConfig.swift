@@ -46,6 +46,6 @@ enum AppConfig {
         return url
     }
 
-    /// Year as plain digits (avoids SwiftUI `Text("\(2027)")` → "2,207").
-    static var eventYearLabel: String { String(eventYear) }
+    /// Year as plain digits (avoids SwiftUI `Text("\(2027)")` → "2,027").
+    static var eventYearLabel: String { YearFormatting.label(eventYear) }
 }

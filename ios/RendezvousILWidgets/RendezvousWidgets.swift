@@ -95,7 +95,7 @@ struct NextEventWidgetView: View {
             }
         default:
             VStack(alignment: .leading, spacing: 6) {
-                Text("Rendezvous \(String(entry.snapshot?.eventYear ?? 2027))")
+                Text(YearFormatting.rendezvousTitle(entry.snapshot?.eventYear ?? 2027))
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(BrandWidgetColors.lake)
                 Text(primaryTitle)

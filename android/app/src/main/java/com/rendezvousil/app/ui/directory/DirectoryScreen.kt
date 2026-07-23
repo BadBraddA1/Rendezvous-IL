@@ -59,6 +59,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.rendezvousil.app.theme.BrandColors
+import com.rendezvousil.core.network.YearFormatting
 import com.rendezvousil.core.network.dto.DirectoryContactPhone
 import com.rendezvousil.core.network.dto.DirectoryFamily
 
@@ -195,7 +196,7 @@ fun DirectoryScreen(
                                 )
                                 Text(
                                     text = if (uiState.searchQuery.isBlank()) {
-                                        "No families listed for ${uiState.selectedYear} yet."
+                                        "No families listed for ${YearFormatting.label(uiState.selectedYear)} yet."
                                     } else {
                                         "No families match your search."
                                     },
@@ -284,7 +285,7 @@ private fun YearPicker(
             FilterChip(
                 selected = year == selectedYear,
                 onClick = { onYearSelected(year) },
-                label = { Text("Rendezvous $year") },
+                label = { Text(YearFormatting.rendezvousTitle(year)) },
             )
         }
     }
@@ -313,7 +314,7 @@ private fun ErrorDirectoryCard(
             )
             if (alternateYear != null) {
                 OutlinedButton(onClick = onTryAlternateYear) {
-                    Text("Try Rendezvous $alternateYear")
+                    Text("Try ${YearFormatting.rendezvousTitle(alternateYear)}")
                 }
             }
         }

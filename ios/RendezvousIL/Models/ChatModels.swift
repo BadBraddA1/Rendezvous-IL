@@ -15,7 +15,7 @@ struct ChatChannelSummary: Codable, Identifiable, Hashable {
 
     var displayTitle: String {
         if channel_type == "year", let year = event_year {
-            return "Rendezvous \(String(year))"
+            return YearFormatting.rendezvousTitle(year)
         }
         return name
     }

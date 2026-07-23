@@ -28,7 +28,7 @@ final class LiveActivityManager {
         }
 
         let state = presentation.state
-        let yearLabel = String(schedule?.year ?? snapshot?.eventYear ?? AppConfig.eventYear)
+        let yearLabel = YearFormatting.label(schedule?.year ?? snapshot?.eventYear ?? AppConfig.eventYear)
         let dateRange = schedule?.dateRange ?? snapshot?.dateRange ?? AppConfig.eventDates
 
         if let activity = Activity<RendezvousActivityAttributes>.activities.first {

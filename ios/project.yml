@@ -55,7 +55,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.rendezvousil.braddcorp.app
         PRODUCT_NAME: Rendezvous IL
-        MARKETING_VERSION: "2.0.7"
+        MARKETING_VERSION: "2.0.6"
         CURRENT_PROJECT_VERSION: "209"
         DEVELOPMENT_TEAM: F5HPRRCC5H
         CODE_SIGN_STYLE: Automatic
@@ -79,7 +79,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.rendezvousil.braddcorp.app.widgets
         PRODUCT_NAME: RendezvousILWidgets
-        MARKETING_VERSION: "2.0.7"
+        MARKETING_VERSION: "2.0.6"
         CURRENT_PROJECT_VERSION: "209"
         DEVELOPMENT_TEAM: F5HPRRCC5H
         CODE_SIGN_STYLE: Automatic
@@ -101,7 +101,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.rendezvousil.braddcorp.app.notification-service
         PRODUCT_NAME: RendezvousILNotificationService
-        MARKETING_VERSION: "2.0.7"
+        MARKETING_VERSION: "2.0.6"
         CURRENT_PROJECT_VERSION: "209"
         DEVELOPMENT_TEAM: F5HPRRCC5H
         CODE_SIGN_STYLE: Automatic

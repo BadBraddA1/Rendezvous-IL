@@ -179,7 +179,7 @@ struct ChatListView: View {
             let email = status.email ?? "your account"
             return "No registration is linked to \(email) yet. Open the website while signed in, or ask an admin to add you to a chat."
         }
-        return "Registration found for \(years.map(String.init).joined(separator: ", ")), but no channels yet. Pull to refresh."
+        return "Registration found for \(years.map(YearFormatting.label).joined(separator: ", ")), but no channels yet. Pull to refresh."
     }
 }
 
