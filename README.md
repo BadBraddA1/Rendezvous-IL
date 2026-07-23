@@ -155,7 +155,7 @@ rendezvous-il/
 
 Native **SwiftUI** attendee hub in `ios/` (not a WebView shell). **Sign-in required** for almost everything — welcome screen, then Clerk, then tabs:
 
-- **Home (Live day board)** — sections ordered by Admin → Home board (`GET /api/home-board`): header, **check-in status** (`GET /api/family/check-in`), now/next, weather, announcements, next meal, chat unread, volunteering, plus optional banners. Opening Home/Volunteering auto-schedules a **30-minute local reminder** before each assignment
+- **Home (Live day board)** — sections ordered by Admin → Home board (`GET /api/home-board`): header, **check-in status** (`GET /api/family/check-in` — resolves via `registrations_v2.family_id` + email, and falls back to the family’s latest registered year if the requested year has none), now/next, weather, announcements, next meal, chat unread, volunteering, plus optional banners. Opening Home/Volunteering auto-schedules a **30-minute local reminder** before each assignment
 - **Schedule** — opens on today (Central Time) or the next upcoming day. **Happening now** highlight only when an event is actually in progress (Central Time) — not the next upcoming item. Empty announcements are hidden. Meals, worship leaders, event reminders (bell → local notification; prefs store the event so reminders still schedule if the shared snapshot is empty). Tap location → campus map
 - **Directory** — disk cache shows last-loaded families immediately, then refreshes in the background. Family detail matches the website: Father/Mother lines plus **Kids with ages**. Manage your family photo from **More → Directory photo**
 - **Map** — MapKit directions to campus + image venue map on site (geofence switch); More → Campus map
