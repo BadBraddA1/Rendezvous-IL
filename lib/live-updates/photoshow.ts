@@ -36,9 +36,11 @@ function mapRow(row: Record<string, unknown>): PhotoshowPhoto {
     id: String(row.id),
     image_url: String(row.image_url),
     caption: row.caption != null && String(row.caption).trim() ? String(row.caption) : null,
+    submitted_by: null,
     sort_order: Number(row.sort_order ?? 0),
     is_active: Number(row.is_active) === 1,
     created_at: String(row.created_at),
+    channel_id: null,
   }
 }
 

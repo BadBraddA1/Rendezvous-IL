@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
-import { ArrowDown, ArrowUp, Copy, ExternalLink, Images, Loader2, MessageSquare, Trash2, Upload } from "lucide-react"
+import { ArrowDown, ArrowUp, Copy, ExternalLink, Eye, EyeOff, Images, Loader2, MessageSquare, Trash2, Upload } from "lucide-react"
 import { AdminConfirmDialog } from "./admin-confirm-dialog"
 import { AdminListSkeleton, AdminRetryButton } from "./admin-panel-states"
 import type { ChatPhotoshowChannel } from "@/lib/live-updates/chat-photoshow"
@@ -28,6 +28,10 @@ export function PhotoshowManager({ canEdit }: { canEdit: boolean }) {
   const [deletePending, setDeletePending] = useState<PhotoshowPhoto | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [tvRoom, setTvRoom] = useState("")
+  const [manageChannelId, setManageChannelId] = useState<string | null>(null)
+  const [chatPhotos, setChatPhotos] = useState<PhotoshowPhoto[]>([])
+  const [chatPhotosLoading, setChatPhotosLoading] = useState(false)
+  const [hidingPhotoId, setHidingPhotoId] = useState<string | null>(null)
   const { toast } = useToast()
 
   const fetchData = useCallback(async () => {
@@ -48,9 +52,73 @@ export function PhotoshowManager({ canEdit }: { canEdit: boolean }) {
     }
   }, [])
 
+  const loadChatPhotos = useCallback(async (channelId: string) => {
+    setChatPhotosLoading(true)
+    try {
+      const res = await fetch(
+        `/api/admin/photoshow/chat?channel=${encodeURIComponent(channelId)}`,
+      )
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || "Could not load chat photos")
+      setChatPhotos(Array.isArray(data.photos) ? data.photos : [])
+    } catch (error) {
+      setChatPhotos([])
+      toast({
+        title: "Could not load chat photos",
+        description: error instanceof Error ? error.message : "Try again",
+        variant: "destructive",
+      })
+    } finally {
+      setChatPhotosLoading(false)
+    }
+  }, [toast])
+
   useEffect(() => {
     void fetchData()
   }, [fetchData])
+
+  useEffect(() => {
+    if (!manageChannelId) {
+      setChatPhotos([])
+      return
+    }
+    void loadChatPhotos(manageChannelId)
+  }, [manageChannelId, loadChatPhotos])
+
+  const openManageChannel = (channelId: string) => {
+    setManageChannelId((prev) => (prev === channelId ? null : channelId))
+  }
+
+  const toggleChatPhotoHidden = async (photo: PhotoshowPhoto) => {
+    if (!manageChannelId || !canEdit) return
+    setHidingPhotoId(photo.id)
+    try {
+      const res = await fetch("/api/admin/photoshow/chat", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          photoId: photo.id,
+          channelId: manageChannelId,
+          hidden: photo.is_active,
+        }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || "Failed")
+      if (Array.isArray(data.photos)) setChatPhotos(data.photos)
+      toast({
+        title: photo.is_active ? "Photo hidden from TVs" : "Photo shown on TVs again",
+      })
+      void fetchData()
+    } catch (error) {
+      toast({
+        title: "Could not update photo",
+        description: error instanceof Error ? error.message : "Try again",
+        variant: "destructive",
+      })
+    } finally {
+      setHidingPhotoId(null)
+    }
+  }
 
   const handleUpload = async () => {
     if (!file) {
@@ -162,7 +230,9 @@ export function PhotoshowManager({ canEdit }: { canEdit: boolean }) {
   }
 
   const activeCount = photos.filter((p) => p.is_active).length
-  const chatsWithPhotos = chatChannels.filter((c) => c.photo_count > 0)
+  const chatsWithPhotos = chatChannels.filter(
+    (c) => c.photo_count > 0 || c.hidden_count > 0,
+  )
 
   return (
     <div className="space-y-6">
@@ -173,9 +243,9 @@ export function PhotoshowManager({ canEdit }: { canEdit: boolean }) {
             Chat photoshows
           </CardTitle>
           <CardDescription>
-            Every chat gets its own slideshow from photos people post in that channel. Point a
-            room TV at that chat&apos;s link — new chat photos show up within about a minute.
-            Optionally set a room name so the screen shows where people are.
+            Every chat gets its own slideshow from photos people post in that channel. TVs show who
+            submitted each photo. Use Manage to hide a photo from screens without deleting the chat
+            message.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -209,51 +279,131 @@ export function PhotoshowManager({ canEdit }: { canEdit: boolean }) {
           ) : chatChannels.length === 0 ? (
             <p className="text-sm text-muted-foreground">No chat channels yet.</p>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {chatChannels.map((channel) => {
                 const path = tvPathFor(channel.tv_path)
+                const isOpen = manageChannelId === channel.id
                 return (
-                <div
-                  key={channel.id}
-                  className="flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <div className="min-w-0 space-y-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-medium">{channel.name}</span>
-                      {channel.channel_type === "year" && channel.event_year != null && (
-                        <Badge variant="secondary">{channel.event_year}</Badge>
-                      )}
-                      {channel.is_test && <Badge variant="outline">Test</Badge>}
-                      {!channel.is_active && <Badge variant="outline">Inactive</Badge>}
+                  <div key={channel.id} className="space-y-3 rounded-lg border p-3">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="min-w-0 space-y-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-medium">{channel.name}</span>
+                          {channel.channel_type === "year" && channel.event_year != null && (
+                            <Badge variant="secondary">{channel.event_year}</Badge>
+                          )}
+                          {channel.is_test && <Badge variant="outline">Test</Badge>}
+                          {!channel.is_active && <Badge variant="outline">Inactive</Badge>}
+                        </div>
+                        <p className="text-sm text-muted-foreground tabular-nums">
+                          {channel.photo_count === 0
+                            ? "No photos showing"
+                            : `${channel.photo_count} on TVs`}
+                          {channel.hidden_count > 0
+                            ? ` · ${channel.hidden_count} hidden`
+                            : ""}
+                        </p>
+                        <code className="block break-all text-xs text-muted-foreground">
+                          {path}
+                        </code>
+                      </div>
+                      <div className="flex shrink-0 flex-wrap gap-2">
+                        <Button
+                          type="button"
+                          variant={isOpen ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => openManageChannel(channel.id)}
+                        >
+                          {isOpen ? "Close" : "Manage photos"}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => void copyTvUrl(channel.tv_path)}
+                        >
+                          <Copy className="mr-2 h-4 w-4" />
+                          Copy TV link
+                        </Button>
+                        <Button type="button" variant="secondary" size="sm" asChild>
+                          <Link href={path} target="_blank" rel="noreferrer">
+                            <ExternalLink className="mr-2 h-4 w-4" />
+                            Preview
+                          </Link>
+                        </Button>
+                      </div>
                     </div>
-                    <p className="text-sm text-muted-foreground tabular-nums">
-                      {channel.photo_count === 0
-                        ? "No photos yet"
-                        : `${channel.photo_count} photo${channel.photo_count === 1 ? "" : "s"}`}
-                    </p>
-                    <code className="block break-all text-xs text-muted-foreground">
-                      {path}
-                    </code>
+
+                    {isOpen && (
+                      <div className="border-t pt-3">
+                        {chatPhotosLoading ? (
+                          <AdminListSkeleton rows={2} />
+                        ) : chatPhotos.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">
+                            No photos in this chat yet.
+                          </p>
+                        ) : (
+                          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                            {chatPhotos.map((photo) => (
+                              <div
+                                key={photo.id}
+                                className={`space-y-2 rounded-md border p-3 ${
+                                  photo.is_active ? "" : "opacity-60"
+                                }`}
+                              >
+                                <div className="relative aspect-video overflow-hidden rounded-md bg-muted">
+                                  <Image
+                                    src={photo.image_url}
+                                    alt={photo.caption || photo.submitted_by || "Chat photo"}
+                                    fill
+                                    unoptimized
+                                    className="object-cover"
+                                    sizes="(max-width: 640px) 100vw, 33vw"
+                                  />
+                                </div>
+                                <div className="space-y-1 text-sm">
+                                  <p className="font-medium">
+                                    {photo.submitted_by
+                                      ? `Photo by ${photo.submitted_by}`
+                                      : "Unknown sender"}
+                                  </p>
+                                  {photo.caption && (
+                                    <p className="line-clamp-2 text-muted-foreground">
+                                      {photo.caption}
+                                    </p>
+                                  )}
+                                  <Badge variant={photo.is_active ? "default" : "secondary"}>
+                                    {photo.is_active ? "On TVs" : "Hidden"}
+                                  </Badge>
+                                </div>
+                                {canEdit && (
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="w-full"
+                                    disabled={hidingPhotoId === photo.id}
+                                    onClick={() => void toggleChatPhotoHidden(photo)}
+                                  >
+                                    {hidingPhotoId === photo.id ? (
+                                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    ) : photo.is_active ? (
+                                      <EyeOff className="mr-2 h-4 w-4" />
+                                    ) : (
+                                      <Eye className="mr-2 h-4 w-4" />
+                                    )}
+                                    {photo.is_active ? "Hide from TVs" : "Show on TVs"}
+                                  </Button>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  <div className="flex shrink-0 flex-wrap gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => void copyTvUrl(channel.tv_path)}
-                    >
-                      <Copy className="mr-2 h-4 w-4" />
-                      Copy TV link
-                    </Button>
-                    <Button type="button" variant="secondary" size="sm" asChild>
-                      <Link href={path} target="_blank" rel="noreferrer">
-                        <ExternalLink className="mr-2 h-4 w-4" />
-                        Preview
-                      </Link>
-                    </Button>
-                  </div>
-                </div>
-              )})}
+                )
+              })}
               {chatsWithPhotos.length === 0 && (
                 <p className="pt-1 text-sm text-muted-foreground">
                   Photos appear here after someone posts an image in chat.

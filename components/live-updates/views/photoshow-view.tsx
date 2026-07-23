@@ -106,17 +106,30 @@ export function PhotoshowView({
             Could not load this photo
           </div>
         )}
-        {photo.caption && !imageFailed && (
+        {!imageFailed && (photo.caption || photo.submitted_by) ? (
           <div
             className={`absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/70 to-transparent px-6 pb-8 pt-24 sm:px-12 sm:pb-10 ${
               immersive ? "" : "rounded-b-[inherit]"
             }`}
           >
-            <p className="text-balance text-center text-2xl font-bold text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] sm:text-3xl lg:text-4xl">
-              {photo.caption}
-            </p>
+            {photo.caption && (
+              <p className="text-balance text-center text-2xl font-bold text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] sm:text-3xl lg:text-4xl">
+                {photo.caption}
+              </p>
+            )}
+            {photo.submitted_by && (
+              <p
+                className={`text-center font-semibold text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] ${
+                  photo.caption
+                    ? "mt-3 text-lg sm:text-xl lg:text-2xl"
+                    : "text-2xl sm:text-3xl lg:text-4xl"
+                }`}
+              >
+                Photo by {photo.submitted_by}
+              </p>
+            )}
           </div>
-        )}
+        ) : null}
       </div>
 
       {photos.length > 1 && !immersive && (

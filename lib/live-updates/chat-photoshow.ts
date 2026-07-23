@@ -15,8 +15,28 @@ export interface ChatPhotoshowChannel {
   is_active: boolean
   is_test: boolean
   photo_count: number
+  hidden_count: number
   /** Path for a dedicated room TV (same origin). */
   tv_path: string
+}
+
+let hiddenSchemaReady = false
+
+export async function ensureChatPhotoshowHiddenSchema(): Promise<void> {
+  if (hiddenSchemaReady) return
+  await sql.query(`
+    CREATE TABLE IF NOT EXISTS live_updates_chat_photoshow_hidden (
+      photo_id TEXT PRIMARY KEY NOT NULL,
+      channel_id TEXT NOT NULL,
+      hidden_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      hidden_by TEXT
+    )
+  `)
+  await sql.query(`
+    CREATE INDEX IF NOT EXISTS idx_chat_photoshow_hidden_channel
+    ON live_updates_chat_photoshow_hidden (channel_id)
+  `)
+  hiddenSchemaReady = true
 }
 
 function parseMessageImageUrls(row: SqlRow): string[] {
@@ -37,23 +57,72 @@ function parseMessageImageUrls(row: SqlRow): string[] {
   return []
 }
 
-function captionForMessage(row: SqlRow): string | null {
+function captionFromBody(row: SqlRow): string | null {
   const body = String(row.body ?? "").trim()
-  if (body) return body.slice(0, 200)
+  return body ? body.slice(0, 200) : null
+}
+
+function submittedByFromRow(row: SqlRow): string | null {
   const sender = String(row.sender_display_name ?? "").trim()
-  if (sender) return `Photo by ${sender}`
-  return null
+  return sender || null
 }
 
 export function chatPhotoshowTvPath(channelId: string): string {
   return `/live-updates?kiosk=1&view=photoshow&channel=${encodeURIComponent(channelId)}`
 }
 
+async function listHiddenPhotoIds(channelId?: string): Promise<Set<string>> {
+  await ensureChatPhotoshowHiddenSchema()
+  const rows = channelId
+    ? await sql`
+        SELECT photo_id FROM live_updates_chat_photoshow_hidden
+        WHERE channel_id = ${channelId}
+      `
+    : await sql`SELECT photo_id FROM live_updates_chat_photoshow_hidden`
+  return new Set(rows.map((row) => String(row.photo_id)))
+}
+
+function photosFromMessageRows(
+  rows: SqlRow[],
+  channelId: string,
+  hiddenIds: Set<string>,
+  options: { includeHidden: boolean },
+): PhotoshowPhoto[] {
+  const photos: PhotoshowPhoto[] = []
+  for (const row of rows) {
+    const urls = parseMessageImageUrls(row)
+    const caption = captionFromBody(row)
+    const submittedBy = submittedByFromRow(row)
+    const createdAt = String(row.created_at)
+    const messageId = String(row.id)
+    for (let i = 0; i < urls.length; i++) {
+      if (photos.length >= CHAT_PHOTOSHOW_MAX_PHOTOS) break
+      const id = urls.length === 1 ? messageId : `${messageId}-${i}`
+      const hidden = hiddenIds.has(id)
+      if (hidden && !options.includeHidden) continue
+      photos.push({
+        id,
+        image_url: urls[i],
+        caption,
+        submitted_by: submittedBy,
+        sort_order: photos.length,
+        is_active: !hidden,
+        created_at: createdAt,
+        channel_id: channelId,
+      })
+    }
+    if (photos.length >= CHAT_PHOTOSHOW_MAX_PHOTOS) break
+  }
+  return photos
+}
+
 /** Photos posted in a chat channel, oldest first, shaped for the TV slideshow. */
 export async function listChatChannelPhotoshowPhotos(
   channelId: string,
+  options: { includeHidden?: boolean } = {},
 ): Promise<PhotoshowPhoto[]> {
   await ensureChatSchema()
+  await ensureChatPhotoshowHiddenSchema()
 
   const id = channelId.trim()
   if (!id) return []
@@ -62,6 +131,9 @@ export async function listChatChannelPhotoshowPhotos(
     SELECT id FROM chat_channels WHERE id = ${id} LIMIT 1
   `
   if (!channel) return []
+
+  const includeHidden = Boolean(options.includeHidden)
+  const hiddenIds = await listHiddenPhotoIds(id)
 
   const rows = await sql`
     SELECT id, body, image_url, image_urls, sender_display_name, created_at
@@ -76,32 +148,40 @@ export async function listChatChannelPhotoshowPhotos(
     LIMIT ${CHAT_PHOTOSHOW_MAX_PHOTOS * 2}
   `
 
-  const photos: PhotoshowPhoto[] = []
-  for (const row of rows) {
-    const urls = parseMessageImageUrls(row as SqlRow)
-    const caption = captionForMessage(row as SqlRow)
-    const createdAt = String(row.created_at)
-    const messageId = String(row.id)
-    for (let i = 0; i < urls.length; i++) {
-      if (photos.length >= CHAT_PHOTOSHOW_MAX_PHOTOS) break
-      photos.push({
-        id: urls.length === 1 ? messageId : `${messageId}-${i}`,
-        image_url: urls[i],
-        caption,
-        sort_order: photos.length,
-        is_active: true,
-        created_at: createdAt,
-      })
-    }
-    if (photos.length >= CHAT_PHOTOSHOW_MAX_PHOTOS) break
-  }
+  return photosFromMessageRows(rows as SqlRow[], id, hiddenIds, { includeHidden })
+}
 
-  return photos
+export async function setChatPhotoshowPhotoHidden(input: {
+  photoId: string
+  channelId: string
+  hidden: boolean
+  hiddenBy?: string | null
+}): Promise<void> {
+  await ensureChatPhotoshowHiddenSchema()
+  const photoId = input.photoId.trim()
+  const channelId = input.channelId.trim()
+  if (!photoId || !channelId) throw new Error("photoId and channelId are required")
+
+  if (input.hidden) {
+    await sql`
+      INSERT INTO live_updates_chat_photoshow_hidden (photo_id, channel_id, hidden_at, hidden_by)
+      VALUES (${photoId}, ${channelId}, datetime('now'), ${input.hiddenBy?.trim() || null})
+      ON CONFLICT(photo_id) DO UPDATE SET
+        channel_id = excluded.channel_id,
+        hidden_at = datetime('now'),
+        hidden_by = excluded.hidden_by
+    `
+  } else {
+    await sql`
+      DELETE FROM live_updates_chat_photoshow_hidden WHERE photo_id = ${photoId}
+    `
+  }
 }
 
 /** Every chat channel with how many photos it can feed into a photoshow. */
 export async function listChatPhotoshowChannels(): Promise<ChatPhotoshowChannel[]> {
   await ensureChatSchema()
+  await ensureChatPhotoshowHiddenSchema()
 
   const channels = await sql`
     SELECT id, name, channel_type, event_year, is_active, is_test
@@ -117,7 +197,7 @@ export async function listChatPhotoshowChannels(): Promise<ChatPhotoshowChannel[
   const ids = channels.map((c) => String(c.id))
   const placeholders = ids.map(() => "?").join(", ")
   const messageRows = await sql.query(
-    `SELECT channel_id, image_url, image_urls
+    `SELECT id, channel_id, image_url, image_urls
      FROM chat_messages
      WHERE deleted_at IS NULL
        AND channel_id IN (${placeholders})
@@ -128,12 +208,22 @@ export async function listChatPhotoshowChannels(): Promise<ChatPhotoshowChannel[
     ids,
   )
 
-  const countByChannel = new Map<string, number>()
+  const hiddenIds = await listHiddenPhotoIds()
+  const visibleByChannel = new Map<string, number>()
+  const hiddenByChannel = new Map<string, number>()
+
   for (const row of messageRows) {
     const channelId = String(row.channel_id)
+    const messageId = String(row.id)
     const urls = parseMessageImageUrls(row as SqlRow)
-    if (urls.length === 0) continue
-    countByChannel.set(channelId, (countByChannel.get(channelId) ?? 0) + urls.length)
+    for (let i = 0; i < urls.length; i++) {
+      const photoId = urls.length === 1 ? messageId : `${messageId}-${i}`
+      if (hiddenIds.has(photoId)) {
+        hiddenByChannel.set(channelId, (hiddenByChannel.get(channelId) ?? 0) + 1)
+      } else {
+        visibleByChannel.set(channelId, (visibleByChannel.get(channelId) ?? 0) + 1)
+      }
+    }
   }
 
   return channels.map((row) => {
@@ -148,7 +238,8 @@ export async function listChatPhotoshowChannels(): Promise<ChatPhotoshowChannel[
           : null,
       is_active: Number(row.is_active) === 1,
       is_test: Number(row.is_test) === 1,
-      photo_count: Math.min(countByChannel.get(id) ?? 0, CHAT_PHOTOSHOW_MAX_PHOTOS),
+      photo_count: Math.min(visibleByChannel.get(id) ?? 0, CHAT_PHOTOSHOW_MAX_PHOTOS),
+      hidden_count: hiddenByChannel.get(id) ?? 0,
       tv_path: chatPhotoshowTvPath(id),
     }
   })

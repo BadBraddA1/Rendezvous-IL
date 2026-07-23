@@ -6,10 +6,15 @@ export const PHOTOSHOW_INTERVAL_MS = 5_000
 export interface PhotoshowPhoto {
   id: string
   image_url: string
+  /** Optional message text / admin caption. */
   caption: string | null
+  /** Who posted it (chat display name). */
+  submitted_by: string | null
   sort_order: number
   is_active: boolean
   created_at: string
+  /** Chat channel id when this slide came from chat. */
+  channel_id?: string | null
 }
 
 /** Epoch-aligned index so every room TV shows the same photo. */
