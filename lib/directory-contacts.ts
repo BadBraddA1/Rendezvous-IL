@@ -18,11 +18,16 @@ export function memberDisplayName(firstName: string, lastName: string): string {
   return `${firstName} ${lastName}`.trim()
 }
 
-/** Prefer explicit per-member phones; fall back to legacy family phones without role labels. */
+/**
+ * Prefer explicit per-member phones; fall back to legacy family husband/wife
+ * phones labeled with father/mother names when available (common for 2026).
+ */
 export function buildDirectoryContactPhones(input: {
   members: DirectoryMemberPhoneRow[]
   husband_phone?: string | null
   wife_phone?: string | null
+  husband_name?: string | null
+  wife_name?: string | null
 }): DirectoryContactPhone[] {
   const fromMembers = input.members
     .map((member) => ({
@@ -42,13 +47,18 @@ export function buildDirectoryContactPhones(input: {
 
   const legacy: DirectoryContactPhone[] = []
   const seen = new Set<string>()
-  for (const phone of [input.husband_phone, input.wife_phone]) {
-    const trimmed = formatPhoneForStorage(phone) || ""
+  const pairs: Array<{ name: string; phone: string | null | undefined }> = [
+    { name: (input.husband_name || "").trim(), phone: input.husband_phone },
+    { name: (input.wife_name || "").trim(), phone: input.wife_phone },
+  ]
+
+  for (const pair of pairs) {
+    const trimmed = formatPhoneForStorage(pair.phone) || ""
     if (!trimmed || seen.has(trimmed)) continue
     seen.add(trimmed)
     legacy.push({
       member_id: null,
-      name: "",
+      name: pair.name,
       phone: trimmed,
     })
   }
@@ -58,4 +68,19 @@ export function buildDirectoryContactPhones(input: {
 
 export function contactPhoneSearchHaystack(contacts: DirectoryContactPhone[]): string {
   return contacts.map((contact) => `${contact.name} ${contact.phone}`).join(" ")
+}
+
+/** Match a directory contact phone to a family member name (first or full). */
+export function contactMatchesMemberName(contactName: string, memberName: string): boolean {
+  const contact = contactName.trim()
+  const member = memberName.trim()
+  if (!contact || !member) return false
+  if (contact.toLowerCase() === member.toLowerCase()) return true
+  const contactFirst = contact.split(/\s+/)[0] || contact
+  const memberFirst = member.split(/\s+/)[0] || member
+  return (
+    contactFirst.toLowerCase() === member.toLowerCase() ||
+    contact.toLowerCase().includes(member.toLowerCase()) ||
+    memberFirst.toLowerCase() === contactFirst.toLowerCase()
+  )
 }

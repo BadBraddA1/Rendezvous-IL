@@ -19,7 +19,10 @@ import {
 } from "@/components/ui/select"
 import { Camera, Loader2, Mail, MapPin, MapPinned, Search, Users } from "lucide-react"
 import { DirectoryContactPhones } from "@/components/directory/directory-contact-phones"
-import { contactPhoneSearchHaystack } from "@/lib/directory-contacts"
+import {
+  contactMatchesMemberName,
+  contactPhoneSearchHaystack,
+} from "@/lib/directory-contacts"
 import type { DirectoryContactPhone } from "@/lib/directory-contacts"
 import {
   parseRegistrationEventYear,
@@ -60,6 +63,24 @@ function memberAgeLabel(member: DirectoryMember): string | null {
   if (member.is_adult) return "Adult"
   if (member.age !== null) return String(member.age)
   return null
+}
+
+function phonesForMember(
+  contacts: DirectoryContactPhone[],
+  memberName: string,
+): DirectoryContactPhone[] {
+  return contacts.filter((contact) => contactMatchesMemberName(contact.name, memberName))
+}
+
+function orphanContactPhones(
+  family: DirectoryFamily,
+): DirectoryContactPhone[] {
+  const names =
+    family.members.length > 0 ? family.members.map((m) => m.name) : family.member_names
+  return family.contact_phones.filter(
+    (contact) =>
+      !contact.name.trim() || !names.some((name) => contactMatchesMemberName(contact.name, name)),
+  )
 }
 
 function pickDirectoryYear(
@@ -384,6 +405,11 @@ export default function DirectoryPage() {
                                       {member.email}
                                     </a>
                                   )}
+                                  <DirectoryContactPhones
+                                    contacts={phonesForMember(family.contact_phones, member.name)}
+                                    className="space-y-1 pl-4 pt-1"
+                                    showNames={false}
+                                  />
                                 </div>
                               ))}
                             {family.members.some((member) => member.role === "child") && (
@@ -408,6 +434,20 @@ export default function DirectoryPage() {
                                 >
                                   {member.name}: {member.email}
                                 </a>
+                              ))}
+                            {family.members
+                              .filter((member) => member.role === "child")
+                              .flatMap((member) =>
+                                phonesForMember(family.contact_phones, member.name).map(
+                                  (contact) => ({ member, contact }),
+                                ),
+                              )
+                              .map(({ member, contact }, index) => (
+                                <DirectoryContactPhones
+                                  key={`kid-phone-${member.name}-${contact.phone}-${index}`}
+                                  contacts={[contact]}
+                                  className="space-y-1 pl-4"
+                                />
                               ))}
                           </div>
                         )}
@@ -449,7 +489,14 @@ export default function DirectoryPage() {
                             </a>
                           </p>
                         )}
-                        <DirectoryContactPhones contacts={family.contact_phones} className="space-y-2" />
+                        <DirectoryContactPhones
+                          contacts={
+                            family.members.length > 0
+                              ? orphanContactPhones(family)
+                              : family.contact_phones
+                          }
+                          className="space-y-2"
+                        />
                         <div className="space-y-1 text-sm text-muted-foreground">
                           <p className="flex items-center gap-2">
                             <Users className="h-4 w-4 shrink-0" />

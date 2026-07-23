@@ -3,6 +3,7 @@ import type { RegistrationEventYear } from "@/lib/registration-event-years"
 import { getSqliteErrorMessage, isMissingSqliteColumn } from "@/lib/sqlite-errors"
 import {
   buildDirectoryContactPhones,
+  contactMatchesMemberName,
   contactPhoneSearchHaystack,
   memberDisplayName,
   type DirectoryContactPhone,
@@ -450,13 +451,48 @@ async function attachRegistrationMembers(
     const sharedPhones: DirectoryContactPhone[] = members
       .filter((m) => m.phone)
       .map((m) => ({ member_id: null, name: m.name, phone: m.phone! }))
+    const contactPhones =
+      sharedPhones.length > 0
+        ? sharedPhones
+        : labelLegacyPhonesWithParents(entry.contact_phones, members)
     return {
       ...entry,
       members,
-      contact_phones: sharedPhones.length > 0 ? sharedPhones : entry.contact_phones,
+      contact_phones: contactPhones,
       member_count: members.length > 0 ? members.length : entry.member_count,
       member_names: members.length > 0 ? members.map((m) => m.name) : entry.member_names,
     }
+  })
+}
+
+/** If legacy phones still lack names, attach Father/Mother registration names in order. */
+function labelLegacyPhonesWithParents(
+  contacts: DirectoryContactPhone[],
+  members: DirectoryMember[],
+): DirectoryContactPhone[] {
+  if (contacts.length === 0) return contacts
+  if (contacts.every((c) => c.name.trim())) return contacts
+
+  const father = members.find((m) => m.role === "father")
+  const mother = members.find((m) => m.role === "mother")
+  let fatherTaken = contacts.some(
+    (c) => father && contactMatchesMemberName(c.name, father.name),
+  )
+  let motherTaken = contacts.some(
+    (c) => mother && contactMatchesMemberName(c.name, mother.name),
+  )
+
+  return contacts.map((contact) => {
+    if (contact.name.trim()) return contact
+    if (father && !fatherTaken) {
+      fatherTaken = true
+      return { ...contact, name: father.name }
+    }
+    if (mother && !motherTaken) {
+      motherTaken = true
+      return { ...contact, name: mother.name }
+    }
+    return contact
   })
 }
 
@@ -535,6 +571,14 @@ async function attachDirectoryContactPhones(
       })),
       husband_phone: entry.legacy_husband_phone,
       wife_phone: entry.legacy_wife_phone,
+      // 2026 (and older profiles) store phones on the family row — attach
+      // father/mother names so apps can nest Call/Text under each parent.
+      husband_name: entry.husband_first_name
+        ? memberDisplayName(entry.husband_first_name, entry.family_last_name)
+        : null,
+      wife_name: entry.wife_first_name
+        ? memberDisplayName(entry.wife_first_name, entry.family_last_name)
+        : null,
     }),
   }))
 }
