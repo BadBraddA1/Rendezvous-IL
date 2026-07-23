@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  serverExternalPackages: ["ably"],
+  // Keep native modules out of the Turbopack/webpack bundle.
+  serverExternalPackages: ["ably", "sharp"],
   typescript: {
     ignoreBuildErrors: true,
   },

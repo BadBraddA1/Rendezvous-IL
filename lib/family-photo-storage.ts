@@ -16,7 +16,7 @@ export async function uploadFamilyPhoto(
     )
   }
 
-  const { buffer, contentType, extension } = await normalizeDirectoryPhoto(bytes)
+  const { buffer, contentType, extension } = await normalizeDirectoryPhoto(bytes, _contentType)
   const pathname = `family-photos/${familyId}-${Date.now()}.${extension}`
   const blob = await put(pathname, buffer, {
     access: "public",
