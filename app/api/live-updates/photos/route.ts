@@ -27,6 +27,10 @@ export async function GET(request: Request) {
     })
   } catch (error) {
     console.error("[live-updates/photos] error:", error)
-    return NextResponse.json({ photos: [], intervalMs: PHOTOSHOW_INTERVAL_MS })
+    // Do not return a successful empty list — clients keep their last good slides.
+    return NextResponse.json(
+      { error: "Failed to load photos", photos: null, intervalMs: PHOTOSHOW_INTERVAL_MS },
+      { status: 503 },
+    )
   }
 }

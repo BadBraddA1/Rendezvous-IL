@@ -504,7 +504,7 @@ export function LiveUpdatesShell() {
           setPhotoshowPhotos(data.photos)
         }
       } catch {
-        // keep last good list
+        // keep last good list (API errors used to return [] with 200 and wipe the slideshow)
       }
     }
     fetchPhotos()
