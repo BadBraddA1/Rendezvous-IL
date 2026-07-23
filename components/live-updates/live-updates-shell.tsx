@@ -826,7 +826,11 @@ export function LiveUpdatesShell() {
             <UpcomingView nowItem={nowItem} upcomingToday={upcomingToday} upcomingAll={upcomingAll} />
           )}
           {currentView === "photoshow" && (
-            <PhotoshowView photos={photoshowPhotos} immersive={photoshowOnly} />
+            <PhotoshowView
+              photos={photoshowPhotos}
+              immersive={photoshowOnly}
+              fromChat={Boolean(photoshowChannelId)}
+            />
           )}
         </ViewTransition>
       </main>

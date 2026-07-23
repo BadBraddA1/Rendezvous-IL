@@ -11,9 +11,12 @@ import {
 export function PhotoshowView({
   photos,
   immersive = false,
+  fromChat = false,
 }: {
   photos: PhotoshowPhoto[]
   immersive?: boolean
+  /** Empty state should tell people to post in the group chat. */
+  fromChat?: boolean
 }) {
   const [tick, setTick] = useState(0)
   const [brokenIds, setBrokenIds] = useState<Record<string, true>>({})
@@ -40,8 +43,10 @@ export function PhotoshowView({
         <div className="lu-panel relative flex w-full max-w-2xl flex-col items-center justify-center p-12">
           <Images className="lu-text-meal mb-6 h-24 w-24 opacity-60" />
           <h2 className="lu-type-board-lg lu-text-meal relative opacity-80">No photos yet</h2>
-          <p className="lu-text-secondary mt-3 text-center text-lg">
-            Post photos in chat, or add slides in Admin → Photoshow.
+          <p className="lu-text-secondary mt-3 max-w-xl text-center text-lg leading-relaxed">
+            {fromChat
+              ? "Send photos in the group chat and they’ll appear on this screen within about a minute."
+              : "Send photos in the group chat (or add slides in Admin → Photoshow) to show them on this screen."}
           </p>
         </div>
       </div>
