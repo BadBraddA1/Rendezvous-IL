@@ -37,6 +37,9 @@ struct MoreView: View {
                     NavigationLink { CalculatorView() } label: {
                         Label("Cost calculator", systemImage: "dollarsign.circle")
                     }
+                    NavigationLink { SongPacksView() } label: {
+                        Label("Songs", systemImage: "music.note.list")
+                    }
                     NavigationLink { AboutView() } label: {
                         Label("About Rendezvous", systemImage: "info.circle")
                     }

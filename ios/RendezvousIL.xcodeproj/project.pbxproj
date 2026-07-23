@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		ECEA01015F624D5DAF6CBF2E /* SongPacksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DFB9472D2BB41B7BF5AC52E /* SongPacksView.swift */; };
+		AF257952DCA640D4906FFFF0 /* SongPackStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8122F891AD54E1ABAA565D5 /* SongPackStore.swift */; };
+		A12A213C05A64AC69D0E3B94 /* SongPackModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5C85D7D6AC44B68949F37DC /* SongPackModels.swift */; };
 		001F6BE14BDAF1A0A6F00A2C /* MoreView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37B9B084751C0C1099D59FE7 /* MoreView.swift */; };
 		0096B6D5331F9F0E8FF3CB84 /* ChatDemoMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1172BDB29FF145E10C031C28 /* ChatDemoMode.swift */; };
 		0355F432B0E93344589A9241 /* VenueMapModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = F96773E3A3A26024702E5D84 /* VenueMapModels.swift */; };
@@ -117,6 +120,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		4DFB9472D2BB41B7BF5AC52E /* SongPacksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SongPacksView.swift; sourceTree = "<group>"; };
+		D8122F891AD54E1ABAA565D5 /* SongPackStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SongPackStore.swift; sourceTree = "<group>"; };
+		E5C85D7D6AC44B68949F37DC /* SongPackModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SongPackModels.swift; sourceTree = "<group>"; };
 		008D20E8BE6CD25A13CBA988 /* CampusLocationMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CampusLocationMonitor.swift; sourceTree = "<group>"; };
 		0224F790B72595846190F6C8 /* ChatPhotoViewer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatPhotoViewer.swift; sourceTree = "<group>"; };
 		02E3AB80D204DA8640DDA2E4 /* venue-map.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "venue-map.json"; sourceTree = "<group>"; };
@@ -218,6 +224,7 @@
 				C481A10CBFA7092E0BDAC5AA /* AdminDashboardView.swift */,
 				D039A64635C0EF6FF3B6D3E3 /* AdminUsersView.swift */,
 				8BDA213F53DB325886659882 /* BibleBowlView.swift */,
+				4DFB9472D2BB41B7BF5AC52E /* SongPacksView.swift */,
 				690D7795EC8B080C69972765 /* CalculatorView.swift */,
 				E2B21229B8C516E3A062368E /* ChatListView.swift */,
 				0224F790B72595846190F6C8 /* ChatPhotoViewer.swift */,
@@ -243,6 +250,7 @@
 			isa = PBXGroup;
 			children = (
 				41FB932F01023F1967486D44 /* AblyService.swift */,
+				D8122F891AD54E1ABAA565D5 /* SongPackStore.swift */,
 				1A62644C156B0B0D6EADBF84 /* APIClient.swift */,
 				466D237AE8A926FC5CADD2F6 /* AppSession.swift */,
 				CE395596786297E49CC999A2 /* BundledContent.swift */,
@@ -348,6 +356,7 @@
 			children = (
 				4BF3FBBFCE2EF235B3B1F1D9 /* AdminUserModels.swift */,
 				4D1AD3F114E29E028A68BB4E /* AppConfig.swift */,
+				E5C85D7D6AC44B68949F37DC /* SongPackModels.swift */,
 				ED599FD2D648050CE74D667A /* AppModels.swift */,
 				4E4BCFAB9A88FD07F6BC8449 /* ChatModels.swift */,
 				64179816F2B892D24E404042 /* HomeBoardModels.swift */,
@@ -548,6 +557,9 @@
 				7568F6D233AF16EAEA555420 /* BibleBowlView.swift in Sources */,
 				82553140B28F7CC2EA40A2A2 /* BrandColors.swift in Sources */,
 				F763B88C4136397DCED07719 /* BundledContent.swift in Sources */,
+				A12A213C05A64AC69D0E3B94 /* SongPackModels.swift in Sources */,
+				AF257952DCA640D4906FFFF0 /* SongPackStore.swift in Sources */,
+				ECEA01015F624D5DAF6CBF2E /* SongPacksView.swift in Sources */,
 				3E7640855ECDE62A00948E3B /* CalculatorView.swift in Sources */,
 				9AFC09B1C3BFA8FB6D3A70F3 /* CampusLocationMonitor.swift in Sources */,
 				8BF585E509998F0FAB97B470 /* CarPlayDataProvider.swift in Sources */,
@@ -694,13 +706,13 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = RendezvousILNotificationService/RendezvousILNotificationService.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 209;
+				CURRENT_PROJECT_VERSION = 210;
 				DEVELOPMENT_TEAM = F5HPRRCC5H;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = RendezvousILNotificationService/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Rendezvous Notifications";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
-				MARKETING_VERSION = 2.0.6;
+				MARKETING_VERSION = 2.0.7;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.rendezvousil.braddcorp.app.notification-service";
 				PRODUCT_NAME = RendezvousILNotificationService;
 				SDKROOT = iphoneos;
@@ -714,7 +726,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = RendezvousILWidgets/RendezvousILWidgets.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 209;
+				CURRENT_PROJECT_VERSION = 210;
 				DEVELOPMENT_TEAM = F5HPRRCC5H;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = RendezvousILWidgets/Info.plist;
@@ -725,7 +737,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 2.0.6;
+				MARKETING_VERSION = 2.0.7;
 				PRODUCT_BUNDLE_IDENTIFIER = com.rendezvousil.braddcorp.app.widgets;
 				PRODUCT_NAME = RendezvousILWidgets;
 				SDKROOT = iphoneos;
@@ -743,14 +755,14 @@
 				CODE_SIGN_ENTITLEMENTS = RendezvousIL/RendezvousIL.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 209;
+				CURRENT_PROJECT_VERSION = 210;
 				DEVELOPMENT_TEAM = F5HPRRCC5H;
 				INFOPLIST_FILE = RendezvousIL/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.0.6;
+				MARKETING_VERSION = 2.0.7;
 				PRODUCT_BUNDLE_IDENTIFIER = com.rendezvousil.braddcorp.app;
 				PRODUCT_NAME = "Rendezvous IL";
 				SDKROOT = iphoneos;
@@ -820,7 +832,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = RendezvousILWidgets/RendezvousILWidgets.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 209;
+				CURRENT_PROJECT_VERSION = 210;
 				DEVELOPMENT_TEAM = F5HPRRCC5H;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = RendezvousILWidgets/Info.plist;
@@ -831,7 +843,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 2.0.6;
+				MARKETING_VERSION = 2.0.7;
 				PRODUCT_BUNDLE_IDENTIFIER = com.rendezvousil.braddcorp.app.widgets;
 				PRODUCT_NAME = RendezvousILWidgets;
 				SDKROOT = iphoneos;
@@ -845,13 +857,13 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = RendezvousILNotificationService/RendezvousILNotificationService.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 209;
+				CURRENT_PROJECT_VERSION = 210;
 				DEVELOPMENT_TEAM = F5HPRRCC5H;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = RendezvousILNotificationService/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Rendezvous Notifications";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
-				MARKETING_VERSION = 2.0.6;
+				MARKETING_VERSION = 2.0.7;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.rendezvousil.braddcorp.app.notification-service";
 				PRODUCT_NAME = RendezvousILNotificationService;
 				SDKROOT = iphoneos;
@@ -869,14 +881,14 @@
 				CODE_SIGN_ENTITLEMENTS = RendezvousIL/RendezvousIL.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 209;
+				CURRENT_PROJECT_VERSION = 210;
 				DEVELOPMENT_TEAM = F5HPRRCC5H;
 				INFOPLIST_FILE = RendezvousIL/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.0.6;
+				MARKETING_VERSION = 2.0.7;
 				PRODUCT_BUNDLE_IDENTIFIER = com.rendezvousil.braddcorp.app;
 				PRODUCT_NAME = "Rendezvous IL";
 				SDKROOT = iphoneos;

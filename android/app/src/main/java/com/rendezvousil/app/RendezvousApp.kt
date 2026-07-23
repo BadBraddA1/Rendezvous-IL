@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -54,6 +55,10 @@ import com.rendezvousil.app.ui.home.VolunteeringViewModel
 import com.rendezvousil.app.ui.more.MoreScreen
 import com.rendezvousil.app.ui.schedule.ScheduleScreen
 import com.rendezvousil.app.ui.schedule.ScheduleViewModel
+import com.rendezvousil.app.ui.songs.SongItemViewerScreen
+import com.rendezvousil.app.ui.songs.SongPackDetailScreen
+import com.rendezvousil.app.ui.songs.SongPacksScreen
+import com.rendezvousil.app.ui.songs.SongPacksViewModel
 import com.rendezvousil.app.ui.notifications.NotificationSettingsScreen
 import com.rendezvousil.app.ui.updates.UpdatesScreen
 import com.rendezvousil.app.ui.updates.UpdatesViewModel
@@ -219,6 +224,7 @@ fun RendezvousApp(
                     appSession = appSession,
                     onNavigateToCalculator = { navController.navigate(Routes.MORE_CALCULATOR) },
                     onNavigateToBibleBowl = { navController.navigate(Routes.MORE_BIBLE_BOWL) },
+                    onNavigateToSongs = { navController.navigate(Routes.MORE_SONGS) },
                     onNavigateToFaq = { navController.navigate(Routes.MORE_FAQ) },
                     onNavigateToAbout = { navController.navigate(Routes.MORE_ABOUT) },
                     onNavigateToAdminDashboard = { navController.navigate(Routes.MORE_ADMIN_DASHBOARD) },
@@ -247,6 +253,74 @@ fun RendezvousApp(
             }
             composable(Routes.MORE_BIBLE_BOWL) {
                 BibleBowlScreen(onBack = { navController.popBackStack() })
+            }
+            composable(Routes.MORE_SONGS) {
+                val songsViewModel: SongPacksViewModel = viewModel(factory = viewModelFactory)
+                SongPacksScreen(
+                    viewModel = songsViewModel,
+                    onBack = { navController.popBackStack() },
+                    onOpenPack = { packId, packName ->
+                        navController.navigate(Routes.songPack(packId, packName))
+                    },
+                )
+            }
+            composable(
+                route = Routes.MORE_SONG_PACK,
+                arguments = listOf(
+                    navArgument("packId") { type = NavType.StringType },
+                    navArgument("name") {
+                        type = NavType.StringType
+                        defaultValue = "Songs"
+                    },
+                ),
+            ) { entry ->
+                val packId = entry.arguments?.getString("packId").orEmpty()
+                val packName = entry.arguments?.getString("name") ?: "Songs"
+                val parentEntry = remember(entry) {
+                    runCatching { navController.getBackStackEntry(Routes.MORE_SONGS) }.getOrNull()
+                }
+                val songsViewModel: SongPacksViewModel = if (parentEntry != null) {
+                    viewModel(parentEntry, factory = viewModelFactory)
+                } else {
+                    viewModel(factory = viewModelFactory)
+                }
+                SongPackDetailScreen(
+                    packId = packId,
+                    packName = packName,
+                    viewModel = songsViewModel,
+                    onBack = { navController.popBackStack() },
+                    onOpenSong = { index ->
+                        navController.navigate(Routes.songViewer(packId, index, packName))
+                    },
+                )
+            }
+            composable(
+                route = Routes.MORE_SONG_VIEWER,
+                arguments = listOf(
+                    navArgument("packId") { type = NavType.StringType },
+                    navArgument("index") { type = NavType.IntType },
+                    navArgument("name") {
+                        type = NavType.StringType
+                        defaultValue = "Song"
+                    },
+                ),
+            ) { entry ->
+                val packId = entry.arguments?.getString("packId").orEmpty()
+                val index = entry.arguments?.getInt("index") ?: 0
+                val parentEntry = remember(entry) {
+                    runCatching { navController.getBackStackEntry(Routes.MORE_SONGS) }.getOrNull()
+                }
+                val songsViewModel: SongPacksViewModel = if (parentEntry != null) {
+                    viewModel(parentEntry, factory = viewModelFactory)
+                } else {
+                    viewModel(factory = viewModelFactory)
+                }
+                SongItemViewerScreen(
+                    packId = packId,
+                    startIndex = index,
+                    viewModel = songsViewModel,
+                    onBack = { navController.popBackStack() },
+                )
             }
             composable(Routes.MORE_FAQ) {
                 FAQScreen(onBack = { navController.popBackStack() })

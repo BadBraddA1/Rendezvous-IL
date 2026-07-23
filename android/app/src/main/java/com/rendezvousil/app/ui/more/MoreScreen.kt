@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.ManageAccounts
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Person
@@ -47,6 +48,7 @@ fun MoreScreen(
     appSession: AppSession,
     onNavigateToCalculator: () -> Unit,
     onNavigateToBibleBowl: () -> Unit,
+    onNavigateToSongs: () -> Unit,
     onNavigateToFaq: () -> Unit,
     onNavigateToAbout: () -> Unit,
     onNavigateToAdminDashboard: () -> Unit,
@@ -93,6 +95,11 @@ fun MoreScreen(
                     title = "Bible Bowl",
                     icon = { Icon(Icons.Default.Book, contentDescription = null) },
                     onClick = onNavigateToBibleBowl,
+                )
+                NavListItem(
+                    title = "Songs",
+                    icon = { Icon(Icons.Default.MusicNote, contentDescription = null) },
+                    onClick = onNavigateToSongs,
                 )
                 NavListItem(
                     title = "FAQ",

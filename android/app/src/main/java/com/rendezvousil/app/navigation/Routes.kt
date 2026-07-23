@@ -12,6 +12,9 @@ object Routes {
     const val MORE = "more"
     const val MORE_CALCULATOR = "more/calculator"
     const val MORE_BIBLE_BOWL = "more/bible_bowl"
+    const val MORE_SONGS = "more/songs"
+    const val MORE_SONG_PACK = "more/songs/{packId}?name={name}"
+    const val MORE_SONG_VIEWER = "more/songs/{packId}/view?index={index}&name={name}"
     const val MORE_FAQ = "more/faq"
     const val MORE_ABOUT = "more/about"
     const val MORE_DIRECTORY = "more/directory"
@@ -39,4 +42,10 @@ object Routes {
         val encodedTitle = Uri.encode(title)
         return "chat/$channelId?title=$encodedTitle&canModerate=$canModerate"
     }
+
+    fun songPack(packId: String, name: String): String =
+        "more/songs/$packId?name=${Uri.encode(name)}"
+
+    fun songViewer(packId: String, index: Int, name: String): String =
+        "more/songs/$packId/view?index=$index&name=${Uri.encode(name)}"
 }

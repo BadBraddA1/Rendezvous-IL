@@ -116,6 +116,13 @@ pnpm db:verify
 - **Admin:** `/admin/chat` (nav: Communication → Year Chat) — create **test/custom** channels, pick members, **Make mod / Remove mod**, chat from the web. Year channels auto-include registered families.
 - API: `GET /api/chat/channels`, `GET/POST /api/chat/channels/[id]/messages`, `POST /api/chat/channels/[id]/photos` (single photo → `{ url }`), `DELETE /api/chat/messages/[id]`, `POST /api/chat/messages/[id]/vote`, `POST /api/chat/messages/[id]/reactions`; admin `GET/POST/PATCH/DELETE /api/admin/chat/channels`, `GET /api/admin/chat/people`, `GET/POST/DELETE /api/admin/chat/channels/[id]/members`.
 
+## Song packs (offline hymn sheets)
+
+- **Admin:** `/admin/songs` (nav: Communication → Songs) — create named packs (defaults seed **Campfire** and **Racket Ball Singing** per event year), reorder, publish/unpublish, upload PDF or image songs (JPG/PNG/WebP → Vercel Blob under `song-packs/`), replace/delete files. Schema: `song_packs` / `song_pack_items` (lazy create in `lib/song-packs.ts`).
+- **Member API** (Clerk + registration for that year, same gate as year chat): `GET /api/songs/packs?year=`, `GET /api/songs/packs/[id]` — published packs + item metadata (`file_url`, `content_hash`, `byte_size`, `file_type`).
+- **Push:** Publishing a pack (or replacing a file on a published pack) sends a best-effort APNs/FCM broadcast via `lib/song-packs-notify.ts` — “open the app to finish downloading.”
+- **Apps:** iOS/Android **More → Songs** — pack list → song list → in-app PDF/image viewer with next/previous. Files download opportunistically when the Songs screen opens (and on pull-to-refresh / Download); cache keyed by `content_hash` under app Documents/`filesDir` so unchanged songs are skipped. Offline open uses the on-device file; never-cached songs show a clear “needs download” state. No audio or live page-sync in v1.
+
 ## App Home board (remote config)
 
 - **Admin → Event → Home board** (`/admin/home-board`) — reorder Today sections, show/hide them, and add **banner** cards (title/body/link). Stored in `app_settings` as `home_board_{year}` (same pattern as schedule header meta).

@@ -71,7 +71,7 @@ Generates `app/src/main/assets/schedule-fallback.json` from `lib/schedule-data.t
 | **Shell** | 5 tabs: Home, Chat, Schedule, Directory, More (Updates via Home/More) |
 | **Schedule** | Day picker, meals, volunteer slots, schedule announcements, offline fallback JSON |
 | **Updates** | Now/next (America/Chicago), weather, live announcements |
-| **Public pages** | FAQ, About, Bible Bowl, cost calculator (same logic as iOS/web) |
+| **Public pages** | FAQ, About, Bible Bowl, cost calculator, **Songs** (signed-in + registered; offline pack download) |
 | **HTTP** | Retrofit + kotlinx.serialization; User-Agent `RendezvousIL-Android/1.0` |
 | **CI** | GitHub Action assembles debug APK on `android/**` changes |
 
@@ -83,7 +83,7 @@ Generates `app/src/main/assets/schedule-fallback.json` from `lib/schedule-data.t
 | **AppSession** | `com.rendezvousil.app.auth.AppSession` — signed-in state, admin flags, bearer `ApiClient` |
 | **Account** | `AccountScreen` — `AuthView` sign-in/out, web links (`BuildConfig.BASE_URL`), directory nav |
 | **Directory** | Browse by year + search; photo upload/replace/remove, opt-out, blurb (Coil + multipart `photo`) |
-| **More tab** | Account section: Family account, Family directory, Directory photo |
+| **More tab** | Account section: Family account, Family directory, Directory photo; Plan section includes **Songs** (packs → offline PDF/image viewer) |
 | **API** | `GET /api/admin/me`, `POST /api/auth/activity`, directory endpoints |
 | **Activity** | Ping on sign-in, `ON_RESUME`, and every 5 minutes while signed in |
 

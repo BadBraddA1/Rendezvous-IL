@@ -40,6 +40,8 @@ import com.rendezvousil.core.network.dto.HomeBoardConfig
 import com.rendezvousil.core.network.dto.MealsResponse
 import com.rendezvousil.core.network.dto.RatesPayload
 import com.rendezvousil.core.network.dto.ScheduleAnnouncementsResponse
+import com.rendezvousil.core.network.dto.SongPackDetailResponse
+import com.rendezvousil.core.network.dto.SongPacksResponse
 import com.rendezvousil.core.network.dto.UserActivityBody
 import com.rendezvousil.core.network.dto.UserActivityResponse
 import com.rendezvousil.core.network.dto.VolunteerWeekResponse
@@ -243,6 +245,36 @@ class ApiClient private constructor(
 
     suspend fun getFamilyCheckIn(year: Int = AppConfig.EVENT_YEAR): FamilyCheckInResponse =
         apiCall { api.getFamilyCheckIn(year) }
+
+    suspend fun getSongPacks(year: Int = AppConfig.EVENT_YEAR): SongPacksResponse =
+        getJson(
+            path = "api/songs/packs",
+            queryParameters = mapOf("year" to year.toString()),
+        )
+
+    suspend fun getSongPack(id: String): SongPackDetailResponse =
+        getJson("api/songs/packs/$id")
+
+    /** Download a remote song file into [destination] (overwrites if present). */
+    suspend fun downloadToFile(url: String, destination: java.io.File) {
+        withContext(Dispatchers.IO) {
+            val request = Request.Builder().url(url).get().build()
+            okHttpClient.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) {
+                    throw ApiException.BadStatus(response.code)
+                }
+                val body = response.body ?: throw ApiException.BadStatus(response.code)
+                destination.parentFile?.mkdirs()
+                val tmp = java.io.File(destination.parentFile, "${destination.name}.tmp")
+                tmp.outputStream().use { out -> body.byteStream().copyTo(out) }
+                if (destination.exists()) destination.delete()
+                if (!tmp.renameTo(destination)) {
+                    tmp.copyTo(destination, overwrite = true)
+                    tmp.delete()
+                }
+            }
+        }
+    }
 
     suspend fun getFamilyDirectorySettings(): FamilyDirectorySettings {
         val envelope = apiCall { api.getFamilyDirectorySettings() }

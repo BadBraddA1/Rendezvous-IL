@@ -16,6 +16,7 @@ import com.rendezvousil.app.ui.directory.DirectoryViewModel
 import com.rendezvousil.app.ui.home.HomeViewModel
 import com.rendezvousil.app.ui.home.VolunteeringViewModel
 import com.rendezvousil.app.ui.schedule.ScheduleViewModel
+import com.rendezvousil.app.ui.songs.SongPacksViewModel
 import com.rendezvousil.app.ui.updates.UpdatesViewModel
 import com.rendezvousil.core.network.RendezvousRepository
 import androidx.lifecycle.createSavedStateHandle
@@ -59,6 +60,8 @@ class RendezvousViewModelFactory(
                 CheckInViewModel(appSession) as T
             modelClass.isAssignableFrom(AdminUsersViewModel::class.java) ->
                 AdminUsersViewModel(appSession) as T
+            modelClass.isAssignableFrom(SongPacksViewModel::class.java) ->
+                SongPacksViewModel(appSession, application) as T
             else -> throw IllegalArgumentException("Unknown ViewModel: ${modelClass.name}")
         }
     }
