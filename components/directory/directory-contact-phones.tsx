@@ -4,13 +4,15 @@ import type { DirectoryContactPhone } from "@/lib/directory-contacts"
 type Props = {
   contacts: DirectoryContactPhone[]
   className?: string
+  /** When false, omit the name line (phone is already under Father/Mother). */
+  showNames?: boolean
 }
 
 function digitsOnly(phone: string) {
   return phone.replace(/[^\d+]/g, "")
 }
 
-export function DirectoryContactPhones({ contacts, className }: Props) {
+export function DirectoryContactPhones({ contacts, className, showNames = true }: Props) {
   if (contacts.length === 0) return null
 
   return (
@@ -24,7 +26,7 @@ export function DirectoryContactPhones({ contacts, className }: Props) {
           >
             <Phone className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
             <div className="min-w-0 space-y-0.5 break-words">
-              {contact.name ? <p className="font-medium">{contact.name}</p> : null}
+              {showNames && contact.name ? <p className="font-medium">{contact.name}</p> : null}
               <p className="text-muted-foreground">{contact.phone}</p>
               {digits ? (
                 <p className="flex flex-wrap gap-3 pt-0.5">
