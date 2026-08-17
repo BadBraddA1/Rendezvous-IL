@@ -10,7 +10,7 @@ Handles public event pages, family registration (2027), admin dashboard (registr
 
 - **Next.js 16** (App Router) + React 19 + TypeScript
 - **Turso** (libSQL / SQLite) — all app data via `lib/db.ts` and `@libsql/client`
-- **Clerk** — authentication (families + admin roles)
+- **Clerk** — authentication (families + admin roles). Sign-in / sign-up use lake-teal site chrome (`lib/clerk-appearance.ts`) — Clerk logo and “Secured by Clerk” footer are hidden; **Powered by BraddCorp** sits under the form.
 - **Resend** — email
 - **Vercel** — hosting (project: `v0-ren`)
 

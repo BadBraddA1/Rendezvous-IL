@@ -2,6 +2,8 @@ import { SignIn } from "@clerk/nextjs"
 import Image from "next/image"
 import Link from "next/link"
 import { MainContent } from "@/components/main-content"
+import { PoweredByBraddcorp } from "@/components/powered-by-braddcorp"
+import { clerkAppearance } from "@/lib/clerk-appearance"
 
 export const metadata = {
   title: "Sign In - Rendezvous IL",
@@ -10,7 +12,7 @@ export const metadata = {
 
 export default function SignInPage() {
   return (
-    <MainContent className="min-h-screen flex flex-col items-center justify-center bg-background px-4 py-12">
+    <MainContent className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-12">
       <div className="w-full max-w-md space-y-8">
         <div className="flex flex-col items-center">
           <Link href="/">
@@ -19,33 +21,20 @@ export default function SignInPage() {
               alt="Rendezvous"
               width={180}
               height={60}
-              className="h-14 w-auto mb-6"
+              className="mb-6 h-14 w-auto"
             />
           </Link>
-          <h1 className="text-2xl font-bold text-foreground text-center">
-            Welcome Back
+          <h1 className="text-center text-2xl font-bold text-balance text-foreground">
+            Welcome back
           </h1>
-          <p className="text-muted-foreground text-center mt-2">
-            Sign in to access your family dashboard and manage registrations.
+          <p className="mt-2 text-center text-sm leading-relaxed text-muted-foreground">
+            Sign in to your family dashboard and manage registrations.
           </p>
         </div>
 
-        <div className="flex justify-center">
+        <div className="rounded-[var(--radius)] border border-border bg-card p-6">
           <SignIn
-            appearance={{
-              elements: {
-                rootBox: "w-full",
-                card: "shadow-none border border-border bg-card",
-                headerTitle: "hidden",
-                headerSubtitle: "hidden",
-                socialButtonsBlockButton: "border border-border bg-background hover:bg-secondary",
-                formButtonPrimary: "bg-primary hover:bg-primary/90 text-primary-foreground",
-                footerActionLink: "text-primary hover:text-primary/90",
-                formFieldInput: "border-border bg-background",
-                dividerLine: "bg-border",
-                dividerText: "text-muted-foreground",
-              },
-            }}
+            appearance={clerkAppearance}
             fallbackRedirectUrl="/account"
             signUpUrl="/sign-up"
           />
@@ -53,10 +42,12 @@ export default function SignInPage() {
 
         <p className="text-center text-sm text-muted-foreground">
           Don&apos;t have an account?{" "}
-          <Link href="/sign-up" className="text-primary hover:underline font-medium">
+          <Link href="/sign-up" className="font-medium text-primary hover:underline">
             Sign up
           </Link>
         </p>
+
+        <PoweredByBraddcorp />
       </div>
     </MainContent>
   )
