@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useSignIn } from "@clerk/nextjs"
 import { authConfig } from "@/lib/auth-config"
 import { afterAuth, globalAuthError } from "@/lib/after-auth"
+import { AuthPending } from "./auth-pending"
 
 /**
  * Three-step password reset (Clerk Core 3 resetPasswordEmailCode API):
@@ -14,6 +15,7 @@ import { afterAuth, globalAuthError } from "@/lib/after-auth"
 export function ForgotPasswordForm() {
   const { signIn, errors, fetchStatus } = useSignIn()
   const [codeSent, setCodeSent] = useState(false)
+  const [redirecting, setRedirecting] = useState(false)
   const busy = fetchStatus === "fetching"
   const globalErr = globalAuthError(errors)
 
@@ -44,10 +46,16 @@ export function ForgotPasswordForm() {
     if (error) return
 
     if (signIn.status === "complete") {
+      setRedirecting(true)
       await signIn.finalize({
         navigate: afterAuth(authConfig.afterSignInUrl),
       })
     }
+  }
+
+  // Hold the spinner until the browser actually leaves the page.
+  if (redirecting || signIn.status === "complete") {
+    return <AuthPending label="Password saved — signing you in…" />
   }
 
   if (signIn.status === "needs_new_password") {

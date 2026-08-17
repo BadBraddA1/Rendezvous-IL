@@ -1,9 +1,10 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useAuth, useSignUp } from "@clerk/nextjs"
 import { authConfig } from "@/lib/auth-config"
 import { afterAuth, globalAuthError } from "@/lib/after-auth"
+import { AuthPending } from "./auth-pending"
 import { SocialButtons } from "./social-buttons"
 
 /**
@@ -16,6 +17,7 @@ import { SocialButtons } from "./social-buttons"
 export function SignUpForm() {
   const { signUp, errors, fetchStatus } = useSignUp()
   const { isSignedIn } = useAuth()
+  const [redirecting, setRedirecting] = useState(false)
   const busy = fetchStatus === "fetching"
   const globalErr = globalAuthError(errors)
 
@@ -51,13 +53,17 @@ export function SignUpForm() {
     if (error) return
 
     if (signUp.status === "complete") {
+      setRedirecting(true)
       await signUp.finalize({
         navigate: afterAuth(authConfig.afterSignUpUrl),
       })
     }
   }
 
-  if (signUp.status === "complete" || isSignedIn) return null
+  // Hold the spinner until the browser actually leaves the page.
+  if (redirecting || isSignedIn || signUp.status === "complete") {
+    return <AuthPending label="Setting up your account…" />
+  }
 
   const verifying =
     signUp.status === "missing_requirements" &&

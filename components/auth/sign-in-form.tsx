@@ -1,10 +1,11 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useAuth, useSignIn } from "@clerk/nextjs"
 import { authConfig } from "@/lib/auth-config"
 import { afterAuth, globalAuthError } from "@/lib/after-auth"
+import { AuthPending } from "./auth-pending"
 import { SocialButtons } from "./social-buttons"
 
 /**
@@ -19,10 +20,13 @@ import { SocialButtons } from "./social-buttons"
 export function SignInForm() {
   const { signIn, errors, fetchStatus } = useSignIn()
   const { isSignedIn } = useAuth()
+  const [redirecting, setRedirecting] = useState(false)
   const busy = fetchStatus === "fetching"
   const globalErr = globalAuthError(errors)
-  const finish = () =>
-    signIn.finalize({ navigate: afterAuth(authConfig.afterSignInUrl) })
+  const finish = () => {
+    setRedirecting(true)
+    return signIn.finalize({ navigate: afterAuth(authConfig.afterSignInUrl) })
+  }
 
   // Already signed in (or the session just activated): never show the form —
   // hard-navigate so the request carries the session cookie.
@@ -30,7 +34,10 @@ export function SignInForm() {
     if (isSignedIn) window.location.replace(authConfig.afterSignInUrl)
   }, [isSignedIn])
 
-  if (isSignedIn) return null
+  // Hold the spinner until the browser actually leaves the page.
+  if (redirecting || isSignedIn || signIn.status === "complete") {
+    return <AuthPending label="Signing you in…" />
+  }
 
   async function handleEmail(formData: FormData) {
     const identifier = formData.get("email") as string

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { useClerk, useSignIn, useSignUp } from "@clerk/nextjs"
 import { authConfig } from "@/lib/auth-config"
 import { afterAuth } from "@/lib/after-auth"
+import { AuthPending } from "@/components/auth/auth-pending"
 
 /**
  * OAuth return route. Handles the four outcomes Clerk can hand back:
@@ -89,7 +90,7 @@ export default function SsoCallbackPage() {
 
   return (
     <div className="ba-page">
-      <p className="ba-hint">Finishing sign in…</p>
+      <AuthPending label="Finishing sign in…" />
       {/* A transferred sign-up may need captcha verification. */}
       <div id="clerk-captcha" />
     </div>
