@@ -1,6 +1,6 @@
 "use client"
 
-import { useRouter } from "next/navigation"
+import { useEffect } from "react"
 import { useAuth, useSignUp } from "@clerk/nextjs"
 import { authConfig } from "@/lib/auth-config"
 import { afterAuth, globalAuthError } from "@/lib/after-auth"
@@ -16,9 +16,14 @@ import { SocialButtons } from "./social-buttons"
 export function SignUpForm() {
   const { signUp, errors, fetchStatus } = useSignUp()
   const { isSignedIn } = useAuth()
-  const router = useRouter()
   const busy = fetchStatus === "fetching"
   const globalErr = globalAuthError(errors)
+
+  // Session already active (or just activated): hard-navigate away so the
+  // request carries the session cookie instead of re-showing the form.
+  useEffect(() => {
+    if (isSignedIn) window.location.replace(authConfig.afterSignUpUrl)
+  }, [isSignedIn])
 
   async function handleSubmit(formData: FormData) {
     const emailAddress = formData.get("email") as string
@@ -47,7 +52,7 @@ export function SignUpForm() {
 
     if (signUp.status === "complete") {
       await signUp.finalize({
-        navigate: afterAuth(router.push, authConfig.afterSignUpUrl),
+        navigate: afterAuth(authConfig.afterSignUpUrl),
       })
     }
   }

@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import { useSignIn } from "@clerk/nextjs"
 import { authConfig } from "@/lib/auth-config"
 import { afterAuth, globalAuthError } from "@/lib/after-auth"
@@ -14,7 +13,6 @@ import { afterAuth, globalAuthError } from "@/lib/after-auth"
  */
 export function ForgotPasswordForm() {
   const { signIn, errors, fetchStatus } = useSignIn()
-  const router = useRouter()
   const [codeSent, setCodeSent] = useState(false)
   const busy = fetchStatus === "fetching"
   const globalErr = globalAuthError(errors)
@@ -47,7 +45,7 @@ export function ForgotPasswordForm() {
 
     if (signIn.status === "complete") {
       await signIn.finalize({
-        navigate: afterAuth(router.push, authConfig.afterSignInUrl),
+        navigate: afterAuth(authConfig.afterSignInUrl),
       })
     }
   }

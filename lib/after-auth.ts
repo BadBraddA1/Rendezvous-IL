@@ -1,9 +1,4 @@
 /**
- * Shared `finalize({ navigate })` handler for Clerk Core 3 flows.
- * Session tasks pause navigation (Clerk renders its own task UI);
- * decorated URLs may be absolute (Safari ITP), which need a full navigation.
- */
-/**
  * `errors.global` changed shape across @clerk/nextjs v7 minors
  * (array of ClerkError → single ClerkError | null). Normalize to one-or-null.
  */
@@ -19,10 +14,16 @@ export function globalAuthError(errors: {
   return Array.isArray(g) ? (g[0] ?? null) : g
 }
 
-export function afterAuth(
-  push: (url: string) => void,
-  destination: string,
-) {
+/**
+ * Shared `finalize({ navigate })` handler for Clerk Core 3 flows.
+ * Session tasks pause navigation (Clerk renders its own task UI).
+ *
+ * Always a FULL navigation, never router.push(): the next request must
+ * carry the just-written session cookie. A client-side push can race the
+ * cookie write, so protected-route middleware sees a signed-out request
+ * and bounces the user back to /sign-in even though sign-in succeeded.
+ */
+export function afterAuth(destination: string) {
   return async ({
     session,
     decorateUrl,
@@ -31,12 +32,6 @@ export function afterAuth(
     decorateUrl: (url: string) => string
   }) => {
     if (session?.currentTask) return
-
-    const url = decorateUrl(destination)
-    if (url.startsWith("http")) {
-      window.location.href = url
-    } else {
-      push(url)
-    }
+    window.location.assign(decorateUrl(destination))
   }
 }

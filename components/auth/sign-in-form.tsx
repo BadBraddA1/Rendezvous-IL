@@ -1,8 +1,8 @@
 "use client"
 
+import { useEffect } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { useSignIn } from "@clerk/nextjs"
+import { useAuth, useSignIn } from "@clerk/nextjs"
 import { authConfig } from "@/lib/auth-config"
 import { afterAuth, globalAuthError } from "@/lib/after-auth"
 import { SocialButtons } from "./social-buttons"
@@ -19,11 +19,19 @@ import { SocialButtons } from "./social-buttons"
  */
 export function SignInForm() {
   const { signIn, errors, fetchStatus } = useSignIn()
-  const router = useRouter()
+  const { isSignedIn } = useAuth()
   const busy = fetchStatus === "fetching"
   const globalErr = globalAuthError(errors)
   const finish = () =>
-    signIn.finalize({ navigate: afterAuth(router.push, authConfig.afterSignInUrl) })
+    signIn.finalize({ navigate: afterAuth(authConfig.afterSignInUrl) })
+
+  // Already signed in (or the session just activated): never show the form —
+  // hard-navigate so the request carries the session cookie.
+  useEffect(() => {
+    if (isSignedIn) window.location.replace(authConfig.afterSignInUrl)
+  }, [isSignedIn])
+
+  if (isSignedIn) return null
 
   async function handlePassword(formData: FormData) {
     const emailAddress = formData.get("email") as string

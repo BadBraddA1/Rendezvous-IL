@@ -25,9 +25,9 @@ export default function SsoCallbackPage() {
       hasRun.current = true
 
       const finishSignIn = () =>
-        signIn.finalize({ navigate: afterAuth(router.push, authConfig.afterSignInUrl) })
+        signIn.finalize({ navigate: afterAuth(authConfig.afterSignInUrl) })
       const finishSignUp = () =>
-        signUp.finalize({ navigate: afterAuth(router.push, authConfig.afterSignUpUrl) })
+        signUp.finalize({ navigate: afterAuth(authConfig.afterSignUpUrl) })
 
       if (signIn.status === "complete") {
         await finishSignIn()
@@ -81,7 +81,7 @@ export default function SsoCallbackPage() {
       if (sessionId) {
         await clerk.setActive({
           session: sessionId,
-          navigate: afterAuth(router.push, authConfig.afterSignInUrl),
+          navigate: afterAuth(authConfig.afterSignInUrl),
         })
       }
     })()
