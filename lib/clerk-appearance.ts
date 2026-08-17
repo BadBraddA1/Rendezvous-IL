@@ -33,7 +33,8 @@ export const clerkAppearance = {
     logoBox: { display: "none" },
     footerPages: { display: "none" },
     footerAction: { display: "none" },
-    footer: { backgroundColor: "transparent", boxShadow: "none" },
+    footer: { display: "none" },
+    footerItem: { display: "none" },
     formButtonPrimary: {
       backgroundColor: "#009276",
       color: "#ffffff",
