@@ -32,13 +32,11 @@ export default function SignUpPage() {
           </p>
         </div>
 
-        <div className="rounded-[var(--radius)] border border-border bg-card p-6">
-          <SignUp
+        <SignUp
             appearance={clerkAppearance}
             fallbackRedirectUrl="/account"
             signInUrl="/sign-in"
           />
-        </div>
 
         <p className="text-center text-sm text-muted-foreground">
           Already have an account?{" "}
