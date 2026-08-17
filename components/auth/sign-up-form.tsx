@@ -14,7 +14,7 @@ import { SocialButtons } from "./social-buttons"
  * The empty #clerk-captcha div is REQUIRED — Clerk mounts its bot
  * protection there. Removing it breaks sign-up in production.
  */
-export function SignUpForm() {
+export function SignUpForm({ prefillEmail }: { prefillEmail?: string }) {
   const { signUp, errors, fetchStatus } = useSignUp()
   const { isSignedIn } = useAuth()
   const [redirecting, setRedirecting] = useState(false)
@@ -113,6 +113,13 @@ export function SignUpForm() {
 
   return (
     <>
+      {/* Set when sign-in hands off an unknown email — a nudge, not an error. */}
+      {prefillEmail && (
+        <p className="ba-hint">
+          We didn&apos;t find an account for <strong>{prefillEmail}</strong>,
+          so let&apos;s create one — it only takes a minute.
+        </p>
+      )}
       <SocialButtons />
       <form action={handleSubmit} className="ba-form">
         {authConfig.collectName && (
@@ -155,6 +162,7 @@ export function SignUpForm() {
             type="email"
             autoComplete="email"
             required
+            defaultValue={prefillEmail}
             className="ba-input"
             aria-invalid={Boolean(errors.fields.emailAddress)}
           />

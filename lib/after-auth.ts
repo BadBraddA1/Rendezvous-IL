@@ -15,6 +15,18 @@ export function globalAuthError(errors: {
 }
 
 /**
+ * True when a Clerk error (single error or API response with an errors
+ * array) carries the given machine-stable code, e.g.
+ * "form_identifier_not_found" for an unknown sign-in email.
+ */
+export function authErrorHasCode(error: unknown, code: string): boolean {
+  if (!error || typeof error !== "object") return false
+  if ((error as { code?: string }).code === code) return true
+  const nested = (error as { errors?: { code?: string }[] }).errors
+  return Array.isArray(nested) && nested.some((e) => e?.code === code)
+}
+
+/**
  * Shared `finalize({ navigate })` handler for Clerk Core 3 flows.
  * Session tasks pause navigation (Clerk renders its own task UI).
  *

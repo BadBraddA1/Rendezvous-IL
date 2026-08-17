@@ -8,7 +8,14 @@ export const metadata: Metadata = {
   description: authConfig.copy.signUpSubtitle,
 }
 
-export default function SignUpPage() {
+export default async function SignUpPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ email?: string }>
+}) {
+  // Sign-in hands off unknown emails here as ?email=… so the form is prefilled.
+  const { email } = await searchParams
+
   return (
     <AuthShell
       title={authConfig.copy.signUpTitle}
@@ -17,7 +24,7 @@ export default function SignUpPage() {
       altHref={authConfig.signInUrl}
       altLabel="Sign in"
     >
-      <SignUpForm />
+      <SignUpForm prefillEmail={email} />
     </AuthShell>
   )
 }

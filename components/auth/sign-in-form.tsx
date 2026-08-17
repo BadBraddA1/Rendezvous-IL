@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { useAuth, useSignIn } from "@clerk/nextjs"
 import { authConfig } from "@/lib/auth-config"
-import { afterAuth, globalAuthError } from "@/lib/after-auth"
+import { afterAuth, authErrorHasCode, globalAuthError } from "@/lib/after-auth"
 import { AuthPending } from "./auth-pending"
 import { SocialButtons } from "./social-buttons"
 
@@ -20,7 +21,9 @@ import { SocialButtons } from "./social-buttons"
 export function SignInForm() {
   const { signIn, errors, fetchStatus } = useSignIn()
   const { isSignedIn } = useAuth()
+  const router = useRouter()
   const [redirecting, setRedirecting] = useState(false)
+  const [handoff, setHandoff] = useState(false)
   const busy = fetchStatus === "fetching"
   const globalErr = globalAuthError(errors)
   const finish = () => {
@@ -39,11 +42,23 @@ export function SignInForm() {
     return <AuthPending label="Signing you in…" />
   }
 
+  if (handoff) {
+    return <AuthPending label="No account yet — let's create one…" />
+  }
+
   async function handleEmail(formData: FormData) {
     const identifier = formData.get("email") as string
     // Looks up the account and populates signIn.userData for the greeting.
-    // Unknown emails surface as errors.fields.identifier on this step.
-    await signIn.create({ identifier })
+    const { error } = await signIn.create({ identifier })
+
+    // Unknown email: don't show an error — take them to sign-up with the
+    // email carried over so they're helped along instead of dead-ended.
+    if (authErrorHasCode(error, "form_identifier_not_found")) {
+      setHandoff(true)
+      router.push(
+        `${authConfig.signUpUrl}?email=${encodeURIComponent(identifier)}`
+      )
+    }
   }
 
   async function handlePassword(formData: FormData) {
