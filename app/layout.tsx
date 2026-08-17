@@ -3,7 +3,6 @@ import type { Metadata, Viewport } from "next"
 import { Libre_Baskerville, Libre_Franklin, Source_Code_Pro, Dancing_Script } from "next/font/google"
 import { Analytics } from "@vercel/analytics/react"
 import { ClerkProvider } from "@clerk/nextjs"
-import { clerkAppearance } from "@/lib/clerk-appearance"
 import { ScrollToTop } from "@/components/scroll-to-top"
 import { BackToTop } from "@/components/back-to-top"
 import { PageTourRoot } from "@/components/dev/page-tour-root"
@@ -13,6 +12,7 @@ import { UserActivityPing } from "@/components/user-activity-ping"
 import { siteDescription, siteTitle } from "@/lib/site-metadata"
 
 import "./globals.css"
+import "./auth.css"
 
 const libreFranklin = Libre_Franklin({
   subsets: ["latin"],
@@ -85,7 +85,7 @@ export default function RootLayout({
         <a href="#main-content" className="skip-link">
           Skip to main content
         </a>
-        <ClerkProvider appearance={clerkAppearance}>
+        <ClerkProvider>
           <ScrollToTop />
           <UserActivityPing />
           {children}
