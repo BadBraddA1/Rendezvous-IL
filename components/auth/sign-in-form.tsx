@@ -8,12 +8,11 @@ import { afterAuth, globalAuthError } from "@/lib/after-auth"
 import { SocialButtons } from "./social-buttons"
 
 /**
- * Email + password sign-in (Clerk Core 3 SignInFuture API).
+ * Identifier-first sign-in, like Clerk's widget (Core 3 SignInFuture API):
  *
- * Handles:
- * - password sign-in
- * - Device Trust (`needs_client_trust`): new browser → email code check
- * - basic email-code MFA (`needs_second_factor`)
+ * 1. email step — signIn.create({ identifier }) looks the account up
+ * 2. password step — greets the matched user by name ("Welcome back, Adin")
+ * 3. code step — Device Trust (`needs_client_trust`) or email-code MFA
  *
  * Forgot password lives at its own route (authConfig.forgotPasswordUrl).
  */
@@ -33,11 +32,18 @@ export function SignInForm() {
 
   if (isSignedIn) return null
 
+  async function handleEmail(formData: FormData) {
+    const identifier = formData.get("email") as string
+    // Looks up the account and populates signIn.userData for the greeting.
+    // Unknown emails surface as errors.fields.identifier on this step.
+    await signIn.create({ identifier })
+  }
+
   async function handlePassword(formData: FormData) {
-    const emailAddress = formData.get("email") as string
     const password = formData.get("password") as string
 
-    const { error } = await signIn.password({ emailAddress, password })
+    // No identifier param: continues the attempt created in handleEmail.
+    const { error } = await signIn.password({ password })
     if (error) return
 
     if (signIn.status === "complete") {
@@ -60,6 +66,7 @@ export function SignInForm() {
     if (signIn.status === "complete") await finish()
   }
 
+  // Step 3: device-trust / MFA email code
   if (
     signIn.status === "needs_client_trust" ||
     signIn.status === "needs_second_factor"
@@ -80,6 +87,7 @@ export function SignInForm() {
             inputMode="numeric"
             autoComplete="one-time-code"
             required
+            autoFocus
             className="ba-input"
             aria-invalid={Boolean(errors.fields.code)}
           />
@@ -107,26 +115,32 @@ export function SignInForm() {
     )
   }
 
-  return (
-    <>
-      <SocialButtons />
+  // Step 2: password, greeting the matched account by name
+  if (signIn.status === "needs_first_factor") {
+    const firstName = signIn.userData?.firstName
+
+    return (
       <form action={handlePassword} className="ba-form">
-        <div className="ba-field">
-          <label htmlFor="email" className="ba-label">
-            Email address
-          </label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            required
-            className="ba-input"
-            aria-invalid={Boolean(errors.fields.identifier)}
-          />
-          {errors.fields.identifier && (
-            <p className="ba-error">{errors.fields.identifier.message}</p>
-          )}
+        <p className="ba-greeting">
+          Welcome back{firstName ? `, ${firstName}` : ""}
+        </p>
+        <div className="ba-identity">
+          {signIn.userData?.hasImage && signIn.userData?.imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element -- Clerk-hosted avatar, unknown remote host
+            <img
+              src={signIn.userData.imageUrl}
+              alt=""
+              className="ba-avatar"
+            />
+          ) : null}
+          <span className="ba-identity-email">{signIn.identifier}</span>
+          <button
+            type="button"
+            className="ba-link"
+            onClick={() => signIn.reset()}
+          >
+            Not you?
+          </button>
         </div>
         <div className="ba-field">
           <div className="ba-label-row">
@@ -143,6 +157,7 @@ export function SignInForm() {
             type="password"
             autoComplete="current-password"
             required
+            autoFocus
             className="ba-input"
             aria-invalid={Boolean(errors.fields.password)}
           />
@@ -155,6 +170,38 @@ export function SignInForm() {
         )}
         <button type="submit" className="ba-button" disabled={busy}>
           {busy ? "Signing in…" : "Sign in"}
+        </button>
+      </form>
+    )
+  }
+
+  // Step 1: email
+  return (
+    <>
+      <SocialButtons />
+      <form action={handleEmail} className="ba-form">
+        <div className="ba-field">
+          <label htmlFor="email" className="ba-label">
+            Email address
+          </label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="username"
+            required
+            className="ba-input"
+            aria-invalid={Boolean(errors.fields.identifier)}
+          />
+          {errors.fields.identifier && (
+            <p className="ba-error">{errors.fields.identifier.message}</p>
+          )}
+        </div>
+        {globalErr && (
+          <p className="ba-error">{globalErr.longMessage ?? globalErr.message}</p>
+        )}
+        <button type="submit" className="ba-button" disabled={busy}>
+          {busy ? "Checking…" : "Continue"}
         </button>
       </form>
     </>

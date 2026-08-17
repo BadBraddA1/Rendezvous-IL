@@ -236,6 +236,33 @@
   color: var(--auth-muted);
 }
 
+.ba-greeting {
+  margin: 0;
+  text-align: center;
+  font-size: 1.0625rem;
+  font-weight: 600;
+}
+
+.ba-identity {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+}
+
+.ba-avatar {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--auth-border);
+}
+
+.ba-identity-email {
+  color: var(--auth-muted);
+}
+
 .ba-footer {
   text-align: center;
   font-size: 0.8125rem;
