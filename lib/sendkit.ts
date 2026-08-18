@@ -127,6 +127,9 @@ async function send(params: SendEmailParams): Promise<SendEmailResult> {
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
+        // Without this SendKit answers validation errors with a 302 to an HTML
+        // page, which fetch follows — the failure would look like a success.
+        Accept: "application/json",
       },
       body: JSON.stringify(body),
     })
