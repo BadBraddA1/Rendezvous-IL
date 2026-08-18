@@ -2,15 +2,13 @@ import { type NextRequest, NextResponse } from "next/server"
 import { checkAdminAuth, getAdminPermissions, logAuditAction } from "@/lib/admin-auth"
 import { getRequestAuditMeta } from "@/lib/audit-log"
 import { sql, type SqlRow } from "@/lib/db"
-import { resend } from "@/lib/resend"
+import { sendkit, emailFrom } from "@/lib/sendkit"
 import { generateVolunteerAssignmentEmail } from "@/lib/email-templates"
 import { ensureVolunteerEmailColumn, resolveVolunteerEmail } from "@/lib/volunteer-scheduling"
 import { ensureLessonTables } from "@/lib/lesson-bids"
 import { parseRegistrationEventYear } from "@/lib/registration-event-years"
 
 export const dynamic = "force-dynamic"
-
-const FROM_ADDRESS = "Rendezvous IL <noreply@rendezvousil.com>"
 
 function formatServiceLabel(date: string, timeSlot: string): string {
   const [y, m, d] = date.split("-").map(Number)
@@ -76,8 +74,8 @@ export async function POST(req: NextRequest) {
       }
 
       try {
-        await resend.emails.send({
-          from: FROM_ADDRESS,
+        await sendkit.emails.send({
+          from: emailFrom(),
           to: email,
           subject: "Your worship service assignments — Rendezvous",
           html: generateVolunteerAssignmentEmail({

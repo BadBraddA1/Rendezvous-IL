@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { checkAdminAuth } from "@/lib/admin-auth"
 import { sql } from "@/lib/db"
-import { resend } from "@/lib/resend"
+import { sendkit, registrationEmailFrom } from "@/lib/sendkit"
 import { generateAdminBulkEmail } from "@/lib/email-templates"
 
 export async function POST(req: NextRequest) {
@@ -30,8 +30,8 @@ export async function POST(req: NextRequest) {
 
     // Send emails
     const emailPromises = registrations.map((reg) =>
-      resend.emails.send({
-        from: "Rendezvous Admin <noreply@braddcorp.com>",
+      sendkit.emails.send({
+        from: registrationEmailFrom(),
         to: reg.email,
         subject: subject,
         html: generateAdminBulkEmail(reg.family_last_name, message),
@@ -39,7 +39,9 @@ export async function POST(req: NextRequest) {
     )
 
     const results = await Promise.allSettled(emailPromises)
-    const successCount = results.filter((r) => r.status === "fulfilled").length
+    const successCount = results.filter(
+      (r) => r.status === "fulfilled" && !r.value.error,
+    ).length
 
     return NextResponse.json({ sent: successCount, total: registrations.length })
   } catch (error) {

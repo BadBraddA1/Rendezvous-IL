@@ -1,16 +1,8 @@
 import { NextResponse } from "next/server"
 import { checkAdminAuth } from "@/lib/admin-auth"
 import { sql } from "@/lib/db"
-import { Resend } from "resend"
+import { sendkit, emailFrom, SENDKIT_MAX_RECIPIENTS } from "@/lib/sendkit"
 import { generateMessagingBroadcastEmail } from "@/lib/email-templates"
-
-function getResend() {
-  const apiKey = process.env.RESEND_API_KEY
-  if (!apiKey) {
-    throw new Error("RESEND_API_KEY is not configured")
-  }
-  return new Resend(apiKey)
-}
 
 export async function POST(request: Request) {
   try {
@@ -66,25 +58,24 @@ export async function POST(request: Request) {
     }
 
     // Send emails (in batches for larger lists)
-    const batchSize = 50
+    const batchSize = SENDKIT_MAX_RECIPIENTS
     let sentCount = 0
 
     for (let i = 0; i < registrations.length; i += batchSize) {
       const batch = registrations.slice(i, i + batchSize)
-      
-      try {
-        const resend = getResend()
-        await resend.emails.send({
-          from: "Rendezvous IL <noreply@rendezvousil.com>",
-          to: batch.map((r: { email: string }) => r.email),
-          subject,
-          text: message,
-          html: generateMessagingBroadcastEmail(message),
-        })
-        sentCount += batch.length
-      } catch (emailError) {
-        console.error("Error sending email batch:", emailError)
+
+      const { error } = await sendkit.emails.send({
+        from: emailFrom(),
+        to: batch.map((r: { email: string }) => r.email),
+        subject,
+        text: message,
+        html: generateMessagingBroadcastEmail(message),
+      })
+      if (error) {
+        console.error("Error sending email batch:", error.message)
+        continue
       }
+      sentCount += batch.length
     }
 
     return NextResponse.json({ 

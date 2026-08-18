@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { sql } from "@/lib/db"
-import { resend } from "@/lib/resend"
+import { sendkit, emailFrom } from "@/lib/sendkit"
 import { generateMagicLinkEmail } from "@/lib/email-templates"
 
 const ALLOWED_ADMINS = ["adin@braddcorp.com", "stephen@bradd.us"]
@@ -41,12 +41,16 @@ export async function POST(req: NextRequest) {
     const magicLink = `${baseUrl}/admin/auth/${token}`
 
     // Send email with magic link
-    await resend.emails.send({
-      from: "noreply@braddcorp.com",
+    const { error } = await sendkit.emails.send({
+      from: emailFrom(),
       to: normalizedEmail,
       subject: "Rendezvous Admin Access Link",
       html: generateMagicLinkEmail(magicLink),
     })
+    if (error) {
+      console.error("Magic link send failed:", error.message)
+      return NextResponse.json({ error: "Failed to send magic link" }, { status: 502 })
+    }
 
     return NextResponse.json({ success: true, message: "Magic link sent to your email" })
   } catch (error) {

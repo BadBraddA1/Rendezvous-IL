@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto"
 import { sql } from "@/lib/db"
-import { resend } from "@/lib/resend"
+import { sendkit, emailFrom } from "@/lib/sendkit"
 import { generateLessonBidEmail } from "@/lib/email-templates"
 import { ensureVolunteerEmailColumn, resolveVolunteerEmail } from "@/lib/volunteer-scheduling"
 
@@ -212,8 +212,8 @@ export async function sendBidInvite(volunteerId: number, baseUrl: string): Promi
   const openTopics = (await listTopics(eventYear)).filter((t) => !t.claimed_by_volunteer_id)
 
   try {
-    await resend.emails.send({
-      from: "Rendezvous IL <noreply@rendezvousil.com>",
+    await sendkit.emails.send({
+      from: emailFrom(),
       to: email,
       subject: "Claim your lesson topic — Rendezvous 2027",
       html: generateLessonBidEmail({

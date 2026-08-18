@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto"
 import { sql } from "@/lib/db"
-import { resend } from "@/lib/resend"
+import { sendkit, registrationEmailFrom } from "@/lib/sendkit"
 import { generateSignatureRequestEmail } from "@/lib/email-templates"
 import type { RegistrationData } from "@/types/registration"
 
@@ -48,16 +48,14 @@ function generateToken(): string {
   return randomBytes(32).toString("hex")
 }
 
-const FROM_ADDRESS = "Rendezvous IL <noreply@rendezvousil.com>"
-
 async function sendRequestEmail(
   request: Pick<SignatureRequestRow, "id" | "parent_name" | "email" | "token">,
   familyLastName: string,
   baseUrl: string,
 ): Promise<boolean> {
   try {
-    await resend.emails.send({
-      from: FROM_ADDRESS,
+    await sendkit.emails.send({
+      from: registrationEmailFrom(),
       to: request.email,
       subject: "Signature needed — Rendezvous 2027 registration",
       html: generateSignatureRequestEmail({
