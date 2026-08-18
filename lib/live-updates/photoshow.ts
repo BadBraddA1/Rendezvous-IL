@@ -1,7 +1,8 @@
 import { randomUUID } from "crypto"
-import { del, put } from "@vercel/blob"
 import { sql } from "@/lib/db"
 import { photoExtensionForType, validateFamilyPhoto } from "@/lib/family-directory"
+import { isR2MediaConfigured, putMediaObject, deleteMediaUrl } from "@/lib/r2-media"
+import { toPublicMediaUrl } from "@/lib/media-keys"
 import type { PhotoshowPhoto } from "@/lib/live-updates/photoshow-shared"
 
 export type { PhotoshowPhoto }
@@ -34,7 +35,7 @@ export async function ensurePhotoshowSchema(): Promise<void> {
 function mapRow(row: Record<string, unknown>): PhotoshowPhoto {
   return {
     id: String(row.id),
-    image_url: String(row.image_url),
+    image_url: toPublicMediaUrl(String(row.image_url)) ?? String(row.image_url),
     caption: row.caption != null && String(row.caption).trim() ? String(row.caption) : null,
     submitted_by: null,
     sort_order: Number(row.sort_order ?? 0),
@@ -81,30 +82,20 @@ export async function uploadPhotoshowPhoto(
   bytes: ArrayBuffer,
   contentType: string,
 ): Promise<string> {
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+  if (!isR2MediaConfigured()) {
     throw new Error(
-      "Photo storage is not configured. Set BLOB_READ_WRITE_TOKEN in Vercel for photoshow uploads.",
+      "Photo storage is not configured. Set R2_UPLOAD_WORKER_URL and R2_UPLOAD_SECRET in Vercel.",
     )
   }
 
   const extension = photoExtensionForType(contentType)
-  const pathname = `photoshow/${Date.now()}-${randomUUID().slice(0, 8)}.${extension}`
-  const blob = await put(pathname, Buffer.from(bytes), {
-    access: "public",
-    contentType,
-    addRandomSuffix: false,
-  })
-
-  return blob.url
+  const key = `photoshow/${Date.now()}-${randomUUID().slice(0, 8)}.${extension}`
+  const { url } = await putMediaObject(key, Buffer.from(bytes), contentType)
+  return url
 }
 
 async function deletePhotoshowBlob(url: string | null | undefined) {
-  if (!url || !url.includes("blob.vercel-storage.com")) return
-  try {
-    await del(url)
-  } catch (error) {
-    console.error("[photoshow] Failed to delete blob:", error)
-  }
+  await deleteMediaUrl(url)
 }
 
 export async function createPhotoshowPhoto(input: {

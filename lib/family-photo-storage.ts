@@ -1,37 +1,30 @@
-import { del, put } from "@vercel/blob"
 import { normalizeDirectoryPhoto } from "@/lib/family-photo-process"
+import { isR2MediaConfigured, putMediaObject, deleteMediaUrl } from "@/lib/r2-media"
 
-export function isBlobStorageConfigured(): boolean {
-  return Boolean(process.env.BLOB_READ_WRITE_TOKEN)
+export function isMediaStorageConfigured(): boolean {
+  return isR2MediaConfigured()
 }
+
+/** @deprecated use isMediaStorageConfigured */
+export const isBlobStorageConfigured = isMediaStorageConfigured
 
 export async function uploadFamilyPhoto(
   familyId: number,
   bytes: ArrayBuffer,
   _contentType: string,
 ): Promise<string> {
-  if (!isBlobStorageConfigured()) {
+  if (!isMediaStorageConfigured()) {
     throw new Error(
-      "Photo storage is not configured. Set BLOB_READ_WRITE_TOKEN in Vercel for family photo uploads.",
+      "Photo storage is not configured. Set R2_UPLOAD_WORKER_URL and R2_UPLOAD_SECRET in Vercel.",
     )
   }
 
   const { buffer, contentType, extension } = await normalizeDirectoryPhoto(bytes, _contentType)
-  const pathname = `family-photos/${familyId}-${Date.now()}.${extension}`
-  const blob = await put(pathname, buffer, {
-    access: "public",
-    contentType,
-    addRandomSuffix: false,
-  })
-
-  return blob.url
+  const key = `family-photos/${familyId}-${Date.now()}.${extension}`
+  const { url } = await putMediaObject(key, buffer, contentType)
+  return url
 }
 
 export async function deleteFamilyPhotoIfStored(url: string | null | undefined) {
-  if (!url || !url.includes("blob.vercel-storage.com")) return
-  try {
-    await del(url)
-  } catch (error) {
-    console.error("[family-photo] Failed to delete old blob:", error)
-  }
+  await deleteMediaUrl(url)
 }

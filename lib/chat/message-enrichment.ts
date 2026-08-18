@@ -1,4 +1,5 @@
 import { sql, type SqlRow } from "@/lib/db"
+import { toPublicMediaUrl } from "@/lib/media-keys"
 import { CHAT_REACTION_EMOJIS } from "@/lib/chat/reactions"
 import { normalizeChatTimestamp } from "@/lib/chat/timestamps"
 import type {
@@ -8,19 +9,22 @@ import type {
 } from "@/types/chat"
 
 function parseImageUrls(row: SqlRow): string[] {
+  const rewrite = (url: string) => toPublicMediaUrl(url) ?? url
   const raw = row.image_urls
   if (typeof raw === "string" && raw.trim()) {
     try {
       const parsed = JSON.parse(raw) as unknown
       if (Array.isArray(parsed)) {
-        return parsed.filter((u): u is string => typeof u === "string" && u.trim().length > 0)
+        return parsed
+          .filter((u): u is string => typeof u === "string" && u.trim().length > 0)
+          .map(rewrite)
       }
     } catch {
       // fall through
     }
   }
   if (row.image_url != null && String(row.image_url).trim()) {
-    return [String(row.image_url)]
+    return [rewrite(String(row.image_url))]
   }
   return []
 }

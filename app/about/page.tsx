@@ -291,7 +291,7 @@ export default function AboutPage() {
                 </div>
                 <div className="relative min-h-[16rem] bg-surface-tint md:min-h-0">
                   <img
-                    src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/20230901_114325-HCoWy8blcIb1Z5en7hOCTvO04ZoxJN.jpeg"
+                    src="https://cdn.rendezvousil.com/site/about-stephen-ranae.jpg"
                     alt="Stephen and Ranae Bradd"
                     className="h-full w-full object-cover"
                   />

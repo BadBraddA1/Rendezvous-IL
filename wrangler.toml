@@ -1,0 +1,11 @@
+name = "rendezvous-il-media"
+main = "worker/media.ts"
+compatibility_date = "2024-11-01"
+account_id = "3b39955f13b1fc5364775d978622d3e1"
+
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "rendezvous-il-media"
+
+[vars]
+R2_PUBLIC_URL = "https://cdn.rendezvousil.com"

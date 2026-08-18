@@ -5,6 +5,7 @@ import {
   type FamilyAccountMember,
 } from "@/lib/family-membership"
 import { formatPhoneForStorage } from "@/lib/phone-format"
+import { toPublicMediaUrl } from "@/lib/media-keys"
 import type { RegistrationEventYear } from "@/lib/registration-event-years"
 import { isMissingSqliteColumn } from "@/lib/sqlite-errors"
 
@@ -166,7 +167,7 @@ export async function listAdminDirectoryFamilies(
       city: row.city ? String(row.city) : null,
       state: row.state ? String(row.state) : null,
       zip: row.zip ? String(row.zip) : null,
-      photo_url: row.photo_url ? String(row.photo_url) : null,
+      photo_url: toPublicMediaUrl(row.photo_url ? String(row.photo_url) : null),
       directory_opt_in: isFamilyDirectoryListed(row.directory_opt_in),
       directory_blurb: row.directory_blurb ? String(row.directory_blurb) : null,
       registration_id: bucket?.registrationId ?? null,

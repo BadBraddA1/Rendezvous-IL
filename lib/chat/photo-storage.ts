@@ -1,5 +1,5 @@
-import { put } from "@vercel/blob"
 import { photoExtensionForType, validateFamilyPhoto } from "@/lib/family-directory"
+import { isR2MediaConfigured, putMediaObject } from "@/lib/r2-media"
 
 export { validateFamilyPhoto as validateChatPhoto }
 
@@ -9,19 +9,14 @@ export async function uploadChatPhoto(
   bytes: ArrayBuffer,
   contentType: string,
 ): Promise<string> {
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+  if (!isR2MediaConfigured()) {
     throw new Error(
-      "Photo storage is not configured. Set BLOB_READ_WRITE_TOKEN in Vercel for chat photo uploads.",
+      "Photo storage is not configured. Set R2_UPLOAD_WORKER_URL and R2_UPLOAD_SECRET in Vercel.",
     )
   }
 
   const extension = photoExtensionForType(contentType)
-  const pathname = `chat-photos/${channelId}/${clerkUserId}-${Date.now()}.${extension}`
-  const blob = await put(pathname, Buffer.from(bytes), {
-    access: "public",
-    contentType,
-    addRandomSuffix: false,
-  })
-
-  return blob.url
+  const key = `chat-photos/${channelId}/${clerkUserId}-${Date.now()}.${extension}`
+  const { url } = await putMediaObject(key, Buffer.from(bytes), contentType)
+  return url
 }

@@ -3,7 +3,7 @@
  * Links Clerk users to family records and registration history
  */
 
-import { auth } from "@clerk/nextjs/server"
+import { toPublicMediaUrl } from "@/lib/media-keys"
 import { sql } from "@/lib/db"
 import {
   ensureFamilyMembershipSchema,
@@ -19,7 +19,12 @@ import {
 export type { FamilyAccountRole }
 
 function asFamily(row: Record<string, unknown> | null | undefined): Family | null {
-  return row ? (row as unknown as Family) : null
+  if (!row) return null
+  const family = row as unknown as Family
+  return {
+    ...family,
+    photo_url: toPublicMediaUrl(family.photo_url),
+  }
 }
 
 export interface Family {

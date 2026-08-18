@@ -22,7 +22,7 @@ export default function ScrabblePage() {
               </Button>
               <Button asChild size="lg" className="h-11 gap-2">
                 <a
-                  href="https://yixdedkxmmcaglqi.public.blob.vercel-storage.com/Scrabble%20Cheat%20Sheet.pdf"
+                  href="https://cdn.rendezvousil.com/site/Scrabble%20Cheat%20Sheet.pdf"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2"

@@ -13,6 +13,7 @@ Handles public event pages, family registration (2027), admin dashboard (registr
 - **Clerk** — authentication (families + admin roles). Auth UI is **fully custom** via the [BraddCorp auth kit](https://github.com/BadBraddA1/braddcorp-auth) (Clerk Core 3 hooks — no Clerk widgets): `/sign-in`, `/sign-up`, `/forgot-password`, `/sso-callback`, components in `components/auth/`, per-site settings in `lib/auth-config.ts`, lake-teal tokens in `app/auth.css`. **Powered by BraddCorp** sits under the form. Route protection stays in `proxy.js`. Kit fixes go to the template repo first, then get re-copied here.
 - **SendKit** — transactional email via `lib/sendkit.ts` (see [Email](#email))
 - **Vercel** — hosting (project: `v0-ren`)
+- **Cloudflare R2** — media (`cdn.rendezvousil.com`, see [Media storage](#media-storage-cloudflare-r2))
 
 ## Environment variables
 
@@ -30,6 +31,9 @@ Required on Vercel (`v0-ren`):
 | `EMAIL_FROM_REGISTRATION` | Registration/signature sender — `Rendezvous Registration <Registration@rendezvousil.com>` |
 | `ABLY_API_KEY` | Year chat realtime (Ably) |
 | `CHAT_DEMO_CODE` | Shared secret for iOS `-ChatDemo` (active **test** channels only) |
+| `R2_PUBLIC_BASE_URL` | Public media CDN — `https://cdn.rendezvousil.com` |
+| `R2_UPLOAD_WORKER_URL` | Media Worker — `https://rendezvous-il-media.badbradda1.workers.dev` |
+| `R2_UPLOAD_SECRET` | Shared secret matching the Worker `UPLOAD_SECRET` |
 
 Full list and legacy cleanup notes: [docs/TURSO_SETUP.md](docs/TURSO_SETUP.md)
 
@@ -58,6 +62,70 @@ Gotchas:
   `noreply@braddcorp.com` and would now be rejected, so they were repointed.
 - SendKit accepts at most **50 recipients** per request (`SENDKIT_MAX_RECIPIENTS`).
   The admin broadcast route batches on that limit.
+
+## Media storage (Cloudflare R2)
+
+Directory photos, chat photos, photoshow slides, song packs, and a couple of
+static site files live in the **`rendezvous-il-media`** R2 bucket, served from
+**`cdn.rendezvousil.com`**. Migrated off Vercel Blob on 2026-08-18 (R2 charges
+no egress). The Next app never holds R2 credentials — uploads go through the
+**`rendezvous-il-media` Worker** (`worker/media.ts`), authenticated with a
+shared secret. Same arrangement as Pew Packers and the Exhibit Evangelism
+photo booth.
+
+| Piece | Where |
+|---|---|
+| Worker | `worker/media.ts` → `https://rendezvous-il-media.badbradda1.workers.dev` |
+| Key/URL helpers | `lib/media-keys.ts` |
+| Worker client (scripts too) | `lib/media-store.ts` |
+| App facade (`server-only`) | `lib/r2-media.ts` |
+| Keys | `family-photos/`, `chat-photos/`, `photoshow/`, `song-packs/`, `site/`, `Tshirts/` |
+
+Env is set on Production, Preview, and Development. The Worker secret is
+`UPLOAD_SECRET` via `wrangler secret put`.
+
+**Read path rewrites Blob URLs to the CDN.** `toPublicMediaUrl()` in
+`lib/media-keys.ts` is applied when serving directory cards, chat messages,
+photoshow slides, and song packs, so a row that still stores a
+`*.blob.vercel-storage.com` URL still renders from R2. New uploads write the
+CDN URL. To rewrite the database itself:
+
+```bash
+npx tsx --env-file=.env.local scripts/backfill-media-urls.ts
+npx tsx --env-file=.env.local scripts/backfill-media-urls.ts --apply
+```
+
+Hardcoded page links that used to point at Blob (or v0's blob store) now use
+the CDN directly:
+
+- `/about` organizer photo → `cdn.rendezvousil.com/site/about-stephen-ranae.jpg`
+- `/scrabble` cheat sheet → `cdn.rendezvousil.com/site/Scrabble%20Cheat%20Sheet.pdf`
+
+The old Vercel Blob store was **left in place** so any un-rewritten URL still
+resolves. Emptying it is a separate decision once the backfill has been
+applied and you've confirmed nothing still writes `BLOB_READ_WRITE_TOKEN`.
+
+To add a file:
+
+```bash
+npx wrangler r2 object put "rendezvous-il-media/<key>" --file=<path> \
+  --content-type="image/jpeg" \
+  --cache-control="public, max-age=31536000, immutable" --remote
+```
+
+Gotchas:
+
+- **Worker PUT is prefix-locked.** Keys must start with one of the prefixes
+  above, or the Worker returns 400.
+- **Photos cache 5 minutes; song packs/site files are immutable for a year.**
+  Photo keys are unique per upload, so a long TTL would keep a replaced
+  directory photo visible after a family removes it. The `cdn.rendezvousil.com`
+  zone currently has Cloudflare Browser Cache TTL at 4 hours, which can
+  override the 5-minute photo header — flip that zone to "Respect Existing
+  Headers" if a removed photo lingers.
+- **Reprocess directory photos** (`scripts/reprocess-directory-photos.mjs`)
+  now uploads through the Worker, not Blob. Needs `R2_UPLOAD_WORKER_URL` +
+  `R2_UPLOAD_SECRET`.
 
 ## Local development
 
@@ -119,7 +187,7 @@ pnpm db:verify
 - **Contact actions (web + apps):** city/address opens Maps (Apple Maps / system maps chooser); each phone shows under the person it belongs to with **Call** and **Text** actions (`tel:` / `sms:`).
 - **Listing is on by default** for registered families (`directory_opt_in`); families opt out from profile if they do not want to appear. Photos are optional — families without a photo still show name, city/state, contact info, and attendees.
 - **Cards show city/state** (e.g. `Springfield, IL`) from the family address fields — not home congregation. API entries include `city`, `state`, and `city_state`. Photos use a fixed crop (`object-cover` / `scaledToFill` + clip) so uneven uploads do not stretch cards.
-- **Photo uploads are normalized** on the server when `sharp` loads (`lib/family-photo-process.ts`): EXIF-rotate, shrink longest edge to 1600px, re-encode JPEG ~82%. Sharp is loaded only during upload (dynamic import) so directory GET/PATCH keep working if the native binary is missing on Vercel; upload then falls back to the client-resized original. To fix photos already in Blob/Turso: `node scripts/reprocess-directory-photos.mjs --family=<id>` or `--all` (needs Turso + `BLOB_READ_WRITE_TOKEN`).
+- **Photo uploads are normalized** on the server when `sharp` loads (`lib/family-photo-process.ts`): EXIF-rotate, shrink longest edge to 1600px, re-encode JPEG ~82%. Sharp is loaded only during upload (dynamic import) so directory GET/PATCH keep working if the native binary is missing on Vercel; upload then falls back to the client-resized original. To fix photos already in R2/Turso: `node --env-file=.env.local scripts/reprocess-directory-photos.mjs --family=<id>` or `--all` (needs Turso + R2 upload env).
 - **Phone numbers** are stored on each `family_members_v2` row (`phone` column) and shown in the directory with that member's name (not husband/wife guesses). Legacy family-level phones still display if no member phones are set. US numbers are normalized to `(XXX) XXX-XXXX` on save (`lib/phone-format.ts`); retroactive cleanup: `pnpm db:normalize-phones`.
 - **Structured member listings + per-member contact opt-in** — directory cards call out **Father:** / **Mother:** by name and list **Kids:** oldest-to-youngest with ages ("Adult" for 18+ or `is_adult_override`), sourced from the year's registration `family_members` rows (`parent_role` column; latest registration per family email). Names and ages always show; a member's **email/phone only appears if the "Show this email/phone in the Family Directory" checkbox** was ticked for them on the registration form (`family_members.share_contact_directory`, default off — both columns added lazily). Opted-in registration phones take precedence over profile (`family_members_v2`) phones; otherwise legacy `husband_phone` / `wife_phone` are labeled with father/mother names (`husband_first_name` / `wife_first_name` + family last name) so Call/Text nest under each parent on web and in the apps (important for **2026** rows that only stored family-level phones).
 - **Year visibility** is controlled on the admin dashboard (`/admin`) — toggles per year in `app_settings` (`directory_enabled_2026`, `directory_enabled_2027`). Defaults: **2026 on**, **2027 off** until registration opens.
@@ -135,7 +203,7 @@ pnpm db:verify
 - **Channel list:** Sorted by newest message first. Each channel includes `unread_count` (messages from others since you last opened it; first visit only counts the last 7 days). Opening a thread (`GET …/messages`) marks the channel read. Badges show on web `/chat`, iOS `ChatListView`, and Android `ChatListScreen`.
 - **Timestamps:** SQLite `CURRENT_TIMESTAMP` is UTC without a `Z`; the API normalizes `created_at` / `last_message_at` to ISO-8601 UTC (`lib/chat/timestamps.ts`) so web, iOS, and Android don’t show times several hours off. New messages also store an explicit ISO `created_at`.
 - **Photos:** Clients **compress** images (~1600px JPEG) and upload **one photo at a time** via `POST /api/chat/channels/[id]/photos`, then send the message as JSON with `image_urls`. That avoids Vercel’s ~4.5 MB request body limit (HTTP 413) when attaching multiple camera photos. Legacy multipart multi-file on `…/messages` still works for a single photo.
-- **Member UI:** `/chat` (web), iOS **Chat** tab (`ChatListView` / `ChatThreadView`), and Android **Chat** tab (`ChatListScreen` / `ChatThreadScreen`). Requires Clerk sign-in + registration for year channels. Members can send **up to 6 photos** per message (Blob storage) with composer previews; tap a photo to enlarge (pinch-zoom on iOS). Channel lists + threads are **disk-cached** on iOS/Android for instant open, then refresh in the background. New messages send APNs/FCM to other channel members **and all linked family accounts** registered for that year (`lib/chat/notify.ts` → `family_account_members` + primary `families.clerk_user_id`). Photo messages include the image URL in the push payload: Android shows a big-picture preview via FCM; iOS needs the **Notification Service Extension** (`RendezvousILNotificationService`, app build **2.0.6+**) which downloads the image when `mutable-content` is set. Release archives use `aps-environment=production` via `APS_ENVIRONMENT` (Debug stays `development`) so Xcode Cloud App Store / Ad Hoc export can sign. Home check-in empty copy uses `YearFormatting` / server `message` so years never show as “2,027” (SwiftUI locale grouping). Always format event years via `YearFormatting.label` / `rendezvousTitle` — never interpolate a raw `Int` year into `Text("… \(year)")`.
+- **Member UI:** `/chat` (web), iOS **Chat** tab (`ChatListView` / `ChatThreadView`), and Android **Chat** tab (`ChatListScreen` / `ChatThreadScreen`). Requires Clerk sign-in + registration for year channels. Members can send **up to 6 photos** per message (R2 / `cdn.rendezvousil.com`) with composer previews; tap a photo to enlarge (pinch-zoom on iOS). Channel lists + threads are **disk-cached** on iOS/Android for instant open, then refresh in the background. New messages send APNs/FCM to other channel members **and all linked family accounts** registered for that year (`lib/chat/notify.ts` → `family_account_members` + primary `families.clerk_user_id`). Photo messages include the image URL in the push payload: Android shows a big-picture preview via FCM; iOS needs the **Notification Service Extension** (`RendezvousILNotificationService`, app build **2.0.6+**) which downloads the image when `mutable-content` is set. Release archives use `aps-environment=production` via `APS_ENVIRONMENT` (Debug stays `development`) so Xcode Cloud App Store / Ad Hoc export can sign. Home check-in empty copy uses `YearFormatting` / server `message` so years never show as “2,027” (SwiftUI locale grouping). Always format event years via `YearFormatting.label` / `rendezvousTitle` — never interpolate a raw `Int` year into `Text("… \(year)")`.
 - **Polls:** Site admins and channel moderators can create polls (2–6 options). Anyone in the channel can vote (one vote per user, changeable). Live counts via Ably `poll_updated`. No extra push beyond the initial “new poll” message notify.
 - **Reactions:** Fixed set `🦙 👍 ❤️ 😂 🙏` on any message (text, photo, announcement, poll). The picker stays behind a smile control (web dropdown / iOS menu / Android dropdown); existing reaction chips still show when someone has reacted. Toggle via `POST /api/chat/messages/[id]/reactions`. Push goes **only to the message author** (not the whole channel).
 - **Mods:** Site admins moderate all rooms. Channel **moderators** (set in Admin → Year Chat) can delete messages, post announcements, and create polls in rooms they moderate. Deletes publish `message_deleted` so other clients remove the message live.
@@ -146,7 +214,7 @@ pnpm db:verify
 
 ## Song packs (offline hymn sheets)
 
-- **Admin:** `/admin/songs` (nav: Communication → Songs) — create named packs (defaults seed **Campfire** and **Racket Ball Singing** per event year), reorder, publish/unpublish, upload PDF or image songs (JPG/PNG/WebP → Vercel Blob under `song-packs/`), replace/delete files. Schema: `song_packs` / `song_pack_items` (lazy create in `lib/song-packs.ts`).
+- **Admin:** `/admin/songs` (nav: Communication → Songs) — create named packs (defaults seed **Campfire** and **Racket Ball Singing** per event year), reorder, publish/unpublish, upload PDF or image songs (JPG/PNG/WebP → R2 under `song-packs/`), replace/delete files. Schema: `song_packs` / `song_pack_items` (lazy create in `lib/song-packs.ts`).
 - **Member API** (Clerk + registration for that year, same gate as year chat): `GET /api/songs/packs?year=`, `GET /api/songs/packs/[id]` — published packs + item metadata (`file_url`, `content_hash`, `byte_size`, `file_type`).
 - **Push:** Publishing a pack (or replacing a file on a published pack) sends a best-effort APNs/FCM broadcast via `lib/song-packs-notify.ts` — “open the app to finish downloading.”
 - **Apps:** iOS/Android **More → Songs** — pack list → song list → in-app PDF/image viewer with next/previous. Files download opportunistically when the Songs screen opens (and on pull-to-refresh / Download); cache keyed by `content_hash` under app Documents/`filesDir` so unchanged songs are skipped. Offline open uses the on-device file; never-cached songs show a clear “needs download” state. No audio or live page-sync in v1.
@@ -165,6 +233,7 @@ pnpm db:verify
 | `pnpm dev` | Next.js dev server |
 | `pnpm build` | Production build |
 | `pnpm db:verify` | List Turso tables and row counts |
+| `npx tsx --env-file=.env.local scripts/backfill-media-urls.ts` | Dry-run rewrite of stored Blob URLs → R2 |
 
 **Localhost page tour:** open [`/dev/page-tour`](http://localhost:3000/dev/page-tour) during `pnpm dev` to auto-cycle routes with a countdown bar (2s default) — for fast header/layout QA. Keyboard: Space pause, ←/→ step, Esc stop.
 
@@ -182,7 +251,7 @@ rendezvous-il/
 ├── ios/              # Native iOS app (SwiftUI) — see ios/README.md
 ├── android/          # Native Android app (Jetpack Compose) — see android/README.md
 ├── lib/db.ts         # Turso database client
-├── scripts/          # Schema, verify, archived migration
+├── worker/          # R2 media Worker (cdn.rendezvousil.com uploads)
 ├── docs/             # Setup guides
 └── src/              # Legacy Vue static site (not deployed)
 ```

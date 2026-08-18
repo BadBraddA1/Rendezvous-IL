@@ -1,15 +1,12 @@
 #!/usr/bin/env node
 /**
- * Re-download family directory photos, normalize (max 1600px JPEG), re-upload,
- * and update families.photo_url. Use after huge camera uploads break cards.
+ * Re-download family directory photos, normalize (max 1600px JPEG), re-upload
+ * to R2, and update families.photo_url.
  *
- * Usage:
- *   node --env-file=/tmp/ren-env-dev.local scripts/reprocess-directory-photos.mjs
- *   node --env-file=... scripts/reprocess-directory-photos.mjs --family=13
- *   node --env-file=... scripts/reprocess-directory-photos.mjs --all
+ *   node --env-file=.env.local scripts/reprocess-directory-photos.mjs --family=13
+ *   node --env-file=.env.local scripts/reprocess-directory-photos.mjs --all
  */
 import { createClient } from "@libsql/client"
-import { put, del } from "@vercel/blob"
 import sharp from "sharp"
 
 const MAX_EDGE = 1600
@@ -30,9 +27,11 @@ if (!familyFilter && !all) {
 
 const url = process.env.TURSO_DATABASE_URL
 const authToken = process.env.TURSO_AUTH_TOKEN
-const blobToken = process.env.BLOB_READ_WRITE_TOKEN
-if (!url || !authToken || !blobToken) {
-  console.error("Need TURSO_DATABASE_URL, TURSO_AUTH_TOKEN, BLOB_READ_WRITE_TOKEN")
+const worker = process.env.R2_UPLOAD_WORKER_URL?.replace(/\/$/, "")
+const secret = process.env.R2_UPLOAD_SECRET
+const publicBase = (process.env.R2_PUBLIC_BASE_URL || "https://cdn.rendezvousil.com").replace(/\/$/, "")
+if (!url || !authToken || !worker || !secret) {
+  console.error("Need TURSO_DATABASE_URL, TURSO_AUTH_TOKEN, R2_UPLOAD_WORKER_URL, R2_UPLOAD_SECRET")
   process.exit(1)
 }
 
@@ -71,24 +70,18 @@ for (const row of rows) {
       .jpeg({ quality: QUALITY, mozjpeg: true })
       .toBuffer()
     const outMeta = await sharp(buffer).metadata()
-    const pathname = `family-photos/${familyId}-${Date.now()}.jpg`
-    const blob = await put(pathname, buffer, {
-      access: "public",
-      contentType: "image/jpeg",
-      addRandomSuffix: false,
-      token: blobToken,
+    const key = `family-photos/${familyId}-${Date.now()}.jpg`
+    const putRes = await fetch(`${worker}/object?key=${encodeURIComponent(key)}`, {
+      method: "PUT",
+      headers: { "content-type": "image/jpeg", "x-upload-secret": secret },
+      body: buffer,
     })
+    if (!putRes.ok) throw new Error(`R2 PUT ${putRes.status} ${await putRes.text()}`)
+    const newUrl = `${publicBase}/${key.split("/").map(encodeURIComponent).join("/")}`
     await client.execute({
       sql: `UPDATE families SET photo_url = ?, photo_updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
-      args: [blob.url, familyId],
+      args: [newUrl, familyId],
     })
-    if (oldUrl.includes("blob.vercel-storage.com") && oldUrl !== blob.url) {
-      try {
-        await del(oldUrl, { token: blobToken })
-      } catch {
-        // old blob may already be gone
-      }
-    }
     console.log(
       `${meta.width}x${meta.height} (${input.length}B) → ${outMeta.width}x${outMeta.height} (${buffer.length}B)`,
     )

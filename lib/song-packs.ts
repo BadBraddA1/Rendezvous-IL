@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from "crypto"
-import { del, put } from "@vercel/blob"
 import { sql, type SqlRow } from "@/lib/db"
+import { isR2MediaConfigured, putMediaObject, deleteMediaUrl } from "@/lib/r2-media"
+import { toPublicMediaUrl } from "@/lib/media-keys"
 import {
   DEFAULT_REGISTRATION_EVENT_YEAR,
   parseRegistrationEventYear,
@@ -150,7 +151,7 @@ function mapItem(row: SqlRow): SongPackItem {
     pack_id: String(row.pack_id),
     title: String(row.title),
     sort_order: Number(row.sort_order ?? 0),
-    file_url: String(row.file_url),
+    file_url: toPublicMediaUrl(String(row.file_url)) ?? String(row.file_url),
     file_type: fileType,
     byte_size: Number(row.byte_size ?? 0),
     content_hash: String(row.content_hash),
@@ -197,24 +198,20 @@ export async function uploadSongPackFile(
   bytes: ArrayBuffer,
   contentType: string,
 ): Promise<{ url: string; byteSize: number; contentHash: string; fileType: SongFileType }> {
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+  if (!isR2MediaConfigured()) {
     throw new Error(
-      "File storage is not configured. Set BLOB_READ_WRITE_TOKEN in Vercel for song pack uploads.",
+      "File storage is not configured. Set R2_UPLOAD_WORKER_URL and R2_UPLOAD_SECRET in Vercel.",
     )
   }
 
   const fileType = songFileTypeForContentType(contentType)
   const extension = extensionForContentType(contentType)
   const contentHash = hashSongFileBytes(bytes)
-  const pathname = `song-packs/${packId}/${Date.now()}-${contentHash.slice(0, 12)}.${extension}`
-  const blob = await put(pathname, Buffer.from(bytes), {
-    access: "public",
-    contentType,
-    addRandomSuffix: false,
-  })
+  const key = `song-packs/${packId}/${Date.now()}-${contentHash.slice(0, 12)}.${extension}`
+  const { url } = await putMediaObject(key, Buffer.from(bytes), contentType)
 
   return {
-    url: blob.url,
+    url,
     byteSize: bytes.byteLength,
     contentHash,
     fileType,
@@ -222,12 +219,7 @@ export async function uploadSongPackFile(
 }
 
 async function deleteSongBlob(url: string | null | undefined) {
-  if (!url || !url.includes("blob.vercel-storage.com")) return
-  try {
-    await del(url)
-  } catch (error) {
-    console.error("[song-packs] Failed to delete blob:", error)
-  }
+  await deleteMediaUrl(url)
 }
 
 async function touchPack(packId: string) {

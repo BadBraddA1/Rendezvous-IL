@@ -9,6 +9,7 @@ import {
   type DirectoryContactPhone,
 } from "@/lib/directory-contacts"
 import { formatPhoneForStorage } from "@/lib/phone-format"
+import { toPublicMediaUrl } from "@/lib/media-keys"
 import {
   ensureFamilyMembershipSchema,
   familyHasRegistrationForYearViaMembership,
@@ -215,7 +216,7 @@ function emptyDirectorySettings(): FamilyDirectorySettings {
 
 export function mapDirectorySettings(row: SqlRow): FamilyDirectorySettings {
   return {
-    photo_url: row.photo_url ? String(row.photo_url) : null,
+    photo_url: toPublicMediaUrl(row.photo_url ? String(row.photo_url) : null),
     directory_opt_in: isFamilyDirectoryListed(row.directory_opt_in),
     directory_blurb: row.directory_blurb ? String(row.directory_blurb) : null,
     photo_updated_at: row.photo_updated_at ? String(row.photo_updated_at) : null,
@@ -594,7 +595,7 @@ function mapDirectoryEntry(row: SqlRow): DirectoryEntryDraft {
     city: city || null,
     state: state || null,
     city_state: formatCityState(city, state),
-    photo_url: photoUrl || null,
+    photo_url: toPublicMediaUrl(photoUrl || null),
     directory_blurb: row.directory_blurb ? String(row.directory_blurb) : null,
     husband_first_name: row.husband_first_name ? String(row.husband_first_name) : null,
     wife_first_name: row.wife_first_name ? String(row.wife_first_name) : null,
