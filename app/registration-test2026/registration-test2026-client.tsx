@@ -368,7 +368,9 @@ export function RegistrationTest2026Client({
               aria-valuemax={STEPS.length}
               aria-label={`Step ${currentStep} of ${STEPS.length}`}
             >
-              <span />
+              <span className="reg-quiet-desk__progress-fill" />
+              <span className="reg-quiet-desk__progress-sheen" aria-hidden="true" />
+              <span className="reg-quiet-desk__progress-tip" aria-hidden="true" />
             </div>
           </div>
 
