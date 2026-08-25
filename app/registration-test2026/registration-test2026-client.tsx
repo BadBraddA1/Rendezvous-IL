@@ -4,10 +4,8 @@ import { useEffect, useRef, useState } from "react"
 import { useUser } from "@clerk/nextjs"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { Progress } from "@/components/ui/progress"
 import { ChevronLeft, ChevronRight, TestTube2, Send } from "lucide-react"
 import { FamilyInfoStep } from "@/components/registration/family-info-step"
 import { LodgingStep } from "@/components/registration/lodging-step"
@@ -302,112 +300,94 @@ export function RegistrationTest2026Client({
 
   return (
     <div className="min-h-screen bg-background">
+      {/*
+        THESIS: Quiet Desk — same registration wizard, calmed to match Lakeside Gathering.
+        OWN-WORLD: mist ground, Baskerville stage titles, teal only on Continue + progress fill + focus.
+        STORY: Staff walk the real form; it should feel like the public site, not an admin tool.
+        FIRST VIEWPORT: test banner, display title, muted step meta + thin rule, stage fields, Continue.
+        FORM: Quiet Desk (#3 brand-match quieter); seed 3c05cea5 surface operate.
+        FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
+      */}
       <SiteHeader />
 
-        <main id="main-content" className="site-container site-below-header-loose site-page-intro py-12">
-        <div className="mx-auto max-w-4xl">
-          <div className="mb-6 rounded-lg border-2 border-orange-500 bg-orange-50 p-4 dark:bg-orange-950">
-            <div className="flex items-center gap-3">
-              <TestTube2 className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+      <main id="main-content" className="reg-quiet-desk site-container site-below-header-loose site-page-intro py-10 md:py-12">
+        <div className="mx-auto max-w-3xl">
+          <div className="reg-quiet-desk__test-banner">
+            <div className="flex items-start gap-3">
+              <TestTube2 className="mt-0.5 h-5 w-5 shrink-0 text-warning" aria-hidden="true" />
               <div>
-                <h3 className="font-semibold text-orange-900 dark:text-orange-100">Test Mode Active</h3>
-                <p className="text-sm text-orange-700 dark:text-orange-300">
-                  This is a test registration page for admin testing. All submissions will be marked as test data.
-                  <strong className="ml-1">Validation is disabled — you can skip any fields.</strong>
-                  {localDevBypass && (
-                    <>
-                      {" "}
-                      <strong>Localhost dev:</strong> no Clerk sign-in or admin toggle required.
-                    </>
-                  )}
+                <h3>Test mode</h3>
+                <p>
+                  Admin test registration — submissions are tagged ADMIN_TEST.
+                  Validation is off so you can skip fields.
+                  {localDevBypass ? " Localhost: no Clerk or admin toggle required." : null}
                 </p>
               </div>
             </div>
           </div>
 
-          <Card className="mb-6 border-blue-500 bg-blue-50 dark:bg-blue-950">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-blue-900 dark:text-blue-100">
-                <Send className="h-5 w-5" />
-                Quick Submit Test
-              </CardTitle>
-              <CardDescription className="text-blue-700 dark:text-blue-300">
-                Test API submission with minimal data to debug errors
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button onClick={testQuickSubmit} disabled={debugLoading} className="mb-4">
-                {debugLoading ? "Submitting..." : "Test Submit Now"}
-              </Button>
-
-              {debugResponse && (
-                <div className="rounded-lg border bg-white p-4 dark:bg-gray-900">
-                  <div className="mb-2 flex items-center gap-2">
-                    <span
-                      className={`inline-block h-3 w-3 rounded-full ${debugResponse.ok ? "bg-green-500" : "bg-red-500"}`}
-                    />
-                    <strong>Status: {debugResponse.status}</strong>
-                  </div>
-                  <pre className="overflow-auto rounded bg-gray-100 p-3 text-xs dark:bg-gray-800">
-                    {JSON.stringify(debugResponse, null, 2)}
-                  </pre>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <div className="mb-8 text-center">
-            <h1 className="mb-4 text-balance text-4xl font-bold tracking-tight md:text-5xl">
-              Rendezvous 2027 Registration (Admin test)
-            </h1>
-            <p className="text-balance text-lead text-muted-foreground">
-              Walk through the full registration flow. Submissions are tagged ADMIN_TEST in Turso.
+          <div className="reg-quiet-desk__debug">
+            <div className="mb-3 flex items-center gap-2">
+              <Send className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+              <p className="text-sm font-medium">Quick submit (debug)</p>
+            </div>
+            <p className="mb-3 text-sm text-muted-foreground">
+              Posts minimal sample data to check the API path.
             </p>
+            <Button onClick={testQuickSubmit} disabled={debugLoading} variant="outline" className="mb-3">
+              {debugLoading ? "Submitting…" : "Test submit now"}
+            </Button>
+            {debugResponse ? (
+              <pre className="overflow-auto rounded-md border bg-muted/30 p-3 text-xs">
+                {JSON.stringify(debugResponse, null, 2)}
+              </pre>
+            ) : null}
           </div>
 
-          <div className="mb-8">
-            <div className="mb-4 flex items-center justify-between">
-              <span className="text-sm font-medium">
+          <header className="reg-quiet-desk__intro">
+            <h1 className="reg-quiet-desk__title">Rendezvous 2027 registration</h1>
+            <p className="reg-quiet-desk__lead">
+              Admin test of the full family registration flow. Same steps families will use —
+              quieter desk chrome so it matches the rest of the site.
+            </p>
+          </header>
+
+          <div className="reg-quiet-desk__progress">
+            <div className="reg-quiet-desk__progress-meta">
+              <span>
                 Step {currentStep} of {STEPS.length}
               </span>
-              <span className="text-sm text-muted-foreground">{STEPS[currentStep - 1].title}</span>
+              <span>{STEPS[currentStep - 1].title}</span>
             </div>
-            <Progress value={progress} className="h-2" />
+            <div
+              className="reg-quiet-desk__progress-rule"
+              style={{ ["--reg-progress" as string]: progress / 100 }}
+              role="progressbar"
+              aria-valuenow={currentStep}
+              aria-valuemin={1}
+              aria-valuemax={STEPS.length}
+              aria-label={`Step ${currentStep} of ${STEPS.length}`}
+            >
+              <span />
+            </div>
           </div>
 
-          <div className="mb-8 hidden md:block">
-            <div className="flex items-center justify-between">
-              {STEPS.map((step, index) => (
-                <div key={step.id} className="flex flex-1 items-center">
-                  <div className="flex flex-col items-center">
-                    <div
-                      className={`flex h-10 w-10 items-center justify-center rounded-full border-2 font-semibold transition-colors ${
-                        currentStep > step.id
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : currentStep === step.id
-                            ? "border-primary text-primary"
-                            : "border-muted text-muted-foreground"
-                      }`}
-                    >
-                      {step.id}
-                    </div>
-                    <div className="mt-2 text-center">
-                      <div className="text-xs font-medium">{step.title}</div>
-                    </div>
-                  </div>
-                  {index < STEPS.length - 1 && (
-                    <div
-                      className={`mx-2 h-0.5 flex-1 transition-colors ${
-                        currentStep > step.id ? "bg-primary" : "bg-muted"
-                      }`}
-                    />
-                  )}
+          <nav className="reg-quiet-desk__steps" aria-label="Registration steps">
+            {STEPS.map((step) => {
+              const state =
+                currentStep > step.id ? "done" : currentStep === step.id ? "current" : "todo"
+              return (
+                <div key={step.id} className="reg-quiet-desk__step" data-state={state}>
+                  <span className="reg-quiet-desk__step-index">
+                    {String(step.id).padStart(2, "0")}
+                  </span>
+                  <span className="reg-quiet-desk__step-label">{step.title}</span>
                 </div>
-              ))}
-            </div>
-          </div>
+              )
+            })}
+          </nav>
 
-          {prefillApplied && currentStep === 1 && (
+          {prefillApplied && currentStep === 1 ? (
             <Alert className="mb-4">
               <AlertDescription>
                 We pre-filled your family members{" "}
@@ -418,47 +398,48 @@ export function RegistrationTest2026Client({
                 missing.
               </AlertDescription>
             </Alert>
-          )}
+          ) : null}
 
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle>{STEPS[currentStep - 1].title}</CardTitle>
-              <CardDescription>{STEPS[currentStep - 1].description}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {currentStep === 1 && <FamilyInfoStep data={registrationData} updateData={updateData} />}
-              {currentStep === 2 && <LodgingStep data={registrationData} updateData={updateData} />}
-              {currentStep === 3 && <MerchandiseStep data={registrationData} updateData={updateData} />}
-              {currentStep === 4 && <AdditionalInfoStep data={registrationData} updateData={updateData} />}
-              {currentStep === 5 && (
-                <AgreementStep
-                  data={registrationData}
-                  updateData={updateData}
-                  signatureEmailsEnabled={signatureEmailsEnabled}
-                />
-              )}
-              {currentStep === 6 && <ConfirmationStep data={registrationData} />}
-            </CardContent>
-          </Card>
+          <section className="reg-quiet-desk__stage" aria-labelledby="reg-stage-title">
+            <header className="reg-quiet-desk__stage-header">
+              <h2 id="reg-stage-title" className="reg-quiet-desk__stage-title">
+                {STEPS[currentStep - 1].title}
+              </h2>
+              <p className="reg-quiet-desk__stage-desc">{STEPS[currentStep - 1].description}</p>
+            </header>
 
-          {stepError && currentStep === 1 && (
+            {currentStep === 1 && <FamilyInfoStep data={registrationData} updateData={updateData} />}
+            {currentStep === 2 && <LodgingStep data={registrationData} updateData={updateData} />}
+            {currentStep === 3 && <MerchandiseStep data={registrationData} updateData={updateData} />}
+            {currentStep === 4 && <AdditionalInfoStep data={registrationData} updateData={updateData} />}
+            {currentStep === 5 && (
+              <AgreementStep
+                data={registrationData}
+                updateData={updateData}
+                signatureEmailsEnabled={signatureEmailsEnabled}
+              />
+            )}
+            {currentStep === 6 && <ConfirmationStep data={registrationData} />}
+          </section>
+
+          {stepError && currentStep === 1 ? (
             <Alert variant="destructive" className="mb-4">
               <AlertDescription>{stepError}</AlertDescription>
             </Alert>
-          )}
+          ) : null}
 
-          {currentStep < 6 && (
-            <div className="flex items-center justify-between">
-              <Button onClick={prevStep} disabled={currentStep === 1} variant="outline">
-                <ChevronLeft className="mr-2 h-4 w-4" />
-                Previous
+          {currentStep < 6 ? (
+            <div className="reg-quiet-desk__nav">
+              <Button onClick={prevStep} disabled={currentStep === 1} variant="ghost">
+                <ChevronLeft className="mr-2 h-4 w-4" aria-hidden="true" />
+                Back
               </Button>
-              <Button onClick={nextStep}>
-                Next
-                <ChevronRight className="ml-2 h-4 w-4" />
+              <Button onClick={nextStep} data-reg-continue className="min-h-11 px-8">
+                Continue
+                <ChevronRight className="ml-2 h-4 w-4" aria-hidden="true" />
               </Button>
             </div>
-          )}
+          ) : null}
         </div>
       </main>
 
