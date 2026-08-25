@@ -2,6 +2,9 @@
 
 Run on a physical device after each TestFlight build.
 
+## Before smoke (App Store Connect)
+0. Confirm the new build is **added to the TestFlight testing group** testers use (Internal and/or External). Processing ≠ available to the group — add/assign the build if Cloud did not auto-attach it.
+
 ## Launch & auth
 1. Cold launch → welcome screen (no crash)
 2. Sign in → five tabs visible

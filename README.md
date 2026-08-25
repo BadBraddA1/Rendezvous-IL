@@ -201,7 +201,7 @@ pnpm db:verify
 
 ## Year chat (`/chat`)
 
-- **Core attendee feature** — each event year gets a group chat (`year-2026`, `year-2027`). Register for a year → you can message that year's families; past years you attended stay available. **When standing up a new year**, create/seed that year channel so membership can auto-add — see [docs/NEXT_SEASON_CHECKLIST.md](docs/NEXT_SEASON_CHECKLIST.md) (missed once for 2027).
+- **Core attendee feature** — each event year gets a group chat (`year-2026`, `year-2027`). Register for a year → you can message that year's families; past years you attended stay available.
 - **Realtime** via Ably Pub/Sub (`rendezvous:channel:{id}`), not `@ably/chat`. Events: `message`, `message_deleted`, `reaction`, `poll_updated`. Token at `POST /api/ably/token`. HTTP poll every 4s is the fallback when Ably is disconnected. Tables: `chat_channels`, `chat_channel_members`, `chat_messages`, `chat_poll_votes`, `chat_message_reactions`, `chat_channel_reads` (lazy-created by `lib/chat-schema.ts`).
 - **Channel list:** Sorted by newest message first. Each channel includes `unread_count` (messages from others since you last opened it; first visit only counts the last 7 days). Opening a thread (`GET …/messages`) marks the channel read. Badges show on web `/chat`, iOS `ChatListView`, and Android `ChatListScreen`.
 - **Timestamps:** SQLite `CURRENT_TIMESTAMP` is UTC without a `Z`; the API normalizes `created_at` / `last_message_at` to ISO-8601 UTC (`lib/chat/timestamps.ts`) so web, iOS, and Android don’t show times several hours off. New messages also store an explicit ISO `created_at`.

@@ -65,3 +65,7 @@ BUILD=$(/usr/libexec/PlistBuddy -c 'Print :ApplicationProperties:CFBundleVersion
 VERSION=$(/usr/libexec/PlistBuddy -c 'Print :ApplicationProperties:CFBundleShortVersionString' "$ARCHIVE_PATH/Info.plist")
 echo ""
 echo "Uploaded Rendezvous IL v$VERSION ($BUILD) — check App Store Connect → TestFlight for processing."
+echo ""
+echo "NEXT: After processing, add this build to the TestFlight **testing group** (or confirm"
+echo "      Xcode Cloud already assigned Internal/External Testing). Builds do not always"
+echo "      auto-appear for testers until the group includes this build number."

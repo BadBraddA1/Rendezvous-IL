@@ -129,7 +129,7 @@ From `ios/`:
 bash scripts/ship-testflight.sh
 ```
 
-Archives Release, verifies Clerk key in the IPA, and uploads to App Store Connect. After processing, run the checklist in [TESTFLIGHT_SMOKE.md](TESTFLIGHT_SMOKE.md) on a physical device.
+Archives Release, verifies Clerk key in the IPA, and uploads to App Store Connect. After processing, **add the build to the TestFlight testing group** (Internal/External) if it is not already assigned — uploads alone do not always auto-add the group testers use. Then run [TESTFLIGHT_SMOKE.md](TESTFLIGHT_SMOKE.md) on a physical device.
 
 If you see **Upload limit reached**, Apple capped uploads for this app for ~24 hours (local and Xcode Cloud share that limit). Wait a day and try again.
 
@@ -186,6 +186,8 @@ If export fails with `Automatic signing cannot register bundle identifier …not
 8. Save, then **Start Build** (or push to `main` if you enabled that).
 
 Bump `CURRENT_PROJECT_VERSION` in `ios/project.yml` before each ship (Cloud archives whatever is on the branch). After a green build, the build appears under **App Store Connect → TestFlight** like a local upload.
+
+**Always confirm the new build is in the TestFlight testing group** before telling testers it is ready. Prefer the workflow action **TestFlight Internal Testing** (or External) so Cloud auto-assigns; for local uploads, open App Store Connect → TestFlight → the group → add the build if missing. (Missed once: build processed but testers never saw it until the group was updated manually.)
 
 **Manual start later:** Xcode → Report navigator (speech bubble) → Cloud → select workflow → **Start Build**, or App Store Connect → Xcode Cloud.
 
