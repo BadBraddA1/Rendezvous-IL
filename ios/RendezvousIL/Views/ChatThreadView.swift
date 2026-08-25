@@ -860,7 +860,7 @@ struct ChatThreadView: View {
             } else {
                 messages.append(response.message)
             }
-            ChatDataStore.saveMessages(messages, channelId: channel.id)
+            persistMessages()
             draft = ""
             pendingImages = []
             pickerItems = []
