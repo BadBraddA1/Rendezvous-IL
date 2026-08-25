@@ -16,7 +16,7 @@ struct AppShell<Content: View>: View {
         content()
             .environment(session)
             .environment(repository)
-            // Both forms are required: `\.clerk` for AuthView, `Clerk.self` for @Environment(Clerk.self).
+            // Both forms: `\.clerk` for Clerk UI helpers, `Clerk.self` for @Environment(Clerk.self).
             .environment(\.clerk, Clerk.shared)
             .environment(Clerk.shared)
             .tint(BrandColors.lake)

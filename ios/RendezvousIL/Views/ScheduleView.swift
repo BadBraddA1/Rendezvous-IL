@@ -285,6 +285,7 @@ private struct EventCard: View {
     var isHappeningNow: Bool = false
 
     @State private var showReminderSheet = false
+    private var reminders = ReminderService.shared
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -307,10 +308,10 @@ private struct EventCard: View {
                     } label: {
                         Image(systemName: reminderIcon)
                             .font(.title3)
-                            .foregroundStyle(BrandColors.coral)
+                            .foregroundStyle(hasReminder ? BrandColors.lake : BrandColors.coral)
                             .frame(width: 44, height: 44)
                     }
-                    .accessibilityLabel("Set reminder")
+                    .accessibilityLabel(hasReminder ? "Edit reminder" : "Set reminder")
                 }
             }
         }
@@ -371,11 +372,13 @@ private struct EventCard: View {
         }
     }
 
+    private var hasReminder: Bool {
+        guard let luItem else { return false }
+        return reminders.preference(for: luItem.id) != nil
+    }
+
     private var reminderIcon: String {
-        if let luItem, ReminderService.shared.preference(for: luItem.id) != nil {
-            return "bell.fill"
-        }
-        return "bell"
+        hasReminder ? "bell.fill" : "bell"
     }
 }
 

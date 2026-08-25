@@ -7,9 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		ECEA01015F624D5DAF6CBF2E /* SongPacksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DFB9472D2BB41B7BF5AC52E /* SongPacksView.swift */; };
-		AF257952DCA640D4906FFFF0 /* SongPackStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8122F891AD54E1ABAA565D5 /* SongPackStore.swift */; };
-		A12A213C05A64AC69D0E3B94 /* SongPackModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5C85D7D6AC44B68949F37DC /* SongPackModels.swift */; };
 		001F6BE14BDAF1A0A6F00A2C /* MoreView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37B9B084751C0C1099D59FE7 /* MoreView.swift */; };
 		0096B6D5331F9F0E8FF3CB84 /* ChatDemoMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1172BDB29FF145E10C031C28 /* ChatDemoMode.swift */; };
 		0355F432B0E93344589A9241 /* VenueMapModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = F96773E3A3A26024702E5D84 /* VenueMapModels.swift */; };
@@ -28,8 +25,10 @@
 		3E7640855ECDE62A00948E3B /* CalculatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 690D7795EC8B080C69972765 /* CalculatorView.swift */; };
 		40D57A631FD567741CAF09D1 /* ScheduleShared.swift in Sources */ = {isa = PBXBuildFile; fileRef = 092E3DF0A72BACCECEE03E35 /* ScheduleShared.swift */; };
 		4126E9AE149320ED218045AB /* RendezvousWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5827AB9131F3A63DC2A47844 /* RendezvousWidgets.swift */; };
+		41BED9B78B70B30C4B4C4CAF /* SongPackModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = F709048C8F9858BA207E54F2 /* SongPackModels.swift */; };
 		43BD0772D15AB8DEBBBF9D40 /* CheckInQRScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8B82CB3618AEAA7A00515AB /* CheckInQRScannerView.swift */; };
 		43C393DA7DDE7C0CA8C161E8 /* FAQView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A296DCF541E135FC128C1E7A /* FAQView.swift */; };
+		488099655F0EE0D23E18315E /* SongPacksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49C9C10A07058E0E383EC1BA /* SongPacksView.swift */; };
 		49286F0D8C03FD5E8CA4B77F /* RendezvousActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = C081E03DADF196CFEE5740DD /* RendezvousActivityAttributes.swift */; };
 		4CF50DE85564341CA1932D0B /* NotificationSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 237B5BF5B8B77520EE65C132 /* NotificationSettingsView.swift */; };
 		4E4A2FD796842CED9F8567FD /* RetreatNowNextSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC36F7ED80F15611CD11B94D /* RetreatNowNextSection.swift */; };
@@ -40,6 +39,8 @@
 		5BAF46E2ACA9E65CA42DFFA7 /* WelcomeHubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F12213D5157AC4235B6DE75 /* WelcomeHubView.swift */; };
 		64C312B89BE0793B46BA318F /* FamilyVolunteeringView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E75E2F787CFD5C0C443F208 /* FamilyVolunteeringView.swift */; };
 		66742AE51B59989BF039B477 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A62644C156B0B0D6EADBF84 /* APIClient.swift */; };
+		6D8BC41F7C03FC8F8DAB1AE9 /* SongPackStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0049423000EBBF7C4E0A582 /* SongPackStore.swift */; };
+		6F04D2E56C2CE153D799C678 /* NativeAuthFlow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 551C9D3B6AA6C6B122E83B81 /* NativeAuthFlow.swift */; };
 		709C33B84426E71DA13A5F19 /* DirectoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDFCA925CF2F46C536CF5593 /* DirectoryView.swift */; };
 		73318A87943BEA4B8F1893F9 /* venue-map.json in Resources */ = {isa = PBXBuildFile; fileRef = 02E3AB80D204DA8640DDA2E4 /* venue-map.json */; };
 		737230A76DDE9FEDE4B66B51 /* VolunteerReminderService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4297DFF22E728AAA08368FF3 /* VolunteerReminderService.swift */; };
@@ -120,9 +121,6 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		4DFB9472D2BB41B7BF5AC52E /* SongPacksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SongPacksView.swift; sourceTree = "<group>"; };
-		D8122F891AD54E1ABAA565D5 /* SongPackStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SongPackStore.swift; sourceTree = "<group>"; };
-		E5C85D7D6AC44B68949F37DC /* SongPackModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SongPackModels.swift; sourceTree = "<group>"; };
 		008D20E8BE6CD25A13CBA988 /* CampusLocationMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CampusLocationMonitor.swift; sourceTree = "<group>"; };
 		0224F790B72595846190F6C8 /* ChatPhotoViewer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatPhotoViewer.swift; sourceTree = "<group>"; };
 		02E3AB80D204DA8640DDA2E4 /* venue-map.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "venue-map.json"; sourceTree = "<group>"; };
@@ -149,11 +147,13 @@
 		4297DFF22E728AAA08368FF3 /* VolunteerReminderService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolunteerReminderService.swift; sourceTree = "<group>"; };
 		466D237AE8A926FC5CADD2F6 /* AppSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSession.swift; sourceTree = "<group>"; };
 		470F82732BB7CA2F2667959E /* AccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountView.swift; sourceTree = "<group>"; };
+		49C9C10A07058E0E383EC1BA /* SongPacksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SongPacksView.swift; sourceTree = "<group>"; };
 		4BF3FBBFCE2EF235B3B1F1D9 /* AdminUserModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminUserModels.swift; sourceTree = "<group>"; };
 		4D1AD3F114E29E028A68BB4E /* AppConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfig.swift; sourceTree = "<group>"; };
 		4DDBF4B4F010F7A0FFA06C77 /* AppStoreScreenshotMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStoreScreenshotMode.swift; sourceTree = "<group>"; };
 		4E4BCFAB9A88FD07F6BC8449 /* ChatModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatModels.swift; sourceTree = "<group>"; };
 		5079917DD576A66F72E89EF5 /* BrandColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrandColors.swift; sourceTree = "<group>"; };
+		551C9D3B6AA6C6B122E83B81 /* NativeAuthFlow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeAuthFlow.swift; sourceTree = "<group>"; };
 		567CD5A88BC1074C79EF3891 /* CarPlaySceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarPlaySceneDelegate.swift; sourceTree = "<group>"; };
 		5827AB9131F3A63DC2A47844 /* RendezvousWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RendezvousWidgets.swift; sourceTree = "<group>"; };
 		5F12213D5157AC4235B6DE75 /* WelcomeHubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeHubView.swift; sourceTree = "<group>"; };
@@ -183,6 +183,7 @@
 		C481A10CBFA7092E0BDAC5AA /* AdminDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminDashboardView.swift; sourceTree = "<group>"; };
 		C9DDD133CDB46828BF6E765E /* EventReminderSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventReminderSheet.swift; sourceTree = "<group>"; };
 		CE395596786297E49CC999A2 /* BundledContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BundledContent.swift; sourceTree = "<group>"; };
+		D0049423000EBBF7C4E0A582 /* SongPackStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SongPackStore.swift; sourceTree = "<group>"; };
 		D039A64635C0EF6FF3B6D3E3 /* AdminUsersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminUsersView.swift; sourceTree = "<group>"; };
 		D6BCF9EAD6FCEF5E52A74CD5 /* RendezvousILNotificationService.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = RendezvousILNotificationService.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		DC68024E8C93B6FAC44F6EAC /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -195,12 +196,13 @@
 		EE0D1FB46943E94BD0904482 /* RendezvousIL.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = RendezvousIL.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		EFF734E540241619F176611A /* GlassCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassCard.swift; sourceTree = "<group>"; };
 		F69A3152020B03D79A56028C /* HomeBoardDataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeBoardDataStore.swift; sourceTree = "<group>"; };
+		F709048C8F9858BA207E54F2 /* SongPackModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SongPackModels.swift; sourceTree = "<group>"; };
 		F7E5B9C3FB21EACB9FD34C8B /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		F93DC358023809E27C05FF3B /* AppEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironment.swift; sourceTree = "<group>"; };
 		F96773E3A3A26024702E5D84 /* VenueMapModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VenueMapModels.swift; sourceTree = "<group>"; };
 		FCDBD34429936681124138B5 /* schedule-fallback.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "schedule-fallback.json"; sourceTree = "<group>"; };
 		FFAD31AE0B70D848AA02648A /* ChatDataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatDataStore.swift; sourceTree = "<group>"; };
-		"TEMP_0F49C0FB-0F9F-4DCF-AA38-BA6F50DAA353" /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
+		"TEMP_AF0B39C5-8419-445C-A8A4-80B2E95EA227" /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -224,7 +226,6 @@
 				C481A10CBFA7092E0BDAC5AA /* AdminDashboardView.swift */,
 				D039A64635C0EF6FF3B6D3E3 /* AdminUsersView.swift */,
 				8BDA213F53DB325886659882 /* BibleBowlView.swift */,
-				4DFB9472D2BB41B7BF5AC52E /* SongPacksView.swift */,
 				690D7795EC8B080C69972765 /* CalculatorView.swift */,
 				E2B21229B8C516E3A062368E /* ChatListView.swift */,
 				0224F790B72595846190F6C8 /* ChatPhotoViewer.swift */,
@@ -240,6 +241,7 @@
 				37B9B084751C0C1099D59FE7 /* MoreView.swift */,
 				237B5BF5B8B77520EE65C132 /* NotificationSettingsView.swift */,
 				613DC0E4AA30786A2A78BB63 /* ScheduleView.swift */,
+				49C9C10A07058E0E383EC1BA /* SongPacksView.swift */,
 				41381ABB5514CB0C7608D0B0 /* UpdatesView.swift */,
 				0FE407421254F1FD65DD9F86 /* VenueMapView.swift */,
 			);
@@ -250,7 +252,6 @@
 			isa = PBXGroup;
 			children = (
 				41FB932F01023F1967486D44 /* AblyService.swift */,
-				D8122F891AD54E1ABAA565D5 /* SongPackStore.swift */,
 				1A62644C156B0B0D6EADBF84 /* APIClient.swift */,
 				466D237AE8A926FC5CADD2F6 /* AppSession.swift */,
 				CE395596786297E49CC999A2 /* BundledContent.swift */,
@@ -264,6 +265,7 @@
 				925104CC717795170B3F3923 /* ReminderService.swift */,
 				07C50D82EE938B688ECCFCD4 /* RendezvousRepository.swift */,
 				773D9EE7847452C39057563C /* ScheduleDataStore.swift */,
+				D0049423000EBBF7C4E0A582 /* SongPackStore.swift */,
 				4297DFF22E728AAA08368FF3 /* VolunteerReminderService.swift */,
 			);
 			path = Services;
@@ -295,6 +297,7 @@
 				5079917DD576A66F72E89EF5 /* BrandColors.swift */,
 				8DD2170CD6154F19D976FE7A /* ClerkAuthSheet.swift */,
 				EFF734E540241619F176611A /* GlassCard.swift */,
+				551C9D3B6AA6C6B122E83B81 /* NativeAuthFlow.swift */,
 				10BA3D6FED0463578297010C /* RegistrationCountdownView.swift */,
 				EC36F7ED80F15611CD11B94D /* RetreatNowNextSection.swift */,
 			);
@@ -356,10 +359,10 @@
 			children = (
 				4BF3FBBFCE2EF235B3B1F1D9 /* AdminUserModels.swift */,
 				4D1AD3F114E29E028A68BB4E /* AppConfig.swift */,
-				E5C85D7D6AC44B68949F37DC /* SongPackModels.swift */,
 				ED599FD2D648050CE74D667A /* AppModels.swift */,
 				4E4BCFAB9A88FD07F6BC8449 /* ChatModels.swift */,
 				64179816F2B892D24E404042 /* HomeBoardModels.swift */,
+				F709048C8F9858BA207E54F2 /* SongPackModels.swift */,
 				F96773E3A3A26024702E5D84 /* VenueMapModels.swift */,
 			);
 			path = Models;
@@ -398,10 +401,10 @@
 			path = RendezvousIL;
 			sourceTree = "<group>";
 		};
-		"TEMP_0BA7B222-1975-4F2E-AF7C-ADE73778D072" /* ios */ = {
+		"TEMP_4E3EEE9E-848D-4D0E-89B6-4703BACCDBDE" /* ios */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_0F49C0FB-0F9F-4DCF-AA38-BA6F50DAA353" /* Config.xcconfig */,
+				"TEMP_AF0B39C5-8419-445C-A8A4-80B2E95EA227" /* Config.xcconfig */,
 			);
 			path = ios;
 			sourceTree = "<group>";
@@ -557,9 +560,6 @@
 				7568F6D233AF16EAEA555420 /* BibleBowlView.swift in Sources */,
 				82553140B28F7CC2EA40A2A2 /* BrandColors.swift in Sources */,
 				F763B88C4136397DCED07719 /* BundledContent.swift in Sources */,
-				A12A213C05A64AC69D0E3B94 /* SongPackModels.swift in Sources */,
-				AF257952DCA640D4906FFFF0 /* SongPackStore.swift in Sources */,
-				ECEA01015F624D5DAF6CBF2E /* SongPacksView.swift in Sources */,
 				3E7640855ECDE62A00948E3B /* CalculatorView.swift in Sources */,
 				9AFC09B1C3BFA8FB6D3A70F3 /* CampusLocationMonitor.swift in Sources */,
 				8BF585E509998F0FAB97B470 /* CarPlayDataProvider.swift in Sources */,
@@ -588,6 +588,7 @@
 				FF1AD4CD38FD1EA57B8F36A6 /* HomeView.swift in Sources */,
 				F31031239434555D31490B94 /* LiveActivityManager.swift in Sources */,
 				001F6BE14BDAF1A0A6F00A2C /* MoreView.swift in Sources */,
+				6F04D2E56C2CE153D799C678 /* NativeAuthFlow.swift in Sources */,
 				2C056AEC8FAB8F9E82406A37 /* NotificationService.swift in Sources */,
 				4CF50DE85564341CA1932D0B /* NotificationSettingsView.swift in Sources */,
 				2F6E869CFEF9C6EBB7FEA808 /* PushRegistrationService.swift in Sources */,
@@ -601,6 +602,9 @@
 				0909D4F07BE927456A537630 /* ScheduleDataStore.swift in Sources */,
 				40D57A631FD567741CAF09D1 /* ScheduleShared.swift in Sources */,
 				AC921200D398D7BEA41C70E0 /* ScheduleView.swift in Sources */,
+				41BED9B78B70B30C4B4C4CAF /* SongPackModels.swift in Sources */,
+				6D8BC41F7C03FC8F8DAB1AE9 /* SongPackStore.swift in Sources */,
+				488099655F0EE0D23E18315E /* SongPacksView.swift in Sources */,
 				A6695420B13B1E422B58B7AA /* UpdatesView.swift in Sources */,
 				0355F432B0E93344589A9241 /* VenueMapModels.swift in Sources */,
 				AFA8B01C44C837F91E7A0ED6 /* VenueMapView.swift in Sources */,
@@ -748,7 +752,7 @@
 		};
 		7ADBCEC1B448B95857681847 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_0F49C0FB-0F9F-4DCF-AA38-BA6F50DAA353" /* Config.xcconfig */;
+			baseConfigurationReference = "TEMP_AF0B39C5-8419-445C-A8A4-80B2E95EA227" /* Config.xcconfig */;
 			buildSettings = {
 				APS_ENVIRONMENT = production;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -874,7 +878,7 @@
 		};
 		F8122583B54F4443475E1AD8 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_0F49C0FB-0F9F-4DCF-AA38-BA6F50DAA353" /* Config.xcconfig */;
+			baseConfigurationReference = "TEMP_AF0B39C5-8419-445C-A8A4-80B2E95EA227" /* Config.xcconfig */;
 			buildSettings = {
 				APS_ENVIRONMENT = development;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;

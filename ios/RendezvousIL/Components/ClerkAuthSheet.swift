@@ -1,17 +1,6 @@
 import Clerk
 import SwiftUI
 
-extension ClerkTheme {
-    /// Lake-teal Clerk UI that follows system light/dark mode.
-    @MainActor
-    static var rendezvous: ClerkTheme {
-        ClerkTheme(
-            colors: .init(primary: BrandColors.lake),
-            design: .init(borderRadius: 12)
-        )
-    }
-}
-
 /// Pew Packers–style copy + button. **No sheet** — parent presents `ClerkAuthSheet` at root only.
 /// Does not read `@Environment(Clerk.self)` so the welcome screen cannot crash if Clerk env is missing.
 struct SignInPromptCard: View {
@@ -93,31 +82,38 @@ struct SignInPromptCard: View {
     }
 }
 
-/// Clerk `AuthView` sheet — attach **only** from `RootView`.
-/// Do **not** wrap `AuthView` in `NavigationStack`: Clerk owns navigation for
-/// forgot-password / alternate methods, and an outer stack swallows those taps.
+/// Custom native auth sheet (Church Relay pattern) — attach **only** from `RootView`.
+/// Uses `NativeAuthFlow` instead of Clerk's embedded `AuthView` chrome.
 struct ClerkAuthSheet: View {
     @Environment(AppSession.self) private var session
     @Environment(\.dismiss) private var dismiss
 
-    var mode: AuthView.Mode = .signInOrUp
-
     var body: some View {
-        ZStack(alignment: .topTrailing) {
-            if session.isClerkReady {
-                AuthView(mode: mode)
-                    .environment(\.clerkTheme, .rendezvous)
-                    .environment(\.clerk, Clerk.shared)
-                    .environment(Clerk.shared)
-            } else {
-                ProgressView("Loading sign-in…")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+        NavigationStack {
+            ScrollView {
+                Group {
+                    if session.isClerkReady {
+                        NativeAuthFlow {
+                            dismiss()
+                            Task { await session.refreshAuth() }
+                        }
+                        .environment(Clerk.shared)
+                    } else {
+                        ProgressView("Loading sign-in…")
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 48)
+                    }
+                }
+                .padding(20)
             }
-
-            Button("Close") { dismiss() }
-                .font(.body.weight(.medium))
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
+            .background(Color(.systemGroupedBackground))
+            .navigationTitle("Sign in")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") { dismiss() }
+                }
+            }
         }
         .onChange(of: session.clerkSessionId) { _, sessionId in
             guard sessionId != nil else { return }

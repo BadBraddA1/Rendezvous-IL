@@ -258,18 +258,18 @@ rendezvous-il/
 
 ## iOS app
 
-Native **SwiftUI** attendee hub in `ios/` (not a WebView shell). **Sign-in required** for almost everything — welcome screen, then Clerk, then tabs:
+Native **SwiftUI** attendee hub in `ios/` (not a WebView shell). **Sign-in required** for almost everything — welcome screen, then **custom native Clerk auth** (same Church Relay pattern as the website BraddCorp kit — email/password, no embedded Clerk `AuthView`), then tabs:
 
 - **Home (Live day board)** — sections ordered by Admin → Home board (`GET /api/home-board`): header, **check-in status** (`GET /api/family/check-in` — requested year only via `registrations_v2.family_id` + email; no cross-year fallback), now/next, weather, announcements, next meal, chat unread, volunteering, plus optional banners. Opening Home/Volunteering auto-schedules a **30-minute local reminder** before each assignment
-- **Schedule** — opens on today (Central Time) or the next upcoming day. **Happening now** highlight only when an event is actually in progress (Central Time) — not the next upcoming item. Empty announcements are hidden. Meals, worship leaders, event reminders (bell → local notification; prefs store the event so reminders still schedule if the shared snapshot is empty). Tap location → campus map
+- **Schedule** — opens on today (Central Time) or the next upcoming day. **Happening now** highlight only when an event is actually in progress (Central Time) — not the next upcoming item. Empty announcements are hidden. Meals, worship leaders, event reminders (bell → local notification; prefs store the event so reminders still schedule if the shared snapshot is empty; bell icon **updates immediately** after Save via observable `ReminderService`). Tap location → campus map
 - **Directory** — disk cache shows last-loaded families immediately, then refreshes in the background. Family detail matches the website: Father/Mother lines plus **Kids with ages**. Manage your family photo from **More → Directory photo**
 - **Map** — MapKit directions to campus + image venue map on site (geofence switch); More → Campus map
-- **Chat** — year group chat (Ably)
+- **Chat** — year group chat (Ably); bubbles + composer styled closer to iMessage (tail radii, clustered consecutive messages, pill composer)
 - **More** — directory, **your volunteering**, account, Bible Bowl, FAQ, notifications, admin/check-in for staff
 - **Live Activity** — lock-screen “now/next” uses explicit dark text on the light lake tint so Light Mode stays readable
 - **CarPlay** — today’s schedule + directions to Lake Williamson ([setup](ios/docs/carplay/SETUP.md); entitlement approved — enable on App ID before device/TestFlight)
 
-Setup: `cd ios && bash scripts/setup-xcode.sh && open RendezvousIL.xcodeproj` — see [ios/README.md](ios/README.md). For staff sign-in, add your Clerk key to `ios/Config.local.xcconfig`.
+Setup: `cd ios && bash scripts/setup-xcode.sh && open RendezvousIL.xcodeproj` — see [ios/README.md](ios/README.md). Publishable key lives in `ios/Config.xcconfig` (`pk_live_…`); override with `ios/Config.local.xcconfig` for a test key if needed.
 
 **TestFlight:** `cd ios && bash scripts/ship-testflight.sh` — latest **v1.2.0 (build 14)**. Device smoke checklist: [ios/TESTFLIGHT_SMOKE.md](ios/TESTFLIGHT_SMOKE.md).
 

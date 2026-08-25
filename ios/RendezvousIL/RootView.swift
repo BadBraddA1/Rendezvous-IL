@@ -98,8 +98,7 @@ struct RootView: View {
             }
         }
         .sheet(isPresented: $showAuthSheet) {
-            // Full-height sheet (no detent) so Clerk can push forgot-password / alternate methods.
-            ClerkAuthSheet(mode: .signInOrUp)
+            ClerkAuthSheet()
                 .withAppEnvironments(session: session)
         }
     }

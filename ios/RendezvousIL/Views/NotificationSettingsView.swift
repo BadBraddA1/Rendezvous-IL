@@ -9,7 +9,8 @@ struct NotificationSettingsView: View {
     @State private var isRefreshingLiveActivity = false
 
     private var notifications: NotificationService { NotificationService.shared }
-    private var reminderCount: Int { ReminderService.shared.savedReminderCount }
+    private var reminders = ReminderService.shared
+    private var reminderCount: Int { reminders.savedReminderCount }
     private var pushService: PushRegistrationService { PushRegistrationService.shared }
 
     var body: some View {
@@ -168,8 +169,8 @@ struct NotificationSettingsView: View {
         defer { isRescheduling = false }
 
         do {
-            try await ReminderService.shared.rescheduleAll(items: repository.schedule?.luItems)
-            let count = ReminderService.shared.savedReminderCount
+            try await reminders.rescheduleAll(items: repository.schedule?.luItems)
+            let count = reminders.savedReminderCount
             rescheduleMessage = count > 0
                 ? "Scheduled \(count) reminder\(count == 1 ? "" : "s")."
                 : "No upcoming reminders to schedule."

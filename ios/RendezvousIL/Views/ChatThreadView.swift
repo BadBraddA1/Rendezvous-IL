@@ -100,7 +100,7 @@ struct ChatThreadView: View {
 
             ScrollViewReader { proxy in
                 ScrollView {
-                    LazyVStack(spacing: 12) {
+                    LazyVStack(spacing: 0) {
                         if isLoading && messages.isEmpty {
                             ProgressView()
                                 .frame(maxWidth: .infinity)
@@ -113,13 +113,17 @@ struct ChatThreadView: View {
                                 .frame(maxWidth: .infinity)
                                 .padding(.top, 40)
                         } else {
-                            ForEach(messages) { message in
-                                messageBubble(message)
+                            ForEach(Array(messages.enumerated()), id: \.element.id) { index, message in
+                                let previous = index > 0 ? messages[index - 1] : nil
+                                let clustered = previous?.sender_clerk_id == message.sender_clerk_id
+                                messageBubble(message, showSender: !clustered)
+                                    .padding(.top, clustered ? 2 : 10)
                                     .id(message.id)
                             }
                         }
                     }
-                    .padding()
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
                 }
                 .refreshable { await reloadMessages() }
                 .onChange(of: messages.count) { _, _ in
@@ -202,43 +206,46 @@ struct ChatThreadView: View {
     }
 
     @ViewBuilder
-    private func messageBubble(_ message: ChatMessage) -> some View {
+    private func messageBubble(_ message: ChatMessage, showSender: Bool) -> some View {
         let mine = !currentUserId.isEmpty && message.sender_clerk_id == currentUserId
         let canDelete = mine || canModerate
-        HStack {
-            if mine { Spacer(minLength: 40) }
-            VStack(alignment: mine ? .trailing : .leading, spacing: 6) {
-                HStack(spacing: 6) {
-                    if message.is_announcement {
-                        Image(systemName: "megaphone.fill")
-                            .font(.caption2)
-                            .foregroundStyle(.orange)
-                    }
-                    if message.isPoll {
-                        Image(systemName: "chart.bar.fill")
-                            .font(.caption2)
-                            .foregroundStyle(BrandColors.lake)
-                    }
-                    Text(message.sender_display_name)
-                        .font(.caption.weight(.semibold))
-                    Text(ChatMessageFormatting.relativeTime(message.created_at))
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                    if canDelete {
-                        Button {
-                            Task { await deleteMessage(message.id) }
-                        } label: {
-                            Image(systemName: "trash")
+        let bubbleFill: Color = {
+            if message.is_announcement { return Color.orange.opacity(0.18) }
+            if message.isPoll { return BrandColors.lake.opacity(0.14) }
+            return mine ? BrandColors.lake : Color(.systemGray5)
+        }()
+        let bubbleText: Color = {
+            if message.is_announcement || message.isPoll { return .primary }
+            return mine ? .white : .primary
+        }()
+
+        HStack(alignment: .bottom, spacing: 6) {
+            if mine { Spacer(minLength: 52) }
+
+            VStack(alignment: mine ? .trailing : .leading, spacing: 4) {
+                if showSender && !mine {
+                    HStack(spacing: 6) {
+                        if message.is_announcement {
+                            Image(systemName: "megaphone.fill")
                                 .font(.caption2)
+                                .foregroundStyle(.orange)
                         }
-                        .foregroundStyle(.secondary)
+                        if message.isPoll {
+                            Image(systemName: "chart.bar.fill")
+                                .font(.caption2)
+                                .foregroundStyle(BrandColors.lake)
+                        }
+                        Text(message.sender_display_name)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
                     }
+                    .padding(.horizontal, 4)
                 }
 
                 let urls = message.photoURLs
                 if !urls.isEmpty {
                     let columns = urls.count == 1 ? 1 : 2
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: columns), spacing: 4) {
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 3), count: columns), spacing: 3) {
                         ForEach(urls, id: \.self) { urlString in
                             if let url = URL(string: urlString) {
                                 Button {
@@ -255,7 +262,7 @@ struct ChatThreadView: View {
                                         }
                                     }
                                     .frame(maxWidth: 220, maxHeight: 220)
-                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                                 }
                                 .buttonStyle(.plain)
                                 .accessibilityLabel("Enlarge photo")
@@ -266,25 +273,54 @@ struct ChatThreadView: View {
 
                 if message.isPoll, let options = message.poll_options {
                     pollCard(message: message, options: options)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 10)
+                        .background(bubbleFill, in: ChatBubbleShape(outgoing: mine))
                 } else if !message.body.isEmpty {
                     Text(message.body)
                         .font(.body)
+                        .foregroundStyle(bubbleText)
                         .multilineTextAlignment(mine ? .trailing : .leading)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 9)
+                        .background(bubbleFill, in: ChatBubbleShape(outgoing: mine))
+                        .contextMenu {
+                            if canDelete {
+                                Button(role: .destructive) {
+                                    Task { await deleteMessage(message.id) }
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
+                        }
                 }
 
-                reactionBar(for: message)
+                HStack(spacing: 8) {
+                    reactionBar(for: message)
+                    Text(ChatMessageFormatting.relativeTime(message.created_at))
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+                .padding(.horizontal, 4)
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(
-                message.is_announcement
-                    ? Color.orange.opacity(0.15)
-                    : message.isPoll
-                        ? BrandColors.lake.opacity(0.12)
-                        : mine ? BrandColors.lake.opacity(0.18) : Color.secondary.opacity(0.12)
+
+            if !mine { Spacer(minLength: 52) }
+        }
+    }
+
+    /// iMessage-style bubble: large radius on three corners, tighter on the “tail” side.
+    private struct ChatBubbleShape: Shape {
+        var outgoing: Bool
+
+        func path(in rect: CGRect) -> Path {
+            UnevenRoundedRectangle(
+                topLeadingRadius: 18,
+                bottomLeadingRadius: outgoing ? 18 : 5,
+                bottomTrailingRadius: outgoing ? 5 : 18,
+                topTrailingRadius: 18,
+                style: .continuous
             )
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-            if !mine { Spacer(minLength: 40) }
+            .path(in: rect)
         }
     }
 
@@ -406,20 +442,32 @@ struct ChatThreadView: View {
                     maxSelectionCount: max(1, maxPhotos - pendingImages.count),
                     matching: .images
                 ) {
-                    Image(systemName: "photo.on.rectangle.angled")
+                    Image(systemName: "photo")
                         .font(.title3)
+                        .foregroundStyle(BrandColors.lake)
+                        .frame(width: 36, height: 36)
                 }
                 .disabled(pendingImages.count >= maxPhotos)
 
                 TextField("Message", text: $draft, axis: .vertical)
-                    .textFieldStyle(.roundedBorder)
-                    .lineLimit(1...4)
+                    .lineLimit(1...5)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(
+                        Capsule(style: .continuous)
+                            .fill(Color(.secondarySystemBackground))
+                    )
+                    .overlay {
+                        Capsule(style: .continuous)
+                            .strokeBorder(Color(.separator).opacity(0.45), lineWidth: 0.5)
+                    }
 
                 if canModerate {
                     Button {
                         showPollSheet = true
                     } label: {
                         Image(systemName: "chart.bar.fill")
+                            .foregroundStyle(BrandColors.lake)
                     }
                     .disabled(isSending)
 
@@ -427,6 +475,7 @@ struct ChatThreadView: View {
                         Task { await sendMessage(isAnnouncement: true) }
                     } label: {
                         Image(systemName: "megaphone.fill")
+                            .foregroundStyle(.orange)
                     }
                     .disabled(!canSend || isSending)
                 }
@@ -436,14 +485,22 @@ struct ChatThreadView: View {
                 } label: {
                     if isSending {
                         ProgressView()
+                            .frame(width: 32, height: 32)
                     } else {
-                        Image(systemName: "paperplane.fill")
+                        Image(systemName: "arrow.up.circle.fill")
+                            .font(.system(size: 32))
+                            .symbolRenderingMode(.palette)
+                            .foregroundStyle(
+                                canSend ? Color.white : Color(.tertiaryLabel),
+                                canSend ? BrandColors.lake : Color(.quaternaryLabel)
+                            )
                     }
                 }
                 .disabled(!canSend || isSending)
+                .accessibilityLabel("Send")
             }
-            .padding(.horizontal)
-            .padding(.bottom)
+            .padding(.horizontal, 12)
+            .padding(.bottom, 10)
         }
         .padding(.top, 8)
         .background(.bar)

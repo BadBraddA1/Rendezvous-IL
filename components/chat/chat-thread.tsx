@@ -480,7 +480,7 @@ export function ChatThread({
         ) : null}
       </div>
 
-      <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
+      <div className="flex-1 space-y-0.5 overflow-y-auto px-3 py-3">
         {isLoading ? (
           <div className="flex items-center justify-center py-12 text-muted-foreground">
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -491,47 +491,73 @@ export function ChatThread({
             No messages yet. Say hello to your Rendezvous family.
           </p>
         ) : (
-          messages.map((message) => {
+          messages.map((message, index) => {
             const mine = message.sender_clerk_id === currentUserId
             const canDelete = mine || threadCanModerate
             const totalVotes = message.poll_counts?.reduce((a, b) => a + b, 0) ?? 0
+            const previous = index > 0 ? messages[index - 1] : null
+            const clustered = previous?.sender_clerk_id === message.sender_clerk_id
             return (
               <div
                 key={message.id}
-                className={cn("group flex", mine ? "justify-end" : "justify-start")}
+                className={cn(
+                  "group flex",
+                  mine ? "justify-end" : "justify-start",
+                  clustered ? "pt-0.5" : "pt-2.5",
+                )}
               >
                 <div
                   className={cn(
-                    "max-w-[85%] rounded-2xl px-4 py-2 text-sm shadow-sm",
+                    "max-w-[78%] px-3.5 py-2 text-[15px] leading-snug shadow-none",
                     message.is_announcement
-                      ? "border border-amber-300/60 bg-amber-50 text-amber-950 dark:bg-amber-950/40 dark:text-amber-50"
+                      ? "rounded-2xl border border-amber-300/60 bg-amber-50 text-amber-950 dark:bg-amber-950/40 dark:text-amber-50"
                       : message.kind === "poll"
-                        ? "border border-primary/30 bg-muted"
+                        ? "rounded-2xl border border-primary/30 bg-muted"
                         : mine
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted",
+                          ? "rounded-[18px] rounded-br-sm bg-primary text-primary-foreground"
+                          : "rounded-[18px] rounded-bl-sm bg-secondary text-foreground",
                   )}
                 >
-                  <div className="mb-1 flex items-center gap-2 text-xs opacity-80">
-                    {message.is_announcement ? <Megaphone className="h-3.5 w-3.5" /> : null}
-                    {message.kind === "poll" ? <BarChart3 className="h-3.5 w-3.5" /> : null}
-                    <span className="font-medium">{message.sender_display_name}</span>
-                    <span>
-                      {formatDistanceToNow(new Date(normalizeChatTimestamp(message.created_at)), {
-                        addSuffix: true,
-                      })}
-                    </span>
-                    {canDelete ? (
+                  {!clustered || !mine ? (
+                    <div
+                      className={cn(
+                        "mb-1 flex items-center gap-2 text-[11px]",
+                        mine ? "opacity-70" : "text-muted-foreground",
+                      )}
+                    >
+                      {message.is_announcement ? <Megaphone className="h-3.5 w-3.5" /> : null}
+                      {message.kind === "poll" ? <BarChart3 className="h-3.5 w-3.5" /> : null}
+                      {!mine ? (
+                        <span className="font-medium">{message.sender_display_name}</span>
+                      ) : null}
+                      <span>
+                        {formatDistanceToNow(new Date(normalizeChatTimestamp(message.created_at)), {
+                          addSuffix: true,
+                        })}
+                      </span>
+                      {canDelete ? (
+                        <button
+                          type="button"
+                          className="ml-auto opacity-0 transition group-hover:opacity-100"
+                          onClick={() => void deleteMessage(message.id)}
+                          aria-label="Delete message"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      ) : null}
+                    </div>
+                  ) : canDelete ? (
+                    <div className="mb-1 flex justify-end">
                       <button
                         type="button"
-                        className="ml-auto opacity-0 transition group-hover:opacity-100"
+                        className="opacity-0 transition group-hover:opacity-100"
                         onClick={() => void deleteMessage(message.id)}
                         aria-label="Delete message"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
-                    ) : null}
-                  </div>
+                    </div>
+                  ) : null}
 
                   {message.image_urls.length > 0 ? (
                     <div
@@ -649,7 +675,7 @@ export function ChatThread({
         <div ref={bottomRef} />
       </div>
 
-      <div className="border-t p-4">
+      <div className="border-t bg-background/80 px-3 py-3 backdrop-blur-sm">
         {error ? <p className="mb-2 text-sm text-destructive">{error}</p> : null}
         {pendingPhotos.length > 0 ? (
           <div className="mb-3 flex flex-wrap gap-2">
@@ -673,7 +699,7 @@ export function ChatThread({
             ))}
           </div>
         ) : null}
-        <div className="flex gap-2">
+        <div className="flex items-end gap-2">
           <input
             ref={fileInputRef}
             type="file"
@@ -688,19 +714,20 @@ export function ChatThread({
           <Button
             type="button"
             size="icon"
-            variant="outline"
+            variant="ghost"
+            className="h-10 w-10 shrink-0 rounded-full text-primary"
             disabled={isSending || pendingPhotos.length >= MAX_CHAT_PHOTOS_PER_MESSAGE}
             onClick={() => fileInputRef.current?.click()}
             aria-label="Attach photos"
           >
-            <ImagePlus className="h-4 w-4" />
+            <ImagePlus className="h-5 w-5" />
           </Button>
           <Textarea
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
             placeholder={`Message ${channelLabel}…`}
-            rows={2}
-            className="min-h-[3rem] resize-none"
+            rows={1}
+            className="min-h-10 max-h-32 resize-none rounded-full border-border/60 bg-secondary px-4 py-2.5 text-[15px] leading-snug shadow-none"
             onKeyDown={(event) => {
               if (event.key === "Enter" && !event.shiftKey) {
                 event.preventDefault()
@@ -712,6 +739,7 @@ export function ChatThread({
             <Button
               type="button"
               size="icon"
+              className="h-10 w-10 shrink-0 rounded-full"
               disabled={!canSend || isSending}
               onClick={() => void sendMessage()}
               aria-label="Send message"

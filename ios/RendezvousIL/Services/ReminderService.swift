@@ -1,14 +1,19 @@
 import Foundation
 import UserNotifications
 
+@Observable
 @MainActor
 final class ReminderService {
     static let shared = ReminderService()
 
     private let storageKey = "event.reminders"
 
+    /// Bumped on every save so schedule cards and settings refresh without leaving the screen.
+    private(set) var revision: Int = 0
+
     func preference(for eventId: String) -> EventReminderOffset? {
-        load().first { $0.eventId == eventId }?.offset
+        _ = revision
+        return load().first { $0.eventId == eventId }?.offset
     }
 
     func setReminder(
@@ -104,10 +109,12 @@ final class ReminderService {
     private func save(_ prefs: [EventReminderPreference]) {
         guard let data = try? JSONEncoder().encode(prefs) else { return }
         UserDefaults.standard.set(data, forKey: storageKey)
+        revision &+= 1
     }
 
     /// Number of events with a saved reminder preference.
     var savedReminderCount: Int {
-        load().count
+        _ = revision
+        return load().count
     }
 }
