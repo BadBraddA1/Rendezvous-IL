@@ -20,6 +20,16 @@ type DashboardResponse = {
   registrationProgress: number
 }
 
+/** Overview quick links that aren't already in the primary "Jump in" grid. */
+const OVERVIEW_EXTRA_LINKS = [
+  { href: "/admin/settings", label: "Settings", hint: "Directory + registration previews" },
+  { href: "/admin/rates", label: "Rates", hint: "Lodging & fee chart" },
+  { href: "/admin/calculator", label: "Calculator", hint: "Test rate totals" },
+  { href: "/admin/directory", label: "Family Directory", hint: "Edit public listings" },
+  { href: "/admin/pending-changes", label: "Pending changes", hint: "Approve profile edits" },
+  { href: "/admin/feedback", label: "Feedback", hint: "Event ratings" },
+] as const
+
 function AdminNewOverviewInner() {
   const { eventYear } = useAdminEventYear()
   const { data: me } = useSWR<{
@@ -35,6 +45,7 @@ function AdminNewOverviewInner() {
   const summary = data?.summary
   const progress = data?.registrationProgress ?? 0
   const isArchive = eventYear === ARCHIVE_REGISTRATION_EVENT_YEAR
+  const isAdmin = me?.staff?.role === "admin"
 
   const quick = adminDashConfig.nav.filter((n) => {
     if (n.href === "/admin/new") return false
@@ -110,18 +121,111 @@ function AdminNewOverviewInner() {
       </AdminStatStrip>
 
       {summary && (
-        <section className="ad-panel p-3">
-          <h2 className="text-sm font-semibold">Lodging · {eventYear}</h2>
-          <p className="mt-1 text-xs" style={{ color: "var(--ad-muted)" }}>
-            Motel {summary.lodgingBreakdown.motel} · RV {summary.lodgingBreakdown.rv} · Tent{" "}
-            {summary.lodgingBreakdown.tent} · Drive-in {summary.lodgingBreakdown.drivein}
-          </p>
-          <p className="mt-2 text-xs" style={{ color: "var(--ad-muted)" }}>
-            Express {summary.expressRegistrations} · Pending changes {summary.pendingChanges} ·
-            Announcements {summary.activeAnnouncements}
-          </p>
-        </section>
+        <div className="grid gap-3 lg:grid-cols-2">
+          <section className="ad-panel p-3">
+            <h2 className="text-sm font-semibold">Lodging · {eventYear}</h2>
+            <p className="mt-1 text-xs" style={{ color: "var(--ad-muted)" }}>
+              Motel {summary.lodgingBreakdown.motel} · RV {summary.lodgingBreakdown.rv} · Tent{" "}
+              {summary.lodgingBreakdown.tent} · Drive-in {summary.lodgingBreakdown.drivein}
+            </p>
+            <p className="mt-2 text-xs" style={{ color: "var(--ad-muted)" }}>
+              Express {summary.expressRegistrations} · Checked in {summary.checkedIn}
+            </p>
+          </section>
+
+          <section className="ad-panel p-3">
+            <h2 className="text-sm font-semibold">Payments · {eventYear}</h2>
+            <p className="mt-1 text-xs" style={{ color: "var(--ad-muted)" }}>
+              Paid in full {summary.fullyPaid} · Deposit only{" "}
+              {Math.max(0, summary.registrations - summary.fullyPaid)}
+            </p>
+            <p className="mt-2 text-xs" style={{ color: "var(--ad-muted)" }}>
+              Deposits ${summary.depositsPaid.toLocaleString()} · Balance $
+              {summary.balanceDue.toLocaleString()}
+            </p>
+          </section>
+
+          <section className="ad-panel p-3">
+            <h2 className="text-sm font-semibold">Action items</h2>
+            <ul className="mt-2 space-y-1.5 text-sm">
+              <li>
+                <Link
+                  href="/admin/pending-changes"
+                  className="flex items-center justify-between gap-2 hover:underline"
+                >
+                  <span>Pending family changes</span>
+                  <span className="tabular-nums font-medium">{summary.pendingChanges}</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/admin/announcements"
+                  className="flex items-center justify-between gap-2 hover:underline"
+                >
+                  <span>Active announcements</span>
+                  <span className="tabular-nums font-medium">{summary.activeAnnouncements}</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href={`/admin/feedback?year=${eventYear}`}
+                  className="flex items-center justify-between gap-2 hover:underline"
+                >
+                  <span>{eventYear} feedback</span>
+                  <span className="tabular-nums font-medium">
+                    {summary.feedbackCount}
+                    {summary.avgRating > 0 ? ` · ${summary.avgRating.toFixed(1)}★` : ""}
+                  </span>
+                </Link>
+              </li>
+            </ul>
+          </section>
+
+          <section className="ad-panel p-3">
+            <h2 className="text-sm font-semibold">Season controls</h2>
+            <p className="mt-1 text-xs" style={{ color: "var(--ad-muted)" }}>
+              Family Directory visibility, registration previews, and signature emails live in
+              Settings (same toggles as the classic home).
+            </p>
+            {isAdmin ? (
+              <Link
+                href="/admin/settings"
+                className="mt-2 inline-block text-sm font-medium text-primary hover:underline"
+              >
+                Open Settings
+              </Link>
+            ) : (
+              <p className="mt-2 text-xs" style={{ color: "var(--ad-muted)" }}>
+                Only admins can change those toggles.
+              </p>
+            )}
+          </section>
+        </div>
       )}
+
+      <section className="ad-panel p-3">
+        <h2 className="text-sm font-semibold">Quick actions</h2>
+        <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {OVERVIEW_EXTRA_LINKS.filter((link) => {
+            if (link.href === "/admin/settings" || link.href === "/admin/rates" || link.href === "/admin/calculator") {
+              return isAdmin
+            }
+            return true
+          }).map((link) => (
+            <Link
+              key={link.href}
+              href={link.href.includes("?") ? link.href : `${link.href}?year=${eventYear}`}
+              className="rounded-md border px-3 py-2 text-sm transition hover:border-primary/40"
+              style={{ borderColor: "var(--ad-line)" }}
+            >
+              <p className="font-semibold">{link.label}</p>
+              <p className="mt-0.5 text-xs" style={{ color: "var(--ad-muted)" }}>
+                {link.hint}
+              </p>
+            </Link>
+          ))}
+        </div>
+      </section>
 
       <section className="ad-panel p-3">
         <h2 className="text-sm font-semibold">Jump in</h2>
@@ -147,6 +251,7 @@ function AdminNewOverviewInner() {
 
 /**
  * New dash overview — 2027 is the primary season; header year switcher jumps to 2026 archive.
+ * Config toggles (directory / registration previews) live under Settings.
  */
 export default function AdminNewOverviewPage() {
   return (

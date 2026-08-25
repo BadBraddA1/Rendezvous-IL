@@ -1,5 +1,7 @@
 import { auth, currentUser } from "@clerk/nextjs/server"
 import { AdminNav } from "@/components/admin/admin-nav"
+import { DirectoryYearToggles } from "@/components/admin/directory-year-toggles"
+import { RegistrationPreviewToggles } from "@/components/admin/registration-preview-toggles"
 import { SystemSettings } from "@/components/admin/system-settings"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -114,10 +116,17 @@ export default async function SettingsPage() {
         <div className="admin-container">
           <header className="admin-page-header">
             <h1 className="text-section-title text-balance">System Settings</h1>
-            <p className="text-lead text-muted-foreground">Configure registration settings and event parameters</p>
+            <p className="text-lead text-muted-foreground">
+              Directory visibility, registration previews, and event parameters (also linked from the
+              new dash overview)
+            </p>
           </header>
 
-          <SystemSettings adminRole={admin.role} />
+          <div className="space-y-6">
+            <DirectoryYearToggles isAdmin={admin.role === "admin"} />
+            <RegistrationPreviewToggles isAdmin={admin.role === "admin"} />
+            <SystemSettings adminRole={admin.role} />
+          </div>
         </div>
       </main>
     </div>
