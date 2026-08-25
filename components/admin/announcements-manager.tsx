@@ -22,8 +22,6 @@ type Announcement = {
   is_active: boolean
   show_on_live_updates: boolean
   show_on_schedule: boolean
-  sent_to_groupme?: boolean
-  groupme_message_id?: string | null
   created_at: string
   expires_at?: string | null
   created_by?: string
@@ -39,7 +37,6 @@ export function AnnouncementsManager({ canEdit }: { canEdit: boolean }) {
   const [priority, setPriority] = useState("normal")
   const [showOnLiveUpdates, setShowOnLiveUpdates] = useState(true)
   const [showOnSchedule, setShowOnSchedule] = useState(false)
-  const [sendToGroupMe, setSendToGroupMe] = useState(false)
   const [deletePending, setDeletePending] = useState<Announcement | null>(null)
   const [deleting, setDeleting] = useState(false)
   const { toast } = useToast()
@@ -76,14 +73,13 @@ export function AnnouncementsManager({ canEdit }: { canEdit: boolean }) {
       const res = await fetch("/api/admin/announcements", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, message, priority, sendToGroupMe, showOnLiveUpdates, showOnSchedule }),
+        body: JSON.stringify({ title, message, priority, showOnLiveUpdates, showOnSchedule }),
       })
       if (!res.ok) throw new Error("Failed")
-      toast({ title: "Announcement created", description: sendToGroupMe ? "Sent to GroupMe" : "Posted live" })
+      toast({ title: "Announcement created", description: "Posted live" })
       setTitle("")
       setMessage("")
       setPriority("normal")
-      setSendToGroupMe(false)
       setShowOnLiveUpdates(true)
       setShowOnSchedule(false)
       void fetchData()
@@ -170,10 +166,6 @@ export function AnnouncementsManager({ canEdit }: { canEdit: boolean }) {
                 <Label htmlFor="schedule" className="cursor-pointer">Show on Schedule page</Label>
                 <Switch id="schedule" checked={showOnSchedule} onCheckedChange={setShowOnSchedule} />
               </div>
-              <div className="flex items-center justify-between">
-                <Label htmlFor="groupme" className="cursor-pointer">Also send to GroupMe</Label>
-                <Switch id="groupme" checked={sendToGroupMe} onCheckedChange={setSendToGroupMe} />
-              </div>
             </div>
             <Button onClick={handleCreate} disabled={submitting} className="w-full gap-2">
               {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
@@ -209,7 +201,6 @@ export function AnnouncementsManager({ canEdit }: { canEdit: boolean }) {
                         {a.priority === "urgent" && <Badge variant="destructive" className="text-xs">Urgent</Badge>}
                         {a.priority === "high" && <Badge variant="secondary" className="text-xs">High</Badge>}
                         {!a.is_active && <Badge variant="outline" className="text-xs">Inactive</Badge>}
-                        {a.sent_to_groupme && <Badge variant="default" className="text-xs">GroupMe</Badge>}
                       </div>
                       <p className="mt-1 break-words text-sm">{a.message}</p>
                       <p className="mt-1 text-xs text-muted-foreground">

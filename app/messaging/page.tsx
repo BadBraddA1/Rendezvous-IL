@@ -15,8 +15,6 @@ interface Announcement {
   is_active: boolean
   show_on_live_updates: boolean
   show_on_schedule: boolean
-  sent_to_groupme: boolean
-  groupme_message_id: string | null
   created_at: string
   expires_at: string | null
   created_by: string | null
@@ -90,7 +88,6 @@ export default async function MessagingPage() {
       SELECT 
         id, title, message, priority, is_active, 
         show_on_live_updates, show_on_schedule, 
-        sent_to_groupme, groupme_message_id,
         created_at, expires_at, created_by
       FROM announcements
       ORDER BY created_at DESC
@@ -105,7 +102,9 @@ export default async function MessagingPage() {
       <div className="site-container space-y-6 py-6 md:py-8">
         <header className="admin-page-header">
           <h1 className="text-section-title text-balance">Messaging & Announcements</h1>
-          <p className="text-lead text-muted-foreground">Send messages to GroupMe and display announcements on /LU and /schedule</p>
+          <p className="text-lead text-muted-foreground">
+            Display announcements on Live Updates and schedule; push to the app when needed
+          </p>
         </header>
 
         <MessagingForm initialAnnouncements={announcements} />

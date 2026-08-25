@@ -20,7 +20,9 @@ export default async function AnnouncementsPage() {
         <div className="admin-container">
           <header className="admin-page-header">
             <h1 className="text-section-title text-balance">Announcements</h1>
-            <p className="text-lead text-muted-foreground">Manage live event announcements and GroupMe broadcasts</p>
+            <p className="text-lead text-muted-foreground">
+              Manage live event announcements for the app, Live Updates, and schedule
+            </p>
           </header>
           <AnnouncementsManager canEdit={admin.role !== "viewer"} />
         </div>

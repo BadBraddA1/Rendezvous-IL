@@ -20,8 +20,6 @@ interface Announcement {
   is_active: boolean
   show_on_live_updates: boolean
   show_on_schedule: boolean
-  sent_to_groupme: boolean
-  groupme_message_id: string | null
   created_at: string
   expires_at: string | null
   created_by: string | null
@@ -40,7 +38,6 @@ export function MessagingForm({ initialAnnouncements }: MessagingFormProps) {
   const [title, setTitle] = useState("")
   const [content, setContent] = useState("")
   const [priority, setPriority] = useState("normal")
-  const [sendToGroupMe, setSendToGroupMe] = useState(false)
   const [sendPushNotification, setSendPushNotification] = useState(false)
   const [showOnLiveUpdates, setShowOnLiveUpdates] = useState(true)
   const [showOnSchedule, setShowOnSchedule] = useState(false)
@@ -60,7 +57,6 @@ export function MessagingForm({ initialAnnouncements }: MessagingFormProps) {
           title,
           message: content,
           priority,
-          sendToGroupMe,
           showOnLiveUpdates,
           showOnSchedule,
         }),
@@ -98,7 +94,6 @@ export function MessagingForm({ initialAnnouncements }: MessagingFormProps) {
         setTitle("")
         setContent("")
         setPriority("normal")
-        setSendToGroupMe(false)
         setSendPushNotification(false)
         setShowOnLiveUpdates(true)
         setShowOnSchedule(false)
@@ -192,7 +187,7 @@ export function MessagingForm({ initialAnnouncements }: MessagingFormProps) {
             Create Announcement
           </CardTitle>
           <CardDescription>
-            Send messages to GroupMe and display on Live Updates & Schedule pages
+            Display on Live Updates & Schedule; optionally push to the app
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -237,18 +232,6 @@ export function MessagingForm({ initialAnnouncements }: MessagingFormProps) {
 
             <div className="space-y-4 pt-4 border-t">
               <h4 className="font-medium">Display Options</h4>
-              
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="groupme">Send to GroupMe</Label>
-                  <p className="text-xs text-muted-foreground">Post message to GroupMe group</p>
-                </div>
-                <Switch
-                  id="groupme"
-                  checked={sendToGroupMe}
-                  onCheckedChange={setSendToGroupMe}
-                />
-              </div>
 
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
@@ -376,11 +359,6 @@ export function MessagingForm({ initialAnnouncements }: MessagingFormProps) {
                     )}
                     {ann.show_on_schedule && (
                       <Badge variant="outline">/schedule</Badge>
-                    )}
-                    {ann.sent_to_groupme && (
-                    <Badge variant="outline" className="border-success/30 bg-surface-highlight text-success">
-                        GroupMe
-                      </Badge>
                     )}
                   </div>
                   
