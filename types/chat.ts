@@ -35,10 +35,17 @@ export interface ChatChannelSummary {
   can_moderate?: boolean
 }
 
+export interface ChatReactor {
+  clerk_user_id: string
+  display_name: string
+}
+
 export interface ChatReactionSummary {
   emoji: ChatReactionEmoji | string
   count: number
   reacted_by_me: boolean
+  /** People who used this emoji — omitted on older clients / stale disk cache. */
+  reactors?: ChatReactor[]
 }
 
 export interface ChatMessagePayload {

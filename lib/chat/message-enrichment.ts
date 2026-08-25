@@ -120,6 +120,38 @@ export async function loadMyVotes(
   return result
 }
 
+async function resolveReactorDisplayNames(
+  clerkUserIds: string[],
+): Promise<Map<string, string>> {
+  const names = new Map<string, string>()
+  const unique = [...new Set(clerkUserIds.filter(Boolean))]
+  if (unique.length === 0) return names
+
+  const placeholders = unique.map(() => "?").join(", ")
+  const rows = await sql.query(
+    `SELECT m.sender_clerk_id, m.sender_display_name
+     FROM chat_messages m
+     INNER JOIN (
+       SELECT sender_clerk_id, MAX(created_at) AS max_created
+       FROM chat_messages
+       WHERE sender_clerk_id IN (${placeholders})
+         AND deleted_at IS NULL
+       GROUP BY sender_clerk_id
+     ) latest
+       ON m.sender_clerk_id = latest.sender_clerk_id
+      AND m.created_at = latest.max_created
+     WHERE m.deleted_at IS NULL`,
+    unique,
+  )
+
+  for (const row of rows) {
+    const id = String(row.sender_clerk_id)
+    const name = String(row.sender_display_name ?? "").trim()
+    if (id && name) names.set(id, name)
+  }
+  return names
+}
+
 export async function loadReactionSummaries(
   messageIds: string[],
   clerkUserId: string,
@@ -131,26 +163,43 @@ export async function loadReactionSummaries(
   const rows = await sql.query(
     `SELECT message_id, emoji, clerk_user_id
      FROM chat_message_reactions
-     WHERE message_id IN (${placeholders})`,
+     WHERE message_id IN (${placeholders})
+     ORDER BY created_at ASC`,
     messageIds,
   )
 
-  type Acc = Map<string, { count: number; reacted_by_me: boolean }>
+  type AccEntry = { userIds: string[]; reacted_by_me: boolean }
+  type Acc = Map<string, AccEntry>
   const byMessage = new Map<string, Acc>()
+  const allUserIds: string[] = []
 
   for (const row of rows) {
     const messageId = String(row.message_id)
     const emoji = String(row.emoji)
+    const reactorId = String(row.clerk_user_id)
     let acc = byMessage.get(messageId)
     if (!acc) {
       acc = new Map()
       byMessage.set(messageId, acc)
     }
-    const cur = acc.get(emoji) ?? { count: 0, reacted_by_me: false }
-    cur.count += 1
-    if (String(row.clerk_user_id) === clerkUserId) cur.reacted_by_me = true
+    const cur = acc.get(emoji) ?? { userIds: [], reacted_by_me: false }
+    cur.userIds.push(reactorId)
+    if (reactorId === clerkUserId) cur.reacted_by_me = true
     acc.set(emoji, cur)
+    allUserIds.push(reactorId)
   }
+
+  const displayNames = await resolveReactorDisplayNames(allUserIds)
+
+  const toSummary = (emoji: string, cur: AccEntry): ChatReactionSummary => ({
+    emoji,
+    count: cur.userIds.length,
+    reacted_by_me: cur.reacted_by_me,
+    reactors: cur.userIds.map((id) => ({
+      clerk_user_id: id,
+      display_name: displayNames.get(id) ?? "Member",
+    })),
+  })
 
   for (const messageId of messageIds) {
     const acc = byMessage.get(messageId)
@@ -163,12 +212,12 @@ export async function loadReactionSummaries(
     for (const emoji of CHAT_REACTION_EMOJIS) {
       const cur = acc.get(emoji)
       if (cur) {
-        summaries.push({ emoji, count: cur.count, reacted_by_me: cur.reacted_by_me })
+        summaries.push(toSummary(emoji, cur))
         acc.delete(emoji)
       }
     }
     for (const [emoji, cur] of acc) {
-      summaries.push({ emoji, count: cur.count, reacted_by_me: cur.reacted_by_me })
+      summaries.push(toSummary(emoji, cur))
     }
     result.set(messageId, summaries)
   }

@@ -78,7 +78,12 @@ function normalizeMessage(raw: ChatMessagePayload): ChatMessagePayload {
     poll_options: raw.poll_options ?? null,
     poll_counts: raw.poll_counts ?? null,
     my_vote: raw.my_vote ?? null,
-    reactions: Array.isArray(raw.reactions) ? raw.reactions : [],
+    reactions: Array.isArray(raw.reactions)
+      ? raw.reactions.map((r) => ({
+          ...r,
+          reactors: Array.isArray(r.reactors) ? r.reactors : [],
+        }))
+      : [],
   }
 }
 
@@ -99,6 +104,10 @@ export function ChatThread({
   const [pollQuestion, setPollQuestion] = useState("")
   const [pollOptions, setPollOptions] = useState(["", ""])
   const [isCreatingPoll, setIsCreatingPoll] = useState(false)
+  const [reactionDetail, setReactionDetail] = useState<{
+    messageId: string
+    emoji: string
+  } | null>(null)
   const bottomRef = useRef<HTMLDivElement | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
@@ -456,6 +465,14 @@ export function ChatThread({
 
   const canSend = Boolean(draft.trim() || pendingPhotos.length > 0)
 
+  const selectedReaction = useMemo(() => {
+    if (!reactionDetail) return null
+    const message = messages.find((m) => m.id === reactionDetail.messageId)
+    const summary = message?.reactions.find((r) => r.emoji === reactionDetail.emoji)
+    if (!message || !summary) return null
+    return { message, summary }
+  }, [messages, reactionDetail])
+
   return (
     <div className="flex h-full min-h-[28rem] flex-col rounded-xl border bg-card">
       <div className="border-b px-4 py-3">
@@ -635,7 +652,13 @@ export function ChatThread({
                                 ? "border-primary/50 bg-primary/15"
                                 : "border-border/60 bg-background/50",
                             )}
-                            onClick={() => void toggleReaction(message.id, reaction.emoji)}
+                            onClick={() =>
+                              setReactionDetail({
+                                messageId: message.id,
+                                emoji: reaction.emoji,
+                              })
+                            }
+                            aria-label={`${reaction.emoji} ${reaction.count} reactions`}
                           >
                             <span>{reaction.emoji}</span>
                             <span className="tabular-nums">{reaction.count}</span>
@@ -839,6 +862,58 @@ export function ChatThread({
             >
               {isCreatingPoll ? <Loader2 className="h-4 w-4 animate-spin" /> : "Post poll"}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={reactionDetail != null && selectedReaction != null}
+        onOpenChange={(open) => {
+          if (!open) setReactionDetail(null)
+        }}
+      >
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedReaction
+                ? `${selectedReaction.summary.emoji} · ${selectedReaction.summary.count}`
+                : "Reactions"}
+            </DialogTitle>
+          </DialogHeader>
+          <ul className="max-h-64 space-y-2 overflow-y-auto">
+            {(selectedReaction?.summary.reactors ?? []).length === 0 ? (
+              <li className="text-sm text-muted-foreground">No names yet.</li>
+            ) : (
+              (selectedReaction?.summary.reactors ?? []).map((reactor) => (
+                <li
+                  key={reactor.clerk_user_id}
+                  className="flex items-center justify-between text-sm"
+                >
+                  <span>{reactor.display_name}</span>
+                  {reactor.clerk_user_id === currentUserId ? (
+                    <span className="text-xs font-medium text-primary">You</span>
+                  ) : null}
+                </li>
+              ))
+            )}
+          </ul>
+          <DialogFooter>
+            <Button type="button" variant="ghost" onClick={() => setReactionDetail(null)}>
+              Close
+            </Button>
+            {selectedReaction ? (
+              <Button
+                type="button"
+                variant={selectedReaction.summary.reacted_by_me ? "outline" : "default"}
+                onClick={() => {
+                  const messageId = selectedReaction.message.id
+                  const emoji = selectedReaction.summary.emoji
+                  void toggleReaction(messageId, emoji)
+                }}
+              >
+                {selectedReaction.summary.reacted_by_me ? "Remove my reaction" : "Add reaction"}
+              </Button>
+            ) : null}
           </DialogFooter>
         </DialogContent>
       </Dialog>

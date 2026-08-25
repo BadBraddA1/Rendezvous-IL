@@ -22,8 +22,17 @@ struct ChatThreadView: View {
     @State private var pollQuestion = ""
     @State private var pollOptions = ["", ""]
     @State private var enlargedPhotoURL: URL?
+    @State private var reactionDetail: ReactionDetail?
 
     private let maxPhotos = 6
+
+    private struct ReactionDetail: Identifiable {
+        let messageId: String
+        let emoji: String
+        let summary: ChatReactionSummary
+
+        var id: String { "\(messageId)-\(emoji)" }
+    }
 
     private enum RealtimeStatus {
         case connecting
@@ -147,6 +156,9 @@ struct ChatThreadView: View {
         }
         .onChange(of: pickerItems) { _, items in
             Task { await loadPickerItems(items) }
+        }
+        .sheet(item: $reactionDetail) { detail in
+            reactionDetailSheet(detail)
         }
         .fullScreenCover(isPresented: Binding(
             get: { enlargedPhotoURL != nil },
@@ -371,7 +383,11 @@ struct ChatThreadView: View {
             if !message.reactionList.isEmpty {
                 ForEach(message.reactionList, id: \.emoji) { reaction in
                     Button {
-                        Task { await toggleReaction(messageId: message.id, emoji: reaction.emoji) }
+                        reactionDetail = ReactionDetail(
+                            messageId: message.id,
+                            emoji: reaction.emoji,
+                            summary: reaction
+                        )
                     } label: {
                         HStack(spacing: 2) {
                             Text(reaction.emoji)
@@ -389,6 +405,7 @@ struct ChatThreadView: View {
                         )
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel("\(reaction.emoji) \(reaction.count) reactions")
                 }
             }
 
@@ -402,7 +419,7 @@ struct ChatThreadView: View {
                 Image(systemName: "face.smiling")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
-                    .padding(6)
+                    .frame(width: 28, height: 28)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -410,8 +427,50 @@ struct ChatThreadView: View {
         }
     }
 
+    @ViewBuilder
+    private func reactionDetailSheet(_ detail: ReactionDetail) -> some View {
+        let live = messages.first(where: { $0.id == detail.messageId })?
+            .reactionList.first(where: { $0.emoji == detail.emoji }) ?? detail.summary
+        NavigationStack {
+            List {
+                if live.reactorList.isEmpty {
+                    Text("No names yet — pull to refresh for who reacted.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(live.reactorList, id: \.clerk_user_id) { reactor in
+                        HStack {
+                            Text(reactor.display_name)
+                            if reactor.clerk_user_id == currentUserId {
+                                Text("You")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(BrandColors.lake)
+                            }
+                        }
+                    }
+                }
+            }
+            .navigationTitle("\(detail.emoji) · \(live.count)")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Done") { reactionDetail = nil }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(live.reacted_by_me ? "Remove" : "Add") {
+                        Task {
+                            await toggleReaction(messageId: detail.messageId, emoji: detail.emoji)
+                        }
+                    }
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+    }
+
     private var composer: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        let multiline = draft.contains(where: \.isNewline) || draft.count > 40
+        return VStack(alignment: .leading, spacing: 8) {
             if !pendingImages.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
@@ -436,18 +495,20 @@ struct ChatThreadView: View {
                     .padding(.horizontal)
                 }
             }
-            HStack(alignment: .bottom, spacing: 8) {
+            HStack(alignment: multiline ? .bottom : .center, spacing: 8) {
                 PhotosPicker(
                     selection: $pickerItems,
                     maxSelectionCount: max(1, maxPhotos - pendingImages.count),
                     matching: .images
                 ) {
                     Image(systemName: "photo")
-                        .font(.title3)
+                        .font(.body.weight(.semibold))
                         .foregroundStyle(BrandColors.lake)
                         .frame(width: 36, height: 36)
+                        .contentShape(Rectangle())
                 }
                 .disabled(pendingImages.count >= maxPhotos)
+                .accessibilityLabel("Attach photos")
 
                 TextField("Message", text: $draft, axis: .vertical)
                     .lineLimit(1...5)
@@ -467,17 +528,25 @@ struct ChatThreadView: View {
                         showPollSheet = true
                     } label: {
                         Image(systemName: "chart.bar.fill")
+                            .font(.body.weight(.semibold))
                             .foregroundStyle(BrandColors.lake)
+                            .frame(width: 36, height: 36)
+                            .contentShape(Rectangle())
                     }
                     .disabled(isSending)
+                    .accessibilityLabel("Create poll")
 
                     Button {
                         Task { await sendMessage(isAnnouncement: true) }
                     } label: {
                         Image(systemName: "megaphone.fill")
+                            .font(.body.weight(.semibold))
                             .foregroundStyle(.orange)
+                            .frame(width: 36, height: 36)
+                            .contentShape(Rectangle())
                     }
                     .disabled(!canSend || isSending)
+                    .accessibilityLabel("Send announcement")
                 }
 
                 Button {
@@ -485,7 +554,7 @@ struct ChatThreadView: View {
                 } label: {
                     if isSending {
                         ProgressView()
-                            .frame(width: 32, height: 32)
+                            .frame(width: 36, height: 36)
                     } else {
                         Image(systemName: "arrow.up.circle.fill")
                             .font(.system(size: 32))
@@ -494,6 +563,8 @@ struct ChatThreadView: View {
                                 canSend ? Color.white : Color(.tertiaryLabel),
                                 canSend ? BrandColors.lake : Color(.quaternaryLabel)
                             )
+                            .frame(width: 36, height: 36)
+                            .contentShape(Rectangle())
                     }
                 }
                 .disabled(!canSend || isSending)
@@ -506,6 +577,7 @@ struct ChatThreadView: View {
         .background(.bar)
     }
 
+    /// Paint disk cache immediately, then refresh + Ably off the critical path.
     private func setup() async {
         if session.isAppStoreScreenshotMode {
             canModerate = false
@@ -515,9 +587,17 @@ struct ChatThreadView: View {
             errorMessage = nil
             return
         }
-        await session.refreshAdminStatus()
+
+        paintCachedMessagesIfNeeded()
         canModerate = channel.canModerate || session.isAdmin
-        await reloadMessages()
+
+        Task {
+            await session.refreshAdminStatus()
+            canModerate = channel.canModerate || session.isAdmin
+        }
+
+        await refreshMessagesInBackground(showSpinnerWhenEmpty: messages.isEmpty)
+
         if session.isChatDemoMode {
             realtimeStatus = .unavailable
             return
@@ -525,7 +605,25 @@ struct ChatThreadView: View {
         await connectRealtime()
     }
 
+    private func paintCachedMessagesIfNeeded() {
+        guard messages.isEmpty,
+              let cached = ChatDataStore.loadMessages(channelId: channel.id),
+              !cached.isEmpty
+        else { return }
+        messages = cached
+        isLoading = false
+    }
+
+    private func persistMessages() {
+        ChatDataStore.saveMessages(messages, channelId: channel.id)
+    }
+
+    /// Pull-to-refresh and open path both use this — never blocks first paint when cache exists.
     private func reloadMessages() async {
+        await refreshMessagesInBackground(showSpinnerWhenEmpty: messages.isEmpty)
+    }
+
+    private func refreshMessagesInBackground(showSpinnerWhenEmpty: Bool) async {
         if session.isAppStoreScreenshotMode {
             if messages.isEmpty {
                 messages = AppStoreScreenshotMode.sampleMessages(for: channel.id)
@@ -535,16 +633,18 @@ struct ChatThreadView: View {
             return
         }
 
+        paintCachedMessagesIfNeeded()
+
         guard let client = session.apiClient else {
-            errorMessage = "Could not connect your account."
+            if messages.isEmpty {
+                errorMessage = "Could not connect your account."
+            }
             isLoading = false
             return
         }
-        if messages.isEmpty, let cached = ChatDataStore.loadMessages(channelId: channel.id), !cached.isEmpty {
-            messages = cached
-            isLoading = false
-        } else {
-            isLoading = messages.isEmpty
+
+        if showSpinnerWhenEmpty && messages.isEmpty {
+            isLoading = true
         }
         defer { isLoading = false }
 
@@ -553,13 +653,22 @@ struct ChatThreadView: View {
                 try await client.getChatMessages(channelId: channel.id)
             }
             messages = response.messages
-            ChatDataStore.saveMessages(messages, channelId: channel.id)
+            persistMessages()
             if let moderate = response.can_moderate {
                 canModerate = moderate || session.isAdmin
             } else {
                 canModerate = session.isAdmin || channel.canModerate
             }
             errorMessage = nil
+            if let detail = reactionDetail,
+               let updated = messages.first(where: { $0.id == detail.messageId })?
+                .reactionList.first(where: { $0.emoji == detail.emoji }) {
+                reactionDetail = ReactionDetail(
+                    messageId: detail.messageId,
+                    emoji: detail.emoji,
+                    summary: updated
+                )
+            }
         } catch {
             if APIError.isCancellation(error) { return }
             if messages.isEmpty {
@@ -590,8 +699,10 @@ struct ChatThreadView: View {
                     } else {
                         messages.append(message)
                     }
+                    persistMessages()
                 case .deleted(let id):
                     messages.removeAll { $0.id == id }
+                    persistMessages()
                 case .reaction(let update):
                     applyReactionUpdate(update)
                 case .pollUpdated(let messageId, let counts, let voterClerkId):
@@ -615,6 +726,7 @@ struct ChatThreadView: View {
                             reactions: old.reactions,
                             created_at: old.created_at
                         )
+                        persistMessages()
                     }
                 }
             }
@@ -637,7 +749,8 @@ struct ChatThreadView: View {
                 return ChatReactionSummary(
                     emoji: incoming.emoji,
                     count: incoming.count,
-                    reacted_by_me: prev?.reacted_by_me ?? false
+                    reacted_by_me: prev?.reacted_by_me ?? false,
+                    reactors: incoming.reactors ?? prev?.reactors
                 )
             }
         }
@@ -659,6 +772,19 @@ struct ChatThreadView: View {
             reactions: merged,
             created_at: old.created_at
         )
+        persistMessages()
+        if let detail = reactionDetail, detail.messageId == update.message_id,
+           let updated = merged.first(where: { $0.emoji == detail.emoji }) {
+            reactionDetail = ReactionDetail(
+                messageId: detail.messageId,
+                emoji: detail.emoji,
+                summary: updated
+            )
+        } else if let detail = reactionDetail,
+                  detail.messageId == update.message_id,
+                  !merged.contains(where: { $0.emoji == detail.emoji }) {
+            reactionDetail = nil
+        }
     }
 
     private func loadPickerItems(_ items: [PhotosPickerItem]) async {
@@ -767,6 +893,7 @@ struct ChatThreadView: View {
             if !messages.contains(where: { $0.id == response.message.id }) {
                 messages.append(response.message)
             }
+            persistMessages()
             showPollSheet = false
             pollQuestion = ""
             pollOptions = ["", ""]
@@ -864,6 +991,7 @@ struct ChatThreadView: View {
                 try await client.deleteChatMessage(messageId: id)
             }
             messages.removeAll { $0.id == id }
+            persistMessages()
             errorMessage = nil
         } catch {
             if APIError.isCancellation(error) { return }

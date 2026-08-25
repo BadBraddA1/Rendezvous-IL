@@ -35,10 +35,19 @@ struct ChatChannelsResponse: Decodable {
     let channels: [ChatChannelSummary]
 }
 
+struct ChatReactor: Codable, Hashable {
+    let clerk_user_id: String
+    let display_name: String
+}
+
 struct ChatReactionSummary: Codable, Hashable {
     let emoji: String
     let count: Int
     let reacted_by_me: Bool
+    /// Present on fresh API payloads; older disk cache may omit it.
+    let reactors: [ChatReactor]?
+
+    var reactorList: [ChatReactor] { reactors ?? [] }
 }
 
 struct ChatMessage: Codable, Identifiable, Hashable {

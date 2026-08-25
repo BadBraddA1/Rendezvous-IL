@@ -128,18 +128,24 @@ struct ChatListView: View {
             return
         }
 
-        guard let client = session.apiClient else {
+        // Paint disk cache immediately — do not wait for apiClient.
+        if let cached = ChatDataStore.loadChannels(), !cached.isEmpty {
+            if force || channels.isEmpty {
+                channels = cached.sortedForDisplay()
+            }
             isLoading = false
-            errorMessage = "Could not connect your account. Try signing out and back in."
+        } else if channels.isEmpty {
+            isLoading = true
+        }
+
+        guard let client = session.apiClient else {
+            if channels.isEmpty {
+                errorMessage = "Could not connect your account. Try signing out and back in."
+            }
+            isLoading = false
             return
         }
 
-        if !force, let cached = ChatDataStore.loadChannels(), !cached.isEmpty {
-            channels = cached.sortedForDisplay()
-            isLoading = false
-        } else if !force {
-            isLoading = true
-        }
         errorMessage = nil
         statusHint = nil
         defer { isLoading = false }

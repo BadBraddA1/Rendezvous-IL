@@ -104,7 +104,16 @@ enum AppStoreScreenshotMode {
                 poll_options: nil,
                 poll_counts: nil,
                 my_vote: nil,
-                reactions: [ChatReactionSummary(emoji: "🦙", count: 3, reacted_by_me: false)],
+                reactions: [ChatReactionSummary(
+                    emoji: "🦙",
+                    count: 3,
+                    reacted_by_me: false,
+                    reactors: [
+                        ChatReactor(clerk_user_id: "demo-1", display_name: "Jordan"),
+                        ChatReactor(clerk_user_id: "demo-2", display_name: "Sam"),
+                        ChatReactor(clerk_user_id: "demo-3", display_name: "Riley"),
+                    ]
+                )],
                 created_at: iso.string(from: base.addingTimeInterval(-3600))
             ),
         ]
