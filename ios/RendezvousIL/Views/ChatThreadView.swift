@@ -107,6 +107,7 @@ struct ChatThreadView: View {
                     .padding(.top, 8)
             }
 
+            // Messages only scroll — composer stays pinned via safeAreaInset (iMessage-style).
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(spacing: 0) {
@@ -134,6 +135,8 @@ struct ChatThreadView: View {
                     .padding(.horizontal, 12)
                     .padding(.vertical, 8)
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .scrollDismissesKeyboard(.interactively)
                 .refreshable { await reloadMessages() }
                 .onChange(of: messages.count) { _, _ in
                     if let last = messages.last {
@@ -143,7 +146,9 @@ struct ChatThreadView: View {
                     }
                 }
             }
-
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
             composer
         }
         .navigationTitle(channel.displayTitle)

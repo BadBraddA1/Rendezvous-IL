@@ -474,8 +474,8 @@ export function ChatThread({
   }, [messages, reactionDetail])
 
   return (
-    <div className="flex h-full min-h-[28rem] flex-col rounded-xl border bg-card">
-      <div className="border-b px-4 py-3">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border bg-card">
+      <div className="shrink-0 border-b px-4 py-3">
         <div className="flex items-center gap-2">
           <h2 className="font-semibold">{channelLabel}</h2>
           {channel.is_test ? <Badge variant="secondary">Test</Badge> : null}
@@ -497,7 +497,7 @@ export function ChatThread({
         ) : null}
       </div>
 
-      <div className="flex-1 space-y-0.5 overflow-y-auto px-3 py-3">
+      <div className="min-h-0 flex-1 space-y-0.5 overflow-y-auto px-3 py-3">
         {isLoading ? (
           <div className="flex items-center justify-center py-12 text-muted-foreground">
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -698,7 +698,7 @@ export function ChatThread({
         <div ref={bottomRef} />
       </div>
 
-      <div className="border-t bg-background/80 px-3 py-3 backdrop-blur-sm">
+      <div className="shrink-0 border-t bg-background/80 px-3 py-3 backdrop-blur-sm">
         {error ? <p className="mb-2 text-sm text-destructive">{error}</p> : null}
         {pendingPhotos.length > 0 ? (
           <div className="mb-3 flex flex-wrap gap-2">

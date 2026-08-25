@@ -83,12 +83,12 @@ export function ChatPageClient({ currentUserId, isAdmin = false }: ChatPageClien
   }
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[18rem_1fr]">
-      <aside className="rounded-xl border bg-card p-2">
-        <p className="px-3 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+    <div className="grid h-full min-h-0 gap-4 lg:grid-cols-[18rem_1fr]">
+      <aside className="flex max-h-[min(70dvh,32rem)] min-h-0 flex-col overflow-hidden rounded-xl border bg-card lg:max-h-none lg:sticky lg:top-[calc(var(--site-header-offset,5rem)+0.5rem)] lg:h-[calc(100dvh-var(--site-header-offset,5rem)-6rem)]">
+        <p className="shrink-0 px-3 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
           Your chats
         </p>
-        <div className="space-y-1">
+        <div className="min-h-0 flex-1 space-y-1 overflow-y-auto p-2 pt-0">
           {channels.map((channel) => {
             const label =
               channel.channel_type === "year" && channel.event_year
@@ -145,7 +145,7 @@ export function ChatPageClient({ currentUserId, isAdmin = false }: ChatPageClien
         </div>
       </aside>
 
-      <div className="min-h-[32rem]">
+      <div className="flex min-h-[28rem] flex-col lg:h-[calc(100dvh-var(--site-header-offset,5rem)-6rem)] lg:min-h-0">
         {selected ? (
           <ChatThread
             channel={selected}
