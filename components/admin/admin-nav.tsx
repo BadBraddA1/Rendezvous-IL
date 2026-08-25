@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { UserMenuButton } from "@/components/user-menu-button"
 import { AdminUiToggle } from "@/components/admin/admin-ui-toggle"
+import { useAdminUiMode } from "@/components/admin/admin-chrome"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -39,6 +40,13 @@ type NavGroup = {
 }
 
 export function AdminNav({ currentPage, admin }: AdminNavProps) {
+  const uiMode = useAdminUiMode()
+
+  // New dash uses AdminShell sidebar — don't stack the classic top nav.
+  if (uiMode === "new") {
+    return null
+  }
+
   // Grouped navigation items
   const navGroups: NavGroup[] = [
     {
