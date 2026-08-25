@@ -1,0 +1,89 @@
+/**
+ * Admin dash tokens — lake teal for Rendezvous (literals only).
+ */
+
+:root {
+  --ad-bg: oklch(0.985 0.009 178);
+  --ad-surface: oklch(0.995 0.005 178);
+  --ad-ink: oklch(0.22 0.035 195);
+  --ad-muted: oklch(0.42 0.03 195);
+  --ad-line: oklch(0.88 0.02 175);
+  --ad-primary: oklch(0.58 0.13 175);
+  --ad-primary-soft: oklch(0.93 0.04 175);
+  --ad-header: oklch(0.32 0.05 175);
+  --ad-header-fg: oklch(0.97 0.01 178);
+  --ad-radius: 6px;
+}
+
+.ad-page {
+  min-height: 100vh;
+  background: var(--ad-bg);
+  color: var(--ad-ink);
+}
+
+.ad-aside {
+  background: var(--ad-surface);
+  border-right: 1px solid var(--ad-line);
+}
+
+.ad-header {
+  background: var(--ad-header);
+  color: var(--ad-header-fg);
+}
+
+.ad-nav-link {
+  border-radius: var(--ad-radius);
+  color: var(--ad-muted);
+}
+
+.ad-nav-link:hover {
+  background: var(--ad-bg);
+  color: var(--ad-ink);
+}
+
+.ad-nav-link[data-active="true"] {
+  background: var(--ad-primary-soft);
+  color: var(--ad-primary);
+  font-weight: 600;
+}
+
+.ad-stat {
+  border: 1px solid var(--ad-line);
+  background: var(--ad-surface);
+  border-radius: var(--ad-radius);
+  padding: 0.5rem 0.75rem;
+}
+
+.ad-stat-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ad-muted);
+}
+
+.ad-stat-value {
+  margin-top: 0.25rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ad-ink);
+}
+
+.ad-panel {
+  border: 1px solid var(--ad-line);
+  background: var(--ad-surface);
+  border-radius: var(--ad-radius);
+}
+
+.ad-chip {
+  border-radius: var(--ad-radius);
+  border: 1px solid color-mix(in oklch, var(--ad-header-fg) 25%, transparent);
+  padding: 0.125rem 0.5rem;
+  font-size: 11px;
+}
+
+.ad-chip[data-active="true"] {
+  background: color-mix(in oklch, var(--ad-header-fg) 15%, transparent);
+  border-color: color-mix(in oklch, var(--ad-header-fg) 40%, transparent);
+}

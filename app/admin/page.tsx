@@ -10,13 +10,21 @@ import {
   Calculator, Clock, CheckCircle2, Church
 } from "lucide-react"
 import Link from "next/link"
+import { cookies } from "next/headers"
+import { redirect } from "next/navigation"
 import { sql } from "@/lib/db"
 import { getCurrentAdmin, isAuthenticated } from "@/lib/clerk-auth"
 import { AdminNav } from "@/components/admin/admin-nav"
 import { DirectoryYearToggles } from "@/components/admin/directory-year-toggles"
 import { RegistrationPreviewToggles } from "@/components/admin/registration-preview-toggles"
+import { ADMIN_UI_COOKIE, parseAdminUiMode } from "@/lib/admin-ui-mode"
 
 export default async function AdminDashboard() {
+  const jar = await cookies()
+  if (parseAdminUiMode(jar.get(ADMIN_UI_COOKIE)?.value) === "new") {
+    redirect("/admin/new")
+  }
+
   const authenticated = await isAuthenticated()
   const admin = await getCurrentAdmin()
 

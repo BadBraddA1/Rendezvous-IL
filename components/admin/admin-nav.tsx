@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { UserMenuButton } from "@/components/user-menu-button"
+import { AdminUiToggle } from "@/components/admin/admin-ui-toggle"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -334,6 +335,7 @@ export function AdminNav({ currentPage, admin }: AdminNavProps) {
         </div>
 
         <div className="flex items-center gap-4">
+          <AdminUiToggle mode="classic" />
           {admin.role === "viewer" && (
             <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
               <Eye className="h-4 w-4" />
