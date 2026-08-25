@@ -738,10 +738,8 @@ private extension SignIn {
     }
 
     var renResetPasswordEmailFactor: Factor? {
-        if let factor = identifyingFirstFactor(strategy: .resetPasswordEmailCode()) {
-            return factor
-        }
-        return supportedFirstFactors?.first(where: { $0.strategy == "reset_password_email_code" })
+        // Prefer supportedFirstFactors — `identifyingFirstFactor` is internal in clerk-ios.
+        supportedFirstFactors?.first(where: { $0.strategy == "reset_password_email_code" })
     }
 
     var renPreferredSecondFactor: Factor? {
