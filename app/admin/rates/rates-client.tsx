@@ -200,6 +200,10 @@ function RatesClientInner() {
       setNewYear("")
       setCopyFromYear("")
       await fetchRates()
+      const created = parseInt(newYear, 10)
+      if (!Number.isNaN(created)) {
+        setEventYear(parseRegistrationEventYear(created))
+      }
     } catch (err) {
       console.error("Error creating year:", err)
       setError("Failed to create year")
