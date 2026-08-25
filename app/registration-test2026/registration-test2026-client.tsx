@@ -40,6 +40,7 @@ export function RegistrationTest2026Client({
   signatureEmailsEnabled = false,
 }: Props) {
   const [currentStep, setCurrentStep] = useState(1)
+  const [barPulse, setBarPulse] = useState(false)
   const [debugLoading, setDebugLoading] = useState(false)
   const [debugResponse, setDebugResponse] = useState<unknown>(null)
   const [stepError, setStepError] = useState<string | null>(null)
@@ -195,25 +196,44 @@ export function RegistrationTest2026Client({
     return true
   }
 
+  const prefersReducedMotion = () =>
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+
+  const scrollToTopAfterBar = () => {
+    const delay = prefersReducedMotion() ? 0 : 320
+    window.setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: prefersReducedMotion() ? "auto" : "smooth" })
+    }, delay)
+  }
+
   const nextStep = () => {
     if (!validateCurrentStep()) {
       return
     }
 
     if (currentStep < STEPS.length) {
+      if (!prefersReducedMotion()) {
+        setBarPulse(true)
+        window.setTimeout(() => setBarPulse(false), 900)
+      }
       setCurrentStep((prev) => prev + 1)
-      window.scrollTo({ top: 0, behavior: "smooth" })
+      scrollToTopAfterBar()
     }
   }
 
   const prevStep = () => {
     if (currentStep > 1) {
+      if (!prefersReducedMotion()) {
+        setBarPulse(true)
+        window.setTimeout(() => setBarPulse(false), 900)
+      }
       setCurrentStep((prev) => prev - 1)
-      window.scrollTo({ top: 0, behavior: "smooth" })
+      scrollToTopAfterBar()
     }
   }
 
-  const progress = (currentStep / STEPS.length) * 100
+  const progressRatio = currentStep / STEPS.length
 
   const testQuickSubmit = async () => {
     setDebugLoading(true)
@@ -361,7 +381,8 @@ export function RegistrationTest2026Client({
             </div>
             <div
               className="reg-quiet-desk__progress-rule"
-              style={{ ["--reg-progress" as string]: progress / 100 }}
+              style={{ ["--reg-progress" as string]: progressRatio }}
+              data-pulse={barPulse ? "true" : undefined}
               role="progressbar"
               aria-valuenow={currentStep}
               aria-valuemin={1}

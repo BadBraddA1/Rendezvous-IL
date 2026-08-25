@@ -1734,6 +1734,12 @@ body.lu-display-mode button[aria-label="Back to top"] {
  * Quiet Desk — registration form chrome (Lakeside Gathering, Operate-quiet).
  * Teal reserved for Continue + focus; progress and summaries stay flat.
  */
+@property --reg-progress {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+
 .reg-quiet-desk {
   color: var(--foreground);
 }
@@ -1796,6 +1802,12 @@ body.lu-display-mode button[aria-label="Back to top"] {
   border-radius: 999px;
   background: color-mix(in oklch, var(--primary) 12%, var(--border));
   overflow: visible;
+  /* Animate the registered custom property so scaleX/tip actually interpolate */
+  transition: --reg-progress 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.reg-quiet-desk__progress-rule[data-pulse="true"] {
+  transition-duration: 0.85s;
 }
 
 .reg-quiet-desk__progress-fill {
@@ -1810,7 +1822,6 @@ body.lu-display-mode button[aria-label="Back to top"] {
   );
   transform-origin: left center;
   transform: scaleX(var(--reg-progress, 0));
-  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
   box-shadow: 0 0 12px color-mix(in oklch, var(--primary) 28%, transparent);
 }
 
@@ -1821,7 +1832,6 @@ body.lu-display-mode button[aria-label="Back to top"] {
   overflow: hidden;
   pointer-events: none;
   clip-path: inset(0 calc((1 - var(--reg-progress, 0)) * 100%) 0 0);
-  transition: clip-path 0.55s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .reg-quiet-desk__progress-sheen::after {
@@ -1838,8 +1848,11 @@ body.lu-display-mode button[aria-label="Back to top"] {
     transparent
   );
   transform: translateX(-120%);
-  animation: reg-quiet-desk-sheen 2.8s ease-in-out infinite;
-  animation-delay: 0.55s;
+  opacity: 0;
+}
+
+.reg-quiet-desk__progress-rule[data-pulse="true"] .reg-quiet-desk__progress-sheen::after {
+  animation: reg-quiet-desk-sheen 0.9s ease-out 1;
 }
 
 .reg-quiet-desk__progress-tip {
@@ -1855,22 +1868,20 @@ body.lu-display-mode button[aria-label="Back to top"] {
     0 0 0 2px color-mix(in oklch, var(--primary) 35%, transparent),
     0 1px 4px color-mix(in oklch, var(--primary) 25%, transparent);
   transform: translate(-50%, -50%) translateX(calc(var(--reg-progress, 0) * 100cqw));
-  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
   pointer-events: none;
 }
 
+.reg-quiet-desk__progress-rule[data-pulse="true"] .reg-quiet-desk__progress-tip {
+  animation: reg-quiet-desk-tip-pulse 0.7s cubic-bezier(0.22, 1, 0.36, 1) 1;
+}
+
 @keyframes reg-quiet-desk-sheen {
-  0%,
-  35% {
+  0% {
     transform: translateX(-120%);
     opacity: 0;
   }
-  45% {
-    opacity: 0.7;
-  }
-  70% {
-    transform: translateX(380%);
-    opacity: 0;
+  20% {
+    opacity: 0.85;
   }
   100% {
     transform: translateX(380%);
@@ -1878,16 +1889,32 @@ body.lu-display-mode button[aria-label="Back to top"] {
   }
 }
 
+@keyframes reg-quiet-desk-tip-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 2px color-mix(in oklch, var(--primary) 35%, transparent),
+      0 1px 4px color-mix(in oklch, var(--primary) 25%, transparent);
+  }
+  45% {
+    box-shadow:
+      0 0 0 6px color-mix(in oklch, var(--primary) 22%, transparent),
+      0 0 16px color-mix(in oklch, var(--primary) 40%, transparent);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .reg-quiet-desk__progress-fill,
-  .reg-quiet-desk__progress-tip,
-  .reg-quiet-desk__progress-meta span {
+  .reg-quiet-desk__progress-rule {
     transition: none;
   }
 
-  .reg-quiet-desk__progress-sheen::after {
+  .reg-quiet-desk__progress-rule[data-pulse="true"] .reg-quiet-desk__progress-sheen::after,
+  .reg-quiet-desk__progress-rule[data-pulse="true"] .reg-quiet-desk__progress-tip {
     animation: none;
-    opacity: 0;
+  }
+
+  .reg-quiet-desk__progress-meta span {
+    transition: none;
   }
 }
 
