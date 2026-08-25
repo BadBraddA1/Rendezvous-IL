@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/hooks/use-toast"
 import { RefreshCw, RotateCcw, KeyRound, CheckCircle2 } from "lucide-react"
 import { AdminConfirmDialog } from "./admin-confirm-dialog"
+import { AdminEventYearSwitcher, useAdminEventYear } from "./admin-event-year-switcher"
 import { AdminListSkeleton, AdminRetryButton } from "./admin-panel-states"
 import { AdminStatStrip, AdminStatItem } from "@/components/admin/admin-stat-strip"
 import { normalizeStringArray } from "@/lib/normalize-string-array"
@@ -39,6 +40,7 @@ function normalizeCheckedInRow(row: CheckedInRow): CheckedInRow {
 }
 
 export function CheckedInTable() {
+  const { eventYear } = useAdminEventYear()
   const [rows, setRows] = useState<CheckedInRow[]>([])
   const [loading, setLoading] = useState(true)
   const [fetchError, setFetchError] = useState<string | null>(null)
@@ -50,7 +52,7 @@ export function CheckedInTable() {
     setLoading(true)
     setFetchError(null)
     try {
-      const res = await fetch("/api/admin/registrations/checked-in")
+      const res = await fetch(`/api/admin/registrations/checked-in?year=${eventYear}`)
       if (!res.ok) throw new Error(`Could not load checked-in families (${res.status})`)
       const data = await res.json()
       const list = Array.isArray(data) ? data : []
@@ -62,11 +64,11 @@ export function CheckedInTable() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [eventYear])
 
   useEffect(() => {
     void fetchData()
-    const interval = setInterval(() => void fetchData(), 30_000) // auto-refresh every 30s
+    const interval = setInterval(() => void fetchData(), 30_000)
     return () => clearInterval(interval)
   }, [fetchData])
 
@@ -107,8 +109,10 @@ export function CheckedInTable() {
 
   return (
     <div className="space-y-6">
+      <AdminEventYearSwitcher id="checked-in-year-picker" className="max-w-xs" />
+
       <AdminStatStrip>
-        <AdminStatItem label="Families checked in" value={total} />
+        <AdminStatItem label="Families checked in" value={total} hint={`${eventYear}`} />
         <AdminStatItem label="People on-site" value={totalAttendees} />
         <AdminStatItem label="Motel families" value={motelFamilies} />
         <AdminStatItem label="Keys out" value={keysOut} />
@@ -116,7 +120,7 @@ export function CheckedInTable() {
 
       <Card>
         <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <CardTitle>Currently Checked In</CardTitle>
+          <CardTitle>Currently Checked In · {eventYear}</CardTitle>
           <Button
             onClick={() => void fetchData()}
             variant="outline"
@@ -156,7 +160,7 @@ export function CheckedInTable() {
                 ) : rows.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center text-muted-foreground">
-                      No families checked in yet
+                      No families checked in for {eventYear} yet
                     </TableCell>
                   </TableRow>
                 ) : (

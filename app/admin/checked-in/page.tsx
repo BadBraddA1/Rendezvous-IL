@@ -1,3 +1,4 @@
+import { Suspense } from "react"
 import { AdminNav } from "@/components/admin/admin-nav"
 import { CheckedInTable } from "@/components/admin/checked-in-table"
 import { getCurrentAdmin, getAdminPermissions, isAuthenticated } from "@/lib/clerk-auth"
@@ -20,9 +21,13 @@ export default async function CheckedInPage() {
         <div className="admin-container">
           <header className="admin-page-header">
             <h1 className="text-section-title text-balance">Checked-In Families</h1>
-            <p className="text-lead text-muted-foreground">Live view of families currently checked in</p>
+            <p className="text-lead text-muted-foreground">
+              Live view of families currently checked in for the selected event year
+            </p>
           </header>
-          <CheckedInTable />
+          <Suspense fallback={<p className="text-muted-foreground">Loading checked-in families...</p>}>
+            <CheckedInTable />
+          </Suspense>
         </div>
       </main>
     </div>
