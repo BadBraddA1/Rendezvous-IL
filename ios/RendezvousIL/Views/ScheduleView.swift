@@ -285,9 +285,12 @@ private struct EventCard: View {
     var isHappeningNow: Bool = false
 
     @State private var showReminderSheet = false
-    private var reminders = ReminderService.shared
 
     var body: some View {
+        // Touch observable singleton so bell icons refresh after save.
+        // Do not store ReminderService as a private property — that makes the
+        // synthesized memberwise init private and breaks EventCard(...) here.
+        let _ = ReminderService.shared.revision
         VStack(alignment: .leading, spacing: 10) {
             if isHappeningNow {
                 Text("Happening now")
@@ -374,7 +377,7 @@ private struct EventCard: View {
 
     private var hasReminder: Bool {
         guard let luItem else { return false }
-        return reminders.preference(for: luItem.id) != nil
+        return ReminderService.shared.preference(for: luItem.id) != nil
     }
 
     private var reminderIcon: String {
