@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { ScheduleManager } from "./schedule-manager"
+import { useAdminUiMode } from "@/components/admin/admin-chrome"
 import {
   DEFAULT_REGISTRATION_EVENT_YEAR,
   REGISTRATION_EVENT_YEARS,
@@ -24,6 +25,7 @@ export function ScheduleSection({ canManage }: Props) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const uiMode = useAdminUiMode()
   const [eventYear, setEventYear] = useState<RegistrationEventYear>(DEFAULT_REGISTRATION_EVENT_YEAR)
 
   useEffect(() => {
@@ -50,21 +52,23 @@ export function ScheduleSection({ canManage }: Props) {
 
   return (
     <div className="space-y-4">
-      <div className="max-w-xs">
-        <Label htmlFor="schedule-year-picker">Event year</Label>
-        <Select value={String(eventYear)} onValueChange={handleYearChange}>
-          <SelectTrigger id="schedule-year-picker" className="min-h-11">
-            <SelectValue placeholder="Event year" />
-          </SelectTrigger>
-          <SelectContent>
-            {REGISTRATION_EVENT_YEARS.map((year) => (
-              <SelectItem key={year} value={String(year)}>
-                {registrationYearOptionLabel(year)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      {uiMode === "classic" ? (
+        <div className="max-w-xs">
+          <Label htmlFor="schedule-year-picker">Event year</Label>
+          <Select value={String(eventYear)} onValueChange={handleYearChange}>
+            <SelectTrigger id="schedule-year-picker" className="min-h-11">
+              <SelectValue placeholder="Event year" />
+            </SelectTrigger>
+            <SelectContent>
+              {REGISTRATION_EVENT_YEARS.map((year) => (
+                <SelectItem key={year} value={String(year)}>
+                  {registrationYearOptionLabel(year)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      ) : null}
 
       <ScheduleManager canManage={canManage} eventYear={eventYear} />
     </div>

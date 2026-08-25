@@ -15,6 +15,7 @@ import { AdminConfirmDialog } from "./admin-confirm-dialog"
 import { AdminListSkeleton, AdminRetryButton } from "./admin-panel-states"
 import { useToast } from "@/hooks/use-toast"
 import { parseLegacyRegistrationId } from "@/lib/admin-registration-queries"
+import { useAdminUiMode } from "@/components/admin/admin-chrome"
 import {
   DEFAULT_REGISTRATION_EVENT_YEAR,
   REGISTRATION_EVENT_YEARS,
@@ -45,6 +46,7 @@ type AdminRegistrationRow = {
 export function RegistrationsTable() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const uiMode = useAdminUiMode()
   const [eventYear, setEventYear] = useState<RegistrationEventYear>(DEFAULT_REGISTRATION_EVENT_YEAR)
   const [registrations, setRegistrations] = useState<AdminRegistrationRow[]>([])
   const [searchInput, setSearchInput] = useState("")
@@ -246,18 +248,20 @@ export function RegistrationsTable() {
                   : "Archived event data from the 2026 registration form."}
               </p>
             </div>
-            <Select value={String(eventYear)} onValueChange={handleYearChange}>
-              <SelectTrigger className="w-full min-h-11 sm:w-[220px]">
-                <SelectValue placeholder="Event year" />
-              </SelectTrigger>
-              <SelectContent>
-                {REGISTRATION_EVENT_YEARS.map((year) => (
-                  <SelectItem key={year} value={String(year)}>
-                    {registrationYearOptionLabel(year)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {uiMode === "classic" ? (
+              <Select value={String(eventYear)} onValueChange={handleYearChange}>
+                <SelectTrigger className="w-full min-h-11 sm:w-[220px]">
+                  <SelectValue placeholder="Event year" />
+                </SelectTrigger>
+                <SelectContent>
+                  {REGISTRATION_EVENT_YEARS.map((year) => (
+                    <SelectItem key={year} value={String(year)}>
+                      {registrationYearOptionLabel(year)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : null}
           </div>
 
           <div className="admin-toolbar mb-6">

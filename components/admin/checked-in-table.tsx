@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast"
 import { RefreshCw, RotateCcw, KeyRound, CheckCircle2 } from "lucide-react"
 import { AdminConfirmDialog } from "./admin-confirm-dialog"
 import { AdminEventYearSwitcher, useAdminEventYear } from "./admin-event-year-switcher"
+import { useAdminUiMode } from "./admin-chrome"
 import { AdminListSkeleton, AdminRetryButton } from "./admin-panel-states"
 import { AdminStatStrip, AdminStatItem } from "@/components/admin/admin-stat-strip"
 import { normalizeStringArray } from "@/lib/normalize-string-array"
@@ -41,6 +42,7 @@ function normalizeCheckedInRow(row: CheckedInRow): CheckedInRow {
 
 export function CheckedInTable() {
   const { eventYear } = useAdminEventYear()
+  const uiMode = useAdminUiMode()
   const [rows, setRows] = useState<CheckedInRow[]>([])
   const [loading, setLoading] = useState(true)
   const [fetchError, setFetchError] = useState<string | null>(null)
@@ -109,7 +111,9 @@ export function CheckedInTable() {
 
   return (
     <div className="space-y-6">
-      <AdminEventYearSwitcher id="checked-in-year-picker" className="max-w-xs" />
+      {uiMode === "classic" ? (
+        <AdminEventYearSwitcher id="checked-in-year-picker" className="max-w-xs" />
+      ) : null}
 
       <AdminStatStrip>
         <AdminStatItem label="Families checked in" value={total} hint={`${eventYear}`} />

@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label"
 import { VolunteerScheduleManager } from "./volunteer-schedule-manager"
 import { LessonBidManager } from "./lesson-bid-manager"
 import { SpecialAssignmentsManager } from "./special-assignments-manager"
+import { useAdminUiMode } from "@/components/admin/admin-chrome"
 import {
   DEFAULT_REGISTRATION_EVENT_YEAR,
   REGISTRATION_EVENT_YEARS,
@@ -27,6 +28,7 @@ export function VolunteerSection({ canManage, section }: Props) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const uiMode = useAdminUiMode()
   const [eventYear, setEventYear] = useState<RegistrationEventYear>(DEFAULT_REGISTRATION_EVENT_YEAR)
 
   useEffect(() => {
@@ -53,21 +55,23 @@ export function VolunteerSection({ canManage, section }: Props) {
 
   return (
     <div className="space-y-4">
-      <div className="max-w-xs">
-        <Label htmlFor="volunteer-year-picker">Event year</Label>
-        <Select value={String(eventYear)} onValueChange={handleYearChange}>
-          <SelectTrigger id="volunteer-year-picker" className="min-h-11">
-            <SelectValue placeholder="Event year" />
-          </SelectTrigger>
-          <SelectContent>
-            {REGISTRATION_EVENT_YEARS.map((year) => (
-              <SelectItem key={year} value={String(year)}>
-                {registrationYearOptionLabel(year)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      {uiMode === "classic" ? (
+        <div className="max-w-xs">
+          <Label htmlFor="volunteer-year-picker">Event year</Label>
+          <Select value={String(eventYear)} onValueChange={handleYearChange}>
+            <SelectTrigger id="volunteer-year-picker" className="min-h-11">
+              <SelectValue placeholder="Event year" />
+            </SelectTrigger>
+            <SelectContent>
+              {REGISTRATION_EVENT_YEARS.map((year) => (
+                <SelectItem key={year} value={String(year)}>
+                  {registrationYearOptionLabel(year)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      ) : null}
 
       {section === "worship" && <VolunteerScheduleManager canManage={canManage} eventYear={eventYear} />}
       {section === "lesson-bids" && <LessonBidManager canManage={canManage} eventYear={eventYear} />}

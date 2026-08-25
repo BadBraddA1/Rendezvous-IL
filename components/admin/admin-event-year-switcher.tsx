@@ -88,13 +88,8 @@ export function AdminEventYearSwitcher({
         aria-label="Event year"
         className={
           compact
-            ? "h-8 rounded-md border bg-background px-2 text-xs font-medium"
+            ? "ad-year-select"
             : "flex h-11 w-full max-w-xs rounded-md border border-input bg-background px-3 text-sm"
-        }
-        style={
-          compact
-            ? { borderColor: "var(--ad-line)", color: "inherit" }
-            : undefined
         }
       >
         {REGISTRATION_EVENT_YEARS.map((year) => (

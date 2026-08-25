@@ -102,11 +102,13 @@ export function AdminShell({ children }: { children: ReactNode }) {
     <div className="ad-page font-sans">
       <aside className="ad-aside hidden w-48 lg:flex">
         <div className="ad-aside-brand border-b px-3 py-3" style={{ borderColor: "var(--ad-line)" }}>
-          <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--ad-muted)" }}>
+          <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--ad-muted)" }}>
             {adminDashConfig.siteName}
           </p>
-          <p className="mt-0.5 text-sm font-semibold leading-tight">{adminDashConfig.title}</p>
-          <p className="mt-0.5 text-[11px]" style={{ color: "var(--ad-muted)" }}>
+          <p className="mt-0.5 text-sm font-semibold leading-tight" style={{ color: "var(--ad-ink)" }}>
+            {adminDashConfig.title}
+          </p>
+          <p className="mt-0.5 text-[12px] font-medium" style={{ color: "var(--ad-muted)" }}>
             {roleLabel}
           </p>
         </div>
@@ -147,12 +149,10 @@ export function AdminShell({ children }: { children: ReactNode }) {
         <header className="ad-header px-3 py-2.5 sm:px-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="min-w-0">
-              <p className="text-[10px] font-semibold uppercase tracking-widest opacity-70">
-                {adminDashConfig.orgName}
-              </p>
-              <h1 className="text-base font-bold tracking-tight sm:text-lg">{adminDashConfig.title}</h1>
+              <p className="ad-header-kicker">{adminDashConfig.orgName}</p>
+              <h1 className="ad-header-title">{adminDashConfig.title}</h1>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="ad-header-controls">
               <Suspense fallback={null}>
                 <AdminEventYearSwitcher compact id="shell-event-year" />
               </Suspense>
@@ -177,7 +177,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
             ))}
           </div>
         </header>
-        <main className="ad-main-scroll px-2.5 py-2.5 sm:px-3 sm:py-3 lg:px-4">{children}</main>
+        <main className="ad-main-scroll px-3 py-3 sm:px-4 sm:py-4 lg:px-5">{children}</main>
       </div>
     </div>
   )

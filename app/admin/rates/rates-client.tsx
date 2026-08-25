@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -37,6 +37,12 @@ import {
 } from "lucide-react"
 import { calculatorCategoryLabel, ratePricingHint } from "@/lib/rate-display"
 import { invalidateCalculatorRates } from "@/lib/calculator-rates-swr"
+import { useAdminEventYear } from "@/components/admin/admin-event-year-switcher"
+import { useAdminUiMode } from "@/components/admin/admin-chrome"
+import {
+  parseRegistrationEventYear,
+  registrationYearLabel,
+} from "@/lib/registration-event-years"
 
 interface Rate {
   id: number
@@ -75,6 +81,22 @@ const categoryIcons: Record<string, typeof DollarSign> = {
 }
 
 export function RatesClient() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      }
+    >
+      <RatesClientInner />
+    </Suspense>
+  )
+}
+
+function RatesClientInner() {
+  const { eventYear, setEventYear } = useAdminEventYear()
+  const uiMode = useAdminUiMode()
   const [rateCharts, setRateCharts] = useState<RateChart[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<number | null>(null)
@@ -229,97 +251,137 @@ export function RatesClient() {
     )
   }
 
+  const activeChart =
+    rateCharts.find((chart) => chart.year === eventYear) ??
+    null
+  const otherYears = rateCharts
+    .map((c) => c.year)
+    .filter((y) => y !== eventYear)
+    .sort((a, b) => b - a)
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-section-title text-balance">Rate Charts</h1>
+          <h1 className="text-section-title text-balance">
+            Rate Charts · {registrationYearLabel(eventYear)}
+          </h1>
           <p className="text-lead text-muted-foreground">
-            Manage pricing for registrations and calculator
+            {uiMode === "new"
+              ? "Use the year control in the header to switch seasons. Only one year shows at a time."
+              : "Manage pricing for registrations and calculator — one event year at a time."}
           </p>
         </div>
-        <Dialog open={newYearDialogOpen} onOpenChange={setNewYearDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              New Year
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create New Rate Chart</DialogTitle>
-              <DialogDescription>
-                Create a rate chart for a new year. You can copy rates from an existing year.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="year">Year</Label>
-                <Input
-                  id="year"
-                  type="number"
-                  placeholder="e.g., 2027"
-                  value={newYear}
-                  onChange={(e) => setNewYear(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="copyFrom">Copy Rates From (Optional)</Label>
-                <Select value={copyFromYear || "none"} onValueChange={(val) => setCopyFromYear(val === "none" ? "" : val)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Start fresh" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Start fresh</SelectItem>
-                    {rateCharts.map((chart) => (
-                      <SelectItem key={chart.year} value={chart.year.toString()}>
-                        {chart.year}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            {error && (
-              <div className="callout-destructive rounded-md p-2 text-sm">
-                {error}
-              </div>
-            )}
-            <DialogFooter>
-              <Button variant="outline" onClick={() => { setNewYearDialogOpen(false); setError(null); }}>
-                Cancel
+        <div className="flex flex-wrap items-center gap-2">
+          {uiMode === "classic" && (
+            <Select
+              value={String(eventYear)}
+              onValueChange={(value) => setEventYear(value)}
+            >
+              <SelectTrigger className="min-h-11 w-[200px]" aria-label="Event year">
+                <SelectValue placeholder="Event year" />
+              </SelectTrigger>
+              <SelectContent>
+                {rateCharts.map((chart) => (
+                  <SelectItem key={chart.year} value={String(chart.year)}>
+                    {registrationYearLabel(parseRegistrationEventYear(chart.year))}
+                    {chart.is_active ? " · active" : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          <Dialog open={newYearDialogOpen} onOpenChange={setNewYearDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                New Year
               </Button>
-              <Button onClick={handleCreateYear} disabled={!newYear || creating}>
-                {creating ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <Plus className="h-4 w-4 mr-2" />
-                )}
-                Create
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Create New Rate Chart</DialogTitle>
+                <DialogDescription>
+                  Create a rate chart for a new year. You can copy rates from an existing year.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="year">Year</Label>
+                  <Input
+                    id="year"
+                    type="number"
+                    placeholder="e.g., 2027"
+                    value={newYear}
+                    onChange={(e) => setNewYear(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="copyFrom">Copy Rates From (Optional)</Label>
+                  <Select value={copyFromYear || "none"} onValueChange={(val) => setCopyFromYear(val === "none" ? "" : val)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Start fresh" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Start fresh</SelectItem>
+                      {rateCharts.map((chart) => (
+                        <SelectItem key={chart.year} value={chart.year.toString()}>
+                          {chart.year}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              {error && (
+                <div className="callout-destructive rounded-md p-2 text-sm">
+                  {error}
+                </div>
+              )}
+              <DialogFooter>
+                <Button variant="outline" onClick={() => { setNewYearDialogOpen(false); setError(null); }}>
+                  Cancel
+                </Button>
+                <Button onClick={handleCreateYear} disabled={!newYear || creating}>
+                  {creating ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Plus className="h-4 w-4 mr-2" />
+                  )}
+                  Create
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
-      {rateCharts.length === 0 ? (
+      {!activeChart ? (
         <Card>
           <CardContent className="py-12 text-center">
             <DollarSign className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No Rate Charts</h3>
+            <h3 className="text-lg font-semibold mb-2">
+              No rate chart for {eventYear}
+            </h3>
             <p className="text-muted-foreground mb-4">
-              Create your first rate chart to get started.
+              {otherYears.length > 0
+                ? `Charts exist for ${otherYears.join(", ")}. Switch the event year or create ${eventYear}.`
+                : "Create a rate chart to get started."}
             </p>
-            <Button onClick={() => setNewYearDialogOpen(true)}>
+            <Button onClick={() => {
+              setNewYear(String(eventYear))
+              setNewYearDialogOpen(true)
+            }}>
               <Plus className="h-4 w-4 mr-2" />
-              Create Rate Chart
+              Create {eventYear} chart
             </Button>
           </CardContent>
         </Card>
       ) : (
-        rateCharts.map((chart) => {
+        (() => {
+          const chart = activeChart
           const groupedRates = groupRatesByCategory(chart.rates)
-          
+
           return (
             <Card key={chart.id}>
               <CardHeader>
@@ -442,7 +504,7 @@ export function RatesClient() {
               </CardContent>
             </Card>
           )
-        })
+        })()
       )}
     </div>
   )

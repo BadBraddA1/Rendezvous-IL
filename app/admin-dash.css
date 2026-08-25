@@ -1,18 +1,22 @@
 /**
  * Admin dash tokens — lake teal for Rendezvous (literals only).
+ * Keep header text high-contrast; soften in-page chrome so nested classic
+ * pages don't feel like a second app inside the shell.
  */
 
 :root {
-  --ad-bg: oklch(0.985 0.009 178);
-  --ad-surface: oklch(0.995 0.005 178);
-  --ad-ink: oklch(0.22 0.035 195);
-  --ad-muted: oklch(0.42 0.03 195);
-  --ad-line: oklch(0.88 0.02 175);
-  --ad-primary: oklch(0.58 0.13 175);
+  --ad-bg: oklch(0.975 0.012 178);
+  --ad-surface: oklch(0.995 0.004 178);
+  --ad-ink: oklch(0.2 0.04 195);
+  --ad-muted: oklch(0.4 0.03 195);
+  --ad-line: oklch(0.9 0.015 175);
+  --ad-primary: oklch(0.48 0.12 175);
   --ad-primary-soft: oklch(0.93 0.04 175);
-  --ad-header: oklch(0.32 0.05 175);
-  --ad-header-fg: oklch(0.97 0.01 178);
-  --ad-radius: 6px;
+  /* Darker header + near-white fg so "Staff admin" stays readable */
+  --ad-header: oklch(0.26 0.045 175);
+  --ad-header-fg: oklch(0.99 0.005 178);
+  --ad-header-muted: oklch(0.86 0.02 178);
+  --ad-radius: 8px;
 }
 
 .ad-page {
@@ -63,6 +67,62 @@
   color: var(--ad-header-fg);
 }
 
+.ad-header-kicker {
+  color: var(--ad-header-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ad-header-title {
+  color: var(--ad-header-fg);
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+.ad-header-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Native year select on the dark header — light field, dark ink */
+.ad-year-select {
+  height: 2rem;
+  border-radius: 6px;
+  border: 1px solid color-mix(in oklch, var(--ad-header-fg) 35%, transparent);
+  background: color-mix(in oklch, var(--ad-header-fg) 96%, var(--ad-header));
+  color: var(--ad-ink);
+  padding: 0 0.5rem;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.ad-year-select:focus-visible {
+  outline: 2px solid color-mix(in oklch, var(--ad-header-fg) 70%, transparent);
+  outline-offset: 2px;
+}
+
+/* Classic/New toggle on dark header */
+.ad-header .ad-ui-toggle {
+  border-color: color-mix(in oklch, var(--ad-header-fg) 30%, transparent);
+  background: color-mix(in oklch, var(--ad-header-fg) 10%, transparent);
+}
+
+.ad-header .ad-ui-toggle button {
+  color: var(--ad-header-muted);
+}
+
+.ad-header .ad-ui-toggle button[data-active="true"] {
+  background: color-mix(in oklch, var(--ad-header-fg) 18%, transparent);
+  color: var(--ad-header-fg);
+  font-weight: 600;
+}
+
 .ad-main-scroll {
   flex: 1 1 auto;
   min-height: 0;
@@ -88,42 +148,108 @@
 }
 
 .ad-stat {
-  border: 1px solid var(--ad-line);
-  background: var(--ad-surface);
-  border-radius: var(--ad-radius);
-  padding: 0.5rem 0.75rem;
+  border: none;
+  background: transparent;
+  border-radius: 0;
+  padding: 0.15rem 0.25rem 0.15rem 0;
 }
 
 .ad-stat-label {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--ad-muted);
 }
 
 .ad-stat-value {
-  margin-top: 0.25rem;
-  font-size: 1.25rem;
-  font-weight: 600;
+  margin-top: 0.15rem;
+  font-size: 1.35rem;
+  font-weight: 650;
   font-variant-numeric: tabular-nums;
   color: var(--ad-ink);
 }
 
 .ad-panel {
-  border: 1px solid var(--ad-line);
-  background: var(--ad-surface);
-  border-radius: var(--ad-radius);
+  border: none;
+  border-top: 1px solid var(--ad-line);
+  background: transparent;
+  border-radius: 0;
+  padding-top: 0.75rem;
 }
 
 .ad-chip {
   border-radius: var(--ad-radius);
-  border: 1px solid color-mix(in oklch, var(--ad-header-fg) 25%, transparent);
-  padding: 0.125rem 0.5rem;
+  border: 1px solid color-mix(in oklch, var(--ad-header-fg) 28%, transparent);
+  color: var(--ad-header-fg);
+  padding: 0.2rem 0.55rem;
   font-size: 11px;
+  font-weight: 500;
 }
 
 .ad-chip[data-active="true"] {
-  background: color-mix(in oklch, var(--ad-header-fg) 15%, transparent);
-  border-color: color-mix(in oklch, var(--ad-header-fg) 40%, transparent);
+  background: color-mix(in oklch, var(--ad-header-fg) 18%, transparent);
+  border-color: color-mix(in oklch, var(--ad-header-fg) 45%, transparent);
+  font-weight: 650;
+}
+
+/**
+ * Classic pages still wrap themselves in .admin-shell / .admin-main.
+ * Inside the new dash, flatten that second chrome so content flows in one pane.
+ */
+.ad-page .admin-shell {
+  display: block;
+  min-height: 0;
+  height: auto;
+}
+
+.ad-page .admin-main {
+  flex: none;
+  padding: 0;
+  background: transparent;
+}
+
+.ad-page .admin-container {
+  max-width: none;
+  gap: 1.25rem;
+}
+
+.ad-page .admin-page-header {
+  gap: 0.35rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid var(--ad-line);
+  margin-bottom: 0.25rem;
+}
+
+.ad-page .admin-page-header .text-section-title,
+.ad-page .admin-page-header h1 {
+  color: var(--ad-ink);
+}
+
+.ad-page .admin-page-header .text-muted-foreground,
+.ad-page .admin-page-header .text-lead {
+  color: var(--ad-muted);
+}
+
+/* Soften shadcn cards — less “dashboard of boxes” */
+.ad-page [data-slot="card"],
+.ad-page .bg-card {
+  background: transparent;
+  box-shadow: none;
+  border-color: var(--ad-line);
+}
+
+.ad-page .admin-stat-strip {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  padding-inline: 0;
+  border-bottom: 1px solid var(--ad-line);
+  padding-bottom: 0.75rem;
+}
+
+.ad-page .callout-success,
+.ad-page .callout-warning,
+.ad-page .callout-destructive {
+  border-radius: var(--ad-radius);
 }

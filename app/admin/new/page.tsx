@@ -5,7 +5,6 @@ import useSWR from "swr"
 import { Suspense } from "react"
 import { AdminStat, AdminStatStrip } from "@/components/admin/admin-stat"
 import { useAdminEventYear } from "@/components/admin/admin-event-year-switcher"
-import { adminDashConfig } from "@/lib/admin-dash-config"
 import {
   ARCHIVE_REGISTRATION_EVENT_YEAR,
   DEFAULT_REGISTRATION_EVENT_YEAR,
@@ -46,11 +45,6 @@ function AdminNewOverviewInner() {
   const progress = data?.registrationProgress ?? 0
   const isArchive = eventYear === ARCHIVE_REGISTRATION_EVENT_YEAR
   const isAdmin = me?.staff?.role === "admin"
-
-  const quick = adminDashConfig.nav.filter((n) => {
-    if (n.href === "/admin/new") return false
-    return me?.staff?.permissions?.[n.permission] !== false
-  })
 
   return (
     <div className="flex flex-col gap-3">
@@ -121,33 +115,33 @@ function AdminNewOverviewInner() {
       </AdminStatStrip>
 
       {summary && (
-        <div className="grid gap-3 lg:grid-cols-2">
-          <section className="ad-panel p-3">
+        <div className="grid gap-4 lg:grid-cols-2">
+          <section className="ad-panel">
             <h2 className="text-sm font-semibold">Lodging · {eventYear}</h2>
-            <p className="mt-1 text-xs" style={{ color: "var(--ad-muted)" }}>
+            <p className="mt-1 text-sm" style={{ color: "var(--ad-muted)" }}>
               Motel {summary.lodgingBreakdown.motel} · RV {summary.lodgingBreakdown.rv} · Tent{" "}
               {summary.lodgingBreakdown.tent} · Drive-in {summary.lodgingBreakdown.drivein}
             </p>
-            <p className="mt-2 text-xs" style={{ color: "var(--ad-muted)" }}>
+            <p className="mt-2 text-sm" style={{ color: "var(--ad-muted)" }}>
               Express {summary.expressRegistrations} · Checked in {summary.checkedIn}
             </p>
           </section>
 
-          <section className="ad-panel p-3">
+          <section className="ad-panel">
             <h2 className="text-sm font-semibold">Payments · {eventYear}</h2>
-            <p className="mt-1 text-xs" style={{ color: "var(--ad-muted)" }}>
+            <p className="mt-1 text-sm" style={{ color: "var(--ad-muted)" }}>
               Paid in full {summary.fullyPaid} · Deposit only{" "}
               {Math.max(0, summary.registrations - summary.fullyPaid)}
             </p>
-            <p className="mt-2 text-xs" style={{ color: "var(--ad-muted)" }}>
+            <p className="mt-2 text-sm" style={{ color: "var(--ad-muted)" }}>
               Deposits ${summary.depositsPaid.toLocaleString()} · Balance $
               {summary.balanceDue.toLocaleString()}
             </p>
           </section>
 
-          <section className="ad-panel p-3">
+          <section className="ad-panel">
             <h2 className="text-sm font-semibold">Action items</h2>
-            <ul className="mt-2 space-y-1.5 text-sm">
+            <ul className="mt-2 space-y-2 text-sm">
               <li>
                 <Link
                   href="/admin/pending-changes"
@@ -181,21 +175,21 @@ function AdminNewOverviewInner() {
             </ul>
           </section>
 
-          <section className="ad-panel p-3">
+          <section className="ad-panel">
             <h2 className="text-sm font-semibold">Season controls</h2>
-            <p className="mt-1 text-xs" style={{ color: "var(--ad-muted)" }}>
-              Family Directory visibility, registration previews, and signature emails live in
-              Settings (same toggles as the classic home).
+            <p className="mt-1 text-sm" style={{ color: "var(--ad-muted)" }}>
+              Directory visibility and registration previews are in Settings.
             </p>
             {isAdmin ? (
               <Link
                 href="/admin/settings"
-                className="mt-2 inline-block text-sm font-medium text-primary hover:underline"
+                className="mt-2 inline-block text-sm font-medium hover:underline"
+                style={{ color: "var(--ad-primary)" }}
               >
                 Open Settings
               </Link>
             ) : (
-              <p className="mt-2 text-xs" style={{ color: "var(--ad-muted)" }}>
+              <p className="mt-2 text-sm" style={{ color: "var(--ad-muted)" }}>
                 Only admins can change those toggles.
               </p>
             )}
@@ -203,9 +197,9 @@ function AdminNewOverviewInner() {
         </div>
       )}
 
-      <section className="ad-panel p-3">
+      <section className="ad-panel">
         <h2 className="text-sm font-semibold">Quick actions</h2>
-        <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-2 text-sm">
           {OVERVIEW_EXTRA_LINKS.filter((link) => {
             if (link.href === "/admin/settings" || link.href === "/admin/rates" || link.href === "/admin/calculator") {
               return isAdmin
@@ -215,32 +209,10 @@ function AdminNewOverviewInner() {
             <Link
               key={link.href}
               href={link.href.includes("?") ? link.href : `${link.href}?year=${eventYear}`}
-              className="rounded-md border px-3 py-2 text-sm transition hover:border-primary/40"
-              style={{ borderColor: "var(--ad-line)" }}
+              className="font-medium hover:underline"
+              style={{ color: "var(--ad-primary)" }}
             >
-              <p className="font-semibold">{link.label}</p>
-              <p className="mt-0.5 text-xs" style={{ color: "var(--ad-muted)" }}>
-                {link.hint}
-              </p>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      <section className="ad-panel p-3">
-        <h2 className="text-sm font-semibold">Jump in</h2>
-        <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {quick.map((q) => (
-            <Link
-              key={q.href}
-              href={`${q.href}?year=${eventYear}`}
-              className="rounded-md border px-3 py-2 text-sm transition hover:border-primary/40"
-              style={{ borderColor: "var(--ad-line)" }}
-            >
-              <p className="font-semibold">{q.label}</p>
-              <p className="mt-0.5 text-xs" style={{ color: "var(--ad-muted)" }}>
-                {q.href}
-              </p>
+              {link.label}
             </Link>
           ))}
         </div>

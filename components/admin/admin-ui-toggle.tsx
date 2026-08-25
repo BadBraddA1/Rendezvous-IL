@@ -24,13 +24,14 @@ export function AdminUiToggle({ mode }: { mode: AdminUiMode }) {
 
   return (
     <div
-      className="inline-flex items-center rounded-md border border-border bg-background p-0.5 text-xs"
+      className="ad-ui-toggle inline-flex items-center rounded-md border border-border bg-background p-0.5 text-xs"
       role="group"
       aria-label="Admin dashboard version"
     >
       <button
         type="button"
         disabled={pending}
+        data-active={mode === "classic"}
         onClick={() => setMode("classic")}
         className={`rounded px-2 py-1 ${
           mode === "classic" ? "bg-secondary font-semibold text-foreground" : "text-muted-foreground"
@@ -41,6 +42,7 @@ export function AdminUiToggle({ mode }: { mode: AdminUiMode }) {
       <button
         type="button"
         disabled={pending}
+        data-active={mode === "new"}
         onClick={() => setMode("new")}
         className={`rounded px-2 py-1 ${
           mode === "new" ? "bg-primary/15 font-semibold text-primary" : "text-muted-foreground"

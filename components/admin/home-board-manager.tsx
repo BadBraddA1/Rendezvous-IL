@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowDown, ArrowUp, Loader2, Plus, Trash2 } from "lucide-react"
+import { useAdminUiMode } from "@/components/admin/admin-chrome"
 import {
   DEFAULT_REGISTRATION_EVENT_YEAR,
   REGISTRATION_EVENT_YEARS,
@@ -52,6 +53,7 @@ export function HomeBoardManager({ canManage }: Props) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const uiMode = useAdminUiMode()
   const [eventYear, setEventYear] = useState<RegistrationEventYear>(DEFAULT_REGISTRATION_EVENT_YEAR)
   const [sections, setSections] = useState<HomeBoardSection[]>([])
   const [loading, setLoading] = useState(true)
@@ -147,21 +149,23 @@ export function HomeBoardManager({ canManage }: Props) {
 
   return (
     <div className="space-y-6">
-      <div className="max-w-xs">
-        <Label htmlFor="home-board-year">Event year</Label>
-        <Select value={String(eventYear)} onValueChange={handleYearChange}>
-          <SelectTrigger id="home-board-year" className="min-h-11">
-            <SelectValue placeholder="Event year" />
-          </SelectTrigger>
-          <SelectContent>
-            {REGISTRATION_EVENT_YEARS.map((year) => (
-              <SelectItem key={year} value={String(year)}>
-                {registrationYearOptionLabel(year)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      {uiMode === "classic" ? (
+        <div className="max-w-xs">
+          <Label htmlFor="home-board-year">Event year</Label>
+          <Select value={String(eventYear)} onValueChange={handleYearChange}>
+            <SelectTrigger id="home-board-year" className="min-h-11">
+              <SelectValue placeholder="Event year" />
+            </SelectTrigger>
+            <SelectContent>
+              {REGISTRATION_EVENT_YEARS.map((year) => (
+                <SelectItem key={year} value={String(year)}>
+                  {registrationYearOptionLabel(year)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      ) : null}
 
       <Card>
         <CardHeader>
