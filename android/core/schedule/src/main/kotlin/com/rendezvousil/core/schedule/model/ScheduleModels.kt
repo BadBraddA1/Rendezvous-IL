@@ -1,5 +1,8 @@
 package com.rendezvousil.core.schedule.model
 
+import java.time.LocalDate
+import java.time.format.TextStyle
+import java.util.Locale
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -15,12 +18,38 @@ data class SchedulePayload(
 
 @Serializable
 data class ScheduleDay(
+    /** Opaque day key: weekday name for retreat days, or yyyy-MM-dd for key dates. */
     val day: String,
+    /** Display weekday ("Friday"). Present for key dates; may be null in older caches. */
+    val weekday: String? = null,
+    /** Short calendar label ("January 1" / "May 3"). */
     val date: String,
     val color: String,
     val events: List<ScheduleEvent>,
 ) {
     val id: String get() = day
+
+    val displayWeekday: String
+        get() {
+            weekday?.takeIf { it.isNotBlank() }?.let { return it }
+            if (ISO_DATE.matches(day)) {
+                return runCatching {
+                    val parsed = LocalDate.parse(day)
+                    parsed.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.US)
+                }.getOrElse { day }
+            }
+            return day
+        }
+
+    val weekdayShort: String
+        get() = displayWeekday.take(3)
+
+    val isKeyDate: Boolean
+        get() = ISO_DATE.matches(day)
+
+    companion object {
+        private val ISO_DATE = Regex("""^\d{4}-\d{2}-\d{2}$""")
+    }
 }
 
 @Serializable

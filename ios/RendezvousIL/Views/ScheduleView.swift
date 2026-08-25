@@ -197,13 +197,14 @@ struct ScheduleView: View {
                         selectedDayIndex = index
                     } label: {
                         VStack(spacing: 4) {
-                            Text(String(day.day.prefix(3)))
+                            Text(day.weekdayShort)
                                 .font(.caption.weight(.bold))
                             Text(day.date)
                                 .font(.caption2)
                                 .lineLimit(1)
+                                .minimumScaleFactor(0.8)
                         }
-                        .frame(minWidth: 64, minHeight: 56)
+                        .frame(minWidth: 72, minHeight: 56)
                         .padding(.horizontal, 6)
                         .background(
                             selectedDayIndex == index ? BrandColors.lake : Color(.secondarySystemGroupedBackground),
@@ -212,7 +213,7 @@ struct ScheduleView: View {
                         .foregroundStyle(selectedDayIndex == index ? .white : .primary)
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("\(day.day), \(day.date)")
+                    .accessibilityLabel("\(day.displayWeekday), \(day.date)")
                 }
             }
             .padding(.horizontal)
@@ -249,12 +250,18 @@ struct ScheduleView: View {
 
     private func header(for day: ScheduleDay, schedule: SchedulePayload) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("\(day.date) · \(day.day)")
+            Text("\(day.date) · \(day.displayWeekday)")
                 .font(.title2.weight(.semibold))
                 .foregroundStyle(BrandColors.lake)
-            Text(schedule.dateRange)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+            if day.isKeyDate {
+                Text("Key date · before retreat week")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            } else {
+                Text(schedule.dateRange)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
             if !schedule.draftNotice.isEmpty {
                 Text(schedule.draftNotice)
                     .font(.caption)

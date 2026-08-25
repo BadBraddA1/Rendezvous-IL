@@ -15,10 +15,39 @@ struct SchedulePayload: Codable, Sendable {
 
 struct ScheduleDay: Codable, Identifiable, Sendable {
     var id: String { day }
+    /// Opaque day key: weekday name for retreat days, or `yyyy-MM-dd` for key dates.
     let day: String
+    /// Display weekday ("Friday"). Present for key dates; may be absent in older caches.
+    let weekday: String?
+    /// Short calendar label ("January 1" / "May 3").
     let date: String
     let color: String
     let events: [ScheduleEvent]
+
+    /// Weekday label for chips/headers — never the raw ISO key.
+    var displayWeekday: String {
+        if let weekday, !weekday.isEmpty { return weekday }
+        if day.range(of: #"^\d{4}-\d{2}-\d{2}$"#, options: .regularExpression) != nil {
+            let formatter = DateFormatter()
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+            formatter.timeZone = TimeZone(secondsFromGMT: 0)
+            formatter.dateFormat = "yyyy-MM-dd"
+            if let parsed = formatter.date(from: day) {
+                formatter.dateFormat = "EEEE"
+                return formatter.string(from: parsed)
+            }
+        }
+        return day
+    }
+
+    var weekdayShort: String {
+        String(displayWeekday.prefix(3))
+    }
+
+    /// Retreat Mon–Fri use weekday keys; custom key dates use ISO keys.
+    var isKeyDate: Bool {
+        day.range(of: #"^\d{4}-\d{2}-\d{2}$"#, options: .regularExpression) != nil
+    }
 }
 
 struct ScheduleEvent: Codable, Identifiable, Sendable {

@@ -184,7 +184,11 @@ private fun ScheduleContent(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 item {
-                    DayHeader(day = day, draftNotice = schedule.draftNotice)
+                    DayHeader(
+                        day = day,
+                        dateRange = schedule.dateRange,
+                        draftNotice = schedule.draftNotice,
+                    )
                 }
                 itemsIndexed(day.events, key = { _, event -> event.id }) { _, event ->
                     val luItem = matchingLUItem(event, isoDate, schedule.luItems)
@@ -267,15 +271,16 @@ private fun DayPicker(
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(
-                        text = day.day.firstOrNull()?.toString().orEmpty(),
+                        text = day.weekdayShort,
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                         color = if (selected) Color.White else MaterialTheme.colorScheme.onSurface,
                     )
                     Text(
-                        text = day.day,
+                        text = day.date,
                         style = MaterialTheme.typography.labelSmall,
                         color = if (selected) Color.White else MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
                     )
                 }
             }
@@ -284,14 +289,27 @@ private fun DayPicker(
 }
 
 @Composable
-private fun DayHeader(day: ScheduleDay, draftNotice: String) {
+private fun DayHeader(day: ScheduleDay, dateRange: String, draftNotice: String) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(
-            text = "${day.date} (${day.day})",
+            text = "${day.date} · ${day.displayWeekday}",
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.SemiBold,
             color = BrandColors.Lake,
         )
+        if (day.isKeyDate) {
+            Text(
+                text = "Key date · before retreat week",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        } else if (dateRange.isNotBlank()) {
+            Text(
+                text = dateRange,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         if (draftNotice.isNotBlank()) {
             Text(
                 text = draftNotice,
