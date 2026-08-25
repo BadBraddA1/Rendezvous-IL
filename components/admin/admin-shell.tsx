@@ -89,9 +89,9 @@ export function AdminShell({ children }: { children: ReactNode }) {
   const roleLabel = adminDashConfig.roleLabels[staff.role] ?? staff.role
 
   return (
-    <div className="ad-page flex font-sans">
-      <aside className="ad-aside hidden w-48 shrink-0 flex-col lg:flex">
-        <div className="border-b px-3 py-3" style={{ borderColor: "var(--ad-line)" }}>
+    <div className="ad-page font-sans">
+      <aside className="ad-aside hidden w-48 lg:flex">
+        <div className="ad-aside-brand border-b px-3 py-3" style={{ borderColor: "var(--ad-line)" }}>
           <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--ad-muted)" }}>
             {adminDashConfig.siteName}
           </p>
@@ -100,7 +100,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
             {roleLabel}
           </p>
         </div>
-        <nav className="flex flex-1 flex-col gap-px overflow-y-auto p-1.5">
+        <nav className="ad-aside-nav flex flex-col gap-px p-1.5">
           {links.map(({ href, label, exact }) => {
             const active = navActive(pathname, href, exact)
             const Icon = ICONS[href] ?? Home
@@ -117,7 +117,10 @@ export function AdminShell({ children }: { children: ReactNode }) {
             )
           })}
         </nav>
-        <div className="space-y-2 border-t p-2" style={{ borderColor: "var(--ad-line)" }}>
+        <div
+          className="ad-aside-foot space-y-2 border-t p-2"
+          style={{ borderColor: "var(--ad-line)" }}
+        >
           <AdminUiToggle mode="new" />
           <UserMenuButton size="sm" afterSignOutUrl="/admin/login" />
           <Link
@@ -130,7 +133,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
         </div>
       </aside>
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="ad-main-col">
         <header className="ad-header px-3 py-2.5 sm:px-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="min-w-0">
@@ -164,7 +167,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
             ))}
           </div>
         </header>
-        <main className="flex-1 px-2.5 py-2.5 sm:px-3 sm:py-3 lg:px-4">{children}</main>
+        <main className="ad-main-scroll px-2.5 py-2.5 sm:px-3 sm:py-3 lg:px-4">{children}</main>
       </div>
     </div>
   )

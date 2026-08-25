@@ -16,19 +16,59 @@
 }
 
 .ad-page {
-  min-height: 100vh;
+  display: flex;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
   background: var(--ad-bg);
   color: var(--ad-ink);
 }
 
 .ad-aside {
+  position: sticky;
+  top: 0;
+  display: flex;
+  height: 100dvh;
+  max-height: 100dvh;
+  flex-shrink: 0;
+  flex-direction: column;
+  overflow: hidden;
   background: var(--ad-surface);
   border-right: 1px solid var(--ad-line);
 }
 
+.ad-aside-brand,
+.ad-aside-foot {
+  flex-shrink: 0;
+}
+
+.ad-aside-nav {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.ad-main-col {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 .ad-header {
+  flex-shrink: 0;
   background: var(--ad-header);
   color: var(--ad-header-fg);
+}
+
+.ad-main-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .ad-nav-link {
