@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import useSWR from "swr"
-import type { ReactNode } from "react"
+import { Suspense, type ReactNode } from "react"
 import {
   CalendarDays,
   ClipboardList,
@@ -20,6 +20,7 @@ import {
   type LucideIcon,
 } from "lucide-react"
 import { adminDashConfig, type AdminDashPermission } from "@/lib/admin-dash-config"
+import { AdminEventYearSwitcher } from "@/components/admin/admin-event-year-switcher"
 import { AdminUiToggle } from "@/components/admin/admin-ui-toggle"
 import { UserMenuButton } from "@/components/user-menu-button"
 import "@/app/admin-dash.css"
@@ -138,7 +139,10 @@ export function AdminShell({ children }: { children: ReactNode }) {
               </p>
               <h1 className="text-base font-bold tracking-tight sm:text-lg">{adminDashConfig.title}</h1>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <Suspense fallback={null}>
+                <AdminEventYearSwitcher compact id="shell-event-year" />
+              </Suspense>
               <div className="lg:hidden">
                 <AdminUiToggle mode="new" />
               </div>

@@ -13,9 +13,10 @@ import { ArrowDown, ArrowUp, Loader2, Plus, Trash2 } from "lucide-react"
 import {
   DEFAULT_REGISTRATION_EVENT_YEAR,
   REGISTRATION_EVENT_YEARS,
-  REGISTRATION_YEAR_STORAGE_KEY,
   parseRegistrationEventYear,
-  registrationYearLabel,
+  readStoredAdminEventYear,
+  registrationYearOptionLabel,
+  writeStoredAdminEventYear,
   type RegistrationEventYear,
 } from "@/lib/registration-event-years"
 import type { HomeBoardBannerSection, HomeBoardSection } from "@/lib/home-board"
@@ -33,11 +34,6 @@ const BUILTIN_LABELS: Record<string, string> = {
   next_meal: "Next meal",
   chat: "Chat unread",
   volunteering: "Your volunteering",
-}
-
-function readStoredEventYear(): RegistrationEventYear {
-  if (typeof window === "undefined") return DEFAULT_REGISTRATION_EVENT_YEAR
-  return parseRegistrationEventYear(window.sessionStorage.getItem(REGISTRATION_YEAR_STORAGE_KEY))
 }
 
 function newBanner(): HomeBoardBannerSection {
@@ -69,12 +65,11 @@ export function HomeBoardManager({ canManage }: Props) {
       setEventYear(parseRegistrationEventYear(yearFromUrl))
       return
     }
-    setEventYear(readStoredEventYear())
+    setEventYear(readStoredAdminEventYear())
   }, [searchParams])
 
   useEffect(() => {
-    if (typeof window === "undefined") return
-    window.sessionStorage.setItem(REGISTRATION_YEAR_STORAGE_KEY, String(eventYear))
+    writeStoredAdminEventYear(eventYear)
   }, [eventYear])
 
   const load = useCallback(async () => {
@@ -99,6 +94,7 @@ export function HomeBoardManager({ canManage }: Props) {
   const handleYearChange = (value: string) => {
     const year = parseRegistrationEventYear(value)
     setEventYear(year)
+    writeStoredAdminEventYear(year)
     const params = new URLSearchParams(searchParams.toString())
     params.set("year", String(year))
     router.replace(`${pathname}?${params.toString()}`)
@@ -160,7 +156,7 @@ export function HomeBoardManager({ canManage }: Props) {
           <SelectContent>
             {REGISTRATION_EVENT_YEARS.map((year) => (
               <SelectItem key={year} value={String(year)}>
-                {registrationYearLabel(year)}
+                {registrationYearOptionLabel(year)}
               </SelectItem>
             ))}
           </SelectContent>

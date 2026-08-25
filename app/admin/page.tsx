@@ -237,7 +237,13 @@ export default async function AdminDashboard() {
                   Planning Phase
                 </Badge>
               </div>
-              <p className="text-lead text-muted-foreground">Welcome back, {admin.fullName || admin.email}</p>
+              <p className="text-lead text-muted-foreground">
+                Welcome back, {admin.fullName || admin.email}. Primary season is 2027 —{" "}
+                <Link href="/admin/registrations?year=2026" className="underline underline-offset-2">
+                  open 2026 archive
+                </Link>{" "}
+                when you need last year.
+              </p>
             </div>
             <div className="flex gap-2">
               <Button asChild variant="outline">

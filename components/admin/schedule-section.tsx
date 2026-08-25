@@ -8,16 +8,12 @@ import { ScheduleManager } from "./schedule-manager"
 import {
   DEFAULT_REGISTRATION_EVENT_YEAR,
   REGISTRATION_EVENT_YEARS,
-  REGISTRATION_YEAR_STORAGE_KEY,
   parseRegistrationEventYear,
-  registrationYearLabel,
+  readStoredAdminEventYear,
+  registrationYearOptionLabel,
+  writeStoredAdminEventYear,
   type RegistrationEventYear,
 } from "@/lib/registration-event-years"
-
-function readStoredEventYear(): RegistrationEventYear {
-  if (typeof window === "undefined") return DEFAULT_REGISTRATION_EVENT_YEAR
-  return parseRegistrationEventYear(window.sessionStorage.getItem(REGISTRATION_YEAR_STORAGE_KEY))
-}
 
 type Props = {
   canManage: boolean
@@ -36,17 +32,17 @@ export function ScheduleSection({ canManage }: Props) {
       setEventYear(parseRegistrationEventYear(yearFromUrl))
       return
     }
-    setEventYear(readStoredEventYear())
+    setEventYear(readStoredAdminEventYear())
   }, [searchParams])
 
   useEffect(() => {
-    if (typeof window === "undefined") return
-    window.sessionStorage.setItem(REGISTRATION_YEAR_STORAGE_KEY, String(eventYear))
+    writeStoredAdminEventYear(eventYear)
   }, [eventYear])
 
   const handleYearChange = (value: string) => {
     const year = parseRegistrationEventYear(value)
     setEventYear(year)
+    writeStoredAdminEventYear(year)
     const params = new URLSearchParams(searchParams.toString())
     params.set("year", String(year))
     router.replace(`${pathname}?${params.toString()}`)
@@ -63,7 +59,7 @@ export function ScheduleSection({ canManage }: Props) {
           <SelectContent>
             {REGISTRATION_EVENT_YEARS.map((year) => (
               <SelectItem key={year} value={String(year)}>
-                {registrationYearLabel(year)}
+                {registrationYearOptionLabel(year)}
               </SelectItem>
             ))}
           </SelectContent>

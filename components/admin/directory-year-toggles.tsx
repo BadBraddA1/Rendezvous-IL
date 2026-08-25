@@ -59,8 +59,8 @@ export function DirectoryYearToggles({ isAdmin }: Props) {
           Family Directory
         </CardTitle>
         <CardDescription>
-          Control which event years appear on the public family directory. Keep 2027 off until
-          registration opens.
+          Control which event years appear on the public family directory. 2027 is the live season;
+          keep it off until registration families should browse each other. 2026 is archive.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

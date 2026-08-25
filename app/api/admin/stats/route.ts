@@ -1,42 +1,32 @@
 import { NextResponse } from "next/server"
 import { checkAdminAuth } from "@/lib/admin-auth"
-import { sql } from "@/lib/db"
+import { getAdminDashboardSummary } from "@/lib/admin-dashboard-summary"
+import { parseRegistrationEventYear } from "@/lib/registration-event-years"
 
-export async function GET() {
+export const dynamic = "force-dynamic"
+
+/** Legacy stats endpoint — now year-scoped (default 2027). Prefer /api/admin/dashboard. */
+export async function GET(request: Request) {
   const admin = await checkAdminAuth()
   if (!admin) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
   try {
-    const [stats] = await sql`
-      SELECT 
-        COUNT(DISTINCT r.id) as total_registrations,
-        COUNT(fm.id) as total_attendees,
-        COALESCE(SUM(r.lodging_total + r.tshirt_total + r.climbing_tower_total + r.registration_fee), 0) as total_revenue
-      FROM registrations r
-      LEFT JOIN family_members fm ON r.id = fm.registration_id
-    `
-
-    const lodging = await sql`
-      SELECT 
-        lodging_type,
-        COUNT(*) as count
-      FROM registrations
-      GROUP BY lodging_type
-    `
-
-    const lodgingBreakdown = {
-      motel: lodging.find((l) => l.lodging_type === "motel")?.count || 0,
-      rv: lodging.find((l) => l.lodging_type === "rv")?.count || 0,
-      tent: lodging.find((l) => l.lodging_type === "tent")?.count || 0,
-    }
+    const { searchParams } = new URL(request.url)
+    const eventYear = parseRegistrationEventYear(searchParams.get("year"))
+    const summary = await getAdminDashboardSummary(eventYear)
 
     return NextResponse.json({
-      totalRegistrations: Number(stats.total_registrations),
-      totalAttendees: Number(stats.total_attendees),
-      totalRevenue: Number(stats.total_revenue),
-      lodgingBreakdown,
+      totalRegistrations: summary.registrations,
+      totalAttendees: summary.registeredAttendees,
+      totalRevenue: summary.totalRevenue,
+      lodgingBreakdown: {
+        motel: summary.lodgingBreakdown.motel,
+        rv: summary.lodgingBreakdown.rv,
+        tent: summary.lodgingBreakdown.tent,
+      },
+      eventYear: summary.eventYear,
     })
   } catch (error) {
     console.error("[v0] Stats error:", error)
