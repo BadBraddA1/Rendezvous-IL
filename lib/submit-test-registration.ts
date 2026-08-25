@@ -1,6 +1,7 @@
 import { sql } from "@/lib/db"
 import { formatPhoneForStorage } from "@/lib/phone-format"
 import { formatArrivalDepartureNotes } from "@/lib/registration-arrival-departure"
+import { notifyAdminsNewRegistration } from "@/lib/registration-admin-notify"
 import type { RegistrationData } from "@/types/registration"
 
 let contactColumnsEnsured = false
@@ -31,9 +32,10 @@ async function ensureContactColumns() {
 
 export async function submitTestRegistration(
   data: RegistrationData,
-  options?: { paymentNotes?: string },
+  options?: { paymentNotes?: string; notifySource?: "test" | "express" },
 ) {
   const paymentNotes = options?.paymentNotes ?? "ADMIN_TEST"
+  const notifySource = options?.notifySource ?? (paymentNotes === "EXPRESS_TEST" ? "express" : "test")
   await ensureContactColumns()
 
   const arrivalNotes = formatArrivalDepartureNotes(
@@ -155,6 +157,13 @@ export async function submitTestRegistration(
       VALUES (${registrationId}, 'dads', ${data.sessionSuggestions.dads})
     `
   }
+
+  // Staff phones (APNs/FCM) — not email. Failures are logged inside; never block submit.
+  await notifyAdminsNewRegistration({
+    registrationId,
+    data,
+    source: notifySource,
+  })
 
   return registrationId
 }
