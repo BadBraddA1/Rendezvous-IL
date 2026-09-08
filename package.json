@@ -34,6 +34,7 @@
     "@radix-ui/react-tabs": "^1.1.0",
     "@radix-ui/react-toast": "^1.2.15",
     "@radix-ui/react-tooltip": "^1.2.8",
+    "@sentry/nextjs": "^10.73.0",
     "@types/bcryptjs": "^2.4.6",
     "@vercel/analytics": "^1.5.0",
     "ably": "^2.23.0",
@@ -72,9 +73,19 @@
   },
   "pnpm": {
     "supportedArchitectures": {
-      "os": ["current", "linux"],
-      "cpu": ["current", "x64", "arm64"],
-      "libc": ["current", "glibc"]
+      "os": [
+        "current",
+        "linux"
+      ],
+      "cpu": [
+        "current",
+        "x64",
+        "arm64"
+      ],
+      "libc": [
+        "current",
+        "glibc"
+      ]
     }
   }
 }

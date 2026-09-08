@@ -19,6 +19,8 @@ Handles public event pages, family registration (2027), admin dashboard (registr
 
 Required on Vercel (`v0-ren`):
 
+- `NEXT_PUBLIC_SENTRY_DSN` / `SENTRY_DSN` — Sentry project `rendezvous-il` (errors + tracing; OpenStatus degrade alerts)
+
 | Variable | Purpose |
 |----------|---------|
 | `TURSO_DATABASE_URL` | Turso libsql URL |
