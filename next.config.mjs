@@ -2,8 +2,17 @@ import { withSentryConfig } from "@sentry/nextjs/config";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [{ key: "Document-Policy", value: "js-profiling" }],
+      },
+    ];
+  },
+
   // Keep native modules out of the Turbopack/webpack bundle.
-  serverExternalPackages: ["ably", "sharp"],
+  serverExternalPackages: ["@sentry/profiling-node", "ably", "sharp"],
   typescript: {
     ignoreBuildErrors: true,
   },
