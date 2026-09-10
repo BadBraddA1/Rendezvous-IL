@@ -19,7 +19,7 @@ Handles public event pages, family registration (2027), admin dashboard (registr
 
 Required on Vercel (`v0-ren`):
 
-- `NEXT_PUBLIC_SENTRY_DSN` / `SENTRY_DSN` — Sentry project `rendezvous-il` (errors + tracing; OpenStatus degrade alerts)
+- `NEXT_PUBLIC_SENTRY_DSN` / `SENTRY_DSN` — Sentry project `rendezvous-il` (errors + tracing + session replay; OpenStatus degrade alerts). The floating **Report a Bug** User Feedback widget is off globally (`feedbackIntegration` removed from `instrumentation-client.ts`); re-add with `autoInject: false` if you want it only on some pages later.
 
 | Variable | Purpose |
 |----------|---------|
