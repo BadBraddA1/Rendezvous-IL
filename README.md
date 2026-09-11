@@ -140,6 +140,8 @@ vercel env pull .env.local --environment=production
 pnpm dev
 ```
 
+Interactive nav chrome uses the BraddCorp animated icon kit (`components/icons/`, Motion hover) — prefer kit exports over static `lucide-react` for header/menu actions.
+
 Verify database connectivity:
 
 ```bash

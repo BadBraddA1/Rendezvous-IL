@@ -3,7 +3,7 @@
 import Link from "next/link"
 import Image from "next/image"
 import { useState, useEffect } from "react"
-import { Menu, User, LogOut, MessageSquare } from "lucide-react"
+import { LogoutIcon, MenuIcon, MessageCircleIcon, UserIcon } from "@/components/icons"
 import { Show, SignOutButton } from "@clerk/nextjs"
 import { Button } from "@/components/ui/button"
 import { UserMenuButton } from "@/components/user-menu-button"
@@ -40,7 +40,7 @@ function MobileNav({
           aria-label="Open menu"
           className="touch-target h-11 w-11 text-foreground"
         >
-          <Menu className="h-6 w-6" />
+          <MenuIcon size={24} />
         </Button>
       </SheetTrigger>
       <SheetContent side="right" className="w-full overflow-y-auto border-border bg-background sm:w-[400px]">
@@ -67,7 +67,7 @@ function MobileNav({
                 className="focus-ring flex min-h-11 items-center gap-3 rounded-lg p-3 transition-colors hover:bg-secondary/50 active:bg-secondary/50"
                 onClick={() => onOpenChange(false)}
               >
-                <MessageSquare className="h-5 w-5 text-primary" />
+                <MessageCircleIcon size={20} className="text-primary" />
                 <div>
                   <p className="text-sm font-medium">Chat</p>
                   <p className="text-xs text-muted-foreground">Message your event years</p>
@@ -78,7 +78,7 @@ function MobileNav({
                 className="focus-ring flex min-h-11 items-center gap-3 rounded-lg p-3 transition-colors hover:bg-secondary/50 active:bg-secondary/50"
                 onClick={() => onOpenChange(false)}
               >
-                <User className="h-5 w-5 text-primary" />
+                <UserIcon size={20} className="text-primary" />
                 <div>
                   <p className="text-sm font-medium">My Account</p>
                   <p className="text-xs text-muted-foreground">View your dashboard</p>
@@ -90,7 +90,7 @@ function MobileNav({
                   className="focus-ring flex min-h-11 w-full items-center gap-3 rounded-lg p-3 text-left transition-colors hover:bg-destructive/10 active:bg-destructive/10"
                   onClick={() => onOpenChange(false)}
                 >
-                  <LogOut className="h-5 w-5 text-destructive" />
+                  <LogoutIcon size={20} className="text-destructive" />
                   <p className="text-sm font-medium text-destructive">Sign Out</p>
                 </button>
               </SignOutButton>
@@ -102,7 +102,7 @@ function MobileNav({
               className="focus-ring flex min-h-11 items-center gap-2 rounded-lg px-4 py-3 text-lg font-medium text-primary transition-colors hover:bg-secondary/50 active:bg-secondary/50"
               onClick={() => onOpenChange(false)}
             >
-              <User className="h-5 w-5" />
+              <UserIcon size={20} />
               Sign In
             </Link>
           </Show>
@@ -169,7 +169,7 @@ export function SiteHeader({ isHomepage = false }: SiteHeaderProps) {
             <Show when="signed-out">
               <Link href="/sign-in">
                 <Button variant="ghost" className="min-h-11 gap-2 px-4">
-                  <User className="h-4 w-4" aria-hidden="true" />
+                  <UserIcon size={16} aria-hidden />
                   Sign In
                 </Button>
               </Link>
