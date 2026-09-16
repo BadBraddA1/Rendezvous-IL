@@ -4,7 +4,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { useState, useEffect } from "react"
 import { LogoutIcon, MenuIcon, MessageCircleIcon, UserIcon } from "@/components/icons"
-import { Show, SignOutButton } from "@clerk/nextjs"
+import { SignOutButton, useAuth } from "@clerk/nextjs"
 import { Button } from "@/components/ui/button"
 import { UserMenuButton } from "@/components/user-menu-button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
@@ -22,6 +22,112 @@ const navLinks = [
 
 interface SiteHeaderProps {
   isHomepage?: boolean
+}
+
+/**
+ * Clerk hooks must not run during SSR of page-level chrome.
+ * Server Actions (incl. Clerk's invalidateCacheAction on sign-in/out) can
+ * re-render the page segment without layout ClerkProvider context — `<Show>`
+ * then throws (RENDEZVOUS-IL-2). Gate on mount so auth UI only runs client-side.
+ */
+function useClientAuth() {
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+  return mounted
+}
+
+function DesktopAuthControls() {
+  const mounted = useClientAuth()
+  if (!mounted) {
+    return (
+      <div className="ml-2 flex min-h-11 min-w-[5.5rem] items-center border-l border-border pl-2" aria-hidden />
+    )
+  }
+  return <DesktopAuthControlsInner />
+}
+
+function DesktopAuthControlsInner() {
+  const { isLoaded, isSignedIn } = useAuth()
+  if (!isLoaded) {
+    return (
+      <div className="ml-2 flex min-h-11 min-w-[5.5rem] items-center border-l border-border pl-2" aria-hidden />
+    )
+  }
+  return (
+    <div className="ml-2 border-l border-border pl-2">
+      {isSignedIn ? (
+        <UserMenuButton size="sm" afterSignOutUrl="/" />
+      ) : (
+        <Link href="/sign-in">
+          <Button variant="ghost" className="min-h-11 gap-2 px-4">
+            <UserIcon size={16} aria-hidden />
+            Sign In
+          </Button>
+        </Link>
+      )}
+    </div>
+  )
+}
+
+function MobileAuthControls({ onNavigate }: { onNavigate: () => void }) {
+  const mounted = useClientAuth()
+  if (!mounted) return null
+  return <MobileAuthControlsInner onNavigate={onNavigate} />
+}
+
+function MobileAuthControlsInner({ onNavigate }: { onNavigate: () => void }) {
+  const { isLoaded, isSignedIn } = useAuth()
+  if (!isLoaded) return null
+
+  if (isSignedIn) {
+    return (
+      <div className="space-y-2 px-4 py-3">
+        <Link
+          href="/chat"
+          className="focus-ring flex min-h-11 items-center gap-3 rounded-lg p-3 transition-colors hover:bg-secondary/50 active:bg-secondary/50"
+          onClick={onNavigate}
+        >
+          <MessageCircleIcon size={20} className="text-primary" />
+          <div>
+            <p className="text-sm font-medium">Chat</p>
+            <p className="text-xs text-muted-foreground">Message your event years</p>
+          </div>
+        </Link>
+        <Link
+          href="/account"
+          className="focus-ring flex min-h-11 items-center gap-3 rounded-lg p-3 transition-colors hover:bg-secondary/50 active:bg-secondary/50"
+          onClick={onNavigate}
+        >
+          <UserIcon size={20} className="text-primary" />
+          <div>
+            <p className="text-sm font-medium">My Account</p>
+            <p className="text-xs text-muted-foreground">View your dashboard</p>
+          </div>
+        </Link>
+        <SignOutButton redirectUrl="/">
+          <button
+            type="button"
+            className="focus-ring flex min-h-11 w-full items-center gap-3 rounded-lg p-3 text-left transition-colors hover:bg-destructive/10 active:bg-destructive/10"
+            onClick={onNavigate}
+          >
+            <LogoutIcon size={20} className="text-destructive" />
+            <p className="text-sm font-medium text-destructive">Sign Out</p>
+          </button>
+        </SignOutButton>
+      </div>
+    )
+  }
+
+  return (
+    <Link
+      href="/sign-in"
+      className="focus-ring flex min-h-11 items-center gap-2 rounded-lg px-4 py-3 text-lg font-medium text-primary transition-colors hover:bg-secondary/50 active:bg-secondary/50"
+      onClick={onNavigate}
+    >
+      <UserIcon size={20} />
+      Sign In
+    </Link>
+  )
 }
 
 function MobileNav({
@@ -60,52 +166,7 @@ function MobileNav({
           ))}
         </nav>
         <div className="mt-6 border-t border-border pt-6">
-          <Show when="signed-in">
-            <div className="space-y-2 px-4 py-3">
-              <Link
-                href="/chat"
-                className="focus-ring flex min-h-11 items-center gap-3 rounded-lg p-3 transition-colors hover:bg-secondary/50 active:bg-secondary/50"
-                onClick={() => onOpenChange(false)}
-              >
-                <MessageCircleIcon size={20} className="text-primary" />
-                <div>
-                  <p className="text-sm font-medium">Chat</p>
-                  <p className="text-xs text-muted-foreground">Message your event years</p>
-                </div>
-              </Link>
-              <Link
-                href="/account"
-                className="focus-ring flex min-h-11 items-center gap-3 rounded-lg p-3 transition-colors hover:bg-secondary/50 active:bg-secondary/50"
-                onClick={() => onOpenChange(false)}
-              >
-                <UserIcon size={20} className="text-primary" />
-                <div>
-                  <p className="text-sm font-medium">My Account</p>
-                  <p className="text-xs text-muted-foreground">View your dashboard</p>
-                </div>
-              </Link>
-              <SignOutButton redirectUrl="/">
-                <button
-                  type="button"
-                  className="focus-ring flex min-h-11 w-full items-center gap-3 rounded-lg p-3 text-left transition-colors hover:bg-destructive/10 active:bg-destructive/10"
-                  onClick={() => onOpenChange(false)}
-                >
-                  <LogoutIcon size={20} className="text-destructive" />
-                  <p className="text-sm font-medium text-destructive">Sign Out</p>
-                </button>
-              </SignOutButton>
-            </div>
-          </Show>
-          <Show when="signed-out">
-            <Link
-              href="/sign-in"
-              className="focus-ring flex min-h-11 items-center gap-2 rounded-lg px-4 py-3 text-lg font-medium text-primary transition-colors hover:bg-secondary/50 active:bg-secondary/50"
-              onClick={() => onOpenChange(false)}
-            >
-              <UserIcon size={20} />
-              Sign In
-            </Link>
-          </Show>
+          <MobileAuthControls onNavigate={() => onOpenChange(false)} />
         </div>
         <div className="mt-4 border-t border-border pt-4">
           <p className="text-center text-sm text-muted-foreground">May 3–7, 2027</p>
@@ -162,19 +223,7 @@ export function SiteHeader({ isHomepage = false }: SiteHeaderProps) {
               {link.label}
             </Link>
           ))}
-          <div className="ml-2 border-l border-border pl-2">
-            <Show when="signed-in">
-              <UserMenuButton size="sm" afterSignOutUrl="/" />
-            </Show>
-            <Show when="signed-out">
-              <Link href="/sign-in">
-                <Button variant="ghost" className="min-h-11 gap-2 px-4">
-                  <UserIcon size={16} aria-hidden />
-                  Sign In
-                </Button>
-              </Link>
-            </Show>
-          </div>
+          <DesktopAuthControls />
         </div>
 
         <MobileNav open={open} onOpenChange={setOpen} />
