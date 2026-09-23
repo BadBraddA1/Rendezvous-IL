@@ -6,7 +6,7 @@ cd /Users/braddford/Code/Rendezvous-IL || exit 1
 
 WORKERS="${WORKERS:-3}"
 LOG_DIR="${LOG_DIR:-/tmp/sfp-import-fast}"
-EXPECTED="${EXPECTED:-896}"
+EXPECTED="${EXPECTED:-895}"  # 896 ppt files minus junk "0958 .ppt"
 PACK_ID="3eac16b6-fc68-43db-9d82-5cd7ccd2d5ce"
 HANG_SECS="${HANG_SECS:-180}"
 PLIST="$HOME/Library/LaunchAgents/com.braddcorp.sfp-import.plist"
@@ -93,6 +93,25 @@ while true; do
     log "COMPLETE pack=$count — unloading launch agent"
     for ((i = 0; i < WORKERS; i++)); do kill_shard "$i"; done
     pkill -9 -f 'soffice.bin' 2>/dev/null || true
+    if [[ -f "$PLIST" ]]; then
+      launchctl bootout "gui/$(id -u)/com.braddcorp.sfp-import" 2>/dev/null || \
+        launchctl unload "$PLIST" 2>/dev/null || true
+    fi
+    exit 0
+  fi
+
+  # If every shard exited with nothing to do AND we're at/above EXPECTED, complete.
+  # Do not treat idle-as-done when alternates may still be pending (below EXPECTED).
+  idle_shards=0
+  for ((i = 0; i < WORKERS; i++)); do
+    if ! shard_running "$i"; then
+      if tail -5 "$LOG_DIR/shard-$i.log" 2>/dev/null | grep -q 'done ok=0'; then
+        idle_shards=$((idle_shards + 1))
+      fi
+    fi
+  done
+  if [[ "$idle_shards" -eq "$WORKERS" && "$count" -ge "$EXPECTED" ]]; then
+    log "all shards idle and pack complete ($count) — unloading"
     if [[ -f "$PLIST" ]]; then
       launchctl bootout "gui/$(id -u)/com.braddcorp.sfp-import" 2>/dev/null || \
         launchctl unload "$PLIST" 2>/dev/null || true

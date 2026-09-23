@@ -192,12 +192,21 @@ function cleanSongTitle(raw: string): string {
 function isBaseSong(name: string): boolean {
   if (!/\.ppt$/i.test(name) || /\.pptx$/i.test(name)) return false
   if (/W-Opt|3vr|optional|Refrain/i.test(name)) return false
-  return /^\d{4}\s/.test(name)
+  // Require a real title after the page number (skip junk like "0958 .ppt")
+  return /^\d{4}\s+\S/.test(name)
 }
 
 function pageFromName(name: string): number | null {
   const m = name.match(/^(\d{4})\s/)
   return m ? Number(m[1]) : null
+}
+
+/** Stable sort among same-page alternates (SFP has ~23 duplicate page numbers). */
+function sortOrderFor(name: string, allSamePage: string[]): number {
+  const page = pageFromName(name) ?? 0
+  const sorted = [...allSamePage].sort((a, b) => a.localeCompare(b))
+  const idx = Math.max(0, sorted.indexOf(name))
+  return page * 10 + idx
 }
 
 async function dropFirstPage(pdfBytes: Uint8Array): Promise<Uint8Array> {
@@ -306,10 +315,18 @@ async function main() {
 
   const files = readdirSync(SRC)
     .filter(isBaseSong)
-    .sort((a, b) => (pageFromName(a) ?? 0) - (pageFromName(b) ?? 0))
+    .sort((a, b) => (pageFromName(a) ?? 0) - (pageFromName(b) ?? 0) || a.localeCompare(b))
+
+  const byPage = new Map<number, string[]>()
+  for (const name of files) {
+    const page = pageFromName(name)!
+    const list = byPage.get(page) ?? []
+    list.push(name)
+    byPage.set(page, list)
+  }
 
   console.log(
-    `src=${SRC}\npack=${PACK_SLUG} id=${PACK_ID}\nfiles=${files.length} apply=${APPLY} resume=${RESUME} limit=${LIMIT || "all"} fast=${FAST} shard=${SHARD.i}/${SHARD.n}`,
+    `src=${SRC}\npack=${PACK_SLUG} id=${PACK_ID}\nfiles=${files.length} pages=${byPage.size} apply=${APPLY} resume=${RESUME} limit=${LIMIT || "all"} fast=${FAST} shard=${SHARD.i}/${SHARD.n}`,
   )
 
   const workRoot = join(
@@ -317,27 +334,26 @@ async function main() {
     "Code/Rendezvous-IL/.tmp-sfp-import",
   )
   const pdfDir = join(workRoot, "pdf")
-  const donePath = join(workRoot, "done.json")
+  const donePath = join(workRoot, "done-titles.json")
   mkdirSync(pdfDir, { recursive: true })
 
   const helperPath = join(workRoot, "inspect.swift")
-  writeFileSync(helperPath, SWIFT_HELPER)
+  if (!FAST) writeFileSync(helperPath, SWIFT_HELPER)
 
-  let donePages = new Set<number>()
+  // Track by cleaned title so same-page alternates each import once
+  let doneTitles = new Set<string>()
   if (RESUME && existsSync(donePath)) {
     try {
-      donePages = new Set(JSON.parse(readFileSync(donePath, "utf8")) as number[])
-      console.log(`resume: skipping ${donePages.size} already imported`)
+      doneTitles = new Set(JSON.parse(readFileSync(donePath, "utf8")) as string[])
+      console.log(`resume: skipping ${doneTitles.size} titles from done-titles.json`)
     } catch {
       /* ignore */
     }
   } else if (APPLY && !RESUME) {
-    // Seed done.json from whatever we write as we go
     writeFileSync(donePath, "[]")
   }
 
   if (APPLY && !RESUME) {
-    // Clear pilot items so the pack becomes the full book
     await db.execute({
       sql: "DELETE FROM song_pack_items WHERE pack_id = ?",
       args: [PACK_ID],
@@ -355,27 +371,34 @@ async function main() {
       ],
     })
     console.log("cleared existing pack items; renamed slug → songs-of-faith-and-praise")
-    donePages = new Set()
+    doneTitles = new Set()
     writeFileSync(donePath, "[]")
   }
 
   let ok = 0
   let fail = 0
-  // Page number is stable across parallel shards (avoid racing MAX(sort_order))
-  void 0
 
-  // If resuming after a partial apply, mark DB pages as done
   if (APPLY && RESUME) {
     const existing = await db.execute({
       sql: "SELECT title FROM song_pack_items WHERE pack_id = ?",
       args: [PACK_ID],
     })
     for (const row of existing.rows) {
-      const m = String(row.title).match(/^(\d+)\s*·/)
-      if (m) donePages.add(Number(m[1]))
+      doneTitles.add(String(row.title))
     }
-    writeFileSync(donePath, JSON.stringify([...donePages]))
-    console.log(`resume: ${donePages.size} songs already in pack`)
+    // Drop junk rows that never got a real title (e.g. "0958")
+    for (const title of [...doneTitles]) {
+      if (!/^\d+\s*·\s*\S/.test(title)) {
+        await db.execute({
+          sql: "DELETE FROM song_pack_items WHERE pack_id = ? AND title = ?",
+          args: [PACK_ID, title],
+        })
+        doneTitles.delete(title)
+        console.log(`removed junk title "${title}"`)
+      }
+    }
+    writeFileSync(donePath, JSON.stringify([...doneTitles]))
+    console.log(`resume: ${doneTitles.size} songs already in pack`)
   }
   let attempted = 0
   for (const name of files) {
@@ -383,7 +406,12 @@ async function main() {
     if (SHARD.n > 1 && page % SHARD.n !== SHARD.i) {
       continue
     }
-    if (donePages.has(page)) {
+    const title = cleanSongTitle(name)
+    if (!/^\d+\s*·\s*\S/.test(title)) {
+      console.log(`skip junk filename ${name}`)
+      continue
+    }
+    if (doneTitles.has(title)) {
       continue
     }
     if (LIMIT > 0 && attempted >= LIMIT) {
@@ -392,7 +420,6 @@ async function main() {
     }
     attempted++
 
-    const title = cleanSongTitle(name)
     console.log(`IMPORT ${name} → ${title}`)
 
     const pptPath = join(SRC, name)
@@ -445,6 +472,8 @@ async function main() {
       continue
     }
 
+    const samePage = byPage.get(page) ?? [name]
+    const sortOrder = sortOrderFor(name, samePage)
     const key = `song-packs/${PACK_ID}/${String(page).padStart(4, "0")}-${contentHash.slice(0, 12)}.pdf`
     const put = await fetch(`${worker}/object?key=${encodeURIComponent(key)}`, {
       method: "PUT",
@@ -467,7 +496,7 @@ async function main() {
         id,
         PACK_ID,
         title,
-        page, // page number = sort order (safe for parallel shards)
+        sortOrder,
         fileUrl,
         withTitle.byteLength,
         contentHash,
@@ -476,8 +505,8 @@ async function main() {
       ],
     })
 
-    donePages.add(page)
-    writeFileSync(donePath, JSON.stringify([...donePages]))
+    doneTitles.add(title)
+    writeFileSync(donePath, JSON.stringify([...doneTitles]))
     ok++
     console.log(`  ok ${fileUrl}`)
 
