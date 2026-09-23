@@ -22,7 +22,7 @@ for ((i = 0; i < WORKERS; i++)); do
     --apply --resume --fast --shard="$i/$WORKERS" \
     >>"$log" 2>&1 &
   pids+=($!)
-  echo "started shard $i pid=${pids[-1]} log=$log" | tee -a "$LOG_DIR/master.log"
+  echo "started shard $i pid=${${pids[$((${#pids[@]}-1))]}} log=$log" | tee -a "$LOG_DIR/master.log"
 done
 
 echo "${pids[*]}" >"$LOG_DIR/pids"
