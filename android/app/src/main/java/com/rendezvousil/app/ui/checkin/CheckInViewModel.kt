@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rendezvousil.app.auth.AppSession
 import com.rendezvousil.core.network.dto.CheckInLookupResponse
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -20,6 +21,8 @@ data class CheckInUiState(
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val successMessage: String? = null,
+    /** RF Orca–style banner after successful check-in. */
+    val finalizedBanner: String? = null,
 )
 
 sealed interface CheckInBoopEvent {
@@ -56,6 +59,21 @@ class CheckInViewModel(
 
     fun resetStation() {
         _uiState.value = CheckInUiState()
+    }
+
+    private fun showFinalizedBanner(familyLastName: String) {
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    successMessage = null,
+                    finalizedBanner = "Finalized check-in · $familyLastName family",
+                )
+            }
+            delay(5_000)
+            _uiState.update { state ->
+                if (state.finalizedBanner != null) state.copy(finalizedBanner = null) else state
+            }
+        }
     }
 
     private fun lookupByCode(trimmed: String) {
@@ -121,11 +139,11 @@ class CheckInViewModel(
                         } else {
                             lookup
                         },
-                        successMessage = "${registration.family_last_name} family checked in.",
+                        successMessage = null,
                     )
                 }
                 _boops.emit(CheckInBoopEvent.Good)
-            } catch (error: Exception) {
+                showFinalizedBanner(registration.family_last_name)            } catch (error: Exception) {
                 _uiState.update {
                     it.copy(
                         isLoading = false,

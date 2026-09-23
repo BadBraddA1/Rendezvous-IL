@@ -14,6 +14,9 @@ struct CheckInView: View {
     @State private var keepDisplayAlive = true
     /// RENTESTGOOD offline preview — same staff UI, no API writes.
     @State private var isDemoPreview = false
+    /// RF Orca–style banner after a successful check-in (auto-hides in 5s).
+    @State private var finalizedBanner: String?
+    @State private var finalizedDismissTask: Task<Void, Never>?
 
     private var scannerPaused: Bool { lookup != nil || isLoading }
 
@@ -126,6 +129,26 @@ struct CheckInView: View {
                 }
             }
         }
+        .overlay(alignment: .top) {
+            if let finalizedBanner {
+                Text(finalizedBanner)
+                    .font(.subheadline.weight(.semibold))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .frame(maxWidth: .infinity)
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .strokeBorder(BrandColors.lake.opacity(0.35), lineWidth: 1)
+                    )
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .accessibilityAddTraits(.isStaticText)
+            }
+        }
+        .animation(.easeOut(duration: 0.28), value: finalizedBanner)
         .allowsHitTesting(!isLoading)
     }
 
@@ -235,6 +258,22 @@ struct CheckInView: View {
         errorMessage = nil
         successMessage = nil
         isDemoPreview = false
+        finalizedDismissTask?.cancel()
+        finalizedBanner = nil
+    }
+
+    private func showFinalizedBanner(familyLastName: String) {
+        finalizedDismissTask?.cancel()
+        withAnimation(.easeOut(duration: 0.28)) {
+            finalizedBanner = "Finalized check-in · \(familyLastName) family"
+        }
+        finalizedDismissTask = Task { @MainActor in
+            try? await Task.sleep(for: .seconds(5))
+            guard !Task.isCancelled else { return }
+            withAnimation(.easeIn(duration: 0.25)) {
+                finalizedBanner = nil
+            }
+        }
     }
 
     private func lookupByCode(_ raw: String) async {
@@ -285,9 +324,10 @@ struct CheckInView: View {
                 roomKeys: roomKeys,
                 tshirtsDistributed: tshirtsDistributed
             )
-            successMessage = "Demo: \(registration.family_last_name) family would be checked in."
+            successMessage = nil
             errorMessage = nil
             CheckInBoopPlayer.play(.good)
+            showFinalizedBanner(familyLastName: registration.family_last_name)
             return
         }
 
@@ -317,8 +357,9 @@ struct CheckInView: View {
                     tshirt_orders: lookup?.tshirt_orders
                 )
             }
-            successMessage = "\(registration.family_last_name) family checked in."
+            successMessage = nil
             CheckInBoopPlayer.play(.good)
+            showFinalizedBanner(familyLastName: registration.family_last_name)
         } catch {
             errorMessage = error.localizedDescription
             CheckInBoopPlayer.play(.bad)

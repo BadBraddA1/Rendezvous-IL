@@ -1,5 +1,6 @@
 package com.rendezvousil.app.ui.checkin
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -39,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -119,21 +121,42 @@ fun CheckInScreen(
                 )
             }
             else -> {
-                CheckInStationContent(
-                    adminName = adminName,
-                    uiState = uiState,
-                    onRoomKeysChange = viewModel::onRoomKeysChange,
-                    onTshirtsDistributedChange = viewModel::onTshirtsDistributedChange,
-                    onSubmit = viewModel::submitCheckIn,
-                    onUndo = viewModel::undoCheckIn,
-                    onScanNext = viewModel::resetStation,
-                    onScannedCode = viewModel::onScannedCode,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding)
-                        .verticalScroll(rememberScrollState())
-                        .padding(16.dp),
-                )
+                Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+                    CheckInStationContent(
+                        adminName = adminName,
+                        uiState = uiState,
+                        onRoomKeysChange = viewModel::onRoomKeysChange,
+                        onTshirtsDistributedChange = viewModel::onTshirtsDistributedChange,
+                        onSubmit = viewModel::submitCheckIn,
+                        onUndo = viewModel::undoCheckIn,
+                        onScanNext = viewModel::resetStation,
+                        onScannedCode = viewModel::onScannedCode,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                            .padding(16.dp),
+                    )
+                    uiState.finalizedBanner?.let { banner ->
+                        Surface(
+                            modifier = Modifier
+                                .align(Alignment.TopCenter)
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                                .fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp),
+                            color = BrandColors.LakeLight.copy(alpha = 0.95f),
+                            shadowElevation = 6.dp,
+                        ) {
+                            Text(
+                                text = banner,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                textAlign = TextAlign.Center,
+                                color = BrandColors.Lake,
+                            )
+                        }
+                    }
+                }
             }
         }
     }

@@ -118,9 +118,20 @@ export function CheckinStation() {
   const [undoConfirmOpen, setUndoConfirmOpen] = useState(false)
   const [pendingSignatures, setPendingSignatures] = useState<string[]>([])
   const [scanError, setScanError] = useState<string | null>(null)
+  const [finalizedBanner, setFinalizedBanner] = useState<string | null>(null)
   const scannerRef = useRef<{ stop: () => Promise<void>; clear: () => void } | null>(null)
   const lookupInFlight = useRef(false)
+  const finalizedTimer = useRef<number | null>(null)
   const { toast } = useToast()
+
+  const showFinalizedBanner = useCallback((familyLastName: string) => {
+    if (finalizedTimer.current != null) window.clearTimeout(finalizedTimer.current)
+    setFinalizedBanner(`Finalized check-in · ${familyLastName} family`)
+    finalizedTimer.current = window.setTimeout(() => {
+      setFinalizedBanner(null)
+      finalizedTimer.current = null
+    }, 5000)
+  }, [])
 
   const fetchPendingSignatures = async (registrationId: number) => {
     try {
@@ -253,11 +264,7 @@ export function CheckinStation() {
       const data = await res.json()
       setResult({ ...result, registration: data.registration })
       playBoop("good")
-      toast({
-        title: "Checked in!",
-        description: `${result.registration.family_last_name} family is checked in.`,
-      })
-    } catch (error) {
+      showFinalizedBanner(result.registration.family_last_name)    } catch (error) {
       console.error("[checkin] Check-in failed:", error)
       playBoop("bad")
       toast({ title: "Error", description: "Check-in failed", variant: "destructive" })
@@ -306,6 +313,17 @@ export function CheckinStation() {
 
   return (
     <>
+      {finalizedBanner ? (
+        <div
+          className="pointer-events-none fixed inset-x-3 top-[calc(0.65rem+env(safe-area-inset-top))] z-50 md:inset-x-auto md:left-1/2 md:w-full md:max-w-md md:-translate-x-1/2"
+          aria-live="polite"
+          role="status"
+        >
+          <div className="rounded-xl border border-primary/35 bg-card/95 px-4 py-3 text-center text-sm font-semibold shadow-lg backdrop-blur-md animate-in fade-in slide-in-from-top-2 duration-300">
+            {finalizedBanner}
+          </div>
+        </div>
+      ) : null}
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
