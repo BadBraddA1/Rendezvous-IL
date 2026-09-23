@@ -547,10 +547,10 @@ fun SongItemViewerScreen(
                                 verticalArrangement = Arrangement.spacedBy(20.dp),
                             ) {
                                 items(textPages.size) { i ->
-                                    val (pageIndex, text) = textPages[i]
+                                    val (pageIndex, text, label) = textPages[i]
                                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                         Text(
-                                            text = "Page ${pageIndex + 1}",
+                                            text = label,
                                             style = MaterialTheme.typography.labelMedium,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         )

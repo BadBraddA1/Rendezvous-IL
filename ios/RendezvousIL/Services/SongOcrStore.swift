@@ -1,6 +1,6 @@
 import Foundation
 
-/// Payload at `SongPackItem.ocr_url` (R2 JSON from lyric-band / fulltext OCR).
+/// Payload at `SongPackItem.ocr_url` (R2 JSON from book/full-song OCR).
 struct SongOcrDocument: Decodable, Sendable {
     struct Page: Decodable, Sendable, Identifiable {
         var id: Int { index }
@@ -9,11 +9,19 @@ struct SongOcrDocument: Decodable, Sendable {
         let confidence: Double?
     }
 
+    struct Verse: Decodable, Sendable, Identifiable {
+        var id: Int { index }
+        let index: Int
+        let text: String?
+        let lines: [String]?
+    }
+
     let item_id: String?
     let title: String?
     let verse_count: Int?
     let page_count: Int?
     let pages: [Page]?
+    let verses: [Verse]?
     let verse_pages: [Int]?
     /// auto | needs_review | confirmed
     let status: String?
@@ -63,15 +71,25 @@ enum SongOcrStore {
         return doc
     }
 
-    /// Lyrics-oriented cleanup of noisy shape-note OCR.
-    static func displayPages(from doc: SongOcrDocument) -> [(index: Int, text: String)] {
+    /// Prefer verse blocks from book/full-song OCR; fall back to page text.
+    static func displayPages(from doc: SongOcrDocument) -> [(index: Int, text: String, label: String)] {
+        let verses = doc.verses ?? []
+        if !verses.isEmpty {
+            return verses.compactMap { v in
+                let cleaned = cleanPageText(
+                    v.text ?? (v.lines ?? []).joined(separator: "\n"),
+                    isTitle: false
+                )
+                guard !cleaned.isEmpty else { return nil }
+                return (v.index, cleaned, "Verse \(v.index)")
+            }
+        }
         let pages = doc.pages ?? []
         return pages.compactMap { page in
             let cleaned = cleanPageText(page.text ?? "", isTitle: page.index == 0)
             guard !cleaned.isEmpty else { return nil }
-            // Skip bare title cards in text mode (page · "Name" · N verses).
             if page.index == 0, isMostlyTitleCard(cleaned) { return nil }
-            return (page.index, cleaned)
+            return (page.index, cleaned, "Page \(page.index + 1)")
         }
     }
 
@@ -85,12 +103,10 @@ enum SongOcrStore {
             lines = lines.filter { line in
                 if line.isEmpty { return false }
                 let letters = line.unicodeScalars.filter { CharacterSet.letters.contains($0) }.count
-                // Drop stave/glyph noise lines with almost no letters.
                 return letters >= 3
             }
         }
 
-        // Collapse runs of blank lines.
         var out: [String] = []
         var blank = false
         for line in lines {

@@ -20,6 +20,7 @@ type ReviewItem = {
 }
 
 type OcrPage = { index: number; text: string; confidence?: number }
+type OcrVerse = { index: number; text: string; lines?: string[] }
 
 export function SongOcrReviewQueue({ canEdit }: { canEdit: boolean }) {
   const { toast } = useToast()
@@ -27,6 +28,7 @@ export function SongOcrReviewQueue({ canEdit }: { canEdit: boolean }) {
   const [loading, setLoading] = useState(true)
   const [activeId, setActiveId] = useState<string | null>(null)
   const [pages, setPages] = useState<OcrPage[]>([])
+  const [verses, setVerses] = useState<OcrVerse[]>([])
   const [saving, setSaving] = useState(false)
 
   const load = useCallback(async () => {
@@ -54,12 +56,24 @@ export function SongOcrReviewQueue({ canEdit }: { canEdit: boolean }) {
   const openItem = async (item: ReviewItem) => {
     setActiveId(item.id)
     setPages([])
+    setVerses([])
     try {
       // Proxy via admin API — CDN has no CORS, so browser can't fetch ocr_url.
       const res = await fetch(`/api/admin/songs/ocr-review/${item.id}`)
       const doc = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(doc.error || "OCR JSON fetch failed")
-      setPages(Array.isArray(doc.pages) ? doc.pages : [])
+      const v = Array.isArray(doc.verses) ? doc.verses : []
+      setVerses(v)
+      if (v.length > 0) {
+        setPages(
+          v.map((verse: OcrVerse) => ({
+            index: Math.max(0, Number(verse.index) - 1),
+            text: verse.text || "",
+          })),
+        )
+      } else {
+        setPages(Array.isArray(doc.pages) ? doc.pages : [])
+      }
     } catch (e) {
       toast({
         title: "Could not load OCR text",
@@ -73,10 +87,21 @@ export function SongOcrReviewQueue({ canEdit }: { canEdit: boolean }) {
     if (!canEdit) return
     setSaving(true)
     try {
+      const bodyVerses =
+        verses.length > 0
+          ? pages.map((p, i) => ({
+              index: verses[i]?.index ?? i + 1,
+              text: p.text,
+            }))
+          : undefined
       const res = await fetch(`/api/admin/songs/ocr-review/${item.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "confirmed", pages }),
+        body: JSON.stringify({
+          status: "confirmed",
+          pages,
+          verses: bodyVerses,
+        }),
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(data.error || "Save failed")
@@ -84,6 +109,7 @@ export function SongOcrReviewQueue({ canEdit }: { canEdit: boolean }) {
       setItems((prev) => prev.filter((i) => i.id !== item.id))
       setActiveId(null)
       setPages([])
+      setVerses([])
     } catch (e) {
       toast({
         title: "Could not confirm",
@@ -169,9 +195,11 @@ export function SongOcrReviewQueue({ canEdit }: { canEdit: boolean }) {
                 <p className="text-sm text-muted-foreground">No page text yet.</p>
               ) : (
                 pages.map((page, i) => (
-                  <div key={page.index} className="space-y-1">
+                  <div key={`${page.index}-${i}`} className="space-y-1">
                     <div className="text-xs font-medium text-muted-foreground">
-                      Page {page.index + 1}
+                      {verses.length > 0
+                        ? `Verse ${verses[i]?.index ?? i + 1}`
+                        : `Page ${page.index + 1}`}
                       {page.confidence != null
                         ? ` · ${Math.round(page.confidence * 100)}%`
                         : ""}

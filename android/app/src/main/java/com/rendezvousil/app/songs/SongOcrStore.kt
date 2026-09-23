@@ -17,12 +17,20 @@ data class SongOcrPage(
 )
 
 @Serializable
+data class SongOcrVerse(
+    val index: Int = 0,
+    val text: String? = null,
+    val lines: List<String>? = null,
+)
+
+@Serializable
 data class SongOcrDocument(
     val item_id: String? = null,
     val title: String? = null,
     val verse_count: Int? = null,
     val page_count: Int? = null,
     val pages: List<SongOcrPage> = emptyList(),
+    val verses: List<SongOcrVerse> = emptyList(),
     val verse_pages: List<Int>? = null,
     /** auto | needs_review | confirmed */
     val status: String? = null,
@@ -68,13 +76,22 @@ class SongOcrStore(context: Context) {
         }
     }
 
-    fun displayPages(doc: SongOcrDocument): List<Pair<Int, String>> =
-        doc.pages.mapNotNull { page ->
+    fun displayPages(doc: SongOcrDocument): List<Triple<Int, String, String>> {
+        if (doc.verses.isNotEmpty()) {
+            return doc.verses.mapNotNull { v ->
+                val raw = v.text ?: v.lines?.joinToString("\n").orEmpty()
+                val cleaned = cleanPageText(raw, isTitle = false)
+                if (cleaned.isEmpty()) null
+                else Triple(v.index, cleaned, "Verse ${v.index}")
+            }
+        }
+        return doc.pages.mapNotNull { page ->
             val cleaned = cleanPageText(page.text.orEmpty(), isTitle = page.index == 0)
             if (cleaned.isEmpty()) return@mapNotNull null
             if (page.index == 0 && isMostlyTitleCard(cleaned)) return@mapNotNull null
-            page.index to cleaned
+            Triple(page.index, cleaned, "Page ${page.index + 1}")
         }
+    }
 
     private fun cleanPageText(raw: String, isTitle: Boolean): String {
         var lines = raw.replace("\u000c", "\n").lines().map { it.trim() }

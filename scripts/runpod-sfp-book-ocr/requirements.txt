@@ -1,0 +1,7 @@
+# RunPod SFP book-scan OCR (v3) — PaddleOCR PP-OCRv4 GPU
+paddlepaddle-gpu==2.6.2
+paddleocr==2.9.1
+pymupdf>=1.24
+Pillow>=10.0
+requests>=2.31
+numpy>=1.24

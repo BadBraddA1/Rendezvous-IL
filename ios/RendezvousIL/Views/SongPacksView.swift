@@ -399,7 +399,7 @@ struct SongItemViewer: View {
     @State private var index: Int = 0
     @State private var jumpPage: Int? = nil
     @State private var displayMode: DisplayMode = .slides
-    @State private var serverPages: [(index: Int, text: String)] = []
+    @State private var serverPages: [(index: Int, text: String, label: String)] = []
     @State private var ocrLoading = false
     @State private var ocrFailed = false
     @State private var ocrNeedsReview = false
@@ -535,7 +535,7 @@ struct SongItemViewer: View {
                 LazyVStack(alignment: .leading, spacing: 24) {
                     ForEach(serverPages, id: \.index) { page in
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("Page \(page.index + 1)")
+                            Text(page.label)
                                 .font(.caption.weight(.semibold))
                                 .foregroundStyle(.secondary)
                             Text(page.text)

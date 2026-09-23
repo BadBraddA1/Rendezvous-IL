@@ -98,15 +98,17 @@ export async function PATCH(request: Request, { params }: Params) {
       }
     }
     const pages = Array.isArray(body.pages) ? body.pages : prev.pages || []
+    const verses = Array.isArray(body.verses) ? body.verses : prev.verses || []
     if (typeof body.confidence === "number") confidence = body.confidence
     const payload = {
       ...prev,
       item_id: itemId,
       title: String(existing.title),
       pages,
+      verses,
       confidence: confidence ?? 1,
       status,
-      method: prev.method || "lyric_band_vision",
+      method: prev.method || "paddleocr_full_song_ppt",
       reviewed_at: new Date().toISOString(),
     }
     if (!isR2MediaConfigured()) {
