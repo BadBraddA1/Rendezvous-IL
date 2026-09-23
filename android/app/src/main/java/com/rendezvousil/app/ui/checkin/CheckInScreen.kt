@@ -641,13 +641,6 @@ private fun ResultSection(
                 ) {
                     Text("Scan next family")
                 }
-            } else {
-                TextButton(
-                    onClick = onScanNext,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text("Wrong family — scan again")
-                }
             }
         }
     }

@@ -244,13 +244,6 @@ struct CheckInView: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 10)
                 .buttonStyle(.bordered)
-            } else {
-                Button("Wrong family — scan again") {
-                    resetStation()
-                }
-                .font(.subheadline.weight(.medium))
-                .frame(maxWidth: .infinity)
-                .foregroundStyle(.secondary)
             }
         }
         .padding()

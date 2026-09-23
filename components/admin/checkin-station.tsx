@@ -573,11 +573,6 @@ export function CheckinStation() {
                       </Button>
                     ) : null}
                   </div>
-                  {!result.registration.checked_in ? (
-                    <Button onClick={reset} variant="ghost" className="w-full">
-                      Wrong family — scan again
-                    </Button>
-                  ) : null}
                 </div>
               </div>
           </CardContent>
