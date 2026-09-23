@@ -1,5 +1,7 @@
 package com.rendezvousil.app.ui.checkin
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -7,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -33,8 +36,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -42,8 +47,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import android.speech.tts.TextToSpeech
 import com.clerk.api.Clerk
 import com.clerk.ui.auth.AuthView
 import com.rendezvousil.app.BuildConfig
@@ -136,28 +144,105 @@ fun CheckInScreen(
                             .verticalScroll(rememberScrollState())
                             .padding(16.dp),
                     )
-                    uiState.finalizedBanner?.let { banner ->
-                        Surface(
-                            modifier = Modifier
-                                .align(Alignment.TopCenter)
-                                .padding(horizontal = 16.dp, vertical = 8.dp)
-                                .fillMaxWidth(),
-                            shape = RoundedCornerShape(14.dp),
-                            color = BrandColors.LakeLight.copy(alpha = 0.95f),
-                            shadowElevation = 6.dp,
-                        ) {
-                            Text(
-                                text = banner,
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                textAlign = TextAlign.Center,
-                                color = BrandColors.Lake,
-                            )
-                        }
+                    uiState.celebrationFamily?.let { family ->
+                        CheckInCelebrationOverlay(
+                            familyLastName = family,
+                            onDismiss = viewModel::dismissCelebration,
+                        )
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun CheckInCelebrationOverlay(
+    familyLastName: String,
+    onDismiss: () -> Unit,
+) {
+    val context = LocalContext.current
+    val confettiColors = remember {
+        listOf(
+            Color(0xFFFFD60A),
+            Color(0xFFFF375F),
+            Color(0xFF5AC8FA),
+            Color.White,
+            Color(0xFFBF5AF2),
+            Color(0xFF30D158),
+        )
+    }
+
+    DisposableEffect(familyLastName) {
+        val holder = arrayOfNulls<TextToSpeech>(1)
+        holder[0] = TextToSpeech(context) { status ->
+            val engine = holder[0] ?: return@TextToSpeech
+            if (status == TextToSpeech.SUCCESS) {
+                engine.language = Locale.US
+                engine.speak(
+                    "Congratulations! You've been checked in.",
+                    TextToSpeech.QUEUE_FLUSH,
+                    null,
+                    "checkin-celebration",
+                )
+            }
+        }
+        onDispose {
+            holder[0]?.stop()
+            holder[0]?.shutdown()
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .zIndex(20f)
+            .background(Color(0xFF22C55E).copy(alpha = 0.92f))
+            .clickable(onClick = onDismiss),
+        contentAlignment = Alignment.Center,
+    ) {
+        confettiColors.forEachIndexed { index, color ->
+            val leftFraction = ((index * 37) % 100) / 100f
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .fillMaxWidth(leftFraction.coerceIn(0.05f, 0.95f))
+                    .offset(y = ((index % 7) * 18).dp)
+                    .size(width = 10.dp, height = 14.dp)
+                    .background(color, RoundedCornerShape(2.dp)),
+            )
+        }
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.padding(28.dp),
+        ) {
+            Text(text = "🎉", fontSize = 64.sp)
+            Text(
+                text = "Congratulations!",
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                text = "You've been checked in",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = Color.White.copy(alpha = 0.95f),
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                text = "$familyLastName family",
+                style = MaterialTheme.typography.titleMedium,
+                color = Color.White.copy(alpha = 0.9f),
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                text = "Tap to dismiss",
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.White.copy(alpha = 0.75f),
+            )
         }
     }
 }

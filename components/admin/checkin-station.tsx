@@ -118,20 +118,38 @@ export function CheckinStation() {
   const [undoConfirmOpen, setUndoConfirmOpen] = useState(false)
   const [pendingSignatures, setPendingSignatures] = useState<string[]>([])
   const [scanError, setScanError] = useState<string | null>(null)
-  const [finalizedBanner, setFinalizedBanner] = useState<string | null>(null)
+  const [celebrationFamily, setCelebrationFamily] = useState<string | null>(null)
   const scannerRef = useRef<{ stop: () => Promise<void>; clear: () => void } | null>(null)
   const lookupInFlight = useRef(false)
-  const finalizedTimer = useRef<number | null>(null)
+  const celebrationTimer = useRef<number | null>(null)
   const { toast } = useToast()
 
-  const showFinalizedBanner = useCallback((familyLastName: string) => {
-    if (finalizedTimer.current != null) window.clearTimeout(finalizedTimer.current)
-    setFinalizedBanner(`Finalized check-in · ${familyLastName} family`)
-    finalizedTimer.current = window.setTimeout(() => {
-      setFinalizedBanner(null)
-      finalizedTimer.current = null
-    }, 5000)
+  const dismissCelebration = useCallback(() => {
+    if (celebrationTimer.current != null) {
+      window.clearTimeout(celebrationTimer.current)
+      celebrationTimer.current = null
+    }
+    window.speechSynthesis?.cancel()
+    setCelebrationFamily(null)
   }, [])
+
+  const showCelebration = useCallback(
+    (familyLastName: string) => {
+      if (celebrationTimer.current != null) window.clearTimeout(celebrationTimer.current)
+      window.speechSynthesis?.cancel()
+      setCelebrationFamily(familyLastName)
+      const utter = new SpeechSynthesisUtterance(
+        `Congratulations, ${familyLastName} family. You've been checked in.`,
+      )
+      utter.rate = 1.05
+      utter.pitch = 1.05
+      window.speechSynthesis?.speak(utter)
+      celebrationTimer.current = window.setTimeout(() => {
+        dismissCelebration()
+      }, 4500)
+    },
+    [dismissCelebration],
+  )
 
   const fetchPendingSignatures = async (registrationId: number) => {
     try {
@@ -264,7 +282,8 @@ export function CheckinStation() {
       const data = await res.json()
       setResult({ ...result, registration: data.registration })
       playBoop("good")
-      showFinalizedBanner(result.registration.family_last_name)    } catch (error) {
+      showCelebration(result.registration.family_last_name)
+    } catch (error) {
       console.error("[checkin] Check-in failed:", error)
       playBoop("bad")
       toast({ title: "Error", description: "Check-in failed", variant: "destructive" })
@@ -313,16 +332,50 @@ export function CheckinStation() {
 
   return (
     <>
-      {finalizedBanner ? (
-        <div
-          className="pointer-events-none fixed inset-x-3 top-[calc(0.65rem+env(safe-area-inset-top))] z-50 md:inset-x-auto md:left-1/2 md:w-full md:max-w-md md:-translate-x-1/2"
-          aria-live="polite"
+      {celebrationFamily ? (
+        <button
+          type="button"
+          className="fixed inset-0 z-50 flex cursor-pointer flex-col items-center justify-center gap-3 border-0 bg-emerald-500/92 p-6 text-center animate-in fade-in duration-200"
+          onClick={dismissCelebration}
+          aria-live="assertive"
           role="status"
         >
-          <div className="rounded-xl border border-primary/35 bg-card/95 px-4 py-3 text-center text-sm font-semibold shadow-lg backdrop-blur-md animate-in fade-in slide-in-from-top-2 duration-300">
-            {finalizedBanner}
-          </div>
-        </div>
+          <span
+            className="pointer-events-none absolute inset-0 animate-pulse bg-emerald-400/35"
+            aria-hidden
+          />
+          {Array.from({ length: 48 }, (_, i) => {
+            const colors = ["#FFD60A", "#FF375F", "#5AC8FA", "#FFFFFF", "#BF5AF2", "#30D158"]
+            const left = ((i * 37) % 100)
+            const delay = (i % 12) * 0.05
+            const duration = 1.8 + (i % 5) * 0.25
+            return (
+              <span
+                key={i}
+                className="pointer-events-none absolute top-[-8%] h-2.5 w-2 rounded-sm"
+                style={{
+                  left: `${left}%`,
+                  backgroundColor: colors[i % colors.length],
+                  animation: `ren-confetti-fall ${duration}s linear ${delay}s both`,
+                  transform: `rotate(${(i * 23) % 360}deg)`,
+                }}
+                aria-hidden
+              />
+            )
+          })}
+          <style
+            dangerouslySetInnerHTML={{
+              __html: `@keyframes ren-confetti-fall{0%{transform:translate3d(0,0,0) rotate(0deg);opacity:1}100%{transform:translate3d(0,110vh,0) rotate(540deg);opacity:.85}}`,
+            }}
+          />
+          <p className="relative z-10 text-3xl font-black tracking-tight text-white drop-shadow-md sm:text-5xl">
+            You&apos;ve been checked in! 🎉
+          </p>
+          <p className="relative z-10 text-lg font-semibold text-white/95 sm:text-2xl">
+            Congratulations, {celebrationFamily} family
+          </p>
+          <p className="relative z-10 text-sm text-white/75">Tap to dismiss</p>
+        </button>
       ) : null}
       <div className="grid gap-6 md:grid-cols-2">
         <Card>

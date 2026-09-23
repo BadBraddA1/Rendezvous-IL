@@ -27,6 +27,7 @@
 		4126E9AE149320ED218045AB /* RendezvousWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5827AB9131F3A63DC2A47844 /* RendezvousWidgets.swift */; };
 		41BED9B78B70B30C4B4C4CAF /* SongPackModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = F709048C8F9858BA207E54F2 /* SongPackModels.swift */; };
 		43BD0772D15AB8DEBBBF9D40 /* CheckInQRScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8B82CB3618AEAA7A00515AB /* CheckInQRScannerView.swift */; };
+		BCD623EDD189E9374D38832B /* CheckInCelebrationOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0BFC6C266FCF98CA5E6BD73 /* CheckInCelebrationOverlay.swift */; };
 		43C393DA7DDE7C0CA8C161E8 /* FAQView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A296DCF541E135FC128C1E7A /* FAQView.swift */; };
 		488099655F0EE0D23E18315E /* SongPacksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49C9C10A07058E0E383EC1BA /* SongPacksView.swift */; };
 		49286F0D8C03FD5E8CA4B77F /* RendezvousActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = C081E03DADF196CFEE5740DD /* RendezvousActivityAttributes.swift */; };
@@ -173,6 +174,7 @@
 		925104CC717795170B3F3923 /* ReminderService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderService.swift; sourceTree = "<group>"; };
 		A296DCF541E135FC128C1E7A /* FAQView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FAQView.swift; sourceTree = "<group>"; };
 		A8B82CB3618AEAA7A00515AB /* CheckInQRScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckInQRScannerView.swift; sourceTree = "<group>"; };
+		B0BFC6C266FCF98CA5E6BD73 /* CheckInCelebrationOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckInCelebrationOverlay.swift; sourceTree = "<group>"; };
 		B0F8D6E375BBF9376F2E488A /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		B27D1FB23F519523E3C7AE87 /* CheckInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckInView.swift; sourceTree = "<group>"; };
 		B29FB9D8B2258141B88927CA /* RendezvousILNotificationService.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RendezvousILNotificationService.entitlements; sourceTree = "<group>"; };
@@ -231,6 +233,7 @@
 				0224F790B72595846190F6C8 /* ChatPhotoViewer.swift */,
 				33566839E96130B158BA3681 /* ChatThreadView.swift */,
 				A8B82CB3618AEAA7A00515AB /* CheckInQRScannerView.swift */,
+				B0BFC6C266FCF98CA5E6BD73 /* CheckInCelebrationOverlay.swift */,
 				B27D1FB23F519523E3C7AE87 /* CheckInView.swift */,
 				BDFCA925CF2F46C536CF5593 /* DirectoryView.swift */,
 				C9DDD133CDB46828BF6E765E /* EventReminderSheet.swift */,
@@ -572,6 +575,7 @@
 				748AA24E1EAA9DFD4C151A9D /* ChatPhotoViewer.swift in Sources */,
 				E9A3538651056E006A467139 /* ChatThreadView.swift in Sources */,
 				43BD0772D15AB8DEBBBF9D40 /* CheckInQRScannerView.swift in Sources */,
+				BCD623EDD189E9374D38832B /* CheckInCelebrationOverlay.swift in Sources */,
 				D946492B75289CE18C0C4AF7 /* CheckInView.swift in Sources */,
 				C064E3A1770F545A45AC837B /* ClerkAuthSheet.swift in Sources */,
 				ADA22A3B77F9F98440833E10 /* ContentView.swift in Sources */,

@@ -21,8 +21,8 @@ data class CheckInUiState(
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val successMessage: String? = null,
-    /** RF Orca–style banner after successful check-in. */
-    val finalizedBanner: String? = null,
+    /** Full-screen celebration after successful check-in. */
+    val celebrationFamily: String? = null,
 )
 
 sealed interface CheckInBoopEvent {
@@ -61,19 +61,23 @@ class CheckInViewModel(
         _uiState.value = CheckInUiState()
     }
 
-    private fun showFinalizedBanner(familyLastName: String) {
+    private fun showCelebration(familyLastName: String) {
         viewModelScope.launch {
             _uiState.update {
                 it.copy(
                     successMessage = null,
-                    finalizedBanner = "Finalized check-in · $familyLastName family",
+                    celebrationFamily = familyLastName,
                 )
             }
-            delay(5_000)
+            delay(4_500)
             _uiState.update { state ->
-                if (state.finalizedBanner != null) state.copy(finalizedBanner = null) else state
+                if (state.celebrationFamily != null) state.copy(celebrationFamily = null) else state
             }
         }
+    }
+
+    fun dismissCelebration() {
+        _uiState.update { it.copy(celebrationFamily = null) }
     }
 
     private fun lookupByCode(trimmed: String) {
@@ -143,7 +147,8 @@ class CheckInViewModel(
                     )
                 }
                 _boops.emit(CheckInBoopEvent.Good)
-                showFinalizedBanner(registration.family_last_name)            } catch (error: Exception) {
+                showCelebration(registration.family_last_name)
+            } catch (error: Exception) {
                 _uiState.update {
                     it.copy(
                         isLoading = false,
