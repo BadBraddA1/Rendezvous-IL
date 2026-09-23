@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { checkAdminAuth } from "@/lib/admin-auth"
+import { checkAdminAuth, logAuditAction } from "@/lib/admin-auth"
 import { sql } from "@/lib/db"
 import { formatPhoneForStorage } from "@/lib/phone-format"
 
@@ -92,7 +92,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const admin = await checkAdminAuth()
+  const admin = await checkAdminAuth(req)
   if (!admin) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
@@ -100,16 +100,39 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   try {
     const { id } = await params
 
+    // Related rows — ignore missing optional tables (schema varies by season).
+    const related = [
+      sql`DELETE FROM family_members WHERE registration_id = ${id}`,
+      sql`DELETE FROM health_information WHERE registration_id = ${id}`,
+      sql`DELETE FROM tshirt_orders WHERE registration_id = ${id}`,
+      sql`DELETE FROM volunteer_signups WHERE registration_id = ${id}`,
+      sql`DELETE FROM registration_attendance WHERE registration_id = ${id}`,
+    ] as const
+    for (const q of related) {
+      try {
+        await q
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        if (!/no such table/i.test(message)) throw error
+      }
+    }
 
+    try {
+      await sql`DELETE FROM registrations_v2 WHERE id = ${id}`
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      if (!/no such table/i.test(message)) throw error
+    }
 
-    // Delete all related records (cascade delete)
-    await sql`DELETE FROM family_members WHERE registration_id = ${id}`
-    await sql`DELETE FROM health_information WHERE registration_id = ${id}`
-    await sql`DELETE FROM tshirt_orders WHERE registration_id = ${id}`
-    await sql`DELETE FROM volunteer_signups WHERE registration_id = ${id}`
-
-    // Finally delete the registration
     await sql`DELETE FROM registrations WHERE id = ${id}`
+
+    await logAuditAction(
+      admin.email,
+      "admin_delete_registration",
+      "registration",
+      Number(id),
+      { registration_id: id },
+    )
 
     return NextResponse.json({ success: true })
   } catch (error) {
