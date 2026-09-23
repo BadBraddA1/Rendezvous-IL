@@ -55,12 +55,11 @@ struct SongPacksView: View {
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
-        guard session.isSignedIn else {
+        guard session.isSignedIn, let client = session.apiClient else {
             errorMessage = "Sign in with your family account to download song packs."
             return
         }
         do {
-            let client = APIClient.shared
             let response: SongPacksResponse = try await client.get(
                 "/api/songs/packs?year=\(AppConfig.eventYear)"
             )
@@ -68,7 +67,7 @@ struct SongPacksView: View {
             // Opportunistic download of all published packs in the background.
             for pack in packs {
                 Task {
-                    await downloadIfNeeded(packId: pack.id)
+                    await downloadIfNeeded(client: client, packId: pack.id)
                 }
             }
         } catch {
@@ -76,12 +75,12 @@ struct SongPacksView: View {
         }
     }
 
-    private func downloadIfNeeded(packId: String) async {
+    private func downloadIfNeeded(client: APIClient, packId: String) async {
         guard !downloadingPackIds.contains(packId) else { return }
         downloadingPackIds.insert(packId)
         defer { downloadingPackIds.remove(packId) }
         do {
-            let detail: SongPackDetailResponse = try await APIClient.shared.get("/api/songs/packs/\(packId)")
+            let detail: SongPackDetailResponse = try await client.get("/api/songs/packs/\(packId)")
             guard let pack = detail.pack else { return }
             _ = try await SongPackStore.downloadPack(pack)
         } catch {
@@ -94,6 +93,7 @@ struct SongPackDetailView: View {
     let packId: String
     let packName: String
 
+    @Environment(AppSession.self) private var session
     @State private var pack: SongPackDetail?
     @State private var isLoading = true
     @State private var isDownloading = false
@@ -166,8 +166,12 @@ struct SongPackDetailView: View {
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
+        guard let client = session.apiClient else {
+            errorMessage = "Sign in with your family account to download song packs."
+            return
+        }
         do {
-            let response: SongPackDetailResponse = try await APIClient.shared.get("/api/songs/packs/\(packId)")
+            let response: SongPackDetailResponse = try await client.get("/api/songs/packs/\(packId)")
             pack = response.pack
             if let pack, !SongPackStore.isFullyDownloaded(pack: pack) {
                 await download()
