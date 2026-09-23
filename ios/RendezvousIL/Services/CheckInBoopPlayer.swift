@@ -1,9 +1,11 @@
+import AudioToolbox
 import AVFoundation
 import Foundation
+import MediaPlayer
 import UIKit
 
-/// Short success/fail tones that play even when the hardware silent switch is on.
-/// Pairs with a strong haptic so desk staff still get feedback if media volume is at zero.
+/// Desk check-in tones. Ignores the silent switch, briefly raises media volume if it’s
+/// at zero (Apple won’t otherwise let apps force sound), and always buzzes the phone.
 enum CheckInBoopPlayer {
     enum Kind {
         case good
@@ -14,9 +16,90 @@ enum CheckInBoopPlayer {
     private static let player = AVAudioPlayerNode()
     private static var didConfigure = false
     private static let lock = NSLock()
+    private static let notificationHaptic = UINotificationFeedbackGenerator()
+    private static let impactHaptic = UIImpactFeedbackGenerator(style: .heavy)
+    /// Kept alive while we nudge the system volume slider.
+    private static var volumeNudgeView: MPVolumeView?
 
     static func play(_ kind: Kind) {
-        fireHaptic(kind)
+        buzz(kind)
+        DispatchQueue.main.async {
+            ensureAudibleVolume { playTone(kind) }
+        }
+    }
+
+    private static func buzz(_ kind: Kind) {
+        // Classic vibrate — works even when System Haptics are off / volume is zero.
+        AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
+
+        DispatchQueue.main.async {
+            notificationHaptic.prepare()
+            impactHaptic.prepare()
+            impactHaptic.impactOccurred(intensity: 1.0)
+            switch kind {
+            case .good:
+                notificationHaptic.notificationOccurred(.success)
+            case .bad:
+                notificationHaptic.notificationOccurred(.error)
+            }
+        }
+    }
+
+    /// If the media volume slider is near zero, nudge it up long enough to hear the boop.
+    private static func ensureAudibleVolume(minimum: Float = 0.45, then play: @escaping () -> Void) {
+        let current = AVAudioSession.sharedInstance().outputVolume
+        guard current < minimum else {
+            play()
+            return
+        }
+
+        guard let window = keyWindow else {
+            play()
+            return
+        }
+
+        volumeNudgeView?.removeFromSuperview()
+        let volumeView = MPVolumeView(frame: CGRect(x: -2000, y: -2000, width: 1, height: 1))
+        volumeView.alpha = 0.01
+        volumeView.isUserInteractionEnabled = false
+        window.addSubview(volumeView)
+        volumeNudgeView = volumeView
+        volumeView.layoutIfNeeded()
+
+        let previous = current
+        // Slider is created lazily — give the view a tick to attach it.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            if let slider = volumeView.subviews.compactMap({ $0 as? UISlider }).first {
+                slider.value = minimum
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                play()
+                // Restore the user’s volume after the tone finishes.
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    if let slider = volumeView.subviews.compactMap({ $0 as? UISlider }).first {
+                        slider.value = previous
+                    }
+                    volumeView.removeFromSuperview()
+                    if volumeNudgeView === volumeView {
+                        volumeNudgeView = nil
+                    }
+                }
+            }
+        }
+    }
+
+    private static var keyWindow: UIWindow? {
+        UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap(\.windows)
+            .first { $0.isKeyWindow }
+            ?? UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap(\.windows)
+            .first
+    }
+
+    private static func playTone(_ kind: Kind) {
         lock.lock()
         defer { lock.unlock() }
 
@@ -34,20 +117,7 @@ enum CheckInBoopPlayer {
                 player.play()
             }
         } catch {
-            // Fail soft — haptic already fired; check-in UI still works without audio.
-        }
-    }
-
-    private static func fireHaptic(_ kind: Kind) {
-        DispatchQueue.main.async {
-            let generator = UINotificationFeedbackGenerator()
-            generator.prepare()
-            switch kind {
-            case .good:
-                generator.notificationOccurred(.success)
-            case .bad:
-                generator.notificationOccurred(.error)
-            }
+            // Fail soft — buzz already fired.
         }
     }
 
@@ -71,9 +141,9 @@ enum CheckInBoopPlayer {
                 format: format,
                 sampleRate: sampleRate,
                 segments: [
-                    (freq: 880, duration: 0.07, gain: 0.55),
+                    (freq: 880, duration: 0.07, gain: 0.7),
                     (freq: 0, duration: 0.04, gain: 0),
-                    (freq: 1320, duration: 0.11, gain: 0.5),
+                    (freq: 1320, duration: 0.11, gain: 0.65),
                 ]
             )
         case .bad:
@@ -81,7 +151,7 @@ enum CheckInBoopPlayer {
                 format: format,
                 sampleRate: sampleRate,
                 segments: [
-                    (freq: 220, duration: 0.22, gain: 0.58),
+                    (freq: 220, duration: 0.22, gain: 0.72),
                 ]
             )
         }
