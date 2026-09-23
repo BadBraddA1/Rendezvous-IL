@@ -561,23 +561,21 @@ struct SongItemViewer: View {
         ocrLoading = true
         defer { ocrLoading = false }
         do {
-            let (data, response) = try await URLSession.shared.data(from: url)
+            var request = URLRequest(url: url)
+            request.cachePolicy = .reloadIgnoringLocalCacheData
+            let (data, response) = try await URLSession.shared.data(for: request)
             if let http = response as? HTTPURLResponse, !(200 ... 299).contains(http.statusCode) {
                 ocrFailed = true
                 return
             }
             let doc = try JSONDecoder().decode(SongOcrDocument.self, from: data)
-            if doc.status == "needs_review" {
-                // Still show text if present so staff-tested phones can preview; flag empty.
-                let pages = SongOcrStore.displayPages(from: doc)
-                if pages.isEmpty {
-                    ocrNeedsReview = true
-                    return
-                }
-                serverPages = pages
+            // Prefer verses when present (v3 book / full-song OCR).
+            let pages = SongOcrStore.displayPages(from: doc)
+            if doc.status == "needs_review", pages.isEmpty {
+                ocrNeedsReview = true
                 return
             }
-            serverPages = SongOcrStore.displayPages(from: doc)
+            serverPages = pages
             if serverPages.isEmpty { ocrFailed = true }
         } catch {
             ocrFailed = true

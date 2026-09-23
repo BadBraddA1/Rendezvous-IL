@@ -56,18 +56,21 @@ class SongOcrStore(context: Context) {
 
     suspend fun load(itemId: String, ocrUrl: String?): SongOcrDocument? = withContext(Dispatchers.IO) {
         if (ocrUrl.isNullOrBlank()) return@withContext null
-        cached(itemId)?.let { return@withContext it }
+        // Cache key includes URL so v3 re-uploads aren't stuck on old JSON.
+        val cacheKey = itemId + "-" + ocrUrl.hashCode()
+        cached(cacheKey)?.let { return@withContext it }
         val conn = (URL(ocrUrl).openConnection() as HttpURLConnection).apply {
             connectTimeout = 20_000
             readTimeout = 30_000
             requestMethod = "GET"
+            useCaches = false
         }
         try {
             if (conn.responseCode !in 200..299) return@withContext null
             val body = conn.inputStream.bufferedReader().use { it.readText() }
             val doc = json.decodeFromString<SongOcrDocument>(body)
-            cacheFile(itemId).writeText(body)
-            memory[itemId] = doc
+            cacheFile(cacheKey).writeText(body)
+            memory[cacheKey] = doc
             doc
         } catch (_: Exception) {
             null

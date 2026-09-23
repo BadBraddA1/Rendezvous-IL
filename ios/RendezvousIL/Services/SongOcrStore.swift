@@ -57,16 +57,18 @@ enum SongOcrStore {
     }
 
     static func load(item: SongPackItem) async throws -> SongOcrDocument? {
-        if let hit = cached(itemId: item.id) { return hit }
+        // Bust stale caches when ocr_url changes (same item id, new file).
+        let cacheKey = item.id + "-" + String((item.ocr_url ?? "").hashValue)
+        if let hit = cached(itemId: cacheKey) { return hit }
         guard let raw = item.ocr_url, let remote = URL(string: raw) else { return nil }
         let (data, response) = try await URLSession.shared.data(from: remote)
         if let http = response as? HTTPURLResponse, !(200 ... 299).contains(http.statusCode) {
             return nil
         }
         let doc = try JSONDecoder().decode(SongOcrDocument.self, from: data)
-        try? data.write(to: cacheFile(for: item.id), options: .atomic)
+        try? data.write(to: cacheFile(for: cacheKey), options: .atomic)
         lock.lock()
-        memory[item.id] = doc
+        memory[cacheKey] = doc
         lock.unlock()
         return doc
     }
