@@ -154,7 +154,14 @@ struct SongPackDetailView: View {
                                     )
                                 } label: {
                                     HStack {
-                                        Text(item.title)
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text(item.title)
+                                            if let verses = item.verse_count, verses > 0 {
+                                                Text(verses == 1 ? "1 verse" : "\(verses) verses")
+                                                    .font(.caption)
+                                                    .foregroundStyle(.secondary)
+                                            }
+                                        }
                                         Spacer()
                                         if SongPackStore.isDownloaded(packId: pack.id, item: item) {
                                             Image(systemName: "checkmark.circle.fill")

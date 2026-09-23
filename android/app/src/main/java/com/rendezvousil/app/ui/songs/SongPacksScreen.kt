@@ -301,6 +301,14 @@ fun SongPackDetailScreen(
                                 val downloaded = viewModel.store().isDownloaded(pack.id, item)
                                 ListItem(
                                     headlineContent = { Text(item.title) },
+                                    supportingContent = {
+                                        val verses = item.verse_count
+                                        if (verses != null && verses > 0) {
+                                            Text(
+                                                if (verses == 1) "1 verse" else "$verses verses",
+                                            )
+                                        }
+                                    },
                                     trailingContent = {
                                         if (downloaded) {
                                             Icon(

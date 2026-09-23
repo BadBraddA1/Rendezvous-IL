@@ -44,4 +44,6 @@ struct SongPackItem: Decodable, Identifiable, Sendable, Hashable {
     let file_type: String
     let byte_size: Int
     let content_hash: String
+    let page_count: Int?
+    let verse_count: Int?
 }

@@ -33,6 +33,8 @@ export async function PATCH(request: Request, { params }: Params) {
         fileType?: "pdf" | "image"
         byteSize?: number
         contentHash?: string
+        pageCount?: number | null
+        verseCount?: number | null
       } = {}
 
       if (typeof titleRaw === "string" && titleRaw.trim()) {
@@ -44,11 +46,15 @@ export async function PATCH(request: Request, { params }: Params) {
         if (validationError) {
           return NextResponse.json({ error: validationError }, { status: 400 })
         }
-        const uploaded = await uploadSongPackFile(packId, await file.arrayBuffer(), file.type)
+        const uploaded = await uploadSongPackFile(packId, await file.arrayBuffer(), file.type, {
+          title: updates.title || undefined,
+        })
         updates.fileUrl = uploaded.url
         updates.fileType = uploaded.fileType
         updates.byteSize = uploaded.byteSize
         updates.contentHash = uploaded.contentHash
+        updates.pageCount = uploaded.pageCount
+        updates.verseCount = uploaded.verseCount
       }
 
       const item = await updateSongPackItem(itemId, updates)

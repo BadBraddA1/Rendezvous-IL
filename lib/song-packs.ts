@@ -73,6 +73,10 @@ export interface SongPackItem {
   file_type: SongFileType
   byte_size: number
   content_hash: string
+  /** Music slides + title opener (when known). */
+  page_count: number | null
+  /** Distinct verse numbers found in the PDF (or `-Nvr` filename hint). */
+  verse_count: number | null
   created_at: string
   updated_at: string
 }
@@ -137,6 +141,18 @@ export async function ensureSongPacksSchema(): Promise<void> {
     if (!/duplicate column name/i.test(message)) throw error
   }
 
+  for (const statement of [
+    `ALTER TABLE song_pack_items ADD COLUMN page_count INTEGER`,
+    `ALTER TABLE song_pack_items ADD COLUMN verse_count INTEGER`,
+  ]) {
+    try {
+      await sql.query(statement)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      if (!/duplicate column name/i.test(message)) throw error
+    }
+  }
+
   await seedDefaultPacks(DEFAULT_REGISTRATION_EVENT_YEAR)
   schemaReady = true
 }
@@ -197,6 +213,10 @@ function mapPack(row: SqlRow, itemCount?: number): SongPack {
 
 function mapItem(row: SqlRow): SongPackItem {
   const fileType = String(row.file_type) === "pdf" ? "pdf" : "image"
+  const pageCount =
+    row.page_count != null && row.page_count !== "" ? Number(row.page_count) : null
+  const verseCount =
+    row.verse_count != null && row.verse_count !== "" ? Number(row.verse_count) : null
   return {
     id: String(row.id),
     pack_id: String(row.pack_id),
@@ -206,6 +226,8 @@ function mapItem(row: SqlRow): SongPackItem {
     file_type: fileType,
     byte_size: Number(row.byte_size ?? 0),
     content_hash: String(row.content_hash),
+    page_count: Number.isFinite(pageCount) ? pageCount : null,
+    verse_count: Number.isFinite(verseCount) ? verseCount : null,
     created_at: String(row.created_at),
     updated_at: String(row.updated_at),
   }
@@ -249,20 +271,34 @@ export async function uploadSongPackFile(
   bytes: ArrayBuffer,
   contentType: string,
   options?: { title?: string },
-): Promise<{ url: string; byteSize: number; contentHash: string; fileType: SongFileType }> {
+): Promise<{
+  url: string
+  byteSize: number
+  contentHash: string
+  fileType: SongFileType
+  pageCount: number | null
+  verseCount: number | null
+}> {
   if (!isR2MediaConfigured()) {
     throw new Error(
       "File storage is not configured. Set R2_UPLOAD_WORKER_URL and R2_UPLOAD_SECRET in Vercel.",
     )
   }
 
+  const { extractVerseCountHint } = await import("@/lib/song-pdf-title-slide")
+  const verseHint = options?.title ? extractVerseCountHint(options.title) : null
+
   let payload = Buffer.from(bytes)
   let type = contentType
+  let pageCount: number | null = null
   if (contentType.toLowerCase() === "application/pdf" && options?.title?.trim()) {
-    const { prependSongTitleSlide } = await import("@/lib/song-pdf-title-slide")
-    const withTitle = await prependSongTitleSlide(bytes, cleanSongTitle(options.title))
+    const { prependSongTitleSlide, countPdfPages } = await import("@/lib/song-pdf-title-slide")
+    const withTitle = await prependSongTitleSlide(bytes, cleanSongTitle(options.title), {
+      verseCount: verseHint,
+    })
     payload = Buffer.from(withTitle)
     type = "application/pdf"
+    pageCount = await countPdfPages(withTitle)
   }
 
   const fileType = songFileTypeForContentType(type)
@@ -276,6 +312,8 @@ export async function uploadSongPackFile(
     byteSize: payload.byteLength,
     contentHash,
     fileType,
+    pageCount,
+    verseCount: verseHint,
   }
 }
 
@@ -462,6 +500,8 @@ export async function addSongPackItem(input: {
   fileType: SongFileType
   byteSize: number
   contentHash: string
+  pageCount?: number | null
+  verseCount?: number | null
 }): Promise<SongPackItem> {
   await ensureSongPacksSchema()
   const pack = await getSongPackDetail(input.packId)
@@ -476,13 +516,17 @@ export async function addSongPackItem(input: {
   `
   const sortOrder = Number(maxRow?.max_order ?? -1) + 1
   const id = randomUUID()
+  const pageCount = input.pageCount ?? null
+  const verseCount = input.verseCount ?? null
 
   await sql`
     INSERT INTO song_pack_items (
-      id, pack_id, title, sort_order, file_url, file_type, byte_size, content_hash
+      id, pack_id, title, sort_order, file_url, file_type, byte_size, content_hash,
+      page_count, verse_count
     ) VALUES (
       ${id}, ${input.packId}, ${title}, ${sortOrder},
-      ${input.fileUrl}, ${input.fileType}, ${input.byteSize}, ${input.contentHash}
+      ${input.fileUrl}, ${input.fileType}, ${input.byteSize}, ${input.contentHash},
+      ${pageCount}, ${verseCount}
     )
   `
   await touchPack(input.packId)
@@ -500,6 +544,8 @@ export async function updateSongPackItem(
     fileType?: SongFileType
     byteSize?: number
     contentHash?: string
+    pageCount?: number | null
+    verseCount?: number | null
   },
 ): Promise<SongPackItem | null> {
   await ensureSongPacksSchema()
@@ -530,6 +576,18 @@ export async function updateSongPackItem(
     updates.contentHash !== undefined
       ? updates.contentHash
       : String(existing.content_hash)
+  const pageCount =
+    updates.pageCount !== undefined
+      ? updates.pageCount
+      : existing.page_count != null
+        ? Number(existing.page_count)
+        : null
+  const verseCount =
+    updates.verseCount !== undefined
+      ? updates.verseCount
+      : existing.verse_count != null
+        ? Number(existing.verse_count)
+        : null
 
   if (updates.fileUrl && updates.fileUrl !== String(existing.file_url)) {
     await deleteSongBlob(String(existing.file_url))
@@ -543,6 +601,8 @@ export async function updateSongPackItem(
         file_type = ${fileType},
         byte_size = ${byteSize},
         content_hash = ${contentHash},
+        page_count = ${pageCount},
+        verse_count = ${verseCount},
         updated_at = datetime('now')
     WHERE id = ${itemId}
   `
@@ -615,6 +675,8 @@ export async function copySongPackItemsToPack(
       fileType: String(row.file_type) === "pdf" ? "pdf" : "image",
       byteSize: Number(row.byte_size),
       contentHash: String(row.content_hash),
+      pageCount: row.page_count != null ? Number(row.page_count) : null,
+      verseCount: row.verse_count != null ? Number(row.verse_count) : null,
     })
     added += 1
   }

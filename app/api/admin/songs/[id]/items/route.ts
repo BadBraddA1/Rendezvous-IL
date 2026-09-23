@@ -77,6 +77,8 @@ export async function POST(request: Request, { params }: Params) {
       fileType: uploaded.fileType,
       byteSize: uploaded.byteSize,
       contentHash: uploaded.contentHash,
+      pageCount: uploaded.pageCount,
+      verseCount: uploaded.verseCount,
     })
 
     const updated = await getSongPackDetail(packId)

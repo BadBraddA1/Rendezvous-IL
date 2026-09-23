@@ -51,4 +51,6 @@ data class SongPackItem(
     val file_type: String,
     val byte_size: Int = 0,
     val content_hash: String,
+    val page_count: Int? = null,
+    val verse_count: Int? = null,
 )

@@ -573,6 +573,16 @@ export function SongPacksManager({ canEdit }: { canEdit: boolean }) {
                               {index + 1}. {item.title}
                             </span>
                             <Badge variant="outline">{item.file_type.toUpperCase()}</Badge>
+                            {item.verse_count != null && item.verse_count > 0 ? (
+                              <Badge variant="secondary">
+                                {item.verse_count === 1 ? "1 verse" : `${item.verse_count} verses`}
+                              </Badge>
+                            ) : null}
+                            {item.page_count != null && item.page_count > 0 ? (
+                              <span className="text-xs text-muted-foreground tabular-nums">
+                                {item.page_count} slides
+                              </span>
+                            ) : null}
                             <span className="text-xs text-muted-foreground tabular-nums">
                               {formatBytes(item.byte_size)}
                             </span>
