@@ -44,24 +44,30 @@ enum SongPackStore {
     }
 
     @discardableResult
+    static func downloadItem(packId: String, item: SongPackItem) async throws -> Bool {
+        let dest = localFileURL(packId: packId, item: item)
+        if FileManager.default.fileExists(atPath: dest.path) {
+            return true
+        }
+        guard let remote = URL(string: item.file_url) else { return false }
+        let (temp, response) = try await URLSession.shared.download(from: remote)
+        if let http = response as? HTTPURLResponse, !(200 ... 299).contains(http.statusCode) {
+            return false
+        }
+        if FileManager.default.fileExists(atPath: dest.path) {
+            try? FileManager.default.removeItem(at: dest)
+        }
+        try FileManager.default.moveItem(at: temp, to: dest)
+        return true
+    }
+
+    @discardableResult
     static func downloadPack(_ pack: SongPackDetail) async throws -> Int {
         var downloaded = 0
         for item in pack.items {
-            let dest = localFileURL(packId: pack.id, item: item)
-            if FileManager.default.fileExists(atPath: dest.path) {
+            if try await downloadItem(packId: pack.id, item: item) {
                 downloaded += 1
-                continue
             }
-            guard let remote = URL(string: item.file_url) else { continue }
-            let (temp, response) = try await URLSession.shared.download(from: remote)
-            if let http = response as? HTTPURLResponse, !(200 ... 299).contains(http.statusCode) {
-                continue
-            }
-            if FileManager.default.fileExists(atPath: dest.path) {
-                try? FileManager.default.removeItem(at: dest)
-            }
-            try FileManager.default.moveItem(at: temp, to: dest)
-            downloaded += 1
         }
         if let data = try? JSONEncoder().encode(pack.updated_at) {
             try? data.write(to: metaURL(packId: pack.id), options: .atomic)

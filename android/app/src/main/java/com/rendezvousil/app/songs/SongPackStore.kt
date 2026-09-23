@@ -32,20 +32,21 @@ class SongPackStore(context: Context) {
     fun isFullyDownloaded(pack: SongPackDetail): Boolean =
         pack.items.isNotEmpty() && downloadedCount(pack) == pack.items.size
 
+    suspend fun downloadItem(api: ApiClient, packId: String, item: SongPackItem): Boolean {
+        val dest = localFile(packId, item)
+        if (dest.isFile) return true
+        return try {
+            api.downloadToFile(item.file_url, dest)
+            dest.isFile
+        } catch (_: Exception) {
+            false
+        }
+    }
+
     suspend fun downloadPack(api: ApiClient, pack: SongPackDetail): Int {
         var count = 0
         for (item in pack.items) {
-            val dest = localFile(pack.id, item)
-            if (dest.isFile) {
-                count++
-                continue
-            }
-            try {
-                api.downloadToFile(item.file_url, dest)
-                if (dest.isFile) count++
-            } catch (_: Exception) {
-                // Leave partial; UI can retry.
-            }
+            if (downloadItem(api, pack.id, item)) count++
         }
         return count
     }

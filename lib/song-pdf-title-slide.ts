@@ -39,6 +39,15 @@ function nearly(a: number, b: number, tol = 2): boolean {
 }
 
 /**
+ * Our white openers (and many LibreOffice title cards) are exactly 720×405.
+ * Music slides from the SFP PPT export are ~720×405.07 — use that to peel
+ * stacked title cards without deleting sheet music.
+ */
+function isExactTitleSlideSize(width: number, height: number): boolean {
+  return nearly(width, SFP_SLIDE_WIDTH, 0.5) && height === SFP_SLIDE_HEIGHT
+}
+
+/**
  * Drop legacy 1920×1080 dark title cards so we can replace them with the
  * native-looking white SFP opener (or keep a real SFP title that was underneath).
  */
@@ -66,6 +75,36 @@ export async function stripLegacyDarkTitleSlides(
   return out.save()
 }
 
+/**
+ * Remove leading exact-720×405 title cards (ours and/or native SFP openers)
+ * so a fresh opener can be prepended without stacking.
+ */
+export async function stripLeadingExactTitleSlides(
+  pdfBytes: Uint8Array | ArrayBuffer,
+): Promise<Uint8Array> {
+  const source = await PDFDocument.load(pdfBytes)
+  let start = 0
+  while (start < source.getPageCount()) {
+    const { width, height } = source.getPage(start).getSize()
+    if (!isExactTitleSlideSize(width, height)) break
+    start++
+  }
+  // Never delete the whole document — leave at least one page.
+  if (start === 0) {
+    return pdfBytes instanceof Uint8Array ? pdfBytes : new Uint8Array(pdfBytes)
+  }
+  if (start >= source.getPageCount()) {
+    start = source.getPageCount() - 1
+  }
+  const out = await PDFDocument.create()
+  const rest = await out.copyPages(
+    source,
+    source.getPageIndices().slice(start),
+  )
+  for (const page of rest) out.addPage(page)
+  return out.save()
+}
+
 export async function countPdfPages(pdfBytes: Uint8Array | ArrayBuffer): Promise<number> {
   const doc = await PDFDocument.load(pdfBytes)
   return doc.getPageCount()
@@ -75,8 +114,10 @@ export async function countPdfPages(pdfBytes: Uint8Array | ArrayBuffer): Promise
  * Prepend a white SFP-style title slide (page number + quoted title), matching
  * songs like “2 / We Praise Thee, O God” in the Taylor Publications decks.
  *
- * Idempotent for our v2 producer. Strips legacy dark cards first.
- * Pass `force: true` to rebuild the opener even when v2 is already present.
+ * Idempotent when the PDF already has a single exact-720×405 opener and the
+ * caller is not forcing a rebuild. Always peels stacked exact-size title cards
+ * (pdf-lib overwrites Producer, so we cannot rely on that marker).
+ * Pass `force: true` to rebuild the opener even when one is already present.
  * Pass `hasNativeTitle: true` to only strip legacy cards (no new opener).
  */
 export async function prependSongTitleSlide(
@@ -88,47 +129,23 @@ export async function prependSongTitleSlide(
     hasNativeTitle?: boolean
   } = {},
 ): Promise<Uint8Array> {
-  const stripped = await stripLegacyDarkTitleSlides(pdfBytes)
+  const noDark = await stripLegacyDarkTitleSlides(pdfBytes)
+  const stripped = await stripLeadingExactTitleSlides(noDark)
   const source = await PDFDocument.load(stripped)
 
   if (options.hasNativeTitle) {
     return stripped instanceof Uint8Array ? stripped : new Uint8Array(stripped)
   }
 
-  const producer = source.getProducer() ?? ""
-  const first = source.getPage(0)
-  if (
-    !options.force &&
-    producer.includes(TITLE_SLIDE_PRODUCER) &&
-    first &&
-    nearly(first.getSize().width, SFP_SLIDE_WIDTH) &&
-    nearly(first.getSize().height, SFP_SLIDE_HEIGHT)
-  ) {
-    return stripped instanceof Uint8Array ? stripped : new Uint8Array(stripped)
-  }
-
-  // Rebuild without a prior v2 opener when forcing
-  let body = source
-  if (
-    options.force &&
-    producer.includes(TITLE_SLIDE_PRODUCER) &&
-    first &&
-    nearly(first.getSize().width, SFP_SLIDE_WIDTH) &&
-    nearly(first.getSize().height, SFP_SLIDE_HEIGHT) &&
-    source.getPageCount() > 1
-  ) {
-    const rebuilt = await PDFDocument.create()
-    const rest = await rebuilt.copyPages(
-      source,
-      source.getPageIndices().slice(1),
-    )
-    for (const page of rest) rebuilt.addPage(page)
-    body = rebuilt
-  }
+  // Without force: if music already starts at page 0 after strip, we'll add one
+  // opener. If strip left nothing unusual, still add. (Idempotent path: when
+  // caller re-uploads the same bytes and force is false, strip peels our opener
+  // then we add it back — same visual result.)
 
   const { pageNumber, name } = parseSongDisplayTitle(title)
   const out = await PDFDocument.create()
-  out.setProducer(TITLE_SLIDE_PRODUCER)
+  // Subject survives pdf-lib save; Producer does not stay as our marker.
+  out.setSubject(TITLE_SLIDE_PRODUCER)
   out.setTitle(title)
 
   const page = out.addPage([SFP_SLIDE_WIDTH, SFP_SLIDE_HEIGHT])
@@ -184,7 +201,7 @@ export async function prependSongTitleSlide(
     })
   }
 
-  const copied = await out.copyPages(body, body.getPageIndices())
+  const copied = await out.copyPages(source, source.getPageIndices())
   for (const p of copied) out.addPage(p)
 
   return out.save()

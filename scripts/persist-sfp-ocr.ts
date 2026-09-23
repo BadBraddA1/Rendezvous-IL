@@ -12,6 +12,7 @@ import { createClient } from "@libsql/client"
 import { existsSync, readFileSync } from "fs"
 import { createInterface } from "readline"
 import { createReadStream } from "fs"
+import { verseCountFromTitleLabel } from "./verse-count-from-ocr"
 
 const APPLY = process.argv.includes("--apply")
 const fromArg = process.argv.find((a) => a.startsWith("--from="))
@@ -137,9 +138,10 @@ async function main() {
     }
 
     const verseCount =
-      row.verse_count != null && Number.isFinite(Number(row.verse_count))
+      verseCountFromTitleLabel(pages) ??
+      (row.verse_count != null && Number.isFinite(Number(row.verse_count))
         ? Math.max(1, Math.min(12, Math.floor(Number(row.verse_count))))
-        : null
+        : null)
     const pages = Array.isArray(row.pages)
       ? row.pages.map((p) => ({
           index: Number(p.index),

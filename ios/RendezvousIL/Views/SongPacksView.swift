@@ -92,7 +92,7 @@ struct SongPacksView: View {
                                 Text("Song books")
                             } footer: {
                                 if query.isEmpty {
-                                    Text("Open a book to download it — nothing downloads until you tap in.")
+                                    Text("Browse song books — songs download only when you open one. Event packs download when you open the pack.")
                                 }
                             }
                         }
@@ -107,7 +107,7 @@ struct SongPacksView: View {
                                 Text("Packs")
                             } footer: {
                                 if query.isEmpty {
-                                    Text("Campfire, racket ball, and other set lists for the week.")
+                                    Text("Campfire, racket ball, and other set lists — opening a pack downloads just those songs.")
                                 }
                             }
                         }
@@ -215,6 +215,9 @@ struct SongPackDetailView: View {
     @State private var statusMessage: String?
     @State private var songSearch = ""
     @State private var openViewerItemId: String? = nil
+    @State private var confirmDownloadAll = false
+
+    private var isLibrary: Bool { pack?.is_library == true }
 
     private var filteredItems: [SongPackItem] {
         guard let pack else { return [] }
@@ -239,9 +242,7 @@ struct SongPackDetailView: View {
                     Section {
                         HStack {
                             Label(
-                                SongPackStore.isFullyDownloaded(pack: pack)
-                                    ? "Downloaded for offline use"
-                                    : "\(SongPackStore.downloadedCount(pack: pack)) of \(pack.items.count) downloaded",
+                                downloadStatusLabel(pack: pack),
                                 systemImage: SongPackStore.isFullyDownloaded(pack: pack)
                                     ? "checkmark.circle.fill"
                                     : "arrow.down.circle"
@@ -249,6 +250,10 @@ struct SongPackDetailView: View {
                             Spacer()
                             if isDownloading {
                                 ProgressView()
+                            } else if isLibrary {
+                                Button("Download all…") {
+                                    confirmDownloadAll = true
+                                }
                             } else {
                                 Button("Download") {
                                     Task { await download() }
@@ -259,6 +264,12 @@ struct SongPackDetailView: View {
                             Text(statusMessage)
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
+                        }
+                    } footer: {
+                        if isLibrary {
+                            Text("Song books stay online — each song downloads only when you open it. Use Download all only if you need the whole book offline.")
+                        } else {
+                            Text("Opening this pack downloads its songs for offline use.")
                         }
                     }
                     Section {
@@ -311,8 +322,33 @@ struct SongPackDetailView: View {
                 SongItemViewer(packId: pack.id, items: pack.items, startIndex: idx)
             }
         }
+        .confirmationDialog(
+            "Download entire song book?",
+            isPresented: $confirmDownloadAll,
+            titleVisibility: .visible
+        ) {
+            Button("Download all \(pack?.items.count ?? 0) songs", role: .destructive) {
+                Task { await download() }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This can use a lot of storage and data. Prefer opening songs one at a time unless you need the whole book offline.")
+        }
         .task { await load() }
         .refreshable { await load() }
+    }
+
+    private func downloadStatusLabel(pack: SongPackDetail) -> String {
+        if SongPackStore.isFullyDownloaded(pack: pack) {
+            return "Downloaded for offline use"
+        }
+        let n = SongPackStore.downloadedCount(pack: pack)
+        if isLibrary {
+            return n == 0
+                ? "Browse only — open a song to download it"
+                : "\(n) of \(pack.items.count) opened on this phone"
+        }
+        return "\(n) of \(pack.items.count) downloaded"
     }
 
     private func load() async {
@@ -326,7 +362,8 @@ struct SongPackDetailView: View {
         do {
             let response: SongPackDetailResponse = try await client.get("/api/songs/packs/\(packId)")
             pack = response.pack
-            if let pack, !SongPackStore.isFullyDownloaded(pack: pack) {
+            // Event packs auto-download; song books never — avoid pulling ~900 files by accident.
+            if let pack, pack.is_library != true, !SongPackStore.isFullyDownloaded(pack: pack) {
                 await download()
             }
             if let startItemId, pack?.items.contains(where: { $0.id == startItemId }) == true {
@@ -358,6 +395,9 @@ struct SongItemViewer: View {
 
     @State private var index: Int = 0
     @State private var jumpPage: Int? = nil
+    @State private var isFetchingFile = false
+    @State private var fetchFailed = false
+    @State private var fileEpoch = 0
 
     private var item: SongPackItem { items[index] }
 
@@ -376,9 +416,27 @@ struct SongItemViewer: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            SongFileRepresentable(packId: packId, item: item, targetPage: jumpPage)
-                .id(item.id)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            ZStack {
+                SongFileRepresentable(packId: packId, item: item, targetPage: jumpPage)
+                    .id("\(item.id)-\(fileEpoch)")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                if isFetchingFile {
+                    ProgressView("Downloading song…")
+                        .padding()
+                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
+                } else if fetchFailed, !SongPackStore.isDownloaded(packId: packId, item: item) {
+                    VStack(spacing: 12) {
+                        Text("Couldn’t download this song.")
+                            .multilineTextAlignment(.center)
+                        Button("Try again") {
+                            Task { await ensureDownloaded() }
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
+                    .padding()
+                }
+            }
 
             if verseJumpPages.count > 1 {
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -429,7 +487,28 @@ struct SongItemViewer: View {
         .navigationTitle(item.title)
         .navigationBarTitleDisplayMode(.inline)
         .onAppear { index = startIndex }
-        .onChange(of: index) { _, _ in jumpPage = nil }
+        .onChange(of: index) { _, _ in
+            jumpPage = nil
+            Task { await ensureDownloaded() }
+        }
+        .task(id: item.id) { await ensureDownloaded() }
+    }
+
+    private func ensureDownloaded() async {
+        fetchFailed = false
+        guard !SongPackStore.isDownloaded(packId: packId, item: item) else {
+            fileEpoch += 1
+            return
+        }
+        isFetchingFile = true
+        defer { isFetchingFile = false }
+        do {
+            let ok = try await SongPackStore.downloadItem(packId: packId, item: item)
+            fetchFailed = !ok
+            if ok { fileEpoch += 1 }
+        } catch {
+            fetchFailed = true
+        }
     }
 }
 

@@ -188,7 +188,7 @@ class SongPacksViewModel(
                         downloadedCount = store.downloadedCount(pack),
                     )
                 }
-                if (!store.isFullyDownloaded(pack)) {
+                if (!pack.is_library && !store.isFullyDownloaded(pack)) {
                     downloadCurrentPack()
                 }
             } catch (e: Exception) {
