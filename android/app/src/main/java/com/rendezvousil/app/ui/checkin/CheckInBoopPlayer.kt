@@ -11,16 +11,16 @@ import android.os.Vibrator
 import android.os.VibratorManager
 
 /**
- * Desk check-in tones. Plays on the alarm stream + vibrates.
- * Does **not** change system volume (that flashes the volume UI).
- * Returns true when volume is too low to hear — callers should show a mute banner.
+ * Desk check-in tones. Raises alarm/music volume when muted so the boop can be
+ * heard, vibrates, and returns true only if volume is still too low after that
+ * (caller should show the mute banner).
  */
 object CheckInBoopPlayer {
     private val handler = Handler(Looper.getMainLooper())
 
     /** @return true if a mute fallback banner should be shown */
     fun playGood(context: Context): Boolean {
-        val needsBanner = !isAudible(context)
+        val needsBanner = !ensureAudibleVolume(context)
         vibrate(context, success = true)
         playTone(ToneGenerator.TONE_PROP_ACK, durationMs = 180)
         return needsBanner
@@ -28,20 +28,29 @@ object CheckInBoopPlayer {
 
     /** @return true if a mute fallback banner should be shown */
     fun playBad(context: Context): Boolean {
-        val needsBanner = !isAudible(context)
+        val needsBanner = !ensureAudibleVolume(context)
         vibrate(context, success = false)
         playTone(ToneGenerator.TONE_PROP_NACK, durationMs = 280)
         return needsBanner
     }
 
-    private fun isAudible(context: Context): Boolean {
+    /** Bump streams if muted. Leaves them up for the desk session. */
+    private fun ensureAudibleVolume(context: Context): Boolean {
         return try {
             val am = context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager ?: return true
-            val alarm = am.getStreamVolume(AudioManager.STREAM_ALARM)
-            val music = am.getStreamVolume(AudioManager.STREAM_MUSIC)
-            alarm > 0 || music > 0
+            var audible = false
+            for (stream in listOf(AudioManager.STREAM_ALARM, AudioManager.STREAM_MUSIC)) {
+                val max = am.getStreamMaxVolume(stream)
+                if (max <= 0) continue
+                val desired = (max * 0.55f).toInt().coerceAtLeast(1)
+                if (am.getStreamVolume(stream) < desired) {
+                    am.setStreamVolume(stream, desired, 0)
+                }
+                if (am.getStreamVolume(stream) > 0) audible = true
+            }
+            audible
         } catch (_: Exception) {
-            true
+            false
         }
     }
 

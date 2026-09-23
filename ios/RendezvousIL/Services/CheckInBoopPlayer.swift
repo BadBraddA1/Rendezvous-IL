@@ -1,12 +1,13 @@
 import AudioToolbox
 import AVFoundation
 import Foundation
+import MediaPlayer
 import UIKit
 
-/// Desk check-in tones. Ignores the silent switch and always buzzes.
-/// Does **not** change system volume (that pops the iOS volume HUD).
-/// When media volume is too low to hear, calls `onNeedsMuteAlert` so UI can show
-/// a clear-to-dismiss banner instead.
+/// Desk check-in tones. Ignores the silent switch, always buzzes, and briefly
+/// raises media volume when it’s at zero so the boop can be heard (iOS shows the
+/// system volume HUD when that happens — unavoidable). Mute banner only if the
+/// nudge fails.
 enum CheckInBoopPlayer {
     enum Kind {
         case good
@@ -19,19 +20,21 @@ enum CheckInBoopPlayer {
     private static let lock = NSLock()
     private static let notificationHaptic = UINotificationFeedbackGenerator()
     private static let impactHaptic = UIImpactFeedbackGenerator(style: .heavy)
+    private static var volumeNudgeView: MPVolumeView?
 
-    /// Below this, assume the boop won’t be heard — show the mute banner.
-    static let audibleMinimum: Float = 0.12
+    /// Target volume when nudging up from silence.
+    static let audibleMinimum: Float = 0.45
 
-    /// Plays the boop. `onNeedsMuteAlert` runs on the main queue only when volume is
-    /// too low to hear (we never force the system slider).
+    /// Plays the boop. `onNeedsMuteAlert` runs on the main queue only when volume
+    /// is still too low after a nudge attempt.
     static func play(_ kind: Kind, onNeedsMuteAlert: (() -> Void)? = nil) {
         buzz(kind)
-        let needsBanner = AVAudioSession.sharedInstance().outputVolume < audibleMinimum
-        playTone(kind)
-        if needsBanner {
-            DispatchQueue.main.async {
-                onNeedsMuteAlert?()
+        DispatchQueue.main.async {
+            ensureAudibleVolume { audible in
+                playTone(kind)
+                if !audible {
+                    onNeedsMuteAlert?()
+                }
             }
         }
     }
@@ -52,14 +55,61 @@ enum CheckInBoopPlayer {
         }
     }
 
+    /// Raises system media volume when it’s near zero. Leaves it up for the desk
+    /// session (one HUD flash, then later boops stay audible without another nudge).
+    private static func ensureAudibleVolume(then: @escaping (_ audible: Bool) -> Void) {
+        let current = AVAudioSession.sharedInstance().outputVolume
+        guard current < audibleMinimum else {
+            then(true)
+            return
+        }
+
+        guard let window = keyWindow else {
+            then(false)
+            return
+        }
+
+        volumeNudgeView?.removeFromSuperview()
+        let volumeView = MPVolumeView(frame: CGRect(x: -2000, y: -2000, width: 1, height: 1))
+        volumeView.alpha = 0.01
+        volumeView.isUserInteractionEnabled = false
+        window.addSubview(volumeView)
+        volumeNudgeView = volumeView
+        volumeView.layoutIfNeeded()
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            if let slider = volumeView.subviews.compactMap({ $0 as? UISlider }).first {
+                slider.value = audibleMinimum
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
+                let after = AVAudioSession.sharedInstance().outputVolume
+                let audible = after >= audibleMinimum * 0.85
+                then(audible)
+                volumeView.removeFromSuperview()
+                if volumeNudgeView === volumeView {
+                    volumeNudgeView = nil
+                }
+            }
+        }
+    }
+
+    private static var keyWindow: UIWindow? {
+        UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap(\.windows)
+            .first { $0.isKeyWindow }
+            ?? UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap(\.windows)
+            .first
+    }
+
     private static func playTone(_ kind: Kind) {
         lock.lock()
         defer { lock.unlock() }
 
         do {
             let session = AVAudioSession.sharedInstance()
-            // `.playback` ignores the Ring/Silent switch. Camera must not auto-reconfigure
-            // the session (see CheckInQRScannerView).
             try session.setCategory(.playback, mode: .default, options: [.duckOthers])
             try session.setActive(true, options: [.notifyOthersOnDeactivation])
             try configureEngineIfNeeded()

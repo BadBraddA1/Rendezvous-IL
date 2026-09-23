@@ -86,7 +86,7 @@ struct CheckInMuteAlertOverlay: View {
                     }
 
                     if hintExpanded {
-                        Text("Volume is down, so the boop can’t be heard. Turn volume up and you wouldn’t have to clear these.")
+                        Text("Volume was too low to hear the boop (and we couldn’t raise it). Turn volume up and you wouldn’t have to clear these.")
                             .font(.footnote.weight(.medium))
                             .foregroundStyle(.white.opacity(0.9))
                             .multilineTextAlignment(.center)
