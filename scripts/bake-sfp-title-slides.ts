@@ -64,6 +64,7 @@ const BAKE_PY = join(
 const APPLY = process.argv.includes("--apply")
 const ALL = process.argv.includes("--all")
 const PILOT = process.argv.includes("--pilot") || !ALL
+const FORCE = process.argv.includes("--force")
 
 const PILOT_PAGES = [2, 121, 234, 356, 470, 580, 687, 796, 905, 1030]
 
@@ -197,7 +198,7 @@ async function main() {
     }
 
     const expectedOut = join(OUT, basename(name).replace(/\.ppt$/i, ".pptx"))
-    if (existsSync(expectedOut)) {
+    if (!FORCE && existsSync(expectedOut)) {
       console.log("  skip existing", basename(expectedOut))
       ok++
       continue
@@ -209,6 +210,22 @@ async function main() {
       continue
     }
     const outPptx = join(OUT, basename(pptx))
+    // Prefer DB / -Nvr; else estimate from slide count so every opener has “N verses”
+    let verseCount = verses
+    if (!verseCount) {
+      const pyCount = spawnSync(
+        PY,
+        [
+          "-c",
+          "from pptx import Presentation; import sys; p=Presentation(sys.argv[1]); print(max(1,min(12,max(1,len(p.slides)//2))))",
+          pptx,
+        ],
+        { encoding: "utf8" },
+      )
+      const n = Number((pyCount.stdout || "").trim())
+      if (Number.isFinite(n) && n > 0) verseCount = n
+    }
+
     const bake = spawnSync(
       PY,
       [
@@ -220,7 +237,7 @@ async function main() {
         "--title",
         titleName,
         "--verses",
-        String(verses || 0),
+        String(verseCount || 0),
       ],
       { encoding: "utf8" },
     )
