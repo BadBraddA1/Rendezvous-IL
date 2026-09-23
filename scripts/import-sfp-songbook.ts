@@ -2,9 +2,12 @@
  * Import the full SFP shape-note book into the library song pack:
  *   original .ppt → PDF (LibreOffice) → OCR verse count → white title opener with “N verses” → R2 + Turso.
  *
- * Skips the corrupted “- titled” PPTX folder (python-pptx bake left duplicate slide refs).
+ * Uses original .ppt → PDF (LibreOffice) + Vision OCR for verse counts, then uploads to R2/Turso.
  *
  *   npx tsx --env-file=.env.local scripts/import-sfp-songbook.ts [--apply] [--limit=N] [--resume]
+ *
+ * --limit=N  process at most N *new* songs this run (skips resume hits). Use with --resume for chunks.
+ * --resume   keep existing pack rows; skip pages already in DB / done.json
  */
 import { createHash, randomUUID } from "crypto"
 import { createClient } from "@libsql/client"
@@ -275,10 +278,9 @@ async function main() {
   const files = readdirSync(SRC)
     .filter(isBaseSong)
     .sort((a, b) => (pageFromName(a) ?? 0) - (pageFromName(b) ?? 0))
-  const selected = LIMIT > 0 ? files.slice(0, LIMIT) : files
 
   console.log(
-    `src=${SRC}\npack=${PACK_SLUG} id=${PACK_ID}\nfiles=${selected.length}/${files.length} apply=${APPLY} resume=${RESUME}`,
+    `src=${SRC}\npack=${PACK_SLUG} id=${PACK_ID}\nfiles=${files.length} apply=${APPLY} resume=${RESUME} limit=${LIMIT || "all"}`,
   )
 
   const workRoot = join(
@@ -351,12 +353,17 @@ async function main() {
     writeFileSync(donePath, JSON.stringify([...donePages]))
     console.log(`resume: ${donePages.size} songs already in pack`)
   }
-  for (const name of selected) {
+  let attempted = 0
+  for (const name of files) {
     const page = pageFromName(name)!
     if (donePages.has(page)) {
-      console.log(`skip ${name} (resume)`)
       continue
     }
+    if (LIMIT > 0 && attempted >= LIMIT) {
+      console.log(`chunk cap reached (--limit=${LIMIT}); re-run with --resume for next chunk`)
+      break
+    }
+    attempted++
 
     const title = cleanSongTitle(name)
     console.log(`IMPORT ${name} → ${title}`)
