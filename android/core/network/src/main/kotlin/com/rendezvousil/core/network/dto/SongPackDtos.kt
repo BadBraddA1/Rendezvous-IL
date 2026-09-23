@@ -76,4 +76,6 @@ data class SongPackItem(
     val verse_count: Int? = null,
     /** 0-based PDF page index for verse 1, 2, 3… */
     val verse_pages: List<Int>? = null,
+    /** CDN JSON with per-page OCR text for text mode. */
+    val ocr_url: String? = null,
 )

@@ -216,6 +216,15 @@ class SongPacksViewModel(
         }
     }
 
+    /** Download a single song PDF/image (song books use this instead of whole-pack download). */
+    suspend fun ensureItemDownloaded(packId: String, itemId: String): Boolean {
+        val pack = _detailState.value.pack ?: return false
+        val item = pack.items.find { it.id == itemId } ?: return false
+        if (store.isDownloaded(packId, item)) return true
+        val client = appSession.authenticatedApiClient ?: return false
+        return store.downloadItem(client, packId, item)
+    }
+
     fun isItemDownloaded(packId: String, itemId: String): Boolean {
         val pack = _detailState.value.pack ?: return false
         val item = pack.items.find { it.id == itemId } ?: return false

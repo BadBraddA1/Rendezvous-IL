@@ -389,6 +389,18 @@ struct SongPackDetailView: View {
 }
 
 struct SongItemViewer: View {
+    enum DisplayMode: String, CaseIterable, Identifiable {
+        case slides
+        case text
+        var id: String { rawValue }
+        var label: String {
+            switch self {
+            case .slides: return "Slides"
+            case .text: return "Text"
+            }
+        }
+    }
+
     let packId: String
     let items: [SongPackItem]
     let startIndex: Int
@@ -398,6 +410,10 @@ struct SongItemViewer: View {
     @State private var isFetchingFile = false
     @State private var fetchFailed = false
     @State private var fileEpoch = 0
+    @State private var displayMode: DisplayMode = .slides
+    @State private var ocrDoc: SongOcrDocument?
+    @State private var ocrLoading = false
+    @State private var ocrFailed = false
 
     private var item: SongPackItem { items[index] }
 
@@ -414,31 +430,52 @@ struct SongItemViewer: View {
         }
     }
 
+    private var textPages: [(index: Int, text: String)] {
+        guard let ocrDoc else { return [] }
+        return SongOcrStore.displayPages(from: ocrDoc)
+    }
+
     var body: some View {
         VStack(spacing: 0) {
-            ZStack {
-                SongFileRepresentable(packId: packId, item: item, targetPage: jumpPage)
-                    .id("\(item.id)-\(fileEpoch)")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-                if isFetchingFile {
-                    ProgressView("Downloading song…")
-                        .padding()
-                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
-                } else if fetchFailed, !SongPackStore.isDownloaded(packId: packId, item: item) {
-                    VStack(spacing: 12) {
-                        Text("Couldn’t download this song.")
-                            .multilineTextAlignment(.center)
-                        Button("Try again") {
-                            Task { await ensureDownloaded() }
-                        }
-                        .buttonStyle(.borderedProminent)
+            if item.ocr_url != nil {
+                Picker("View", selection: $displayMode) {
+                    ForEach(DisplayMode.allCases) { mode in
+                        Text(mode.label).tag(mode)
                     }
-                    .padding()
                 }
+                .pickerStyle(.segmented)
+                .padding(.horizontal)
+                .padding(.vertical, 8)
             }
 
-            if verseJumpPages.count > 1 {
+            ZStack {
+                if displayMode == .text {
+                    songTextBody
+                } else {
+                    SongFileRepresentable(packId: packId, item: item, targetPage: jumpPage)
+                        .id("\(item.id)-\(fileEpoch)")
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                    if isFetchingFile {
+                        ProgressView("Downloading song…")
+                            .padding()
+                            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
+                    } else if fetchFailed, !SongPackStore.isDownloaded(packId: packId, item: item) {
+                        VStack(spacing: 12) {
+                            Text("Couldn’t download this song.")
+                                .multilineTextAlignment(.center)
+                            Button("Try again") {
+                                Task { await ensureDownloaded() }
+                            }
+                            .buttonStyle(.borderedProminent)
+                        }
+                        .padding()
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            if displayMode == .slides, verseJumpPages.count > 1 {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
                         Text("Verse")
@@ -489,12 +526,66 @@ struct SongItemViewer: View {
         .onAppear { index = startIndex }
         .onChange(of: index) { _, _ in
             jumpPage = nil
-            Task { await ensureDownloaded() }
+            ocrDoc = nil
+            ocrFailed = false
+            Task {
+                await ensureDownloaded()
+                await loadOcrIfNeeded()
+            }
         }
-        .task(id: item.id) { await ensureDownloaded() }
+        .onChange(of: displayMode) { _, mode in
+            if mode == .text {
+                Task { await loadOcrIfNeeded() }
+            } else {
+                Task { await ensureDownloaded() }
+            }
+        }
+        .task(id: item.id) {
+            await ensureDownloaded()
+            if displayMode == .text || item.ocr_url != nil {
+                await loadOcrIfNeeded()
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var songTextBody: some View {
+        if ocrLoading && textPages.isEmpty {
+            ProgressView("Loading text…")
+        } else if ocrFailed && textPages.isEmpty {
+            ContentUnavailableView(
+                "Text unavailable",
+                systemImage: "text.page.slash",
+                description: Text("Couldn’t load lyrics for this song.")
+            )
+        } else if textPages.isEmpty {
+            ContentUnavailableView(
+                "No text yet",
+                systemImage: "text.page",
+                description: Text("Lyrics OCR isn’t available for this song.")
+            )
+        } else {
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 24) {
+                    ForEach(textPages, id: \.index) { page in
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Page \(page.index + 1)")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                            Text(page.text)
+                                .font(.body)
+                                .textSelection(.enabled)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                    }
+                }
+                .padding()
+            }
+        }
     }
 
     private func ensureDownloaded() async {
+        guard displayMode == .slides else { return }
         fetchFailed = false
         guard !SongPackStore.isDownloaded(packId: packId, item: item) else {
             fileEpoch += 1
@@ -508,6 +599,23 @@ struct SongItemViewer: View {
             if ok { fileEpoch += 1 }
         } catch {
             fetchFailed = true
+        }
+    }
+
+    private func loadOcrIfNeeded() async {
+        guard item.ocr_url != nil else {
+            ocrDoc = nil
+            return
+        }
+        if ocrDoc != nil { return }
+        ocrLoading = true
+        ocrFailed = false
+        defer { ocrLoading = false }
+        do {
+            ocrDoc = try await SongOcrStore.load(item: item)
+            if ocrDoc == nil { ocrFailed = true }
+        } catch {
+            ocrFailed = true
         }
     }
 }

@@ -52,6 +52,11 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.FilterChip
+import androidx.compose.ui.platform.LocalContext
+import com.rendezvousil.app.songs.SongOcrDocument
+import com.rendezvousil.app.songs.SongOcrStore
 import com.rendezvousil.app.theme.BrandColors
 import com.rendezvousil.core.network.dto.SongPackSummary
 import java.io.File
@@ -427,6 +432,10 @@ fun SongItemViewerScreen(
     var index by remember(startIndex, items.size) {
         mutableIntStateOf(startIndex.coerceIn(0, (items.size - 1).coerceAtLeast(0)))
     }
+    var displayMode by remember { mutableStateOf("slides") } // slides | text
+    var ocrDoc by remember { mutableStateOf<SongOcrDocument?>(null) }
+    var ocrLoading by remember { mutableStateOf(false) }
+    var downloadTick by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(packId) {
         if (state.pack?.id != packId) {
@@ -454,71 +463,137 @@ fun SongItemViewerScreen(
                     .padding(padding),
                 contentAlignment = Alignment.Center,
             ) {
-                Text("Needs download — go back and tap Download.")
+                Text("Loading songs…")
             }
         }
-    } else {
-        val item = items[index]
-        val local = viewModel.store().localFile(packId, item).takeIf { it.isFile }
+        return
+    }
 
-        Scaffold(
-            modifier = modifier,
-            topBar = {
-                TopAppBar(
-                    title = { Text(item.title) },
-                    navigationIcon = {
-                        IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                        }
-                    },
-                )
-            },
-        ) { padding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-            ) {
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                        .background(Color.Black),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    when {
-                        local == null -> {
-                            Text(
-                                text = "File not downloaded yet.\nGo back and tap Download.",
-                                color = Color.White,
-                            )
-                        }
-                        item.file_type == "pdf" -> PdfPagesViewer(
-                            file = local,
-                            versePages = item.verse_pages,
-                            verseCount = item.verse_count,
-                            pageCountHint = item.page_count,
-                        )
-                        else -> ZoomableImageFile(file = local)
+    val item = items[index]
+    val context = LocalContext.current
+    val ocr = remember(context) { SongOcrStore(context) }
+
+    LaunchedEffect(item.id, displayMode) {
+        if (displayMode == "text" && !item.ocr_url.isNullOrBlank()) {
+            ocrLoading = true
+            ocrDoc = ocr.load(item.id, item.ocr_url)
+            ocrLoading = false
+        }
+        if (displayMode == "slides" && !viewModel.store().isDownloaded(packId, item)) {
+            viewModel.ensureItemDownloaded(packId, item.id)
+            downloadTick++
+        }
+    }
+
+    val local = viewModel.store().localFile(packId, item).takeIf { it.isFile }
+    // downloadTick forces recomposition after on-demand download
+    @Suppress("UNUSED_EXPRESSION")
+    downloadTick
+    val textPages = ocrDoc?.let { ocr.displayPages(it) }.orEmpty()
+
+    Scaffold(
+        modifier = modifier,
+        topBar = {
+            TopAppBar(
+                title = { Text(item.title) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
-                }
+                },
+            )
+        },
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
+        ) {
+            if (!item.ocr_url.isNullOrBlank()) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    TextButton(
-                        onClick = { index = (index - 1).coerceAtLeast(0) },
-                        enabled = index > 0,
-                    ) { Text("Previous") }
-                    Text("${index + 1} / ${items.size}")
-                    TextButton(
-                        onClick = { index = (index + 1).coerceAtMost(items.lastIndex) },
-                        enabled = index < items.lastIndex,
-                    ) { Text("Next") }
+                    FilterChip(
+                        selected = displayMode == "slides",
+                        onClick = { displayMode = "slides" },
+                        label = { Text("Slides") },
+                    )
+                    FilterChip(
+                        selected = displayMode == "text",
+                        onClick = { displayMode = "text" },
+                        label = { Text("Text") },
+                    )
                 }
+            }
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .background(if (displayMode == "text") MaterialTheme.colorScheme.background else Color.Black),
+                contentAlignment = Alignment.Center,
+            ) {
+                when {
+                    displayMode == "text" -> {
+                        when {
+                            ocrLoading -> CircularProgressIndicator()
+                            textPages.isEmpty() -> Text("No text yet for this song.")
+                            else -> LazyColumn(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(20.dp),
+                            ) {
+                                items(textPages.size) { i ->
+                                    val (pageIndex, text) = textPages[i]
+                                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                        Text(
+                                            text = "Page ${pageIndex + 1}",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                        Text(text, style = MaterialTheme.typography.bodyLarge)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    local == null -> {
+                        CircularProgressIndicator(color = Color.White)
+                    }
+                    item.file_type == "pdf" -> PdfPagesViewer(
+                        file = local,
+                        versePages = item.verse_pages,
+                        verseCount = item.verse_count,
+                        pageCountHint = item.page_count,
+                    )
+                    else -> ZoomableImageFile(file = local)
+                }
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                TextButton(
+                    onClick = {
+                        index = (index - 1).coerceAtLeast(0)
+                        ocrDoc = null
+                    },
+                    enabled = index > 0,
+                ) { Text("Previous") }
+                Text("${index + 1} / ${items.size}")
+                TextButton(
+                    onClick = {
+                        index = (index + 1).coerceAtMost(items.lastIndex)
+                        ocrDoc = null
+                    },
+                    enabled = index < items.lastIndex,
+                ) { Text("Next") }
             }
         }
     }
