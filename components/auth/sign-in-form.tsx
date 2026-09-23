@@ -8,6 +8,7 @@ import { authConfig } from "@/lib/auth-config"
 import { afterAuth, authErrorHasCode, globalAuthError } from "@/lib/after-auth"
 import { AuthPending } from "./auth-pending"
 import { SocialButtons } from "./social-buttons"
+import { useClerkReady } from "./use-clerk-ready"
 
 /**
  * Identifier-first sign-in, like Clerk's widget (Core 3 SignInFuture API):
@@ -17,25 +18,40 @@ import { SocialButtons } from "./social-buttons"
  * 3. code step — Device Trust (`needs_client_trust`) or email-code MFA
  *
  * Forgot password lives at its own route (authConfig.forgotPasswordUrl).
+ *
+ * Props override the authConfig defaults — for deep-link returns
+ * (redirect_url via safeReturnPath) or a second flow on the same site
+ * (e.g. a client portal with its own routes and landing page).
  */
-export function SignInForm() {
+export function SignInForm({
+  afterUrl = authConfig.afterSignInUrl,
+  signUpUrl = authConfig.signUpUrl,
+  forgotPasswordUrl = authConfig.forgotPasswordUrl,
+}: {
+  afterUrl?: string
+  signUpUrl?: string
+  forgotPasswordUrl?: string
+}) {
   const { signIn, errors, fetchStatus } = useSignIn()
   const { isSignedIn } = useAuth()
+  const { ready, loadError } = useClerkReady()
   const router = useRouter()
   const [redirecting, setRedirecting] = useState(false)
   const [handoff, setHandoff] = useState(false)
+  const [actionError, setActionError] = useState<string | null>(null)
   const busy = fetchStatus === "fetching"
   const globalErr = globalAuthError(errors)
+  const bannerError = loadError || actionError || globalErr?.longMessage || globalErr?.message
   const finish = () => {
     setRedirecting(true)
-    return signIn.finalize({ navigate: afterAuth(authConfig.afterSignInUrl) })
+    return signIn.finalize({ navigate: afterAuth(afterUrl) })
   }
 
   // Already signed in (or the session just activated): never show the form —
   // hard-navigate so the request carries the session cookie.
   useEffect(() => {
-    if (isSignedIn) window.location.replace(authConfig.afterSignInUrl)
-  }, [isSignedIn])
+    if (isSignedIn) window.location.replace(afterUrl)
+  }, [isSignedIn, afterUrl])
 
   // Hold the spinner until the browser actually leaves the page.
   if (redirecting || isSignedIn || signIn.status === "complete") {
@@ -47,45 +63,71 @@ export function SignInForm() {
   }
 
   async function handleEmail(formData: FormData) {
-    const identifier = formData.get("email") as string
-    // Looks up the account and populates signIn.userData for the greeting.
-    const { error } = await signIn.create({ identifier })
+    setActionError(null)
+    if (!ready) {
+      setActionError(
+        loadError ?? "Sign-in is still loading — wait a moment and try again.",
+      )
+      return
+    }
 
-    // Unknown email: don't show an error — take them to sign-up with the
-    // email carried over so they're helped along instead of dead-ended.
-    if (authErrorHasCode(error, "form_identifier_not_found")) {
-      setHandoff(true)
-      router.push(
-        `${authConfig.signUpUrl}?email=${encodeURIComponent(identifier)}`
+    const identifier = formData.get("email") as string
+    try {
+      // Looks up the account and populates signIn.userData for the greeting.
+      const { error } = await signIn.create({ identifier })
+
+      // Unknown email: don't show an error — take them to sign-up with the
+      // email carried over so they're helped along instead of dead-ended.
+      if (authErrorHasCode(error, "form_identifier_not_found")) {
+        setHandoff(true)
+        router.push(`${signUpUrl}?email=${encodeURIComponent(identifier)}`)
+      }
+    } catch (err) {
+      setActionError(
+        err instanceof Error ? err.message : "Could not check that email. Try again.",
       )
     }
   }
 
   async function handlePassword(formData: FormData) {
+    setActionError(null)
     const password = formData.get("password") as string
 
-    // No identifier param: continues the attempt created in handleEmail.
-    const { error } = await signIn.password({ password })
-    if (error) return
+    try {
+      // No identifier param: continues the attempt created in handleEmail.
+      const { error } = await signIn.password({ password })
+      if (error) return
 
-    if (signIn.status === "complete") {
-      await finish()
-    } else if (
-      signIn.status === "needs_client_trust" ||
-      signIn.status === "needs_second_factor"
-    ) {
-      // New device or MFA — email code is the default second-factor strategy.
-      await signIn.mfa.sendEmailCode()
+      if (signIn.status === "complete") {
+        await finish()
+      } else if (
+        signIn.status === "needs_client_trust" ||
+        signIn.status === "needs_second_factor"
+      ) {
+        // New device or MFA — email code is the default second-factor strategy.
+        await signIn.mfa.sendEmailCode()
+      }
+    } catch (err) {
+      setActionError(
+        err instanceof Error ? err.message : "Could not sign you in. Try again.",
+      )
     }
   }
 
   async function handleCode(formData: FormData) {
+    setActionError(null)
     const code = formData.get("code") as string
 
-    const { error } = await signIn.mfa.verifyEmailCode({ code })
-    if (error) return
+    try {
+      const { error } = await signIn.mfa.verifyEmailCode({ code })
+      if (error) return
 
-    if (signIn.status === "complete") await finish()
+      if (signIn.status === "complete") await finish()
+    } catch (err) {
+      setActionError(
+        err instanceof Error ? err.message : "Could not verify that code. Try again.",
+      )
+    }
   }
 
   // Step 3: device-trust / MFA email code
@@ -117,10 +159,10 @@ export function SignInForm() {
             <p className="ba-error">{errors.fields.code.message}</p>
           )}
         </div>
-        {globalErr && (
-          <p className="ba-error">{globalErr.longMessage ?? globalErr.message}</p>
+        {bannerError && (
+          <p className="ba-error">{bannerError}</p>
         )}
-        <button type="submit" className="ba-button" disabled={busy}>
+        <button type="submit" className="ba-button" disabled={busy || !ready}>
           {busy ? "Verifying…" : "Verify"}
         </button>
         <button
@@ -169,7 +211,7 @@ export function SignInForm() {
             <label htmlFor="password" className="ba-label">
               Password
             </label>
-            <Link href={authConfig.forgotPasswordUrl} className="ba-link">
+            <Link href={forgotPasswordUrl} className="ba-link">
               Forgot password?
             </Link>
           </div>
@@ -187,10 +229,10 @@ export function SignInForm() {
             <p className="ba-error">{errors.fields.password.message}</p>
           )}
         </div>
-        {globalErr && (
-          <p className="ba-error">{globalErr.longMessage ?? globalErr.message}</p>
+        {bannerError && (
+          <p className="ba-error">{bannerError}</p>
         )}
-        <button type="submit" className="ba-button" disabled={busy}>
+        <button type="submit" className="ba-button" disabled={busy || !ready}>
           {busy ? "Signing in…" : "Sign in"}
         </button>
       </form>
@@ -219,10 +261,11 @@ export function SignInForm() {
             <p className="ba-error">{errors.fields.identifier.message}</p>
           )}
         </div>
-        {globalErr && (
-          <p className="ba-error">{globalErr.longMessage ?? globalErr.message}</p>
+        {bannerError && <p className="ba-error">{bannerError}</p>}
+        {!ready && !loadError && (
+          <p className="ba-hint">Loading sign-in…</p>
         )}
-        <button type="submit" className="ba-button" disabled={busy}>
+        <button type="submit" className="ba-button" disabled={busy || !ready}>
           {busy ? "Checking…" : "Continue"}
         </button>
       </form>

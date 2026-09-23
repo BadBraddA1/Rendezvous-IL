@@ -20,6 +20,12 @@ export const authConfig = {
 
   collectName: true,
 
+  /**
+   * Absolute redirect_url values on these hosts are honored after sign-in
+   * (middleware deep-link returns). Relative paths are always allowed.
+   */
+  allowedReturnHosts: ["rendezvousil.com", "www.rendezvousil.com"] as string[],
+
   /** No social connections enabled on the Ren Clerk instance. */
   socialProviders: [] as SocialProvider[],
 

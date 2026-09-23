@@ -12,7 +12,15 @@ import { AuthPending } from "./auth-pending"
  * 2. verify code
  * 3. set new password → signed in
  */
-export function ForgotPasswordForm() {
+export function ForgotPasswordForm({
+  afterUrl = authConfig.afterSignInUrl,
+  defaultEmail,
+}: {
+  /** Override for secondary flows (e.g. a client portal landing page). */
+  afterUrl?: string
+  /** Prefill for reset links that carry ?email= (e.g. admin-sent emails). */
+  defaultEmail?: string
+}) {
   const { signIn, errors, fetchStatus } = useSignIn()
   const [codeSent, setCodeSent] = useState(false)
   const [redirecting, setRedirecting] = useState(false)
@@ -48,7 +56,7 @@ export function ForgotPasswordForm() {
     if (signIn.status === "complete") {
       setRedirecting(true)
       await signIn.finalize({
-        navigate: afterAuth(authConfig.afterSignInUrl),
+        navigate: afterAuth(afterUrl),
       })
     }
   }
@@ -139,6 +147,7 @@ export function ForgotPasswordForm() {
           type="email"
           autoComplete="email"
           required
+          defaultValue={defaultEmail}
           className="ba-input"
           aria-invalid={Boolean(errors.fields.identifier)}
         />

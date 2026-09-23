@@ -14,6 +14,37 @@ export function globalAuthError(errors: {
   return Array.isArray(g) ? (g[0] ?? null) : g
 }
 
+import { authConfig } from "./auth-config"
+
+/**
+ * Middleware bounces signed-out users to /sign-in?redirect_url=… — honor it
+ * so deep links survive login, but only same-site paths or hosts listed in
+ * authConfig.allowedReturnHosts (never an open redirect).
+ *
+ * Allowed hosts keep their full https origin so cross-domain returns work
+ * (Clerk satellite domains sign in on the primary and land back on the
+ * satellite). Relative paths stay relative.
+ */
+export function safeReturnPath(
+  raw: string | string[] | undefined
+): string | null {
+  const value = Array.isArray(raw) ? raw[0] : raw
+  if (!value) return null
+  if (value.startsWith("/") && !value.startsWith("//")) return value
+  try {
+    const url = new URL(value)
+    if (
+      url.protocol === "https:" &&
+      authConfig.allowedReturnHosts.includes(url.host)
+    ) {
+      return url.origin + url.pathname + url.search
+    }
+  } catch {
+    /* not a URL */
+  }
+  return null
+}
+
 /**
  * True when a Clerk error (single error or API response with an errors
  * array) carries the given machine-stable code, e.g.

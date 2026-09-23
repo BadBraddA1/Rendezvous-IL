@@ -4,7 +4,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { useState, useEffect } from "react"
 import { LogoutIcon, MenuIcon, MessageCircleIcon, UserIcon } from "@/components/icons"
-import { SignOutButton, useAuth } from "@clerk/nextjs"
+import { useAuth, useClerk } from "@clerk/nextjs"
 import { Button } from "@/components/ui/button"
 import { UserMenuButton } from "@/components/user-menu-button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
@@ -77,6 +77,7 @@ function MobileAuthControls({ onNavigate }: { onNavigate: () => void }) {
 
 function MobileAuthControlsInner({ onNavigate }: { onNavigate: () => void }) {
   const { isLoaded, isSignedIn } = useAuth()
+  const { signOut } = useClerk()
   if (!isLoaded) return null
 
   if (isSignedIn) {
@@ -104,16 +105,17 @@ function MobileAuthControlsInner({ onNavigate }: { onNavigate: () => void }) {
             <p className="text-xs text-muted-foreground">View your dashboard</p>
           </div>
         </Link>
-        <SignOutButton redirectUrl="/">
-          <button
-            type="button"
-            className="focus-ring flex min-h-11 w-full items-center gap-3 rounded-lg p-3 text-left transition-colors hover:bg-destructive/10 active:bg-destructive/10"
-            onClick={onNavigate}
-          >
-            <LogoutIcon size={20} className="text-destructive" />
-            <p className="text-sm font-medium text-destructive">Sign Out</p>
-          </button>
-        </SignOutButton>
+        <button
+          type="button"
+          className="focus-ring flex min-h-11 w-full items-center gap-3 rounded-lg p-3 text-left transition-colors hover:bg-destructive/10 active:bg-destructive/10"
+          onClick={() => {
+            onNavigate()
+            void signOut({ redirectUrl: "/" })
+          }}
+        >
+          <LogoutIcon size={20} className="text-destructive" />
+          <p className="text-sm font-medium text-destructive">Sign Out</p>
+        </button>
       </div>
     )
   }
