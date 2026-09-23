@@ -47,6 +47,7 @@ export async function PATCH(request: Request, { params }: Params) {
             ? body.description
             : undefined,
       isPublished: typeof body.is_published === "boolean" ? body.is_published : undefined,
+      isLibrary: typeof body.is_library === "boolean" ? body.is_library : undefined,
       sortOrder: typeof body.sort_order === "number" ? body.sort_order : undefined,
     })
     if (!pack) return NextResponse.json({ error: "Not found" }, { status: 404 })

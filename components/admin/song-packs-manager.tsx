@@ -127,7 +127,7 @@ export function SongPacksManager({ canEdit }: { canEdit: boolean }) {
   }
 
   const togglePublished = async (pack: SongPackDetail) => {
-    if (!canEdit) return
+    if (!canEdit || pack.is_library) return
     try {
       const res = await fetch(`/api/admin/songs/${pack.id}`, {
         method: "PATCH",
@@ -143,6 +143,34 @@ export function SongPacksManager({ canEdit }: { canEdit: boolean }) {
         description: !pack.is_published
           ? "Registered families can download it in the app."
           : "Hidden from the app until published again.",
+      })
+    } catch (error) {
+      toast({
+        title: "Could not update pack",
+        description: error instanceof Error ? error.message : "Try again",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const toggleLibrary = async (pack: SongPackDetail) => {
+    if (!canEdit) return
+    const next = !pack.is_library
+    try {
+      const res = await fetch(`/api/admin/songs/${pack.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ is_library: next }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || "Update failed")
+      setDetail(data.pack)
+      void fetchPacks()
+      toast({
+        title: next ? "Marked as library" : "Event pack",
+        description: next
+          ? "Hidden from the app. Copy songs into published event packs for download."
+          : "Can be published for families to download.",
       })
     } catch (error) {
       toast({
@@ -330,8 +358,9 @@ export function SongPacksManager({ canEdit }: { canEdit: boolean }) {
             Song packs
           </CardTitle>
           <CardDescription>
-            Upload PDFs or images for Campfire, Racket Ball Singing, and other nights without
-            screens. Published packs download to the app for offline use.
+            Upload PDFs or images for Campfire, Racket Ball Singing, and other nights. Mark a full
+            book as a <strong>library</strong> (hidden from the app), then copy songs into published
+            event packs so families only download what they need.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -385,7 +414,11 @@ export function SongPacksManager({ canEdit }: { canEdit: boolean }) {
                   <Badge variant="secondary" className="ml-2 tabular-nums">
                     {pack.item_count ?? 0}
                   </Badge>
-                  {pack.is_published ? null : (
+                  {pack.is_library ? (
+                    <Badge variant="outline" className="ml-1">
+                      Library
+                    </Badge>
+                  ) : pack.is_published ? null : (
                     <Badge variant="outline" className="ml-1">
                       Draft
                     </Badge>
@@ -421,15 +454,26 @@ export function SongPacksManager({ canEdit }: { canEdit: boolean }) {
                       onChange={(e) => setDetail({ ...detail, name: e.target.value })}
                     />
                   </div>
-                  <div className="flex items-end gap-3 pb-1">
+                  <div className="flex flex-col gap-3 pb-1 sm:items-end">
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        id="pack-library"
+                        checked={detail.is_library}
+                        disabled={!canEdit}
+                        onCheckedChange={() => void toggleLibrary(detail)}
+                      />
+                      <Label htmlFor="pack-library">Library (admin only)</Label>
+                    </div>
                     <div className="flex items-center gap-2">
                       <Switch
                         id="pack-published"
                         checked={detail.is_published}
-                        disabled={!canEdit}
+                        disabled={!canEdit || detail.is_library}
                         onCheckedChange={() => void togglePublished(detail)}
                       />
-                      <Label htmlFor="pack-published">Published to app</Label>
+                      <Label htmlFor="pack-published">
+                        {detail.is_library ? "Not published (library)" : "Published to app"}
+                      </Label>
                     </div>
                   </div>
                 </div>

@@ -102,9 +102,7 @@ class SongPacksViewModel(
                 _listState.update {
                     it.copy(isLoading = false, packs = packs, errorMessage = null)
                 }
-                packs.forEach { pack ->
-                    viewModelScope.launch { downloadPackInBackground(pack.id) }
-                }
+                // Download only when a pack is opened — never pull an entire library up front.
             } catch (e: ApiException.Unauthorized) {
                 _listState.update {
                     it.copy(
@@ -201,17 +199,4 @@ class SongPacksViewModel(
     }
 
     fun store(): SongPackStore = store
-
-    private suspend fun downloadPackInBackground(packId: String) {
-        val client = appSession.authenticatedApiClient ?: return
-        if (packId in _listState.value.downloadingPackIds) return
-        _listState.update { it.copy(downloadingPackIds = it.downloadingPackIds + packId) }
-        try {
-            val detail = client.getSongPack(packId).pack ?: return
-            store.downloadPack(client, detail)
-        } catch (_: Exception) {
-        } finally {
-            _listState.update { it.copy(downloadingPackIds = it.downloadingPackIds - packId) }
-        }
-    }
 }

@@ -57,6 +57,8 @@ export interface SongPack {
   event_year: RegistrationEventYear
   sort_order: number
   is_published: boolean
+  /** Admin library (full book) — never shown to members / never auto-downloaded. */
+  is_library: boolean
   updated_at: string
   created_at: string
   item_count?: number
@@ -126,6 +128,15 @@ export async function ensureSongPacksSchema(): Promise<void> {
     ON song_pack_items (pack_id, sort_order)
   `)
 
+  try {
+    await sql.query(`
+      ALTER TABLE song_packs ADD COLUMN is_library INTEGER NOT NULL DEFAULT 0
+    `)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    if (!/duplicate column name/i.test(message)) throw error
+  }
+
   await seedDefaultPacks(DEFAULT_REGISTRATION_EVENT_YEAR)
   schemaReady = true
 }
@@ -177,6 +188,7 @@ function mapPack(row: SqlRow, itemCount?: number): SongPack {
     event_year: parseRegistrationEventYear(row.event_year),
     sort_order: Number(row.sort_order ?? 0),
     is_published: Number(row.is_published) === 1,
+    is_library: Number(row.is_library) === 1,
     updated_at: String(row.updated_at),
     created_at: String(row.created_at),
     item_count: itemCount,
@@ -289,7 +301,9 @@ export async function listSongPacks(options: {
         SELECT p.*,
           (SELECT COUNT(*) FROM song_pack_items i WHERE i.pack_id = p.id) AS item_count
         FROM song_packs p
-        WHERE p.event_year = ${year} AND p.is_published = 1
+        WHERE p.event_year = ${year}
+          AND p.is_published = 1
+          AND COALESCE(p.is_library, 0) = 0
         ORDER BY p.sort_order ASC, p.name ASC
       `
     : await sql`
@@ -315,7 +329,9 @@ export async function getSongPackDetail(
 
   const packs = options.publishedOnly
     ? await sql`
-        SELECT * FROM song_packs WHERE id = ${id} AND is_published = 1 LIMIT 1
+        SELECT * FROM song_packs
+        WHERE id = ${id} AND is_published = 1 AND COALESCE(is_library, 0) = 0
+        LIMIT 1
       `
     : await sql`
         SELECT * FROM song_packs WHERE id = ${id} LIMIT 1
@@ -378,6 +394,7 @@ export async function updateSongPack(
     name?: string
     description?: string | null
     isPublished?: boolean
+    isLibrary?: boolean
     sortOrder?: number
   },
 ): Promise<SongPack | null> {
@@ -391,8 +408,12 @@ export async function updateSongPack(
     updates.description !== undefined
       ? updates.description?.trim() || null
       : existing.description
-  const isPublished =
+  const isLibrary =
+    updates.isLibrary !== undefined ? (updates.isLibrary ? 1 : 0) : existing.is_library ? 1 : 0
+  // Library packs are never published to members
+  let isPublished =
     updates.isPublished !== undefined ? (updates.isPublished ? 1 : 0) : existing.is_published ? 1 : 0
+  if (isLibrary) isPublished = 0
   const sortOrder =
     updates.sortOrder !== undefined ? updates.sortOrder : existing.sort_order
 
@@ -401,6 +422,7 @@ export async function updateSongPack(
     SET name = ${name},
         description = ${description},
         is_published = ${isPublished},
+        is_library = ${isLibrary},
         sort_order = ${sortOrder},
         updated_at = datetime('now')
     WHERE id = ${packId}

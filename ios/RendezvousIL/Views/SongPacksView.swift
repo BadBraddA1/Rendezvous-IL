@@ -7,7 +7,6 @@ struct SongPacksView: View {
     @State private var packs: [SongPackSummary] = []
     @State private var isLoading = true
     @State private var errorMessage: String?
-    @State private var downloadingPackIds: Set<String> = []
     @State private var packSearch = ""
 
     private var filteredPacks: [SongPackSummary] {
@@ -77,27 +76,9 @@ struct SongPacksView: View {
                 "/api/songs/packs?year=\(AppConfig.eventYear)"
             )
             packs = response.packs ?? []
-            // Opportunistic download of all published packs in the background.
-            for pack in packs {
-                Task {
-                    await downloadIfNeeded(client: client, packId: pack.id)
-                }
-            }
+            // Download only when a pack is opened — never pull an entire library up front.
         } catch {
             errorMessage = error.localizedDescription
-        }
-    }
-
-    private func downloadIfNeeded(client: APIClient, packId: String) async {
-        guard !downloadingPackIds.contains(packId) else { return }
-        downloadingPackIds.insert(packId)
-        defer { downloadingPackIds.remove(packId) }
-        do {
-            let detail: SongPackDetailResponse = try await client.get("/api/songs/packs/\(packId)")
-            guard let pack = detail.pack else { return }
-            _ = try await SongPackStore.downloadPack(pack)
-        } catch {
-            // Keep UI usable; detail screen can retry.
         }
     }
 }
