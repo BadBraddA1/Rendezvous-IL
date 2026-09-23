@@ -43,26 +43,49 @@ function loadEnv() {
   return env
 }
 
-function parseVerseMap(raw: unknown): Map<number, number> {
-  const map = new Map<number, number>()
+function parseVerseMap(raw: unknown): {
+  byPage: Map<number, number>
+  byTitle: Map<string, number>
+} {
+  const byPage = new Map<number, number>()
+  const byTitle = new Map<string, number>()
   if (Array.isArray(raw)) {
     for (const row of raw) {
       const page = Number((row as { page?: number }).page)
       const vc = Number((row as { verse_count?: number }).verse_count)
-      if (Number.isFinite(page) && Number.isFinite(vc) && vc >= 1 && vc <= 12) {
-        map.set(page, vc)
+      const title = String((row as { title?: string }).title || "")
+      if (Number.isFinite(vc) && vc >= 1 && vc <= 12) {
+        if (Number.isFinite(page)) byPage.set(page, vc)
+        if (title) byTitle.set(title, vc)
       }
     }
   } else if (raw && typeof raw === "object") {
-    for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+    const obj = raw as Record<string, unknown>
+    if (obj.by_title && typeof obj.by_title === "object") {
+      for (const [k, v] of Object.entries(obj.by_title as Record<string, unknown>)) {
+        const vc = Number(v)
+        if (Number.isFinite(vc) && vc >= 1 && vc <= 12) byTitle.set(k, vc)
+      }
+    }
+    if (obj.by_page && typeof obj.by_page === "object") {
+      for (const [k, v] of Object.entries(obj.by_page as Record<string, unknown>)) {
+        const page = Number(k)
+        const vc = Number(v)
+        if (Number.isFinite(page) && Number.isFinite(vc) && vc >= 1 && vc <= 12) {
+          byPage.set(page, vc)
+        }
+      }
+    }
+    for (const [k, v] of Object.entries(obj)) {
+      if (k === "by_title" || k === "by_page" || k === "results") continue
       const page = Number(k)
       const vc = Number(v)
       if (Number.isFinite(page) && Number.isFinite(vc) && vc >= 1 && vc <= 12) {
-        map.set(page, vc)
+        byPage.set(page, vc)
       }
     }
   }
-  return map
+  return { byPage, byTitle }
 }
 
 async function main() {
@@ -70,8 +93,10 @@ async function main() {
     console.error("pass --from=/path/to/sfp-verse-ocr.json")
     process.exit(1)
   }
-  const verseMap = parseVerseMap(JSON.parse(readFileSync(FROM, "utf8")))
-  console.log(`verse map entries=${verseMap.size} apply=${APPLY}`)
+  const { byPage, byTitle } = parseVerseMap(JSON.parse(readFileSync(FROM, "utf8")))
+  console.log(
+    `verse map pages=${byPage.size} titles=${byTitle.size} apply=${APPLY}`,
+  )
 
   const env = loadEnv()
   const db = createClient({
@@ -101,12 +126,8 @@ async function main() {
   for (const row of items.rows) {
     const title = String(row.title)
     const m = title.match(/^(\d+)\s*·/)
-    if (!m) {
-      skip++
-      continue
-    }
-    const page = Number(m[1])
-    const next = verseMap.get(page)
+    const page = m ? Number(m[1]) : null
+    const next = byTitle.get(title) ?? (page != null ? byPage.get(page) : undefined)
     if (next == null) {
       skip++
       continue
@@ -133,8 +154,6 @@ async function main() {
     }
     let pdfBytes = new Uint8Array(await res.arrayBuffer())
     pdfBytes = await stripLegacyDarkTitleSlides(pdfBytes)
-    // Drop our white opener if present (first page typically text-only / our size)
-    // prependSongTitleSlide with force:true already replaces v2 openers.
     const withTitle = await prependSongTitleSlide(pdfBytes, title, {
       verseCount: next,
       force: true,
@@ -142,7 +161,8 @@ async function main() {
     })
     const pageCount = await countPdfPages(withTitle)
     const contentHash = createHash("sha256").update(Buffer.from(withTitle)).digest("hex")
-    const key = `song-packs/${PACK_ID}/${String(page).padStart(4, "0")}-${contentHash.slice(0, 12)}.pdf`
+    const pageKey = page != null ? String(page).padStart(4, "0") : "xxxx"
+    const key = `song-packs/${PACK_ID}/${pageKey}-${contentHash.slice(0, 12)}.pdf`
     const put = await fetch(`${worker}/object?key=${encodeURIComponent(key)}`, {
       method: "PUT",
       headers: { "x-upload-secret": secret, "content-type": "application/pdf" },

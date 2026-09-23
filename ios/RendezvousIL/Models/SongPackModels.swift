@@ -68,4 +68,6 @@ struct SongPackItem: Decodable, Identifiable, Sendable, Hashable {
     let verse_count: Int?
     /// 0-based PDF page for verse 1, 2, 3… (jump targets).
     let verse_pages: [Int]?
+    /// CDN JSON: per-page OCR text for text-only mode (`pages[].text` + `verse_count`).
+    let ocr_url: String?
 }

@@ -82,6 +82,11 @@ export interface SongPackItem {
    * Example: `[1,5,9]` means jump to pages 2/6/10 in a 1-based UI.
    */
   verse_pages: number[] | null
+  /**
+   * CDN URL for full OCR JSON: `{ title, verse_count, pages: [{ index, text }] }`.
+   * Lets clients render text-only mode without re-OCR.
+   */
+  ocr_url: string | null
   created_at: string
   updated_at: string
 }
@@ -150,6 +155,7 @@ export async function ensureSongPacksSchema(): Promise<void> {
     `ALTER TABLE song_pack_items ADD COLUMN page_count INTEGER`,
     `ALTER TABLE song_pack_items ADD COLUMN verse_count INTEGER`,
     `ALTER TABLE song_pack_items ADD COLUMN verse_pages TEXT`,
+    `ALTER TABLE song_pack_items ADD COLUMN ocr_url TEXT`,
   ]) {
     try {
       await sql.query(statement)
@@ -250,6 +256,7 @@ function mapItem(row: SqlRow): SongPackItem {
     page_count: Number.isFinite(pageCount) ? pageCount : null,
     verse_count: Number.isFinite(verseCount) ? verseCount : null,
     verse_pages: parseVersePages(row.verse_pages),
+    ocr_url: row.ocr_url ? toPublicMediaUrl(String(row.ocr_url)) ?? String(row.ocr_url) : null,
     created_at: String(row.created_at),
     updated_at: String(row.updated_at),
   }
@@ -579,6 +586,7 @@ export async function addSongPackItem(input: {
   pageCount?: number | null
   verseCount?: number | null
   versePages?: number[] | null
+  ocrUrl?: string | null
 }): Promise<SongPackItem> {
   await ensureSongPacksSchema()
   const pack = await getSongPackDetail(input.packId)
@@ -597,15 +605,16 @@ export async function addSongPackItem(input: {
   const verseCount = input.verseCount ?? null
   const versePagesJson =
     input.versePages && input.versePages.length > 0 ? JSON.stringify(input.versePages) : null
+  const ocrUrl = input.ocrUrl ?? null
 
   await sql`
     INSERT INTO song_pack_items (
       id, pack_id, title, sort_order, file_url, file_type, byte_size, content_hash,
-      page_count, verse_count, verse_pages
+      page_count, verse_count, verse_pages, ocr_url
     ) VALUES (
       ${id}, ${input.packId}, ${title}, ${sortOrder},
       ${input.fileUrl}, ${input.fileType}, ${input.byteSize}, ${input.contentHash},
-      ${pageCount}, ${verseCount}, ${versePagesJson}
+      ${pageCount}, ${verseCount}, ${versePagesJson}, ${ocrUrl}
     )
   `
   await touchPack(input.packId)
@@ -626,6 +635,7 @@ export async function updateSongPackItem(
     pageCount?: number | null
     verseCount?: number | null
     versePages?: number[] | null
+    ocrUrl?: string | null
   },
 ): Promise<SongPackItem | null> {
   await ensureSongPacksSchema()
@@ -674,6 +684,12 @@ export async function updateSongPackItem(
       : parseVersePages(existing.verse_pages)
   const versePagesJson =
     versePages && versePages.length > 0 ? JSON.stringify(versePages) : null
+  const ocrUrl =
+    updates.ocrUrl !== undefined
+      ? updates.ocrUrl
+      : existing.ocr_url != null
+        ? String(existing.ocr_url)
+        : null
 
   if (updates.fileUrl && updates.fileUrl !== String(existing.file_url)) {
     await deleteSongBlob(String(existing.file_url))
@@ -690,6 +706,7 @@ export async function updateSongPackItem(
         page_count = ${pageCount},
         verse_count = ${verseCount},
         verse_pages = ${versePagesJson},
+        ocr_url = ${ocrUrl},
         updated_at = datetime('now')
     WHERE id = ${itemId}
   `
@@ -765,6 +782,7 @@ export async function copySongPackItemsToPack(
       pageCount: row.page_count != null ? Number(row.page_count) : null,
       verseCount: row.verse_count != null ? Number(row.verse_count) : null,
       versePages: parseVersePages(row.verse_pages),
+      ocrUrl: row.ocr_url != null ? String(row.ocr_url) : null,
     })
     added += 1
   }
