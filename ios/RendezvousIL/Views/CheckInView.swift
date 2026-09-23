@@ -17,6 +17,8 @@ struct CheckInView: View {
     /// Full-screen celebration after a successful check-in (auto-hides in 5s).
     @State private var celebrationFamily: String?
     @State private var celebrationDismissTask: Task<Void, Never>?
+    /// Obnoxious clear-to-dismiss banner when volume is too low to hear boops.
+    @State private var muteAlertKind: CheckInBoopPlayer.Kind?
 
     private var scannerPaused: Bool { lookup != nil || isLoading }
 
@@ -138,8 +140,20 @@ struct CheckInView: View {
                 .zIndex(20)
             }
         }
+        .overlay {
+            if let muteAlertKind, celebrationFamily == nil {
+                CheckInMuteAlertOverlay(kind: muteAlertKind) {
+                    withAnimation(.easeIn(duration: 0.2)) {
+                        self.muteAlertKind = nil
+                    }
+                }
+                .transition(.opacity)
+                .zIndex(30)
+            }
+        }
         .animation(.easeOut(duration: 0.25), value: celebrationFamily)
-        .allowsHitTesting(!isLoading || celebrationFamily != nil)
+        .animation(.easeOut(duration: 0.2), value: muteAlertKind)
+        .allowsHitTesting(!isLoading || celebrationFamily != nil || muteAlertKind != nil)
     }
 
     private var keepDisplayAliveToggle: some View {
@@ -250,6 +264,16 @@ struct CheckInView: View {
         isDemoPreview = false
         celebrationDismissTask?.cancel()
         celebrationFamily = nil
+        muteAlertKind = nil
+    }
+
+    /// Play boop; if volume is too low, show the clear-to-dismiss mute banner
+    /// (skipped when the celebration overlay already covers success feedback).
+    private func boop(_ kind: CheckInBoopPlayer.Kind, suppressMuteAlert: Bool = false) {
+        CheckInBoopPlayer.play(kind) {
+            guard !suppressMuteAlert else { return }
+            muteAlertKind = kind
+        }
     }
 
     private func showCelebration(familyLastName: String) {
@@ -283,7 +307,7 @@ struct CheckInView: View {
             isDemoPreview = true
             errorMessage = nil
             successMessage = nil
-            CheckInBoopPlayer.play(.good)
+            boop(.good)
             return
         }
 
@@ -302,11 +326,11 @@ struct CheckInView: View {
             lookup = response
             roomKeys = (response.registration.pre_assigned_keys ?? []).joined(separator: ", ")
             tshirtsDistributed = response.registration.tshirts_distributed ?? false
-            CheckInBoopPlayer.play(.good)
+            boop(.good)
         } catch {
             lookup = nil
             errorMessage = error.localizedDescription
-            CheckInBoopPlayer.play(.bad)
+            boop(.bad)
         }
     }
 
@@ -320,7 +344,7 @@ struct CheckInView: View {
             )
             successMessage = nil
             errorMessage = nil
-            CheckInBoopPlayer.play(.good)
+            boop(.good, suppressMuteAlert: true)
             showCelebration(familyLastName: registration.family_last_name)
             return
         }
@@ -352,11 +376,11 @@ struct CheckInView: View {
                 )
             }
             successMessage = nil
-            CheckInBoopPlayer.play(.good)
+            boop(.good, suppressMuteAlert: true)
             showCelebration(familyLastName: registration.family_last_name)
         } catch {
             errorMessage = error.localizedDescription
-            CheckInBoopPlayer.play(.bad)
+            boop(.bad)
         }
     }
 
@@ -369,7 +393,7 @@ struct CheckInView: View {
             tshirtsDistributed = false
             successMessage = "Demo: check-in undone."
             errorMessage = nil
-            CheckInBoopPlayer.play(.good)
+            boop(.good)
             return
         }
 
@@ -390,10 +414,10 @@ struct CheckInView: View {
             roomKeys = (refreshed.registration.pre_assigned_keys ?? []).joined(separator: ", ")
             tshirtsDistributed = refreshed.registration.tshirts_distributed ?? false
             successMessage = "Check-in undone."
-            CheckInBoopPlayer.play(.good)
+            boop(.good)
         } catch {
             errorMessage = error.localizedDescription
-            CheckInBoopPlayer.play(.bad)
+            boop(.bad)
         }
     }
 

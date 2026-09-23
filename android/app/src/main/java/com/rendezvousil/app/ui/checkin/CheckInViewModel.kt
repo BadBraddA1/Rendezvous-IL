@@ -23,6 +23,8 @@ data class CheckInUiState(
     val successMessage: String? = null,
     /** Full-screen celebration after successful check-in. */
     val celebrationFamily: String? = null,
+    /** Clear-to-dismiss banner when volume is too low: true=good, false=bad, null=hidden. */
+    val muteAlertIsGood: Boolean? = null,
 )
 
 sealed interface CheckInBoopEvent {
@@ -78,6 +80,14 @@ class CheckInViewModel(
 
     fun dismissCelebration() {
         _uiState.update { it.copy(celebrationFamily = null) }
+    }
+
+    fun dismissMuteAlert() {
+        _uiState.update { it.copy(muteAlertIsGood = null) }
+    }
+
+    fun showMuteAlert(isGood: Boolean) {
+        _uiState.update { it.copy(muteAlertIsGood = isGood) }
     }
 
     private fun lookupByCode(trimmed: String) {

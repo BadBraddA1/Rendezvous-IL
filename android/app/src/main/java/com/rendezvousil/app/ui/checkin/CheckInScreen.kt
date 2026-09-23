@@ -86,9 +86,16 @@ fun CheckInScreen(
 
     LaunchedEffect(viewModel) {
         viewModel.boops.collectLatest { event ->
+            val celebrating = viewModel.uiState.value.celebrationFamily != null
             when (event) {
-                CheckInBoopEvent.Good -> CheckInBoopPlayer.playGood(context)
-                CheckInBoopEvent.Bad -> CheckInBoopPlayer.playBad(context)
+                CheckInBoopEvent.Good -> {
+                    val needsBanner = CheckInBoopPlayer.playGood(context)
+                    if (needsBanner && !celebrating) viewModel.showMuteAlert(isGood = true)
+                }
+                CheckInBoopEvent.Bad -> {
+                    val needsBanner = CheckInBoopPlayer.playBad(context)
+                    if (needsBanner) viewModel.showMuteAlert(isGood = false)
+                }
             }
         }
     }
@@ -150,8 +157,69 @@ fun CheckInScreen(
                             onDismiss = viewModel::dismissCelebration,
                         )
                     }
+                    uiState.muteAlertIsGood?.let { isGood ->
+                        if (uiState.celebrationFamily == null) {
+                            CheckInMuteAlertOverlay(
+                                isGood = isGood,
+                                onDismiss = viewModel::dismissMuteAlert,
+                            )
+                        }
+                    }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun CheckInMuteAlertOverlay(
+    isGood: Boolean,
+    onDismiss: () -> Unit,
+) {
+    val background = if (isGood) Color(0xFFFFC000) else Color(0xFFF22633)
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .zIndex(30f)
+            .background(background),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.padding(28.dp),
+        ) {
+            Text(text = if (isGood) "✅" else "⛔", fontSize = 64.sp)
+            Text(
+                text = if (isGood) "THAT WORKED" else "NOPE",
+                style = MaterialTheme.typography.displaySmall,
+                fontWeight = FontWeight.Black,
+                color = Color.White,
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                text = if (isGood) "Scan / check-in succeeded" else "Scan failed — try again",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = Color.White.copy(alpha = 0.95f),
+                textAlign = TextAlign.Center,
+            )
+            Button(
+                onClick = onDismiss,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.White,
+                    contentColor = background,
+                ),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text("CLEAR", fontWeight = FontWeight.Black)
+            }
+            Text(
+                text = "Why this banner? Volume is down — turn it up and you wouldn't see this.",
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.White.copy(alpha = 0.9f),
+                textAlign = TextAlign.Center,
+            )
         }
     }
 }

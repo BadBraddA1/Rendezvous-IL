@@ -29,6 +29,7 @@
 		43BD0772D15AB8DEBBBF9D40 /* CheckInQRScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8B82CB3618AEAA7A00515AB /* CheckInQRScannerView.swift */; };
 		AA57E4FCA0997E9097D38B47 /* CheckInBoopPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EEB630FE5672758131248FD /* CheckInBoopPlayer.swift */; };
 		BCD623EDD189E9374D38832B /* CheckInCelebrationOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0BFC6C266FCF98CA5E6BD73 /* CheckInCelebrationOverlay.swift */; };
+		5F188BECFEF3CBDE9CB5FE06 /* CheckInMuteAlertOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = B260B7314B6D26B401C1F21A /* CheckInMuteAlertOverlay.swift */; };
 		807F004546422BC147CB2359 /* StealthCheckInMarkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3643493AF2EDBC8C208DA70 /* StealthCheckInMarkView.swift */; };
 		43C393DA7DDE7C0CA8C161E8 /* FAQView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A296DCF541E135FC128C1E7A /* FAQView.swift */; };
 		488099655F0EE0D23E18315E /* SongPacksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49C9C10A07058E0E383EC1BA /* SongPacksView.swift */; };
@@ -178,6 +179,7 @@
 		A8B82CB3618AEAA7A00515AB /* CheckInQRScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckInQRScannerView.swift; sourceTree = "<group>"; };
 		5EEB630FE5672758131248FD /* CheckInBoopPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckInBoopPlayer.swift; sourceTree = "<group>"; };
 		B0BFC6C266FCF98CA5E6BD73 /* CheckInCelebrationOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckInCelebrationOverlay.swift; sourceTree = "<group>"; };
+		B260B7314B6D26B401C1F21A /* CheckInMuteAlertOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckInMuteAlertOverlay.swift; sourceTree = "<group>"; };
 		C3643493AF2EDBC8C208DA70 /* StealthCheckInMarkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StealthCheckInMarkView.swift; sourceTree = "<group>"; };
 		B0F8D6E375BBF9376F2E488A /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		B27D1FB23F519523E3C7AE87 /* CheckInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckInView.swift; sourceTree = "<group>"; };
@@ -238,6 +240,7 @@
 				33566839E96130B158BA3681 /* ChatThreadView.swift */,
 				A8B82CB3618AEAA7A00515AB /* CheckInQRScannerView.swift */,
 				B0BFC6C266FCF98CA5E6BD73 /* CheckInCelebrationOverlay.swift */,
+				B260B7314B6D26B401C1F21A /* CheckInMuteAlertOverlay.swift */,
 				C3643493AF2EDBC8C208DA70 /* StealthCheckInMarkView.swift */,
 				B27D1FB23F519523E3C7AE87 /* CheckInView.swift */,
 				BDFCA925CF2F46C536CF5593 /* DirectoryView.swift */,
@@ -583,6 +586,7 @@
 				E9A3538651056E006A467139 /* ChatThreadView.swift in Sources */,
 				43BD0772D15AB8DEBBBF9D40 /* CheckInQRScannerView.swift in Sources */,
 				BCD623EDD189E9374D38832B /* CheckInCelebrationOverlay.swift in Sources */,
+				5F188BECFEF3CBDE9CB5FE06 /* CheckInMuteAlertOverlay.swift in Sources */,
 				807F004546422BC147CB2359 /* StealthCheckInMarkView.swift in Sources */,
 				D946492B75289CE18C0C4AF7 /* CheckInView.swift in Sources */,
 				C064E3A1770F545A45AC837B /* ClerkAuthSheet.swift in Sources */,

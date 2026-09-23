@@ -11,39 +11,37 @@ import android.os.Vibrator
 import android.os.VibratorManager
 
 /**
- * Desk check-in tones. Raises alarm/media volume if they’re at zero, plays on the
- * alarm stream, and always vibrates — silence at the desk isn’t useful.
+ * Desk check-in tones. Plays on the alarm stream + vibrates.
+ * Does **not** change system volume (that flashes the volume UI).
+ * Returns true when volume is too low to hear — callers should show a mute banner.
  */
 object CheckInBoopPlayer {
     private val handler = Handler(Looper.getMainLooper())
 
-    fun playGood(context: Context) {
-        ensureAudibleVolume(context)
+    /** @return true if a mute fallback banner should be shown */
+    fun playGood(context: Context): Boolean {
+        val needsBanner = !isAudible(context)
         vibrate(context, success = true)
         playTone(ToneGenerator.TONE_PROP_ACK, durationMs = 180)
+        return needsBanner
     }
 
-    fun playBad(context: Context) {
-        ensureAudibleVolume(context)
+    /** @return true if a mute fallback banner should be shown */
+    fun playBad(context: Context): Boolean {
+        val needsBanner = !isAudible(context)
         vibrate(context, success = false)
         playTone(ToneGenerator.TONE_PROP_NACK, durationMs = 280)
+        return needsBanner
     }
 
-    /** Bump alarm + music streams if the user has them muted. */
-    private fun ensureAudibleVolume(context: Context) {
-        try {
-            val am = context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager ?: return
-            for (stream in listOf(AudioManager.STREAM_ALARM, AudioManager.STREAM_MUSIC)) {
-                val max = am.getStreamMaxVolume(stream)
-                if (max <= 0) continue
-                val desired = (max * 0.55f).toInt().coerceAtLeast(1)
-                if (am.getStreamVolume(stream) < desired) {
-                    // flags=0 — no system volume toast
-                    am.setStreamVolume(stream, desired, 0)
-                }
-            }
+    private fun isAudible(context: Context): Boolean {
+        return try {
+            val am = context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager ?: return true
+            val alarm = am.getStreamVolume(AudioManager.STREAM_ALARM)
+            val music = am.getStreamVolume(AudioManager.STREAM_MUSIC)
+            alarm > 0 || music > 0
         } catch (_: Exception) {
-            // Fail soft
+            true
         }
     }
 
@@ -55,7 +53,7 @@ object CheckInBoopPlayer {
                 runCatching { generator.release() }
             }, durationMs + 80L)
         } catch (_: Exception) {
-            // Fail soft — vibrate already attempted.
+            // Fail soft
         }
     }
 
