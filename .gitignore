@@ -45,3 +45,4 @@ ios/build/
 xcuserdata/
 *.xcuserstate
 .agents/
+.tmp-song-pilot/

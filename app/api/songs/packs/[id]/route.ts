@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { authUserContext } from "@/lib/clerk-auth"
-import { userHasRegistrationForYear } from "@/lib/family-directory"
+import { canAccessSongPacks } from "@/lib/song-packs-access"
 import { getSongPackDetail } from "@/lib/song-packs"
 
 export const dynamic = "force-dynamic"
@@ -20,7 +20,8 @@ export async function GET(request: Request, { params }: Params) {
       return NextResponse.json({ error: "Not found" }, { status: 404 })
     }
 
-    const allowed = await userHasRegistrationForYear(
+    const allowed = await canAccessSongPacks(
+      request,
       ctx.userId,
       ctx.email,
       pack.event_year,

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { authUserContext } from "@/lib/clerk-auth"
-import { userHasRegistrationForYear } from "@/lib/family-directory"
+import { canAccessSongPacks } from "@/lib/song-packs-access"
 import { listSongPacks } from "@/lib/song-packs"
 import {
   DEFAULT_REGISTRATION_EVENT_YEAR,
@@ -21,7 +21,7 @@ export async function GET(request: Request) {
       searchParams.get("year") ?? DEFAULT_REGISTRATION_EVENT_YEAR,
     )
 
-    const allowed = await userHasRegistrationForYear(ctx.userId, ctx.email, year)
+    const allowed = await canAccessSongPacks(request, ctx.userId, ctx.email, year)
     if (!allowed) {
       return NextResponse.json(
         { error: "Registration required for this year", packs: [] },
