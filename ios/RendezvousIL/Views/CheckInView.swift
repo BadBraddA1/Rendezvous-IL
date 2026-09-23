@@ -12,6 +12,8 @@ struct CheckInView: View {
     @State private var errorMessage: String?
     @State private var successMessage: String?
     @State private var keepDisplayAlive = true
+    /// RENTESTGOOD offline preview — same staff UI, no API writes.
+    @State private var isDemoPreview = false
 
     private var scannerPaused: Bool { lookup != nil || isLoading }
 
@@ -84,6 +86,11 @@ struct CheckInView: View {
                 }
 
                 if let lookup {
+                    if isDemoPreview {
+                        Text("Demo preview — UI only, nothing is saved.")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(BrandColors.lake)
+                    }
                     resultSection(lookup)
 
                     Button("Scan next family") {
@@ -139,6 +146,11 @@ struct CheckInView: View {
 
     private func resultSection(_ lookup: CheckInLookupResponse) -> some View {
         let registration = lookup.registration
+        let paymentLabel: String = {
+            if registration.full_payment_paid == true { return "Paid in full" }
+            if registration.registration_fee_paid == true { return "Reg fee paid" }
+            return "Payment due"
+        }()
 
         return VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 6) {
@@ -156,12 +168,27 @@ struct CheckInView: View {
                 }
             }
 
+            Label(paymentLabel, systemImage: "creditcard")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+
             if let members = lookup.family_members, !members.isEmpty {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Family members")
                         .font(.headline)
                     ForEach(members) { member in
-                        Text("• \(member.first_name) \(member.last_name ?? "")")
+                        Text(memberLine(member))
+                            .font(.subheadline)
+                    }
+                }
+            }
+
+            if let shirts = lookup.tshirt_orders, !shirts.isEmpty {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("T-shirts ordered")
+                        .font(.headline)
+                    ForEach(shirts) { shirt in
+                        Text("• \(shirt.quantity ?? 1)× \(shirt.size ?? "?") \(shirt.color ?? "")")
                             .font(.subheadline)
                     }
                 }
@@ -196,23 +223,33 @@ struct CheckInView: View {
         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
     }
 
+    private func memberLine(_ member: CheckInFamilyMember) -> String {
+        let age = member.age.map { " (\($0))" } ?? ""
+        return "• \(member.first_name) \(member.last_name ?? "")\(age)"
+    }
+
     private func resetStation() {
         lookup = nil
         roomKeys = ""
         tshirtsDistributed = false
         errorMessage = nil
         successMessage = nil
+        isDemoPreview = false
     }
 
     private func lookupByCode(_ raw: String) async {
         let code = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !code.isEmpty else { return }
 
-        // Offline good-boop test QR (see /tmp/ren-checkin-good-qr) — not a real family.
+        // Offline good-boop + full staff UI preview (not a real family).
         if code.uppercased() == "RENTESTGOOD" {
+            let demo = Self.demoLookup
+            lookup = demo
+            roomKeys = (demo.registration.pre_assigned_keys ?? []).joined(separator: ", ")
+            tshirtsDistributed = demo.registration.tshirts_distributed ?? false
+            isDemoPreview = true
             errorMessage = nil
-            successMessage = "Good boop test — not a real check-in."
-            lookup = nil
+            successMessage = nil
             CheckInBoopPlayer.play(.good)
             return
         }
@@ -222,6 +259,7 @@ struct CheckInView: View {
         isLoading = true
         errorMessage = nil
         successMessage = nil
+        isDemoPreview = false
         defer { isLoading = false }
 
         do {
@@ -240,7 +278,20 @@ struct CheckInView: View {
     }
 
     private func submitCheckIn() async {
-        guard let client = session.apiClient, let registration = lookup?.registration else { return }
+        guard let registration = lookup?.registration else { return }
+
+        if isDemoPreview {
+            lookup = Self.demoLookupCheckedIn(
+                roomKeys: roomKeys,
+                tshirtsDistributed: tshirtsDistributed
+            )
+            successMessage = "Demo: \(registration.family_last_name) family would be checked in."
+            errorMessage = nil
+            CheckInBoopPlayer.play(.good)
+            return
+        }
+
+        guard let client = session.apiClient else { return }
         isLoading = true
         errorMessage = nil
         successMessage = nil
@@ -275,7 +326,19 @@ struct CheckInView: View {
     }
 
     private func undoCheckIn() async {
-        guard let client = session.apiClient, let registration = lookup?.registration else { return }
+        guard let registration = lookup?.registration else { return }
+
+        if isDemoPreview {
+            lookup = Self.demoLookup
+            roomKeys = (Self.demoLookup.registration.pre_assigned_keys ?? []).joined(separator: ", ")
+            tshirtsDistributed = false
+            successMessage = "Demo: check-in undone."
+            errorMessage = nil
+            CheckInBoopPlayer.play(.good)
+            return
+        }
+
+        guard let client = session.apiClient else { return }
         isLoading = true
         errorMessage = nil
         successMessage = nil
@@ -297,6 +360,76 @@ struct CheckInView: View {
             errorMessage = error.localizedDescription
             CheckInBoopPlayer.play(.bad)
         }
+    }
+
+    /// Rich demo payload so staff can walk the real check-in card.
+    private static let demoLookup: CheckInLookupResponse = {
+        let json = """
+        {
+          "registration": {
+            "id": -1,
+            "family_last_name": "Bradd",
+            "email": "demo@rendezvousil.test",
+            "husband_phone": "217-555-0101",
+            "wife_phone": "217-555-0102",
+            "lodging_type": "motel",
+            "checkin_qr_code": "RENTESTGOOD",
+            "checked_in": false,
+            "checked_in_at": null,
+            "pre_assigned_keys": ["214", "215"],
+            "tshirts_distributed": false,
+            "full_payment_paid": true,
+            "registration_fee_paid": true
+          },
+          "family_members": [
+            { "id": 1, "first_name": "Adin", "last_name": "Bradd", "age": 36 },
+            { "id": 2, "first_name": "Maddy", "last_name": "Bradd", "age": 34 },
+            { "id": 3, "first_name": "Kiddo", "last_name": "Bradd", "age": 8 }
+          ],
+          "tshirt_orders": [
+            { "id": 1, "size": "L", "color": "Lake Teal", "quantity": 2 },
+            { "id": 2, "size": "YS", "color": "Lake Teal", "quantity": 1 }
+          ]
+        }
+        """
+        return try! JSONDecoder().decode(CheckInLookupResponse.self, from: Data(json.utf8))
+    }()
+
+    private static func demoLookupCheckedIn(roomKeys: String, tshirtsDistributed: Bool) -> CheckInLookupResponse {
+        let keys = roomKeys
+            .split(separator: ",")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        let keysJSON = keys.map { "\"\($0)\"" }.joined(separator: ",")
+        let json = """
+        {
+          "registration": {
+            "id": -1,
+            "family_last_name": "Bradd",
+            "email": "demo@rendezvousil.test",
+            "husband_phone": "217-555-0101",
+            "wife_phone": "217-555-0102",
+            "lodging_type": "motel",
+            "checkin_qr_code": "RENTESTGOOD",
+            "checked_in": true,
+            "checked_in_at": "2027-05-03T18:00:00.000Z",
+            "pre_assigned_keys": [\(keysJSON)],
+            "tshirts_distributed": \(tshirtsDistributed ? "true" : "false"),
+            "full_payment_paid": true,
+            "registration_fee_paid": true
+          },
+          "family_members": [
+            { "id": 1, "first_name": "Adin", "last_name": "Bradd", "age": 36 },
+            { "id": 2, "first_name": "Maddy", "last_name": "Bradd", "age": 34 },
+            { "id": 3, "first_name": "Kiddo", "last_name": "Bradd", "age": 8 }
+          ],
+          "tshirt_orders": [
+            { "id": 1, "size": "L", "color": "Lake Teal", "quantity": 2 },
+            { "id": 2, "size": "YS", "color": "Lake Teal", "quantity": 1 }
+          ]
+        }
+        """
+        return try! JSONDecoder().decode(CheckInLookupResponse.self, from: Data(json.utf8))
     }
 }
 
