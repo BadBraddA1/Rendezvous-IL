@@ -6,6 +6,10 @@ Strip leading title-like slides from an SFP .pptx and insert a uniform opener:
 IMPORTANT: Do NOT resize the slide canvas. Original SFP decks are ~10"×5.63"
 (16:9); forcing 13.33"×7.5" without scaling shapes left music at ~75% size.
 
+IMPORTANT: Insert the new title FIRST, then delete old titles. Deleting first
+leaves orphan slide parts in the package; python-pptx then reuses slideN.xml
+and overwrites the last music slide — so the title appears at both ends.
+
 Usage:
   python bake_pptx_title.py input.pptx output.pptx --page 121 --title "God Is Love" --verses 3
 """
@@ -19,14 +23,18 @@ from pptx import Presentation
 from pptx.dml.color import RGBColor
 from pptx.enum.shapes import MSO_SHAPE
 from pptx.enum.text import PP_ALIGN
-from pptx.util import Emu, Inches, Pt
+from pptx.oxml.ns import qn
+from pptx.util import Pt
 
 
 def _delete_slide(prs: Presentation, index: int) -> None:
     slide_id_list = prs.slides._sldIdLst  # noqa: SLF001
     slides = list(slide_id_list)
-    r_id = slides[index].get("rId")
-    slide_id_list.remove(slides[index])
+    if index < 0 or index >= len(slides):
+        return
+    el = slides[index]
+    r_id = el.get(qn("r:id"))
+    slide_id_list.remove(el)
     if r_id:
         try:
             prs.part.drop_rel(r_id)
@@ -45,11 +53,21 @@ def _has_picture(slide) -> bool:
     return False
 
 
+def _slide_texts(slide) -> list[str]:
+    out: list[str] = []
+    for shape in slide.shapes:
+        if shape.has_text_frame:
+            t = (shape.text_frame.text or "").strip()
+            if t:
+                out.append(t)
+    return out
+
+
 def _looks_like_title_slide(slide) -> bool:
-    """Sparse text-only openers (old SFP titles) vs dense music slides."""
-    n = _shape_count(slide)
+    """Sparse text-only openers (old SFP titles or our baked opener) vs music."""
     if _has_picture(slide):
         return False
+    n = _shape_count(slide)
     if n <= 8:
         return True
     text_len = 0
@@ -60,13 +78,50 @@ def _looks_like_title_slide(slide) -> bool:
     return text_len < 120 and n <= 20
 
 
-def strip_leading_titles(prs: Presentation) -> int:
+def _looks_like_our_opener(slide) -> bool:
+    """White title card we bake: page / "Title" / N verses."""
+    if _has_picture(slide):
+        return False
+    texts = _slide_texts(slide)
+    if not texts:
+        return False
+    joined = " | ".join(texts).lower()
+    has_quoted = any(t.startswith('"') and t.endswith('"') for t in texts)
+    has_verses = "verse" in joined
+    return has_quoted or has_verses
+
+
+def strip_extra_titles(prs: Presentation, *, keep_index: int = 0) -> int:
+    """Remove title-like slides except the one at keep_index (our new opener)."""
     removed = 0
-    while len(prs.slides) > 1 and _looks_like_title_slide(prs.slides[0]):
-        _delete_slide(prs, 0)
-        removed += 1
-        if removed >= 3:
+    # Trailing first (safe while keep_index stays 0)
+    while len(prs.slides) > 1:
+        last = len(prs.slides) - 1
+        if last == keep_index:
             break
+        if _looks_like_title_slide(prs.slides[last]) or _looks_like_our_opener(
+            prs.slides[last]
+        ):
+            _delete_slide(prs, last)
+            removed += 1
+            if removed >= 5:
+                break
+            continue
+        break
+    # Leading after opener: old SFP title that was originally slide 0
+    guard = 0
+    while len(prs.slides) > 1 and guard < 5:
+        guard += 1
+        idx = 1 if keep_index == 0 else 0
+        if idx >= len(prs.slides):
+            break
+        if _looks_like_title_slide(prs.slides[idx]) or _looks_like_our_opener(
+            prs.slides[idx]
+        ):
+            _delete_slide(prs, idx)
+            removed += 1
+            continue
+        break
     return removed
 
 
@@ -91,7 +146,6 @@ def insert_title_slide(
     slide_w = prs.slide_width
     slide_h = prs.slide_height
 
-    # White background matching the native canvas size
     background = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, 0, 0, slide_w, slide_h)
     background.fill.solid()
     background.fill.fore_color.rgb = RGBColor(255, 255, 255)
@@ -149,13 +203,14 @@ def main() -> int:
 
     prs = Presentation(str(src))
     # Keep native slide size (typically ~10" × 5.63"). Never call set_slide_size.
-    removed = strip_leading_titles(prs)
+    # Insert BEFORE stripping so add_slide gets a free slideN.xml name.
     insert_title_slide(
         prs,
         page=args.page.strip() or None,
         title=args.title.strip(),
         verses=args.verses if args.verses > 0 else None,
     )
+    removed = strip_extra_titles(prs, keep_index=0)
     dst.parent.mkdir(parents=True, exist_ok=True)
     prs.save(str(dst))
     print(
