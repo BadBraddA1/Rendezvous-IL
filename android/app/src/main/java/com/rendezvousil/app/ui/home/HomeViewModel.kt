@@ -10,6 +10,7 @@ import com.rendezvousil.core.network.dto.FamilyCheckInResponse
 import com.rendezvousil.core.network.dto.FamilyVolunteeringResponse
 import com.rendezvousil.core.network.dto.HomeBoardConfig
 import com.rendezvousil.core.network.dto.HomeBoardSection
+import com.rendezvousil.core.network.dto.YearHubResponse
 import com.rendezvousil.core.network.dto.WeatherPayload
 import com.rendezvousil.core.schedule.MealMatcher
 import com.rendezvousil.core.schedule.ScheduleNowNext
@@ -25,11 +26,15 @@ import kotlinx.coroutines.withContext
 
 data class HomeUiState(
     val board: HomeBoardConfig? = null,
+    val yearHub: YearHubResponse? = null,
     val checkIn: FamilyCheckInResponse? = null,
     val chatUnreadTotal: Int = 0,
     val nextMealLine: String? = null,
     val volunteering: FamilyVolunteeringResponse? = null,
 ) {
+    val preferSeasonHub: Boolean
+        get() = yearHub?.preferSeasonHub ?: true
+
     val sections: List<HomeBoardSection>
         get() = board?.sections?.filter { it.enabled }
             ?: defaultSections()
@@ -66,6 +71,7 @@ class HomeViewModel(
             }
             repository.loadScheduleExtras()
             loadHomeBoard()
+            loadYearHub()
             loadCheckIn()
             loadVolunteering()
             loadChatUnread()
@@ -77,6 +83,15 @@ class HomeViewModel(
         val client = appSession.authenticatedApiClient ?: return
         val board = runCatching { client.getHomeBoard() }.getOrNull() ?: return
         _uiState.update { it.copy(board = board) }
+    }
+
+    private suspend fun loadYearHub() {
+        val client = appSession.authenticatedApiClient ?: run {
+            _uiState.update { it.copy(yearHub = null) }
+            return
+        }
+        val payload = runCatching { client.getYearHub() }.getOrNull()
+        _uiState.update { it.copy(yearHub = payload) }
     }
 
     private suspend fun loadCheckIn() {

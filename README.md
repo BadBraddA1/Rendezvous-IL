@@ -4,7 +4,9 @@ Production site for the Rendezvous Christian Homeschool Family Retreat — [rend
 
 Handles public event pages, family registration (2027), admin dashboard (registrations, meals, check-in, messaging), and Clerk-based family accounts.
 
-**Homepage / About:** Rendezvous 2026 group photo (`public/images/rendezvous-group-2026.jpg`) with caption headcount from `lib/attendance-history.ts` (homepage caption links to `/about`). Social OG image uses the cropped group photo (`rendezvous-group-2026-og.jpg`).
+**Home (year hub):** `/` is the **2027 season hub**, not a marketing brochure. Signed-out → compact entry (countdown / sign-in / register). Signed-in without a 2027 registration → register CTA only (no year data). Signed-in with registration → family roster, lodging/payment summary, volunteering list. Long-form marketing stays on `/about`, `/schedule`, etc. Shared payload: `lib/year-hub.ts` + `GET /api/family/year-hub`. Apps use the same API: Home shows the season hub until retreat week (May 3–7, 2027), then the live day board.
+
+**About / OG:** Rendezvous 2026 group photo (`public/images/rendezvous-group-2026.jpg`) with caption headcount from `lib/attendance-history.ts`. Social OG image uses the cropped group photo (`rendezvous-group-2026-og.jpg`).
 
 ## Tech stack
 
@@ -269,7 +271,7 @@ rendezvous-il/
 
 Native **SwiftUI** attendee hub in `ios/` (not a WebView shell). **Sign-in required** for almost everything — welcome screen, then **custom native Clerk auth** (same Church Relay pattern as the website BraddCorp kit — email/password, no embedded Clerk `AuthView`), then tabs:
 
-- **Home (Live day board)** — sections ordered by Admin → Home board (`GET /api/home-board`): header, **check-in status** (`GET /api/family/check-in` — requested year only via `registrations_v2.family_id` + email; no cross-year fallback), now/next, weather, announcements, next meal, chat unread, volunteering, plus optional banners. Opening Home/Volunteering auto-schedules a **30-minute local reminder** before each assignment
+- **Home (Live day board)** — during retreat week only (see year hub above). Sections ordered by Admin → Home board (`GET /api/home-board`): header, **check-in status** (`GET /api/family/check-in` — requested year only via `registrations_v2.family_id` + email; no cross-year fallback), now/next, weather, announcements, next meal, chat unread, volunteering, plus optional banners. Opening Home/Volunteering auto-schedules a **30-minute local reminder** before each assignment. Outside retreat week, Home is the **season year hub** (`GET /api/family/year-hub`).
 - **Schedule** — opens on today (Central Time) or the next upcoming day. **Happening now** highlight only when an event is actually in progress (Central Time) — not the next upcoming item. Empty announcements are hidden. Meals, worship leaders, event reminders (bell → local notification; prefs store the event so reminders still schedule if the shared snapshot is empty; bell icon **updates immediately** after Save via observable `ReminderService`). Tap location → campus map. **Key dates** outside retreat week (e.g. Registration opens Jan 1) use ISO day keys in the API; chips/headers show weekday + date label (not truncated `"202"` / raw `2027-01-01`), and the May date-range subtitle is hidden on those days (build **2.0.7 (211)+**).
 - **Directory** — disk cache shows last-loaded families immediately, then refreshes in the background. Family detail matches the website: Father/Mother lines plus **Kids with ages**. Manage your family photo from **More → Directory photo**
 - **Map** — MapKit directions to campus + image venue map on site (geofence switch); More → Campus map
@@ -290,7 +292,7 @@ Native admin APIs: `GET /api/admin/me`, `GET /api/admin/mobile/dashboard` (Beare
 
 Native **Jetpack Compose** app in `android/` (Phases 1–5). **Not on Google Play yet** — website footer and `/install` say “still in the works” until `ANDROID_APP_LIVE` is flipped in `lib/native-app-store.ts`.
 
-- **Home / Chat / Schedule / Directory / More** — 5-tab shell aligned with iOS (CarPlay / campus map stay iOS-ahead). Home is a **Live day board** driven by `GET /api/home-board` (check-in, now/next, weather, announcements, meal, chat, volunteering, banners)
+- **Home / Chat / Schedule / Directory / More** — 5-tab shell aligned with iOS (CarPlay / campus map stay iOS-ahead). Outside retreat week, Home is the **season year hub** (`GET /api/family/year-hub`); during retreat week it is the **Live day board** (`GET /api/home-board`: check-in, now/next, weather, announcements, meal, chat, volunteering, banners)
 - **Chat** — year group chat parity with iOS/web: channel list (unread badges, activity sort), thread (text, up to 6 photos, polls, announcements for mods, reactions behind smile menu, delete), Ably Pub/Sub + 4s HTTP poll fallback (`ably-android`)
 - **Schedule** — opens on today / next upcoming day; **Happening now** only for the in-progress event (Central Time); day picker, meals, volunteer slots, **event reminders** (bell icon), offline fallback; empty announcements hidden. Key-date chips/headers use `weekday` + date label (same as iOS).
 - **Directory** — on-device cache first, background refresh; Father/Mother + **Kids (ages)** like the website; family photo manage stays under More

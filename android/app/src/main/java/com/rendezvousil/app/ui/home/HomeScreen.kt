@@ -44,6 +44,7 @@ import com.rendezvousil.core.network.YearFormatting
 import com.rendezvousil.core.network.dto.FamilyCheckInResponse
 import com.rendezvousil.core.network.dto.FamilyVolunteeringResponse
 import com.rendezvousil.core.network.dto.HomeBoardSection
+import com.rendezvousil.core.network.dto.YearHubResponse
 import com.rendezvousil.core.network.dto.WeatherCurrent
 import com.rendezvousil.core.schedule.model.Announcement
 import com.rendezvousil.core.schedule.model.NowNextResult
@@ -67,7 +68,19 @@ fun HomeScreen(
 
     Scaffold(
         modifier = modifier,
-        topBar = { TopAppBar(title = { Text("Today") }) },
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        if (uiState.preferSeasonHub) {
+                            "Rendezvous ${AppConfig.eventYearLabel}"
+                        } else {
+                            "Today"
+                        },
+                    )
+                },
+            )
+        },
         containerColor = BrandColors.GroupedBackground,
     ) { padding ->
         PullToRefreshBox(
@@ -90,21 +103,179 @@ fun HomeScreen(
                     .padding(horizontal = 20.dp, vertical = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(20.dp),
             ) {
-                uiState.sections.forEach { section ->
-                    HomeBoardSectionView(
-                        section = section,
-                        nowNext = nowNext,
-                        weatherCurrent = weather?.current,
-                        announcements = announcements,
-                        uiState = uiState,
+                if (uiState.preferSeasonHub) {
+                    SeasonHubContent(
+                        yearHub = uiState.yearHub,
                         onNavigateToSchedule = onNavigateToSchedule,
                         onNavigateToChat = onNavigateToChat,
                         onNavigateToVolunteering = onNavigateToVolunteering,
                     )
+                } else {
+                    uiState.sections.forEach { section ->
+                        HomeBoardSectionView(
+                            section = section,
+                            nowNext = nowNext,
+                            weatherCurrent = weather?.current,
+                            announcements = announcements,
+                            uiState = uiState,
+                            onNavigateToSchedule = onNavigateToSchedule,
+                            onNavigateToChat = onNavigateToChat,
+                            onNavigateToVolunteering = onNavigateToVolunteering,
+                        )
+                    }
                 }
             }
         }
     }
+}
+
+@Composable
+private fun SeasonHubContent(
+    yearHub: YearHubResponse?,
+    onNavigateToSchedule: () -> Unit,
+    onNavigateToChat: () -> Unit,
+    onNavigateToVolunteering: () -> Unit,
+) {
+    val context = LocalContext.current
+    Text(
+        text = "Your ${AppConfig.eventYearLabel} year",
+        style = MaterialTheme.typography.titleLarge,
+        fontWeight = FontWeight.SemiBold,
+    )
+    Text(
+        text = "${AppConfig.EVENT_DATES} · Lake Williamson",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+
+    when {
+        yearHub == null -> {
+            Text(
+                text = "Sign in to see your ${AppConfig.eventYearLabel} registration.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        !yearHub.hasRegistration -> {
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = BrandColors.LakeLight.copy(alpha = 0.45f),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Column(Modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "Not registered for ${YearFormatting.label(yearHub.eventYear)} yet",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        text = yearHub.message
+                            ?: "Register on the website to unlock your family hub for this year.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        text = if (yearHub.registrationOpen) "Register on the website" else "Registration info",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = BrandColors.Lake,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                }
+            }
+            // Open registration URL when card is tapped via ActionCard pattern below
+            ActionCard(
+                title = if (yearHub.registrationOpen) "Register" else "Registration info",
+                subtitle = "Opens rendezvousil.com",
+                icon = { Icon(Icons.Default.ChevronRight, null, tint = BrandColors.Lake) },
+                onClick = {
+                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(yearHub.registerUrl)))
+                },
+            )
+        }
+        else -> {
+            yearHub.registration?.let { reg ->
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text("Registration", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                        Text(
+                            "${reg.familyLastName} family",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium,
+                        )
+                        val lodging = reg.lodgingType?.let { " · $it" }.orEmpty()
+                        Text(
+                            text = "${reg.attendeeCount ?: "—"} attendees$lodging",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        if (reg.checkedIn) {
+                            Text("Checked in", color = BrandColors.Lake, style = MaterialTheme.typography.labelLarge)
+                        }
+                        reg.paymentStatus?.let { status ->
+                            Text(
+                                text = when (status) {
+                                    "paid_in_full" -> "Paid in full"
+                                    "deposit_paid" -> "Deposit paid"
+                                    "payment_due" -> "Payment due"
+                                    else -> status
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+            }
+            yearHub.family?.members?.takeIf { it.isNotEmpty() }?.let { members ->
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text("Your family", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                        members.take(12).forEach { m ->
+                            Text("${m.firstName} ${m.lastName}", style = MaterialTheme.typography.bodyMedium)
+                        }
+                    }
+                }
+            }
+            val volunteering = yearHub.volunteering
+            if (volunteering != null && volunteering.hasContent) {
+                ActionCard(
+                    title = "Volunteering",
+                    subtitle = volunteering.volunteers.firstOrNull()?.let {
+                        "${it.volunteerName} · ${it.roleLabel ?: it.volunteerType}"
+                    } ?: "View your assignments",
+                    icon = { Icon(Icons.Default.VolunteerActivism, null, tint = BrandColors.Lake) },
+                    onClick = onNavigateToVolunteering,
+                )
+            } else {
+                Text(
+                    text = "No volunteering yet — recommendations are coming soon.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            ActionCard(
+                title = "Chat",
+                subtitle = "Open year chat",
+                icon = { Icon(Icons.AutoMirrored.Filled.Chat, null, tint = BrandColors.Coral) },
+                onClick = onNavigateToChat,
+            )
+        }
+    }
+
+    ActionCard(
+        title = "View schedule",
+        subtitle = AppConfig.EVENT_DATES,
+        icon = { Icon(Icons.Default.ChevronRight, null, tint = BrandColors.Lake) },
+        onClick = onNavigateToSchedule,
+    )
 }
 
 @Composable

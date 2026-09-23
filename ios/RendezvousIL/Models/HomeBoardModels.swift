@@ -37,3 +37,68 @@ struct FamilyCheckInResponse: Codable, Sendable {
         }
     }
 }
+
+// MARK: - Year hub (season Home)
+
+struct YearHubMember: Codable, Sendable, Identifiable {
+    let id: Int
+    let firstName: String
+    let lastName: String
+}
+
+struct YearHubFamily: Codable, Sendable {
+    let id: Int
+    let lastName: String
+    let email: String?
+    let city: String?
+    let state: String?
+    let homeCongregation: String?
+    let members: [YearHubMember]
+}
+
+struct YearHubRegistration: Codable, Sendable {
+    let id: Int
+    let familyLastName: String
+    let lodgingType: String?
+    let attendeeCount: Int?
+    let checkedIn: Bool
+    let totalCost: Double?
+    let paymentStatus: String?
+}
+
+struct YearHubVolunteerRow: Codable, Sendable, Identifiable {
+    let id: Int
+    let volunteerName: String
+    let volunteerType: String
+    let roleLabel: String?
+}
+
+struct YearHubVolunteering: Codable, Sendable {
+    let hasContent: Bool
+    let volunteers: [YearHubVolunteerRow]
+    let specialAssignmentCount: Int
+}
+
+struct YearHubLinks: Codable, Sendable {
+    let profile: String
+    let account: String
+    let chat: String
+    let registration: String
+    let about: String
+    let schedule: String
+}
+
+struct YearHubResponse: Codable, Sendable {
+    let eventYear: Int
+    let hasFamily: Bool
+    let hasRegistration: Bool
+    let registrationOpen: Bool
+    let isRetreatWeek: Bool
+    let preferSeasonHub: Bool
+    let message: String?
+    let registerUrl: String
+    let family: YearHubFamily?
+    let registration: YearHubRegistration?
+    let volunteering: YearHubVolunteering?
+    let links: YearHubLinks
+}

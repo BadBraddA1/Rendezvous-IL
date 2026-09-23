@@ -31,6 +31,7 @@ import com.rendezvousil.core.network.dto.CheckInUndoResponse
 import com.rendezvousil.core.network.dto.DirectoryResponse
 import com.rendezvousil.core.network.dto.FamilyVolunteeringResponse
 import com.rendezvousil.core.network.dto.FamilyCheckInResponse
+import com.rendezvousil.core.network.dto.YearHubResponse
 import com.rendezvousil.core.network.dto.DirectoryYearsResponse
 import com.rendezvousil.core.network.dto.FamilyDirectorySettings
 import com.rendezvousil.core.network.dto.FamilyDirectorySettingsBody
@@ -118,6 +119,9 @@ interface RendezvousApi {
 
     @GET("api/family/check-in")
     suspend fun getFamilyCheckIn(@Query("year") year: Int): FamilyCheckInResponse
+
+    @GET("api/family/year-hub")
+    suspend fun getYearHub(@Query("year") year: Int): YearHubResponse
 }
 
 class ApiClient private constructor(
@@ -245,6 +249,9 @@ class ApiClient private constructor(
 
     suspend fun getFamilyCheckIn(year: Int = AppConfig.EVENT_YEAR): FamilyCheckInResponse =
         apiCall { api.getFamilyCheckIn(year) }
+
+    suspend fun getYearHub(year: Int = AppConfig.EVENT_YEAR): YearHubResponse =
+        apiCall { api.getYearHub(year) }
 
     suspend fun getSongPacks(year: Int = AppConfig.EVENT_YEAR): SongPacksResponse =
         getJson(

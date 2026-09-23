@@ -1,17 +1,22 @@
 import Clerk
 import SwiftUI
 
-/// Live day board — sections ordered remotely via Admin → Home board.
+/// Season year hub most of the year; live day board during retreat week.
 struct HomeView: View {
     @Environment(AppSession.self) private var session
     @Environment(RendezvousRepository.self) private var repository
     @Binding var selectedTab: AppTab
 
     @State private var board: HomeBoardConfig?
+    @State private var yearHub: YearHubResponse?
     @State private var checkIn: FamilyCheckInResponse?
     @State private var volunteering: FamilyVolunteeringResponse?
     @State private var chatUnreadTotal = 0
     @State private var nextMealLine: String?
+
+    private var showSeasonHub: Bool {
+        yearHub?.preferSeasonHub ?? true
+    }
 
     private var sections: [HomeBoardSection] {
         if let board {
@@ -28,15 +33,19 @@ struct HomeView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    ForEach(sections) { section in
-                        sectionView(section)
+                    if showSeasonHub {
+                        seasonHubContent
+                    } else {
+                        ForEach(sections) { section in
+                            sectionView(section)
+                        }
                     }
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 32)
             }
             .background(Color(.systemGroupedBackground))
-            .navigationTitle("Today")
+            .navigationTitle(showSeasonHub ? "Rendezvous \(AppConfig.eventYearLabel)" : "Today")
             .navigationBarTitleDisplayMode(.large)
             .refreshable { await refreshBoard() }
             .task {
@@ -45,6 +54,168 @@ struct HomeView: View {
                 }
                 await refreshBoard()
             }
+        }
+    }
+
+    @ViewBuilder
+    private var seasonHubContent: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if let name = session.userDisplayName {
+                Text("Hi, \(name)")
+                    .font(.title2.weight(.semibold))
+            } else {
+                Text("Your \(AppConfig.eventYearLabel) year")
+                    .font(.title2.weight(.semibold))
+            }
+            Text("\(AppConfig.eventDates) · \(AppConfig.location)")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+
+        if let yearHub {
+            if !yearHub.hasRegistration {
+                seasonRegisterCard(yearHub)
+            } else {
+                seasonRegisteredCards(yearHub)
+            }
+        } else if session.apiClient == nil {
+            Text("Sign in to see your \(AppConfig.eventYearLabel) registration.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        } else {
+            ProgressView()
+                .frame(maxWidth: .infinity)
+                .padding()
+        }
+
+        Button { selectedTab = .schedule } label: {
+            Label("View schedule", systemImage: "calendar")
+                .font(.subheadline.weight(.semibold))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding()
+                .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func seasonRegisterCard(_ hub: YearHubResponse) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Not registered for \(YearFormatting.label(hub.eventYear)) yet")
+                .font(.headline)
+            Text(hub.message ?? "Register on the website to unlock your family hub for this year.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            if let url = URL(string: hub.registerUrl) {
+                Link(destination: url) {
+                    Text(hub.registrationOpen ? "Register on the website" : "Registration info")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(BrandColors.lake)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
+        .background(BrandColors.lakeLight.opacity(0.45), in: RoundedRectangle(cornerRadius: 12))
+    }
+
+    @ViewBuilder
+    private func seasonRegisteredCards(_ hub: YearHubResponse) -> some View {
+        if let reg = hub.registration {
+            VStack(alignment: .leading, spacing: 8) {
+                sectionTitle("Registration")
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("\(reg.familyLastName) family")
+                        .font(.subheadline.weight(.semibold))
+                    if let count = reg.attendeeCount {
+                        Text("\(count) attendees\(reg.lodgingType.map { " · \($0)" } ?? "")")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    if reg.checkedIn {
+                        Label("Checked in", systemImage: "checkmark.circle.fill")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(BrandColors.lake)
+                    }
+                    if let status = reg.paymentStatus {
+                        Text(paymentLabel(status))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding()
+                .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
+            }
+        }
+
+        if let family = hub.family, !family.members.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                sectionTitle("Your family")
+                VStack(alignment: .leading, spacing: 6) {
+                    ForEach(family.members.prefix(12)) { member in
+                        Text("\(member.firstName) \(member.lastName)")
+                            .font(.subheadline)
+                    }
+                    if let url = URL(string: hub.links.profile) {
+                        Link("Edit on website", destination: url)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(BrandColors.lake)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding()
+                .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
+            }
+        }
+
+        VStack(alignment: .leading, spacing: 8) {
+            sectionTitle("Volunteering")
+            if let volunteering = hub.volunteering, volunteering.hasContent {
+                NavigationLink {
+                    FamilyVolunteeringView()
+                } label: {
+                    VStack(alignment: .leading, spacing: 6) {
+                        ForEach(volunteering.volunteers.prefix(4)) { row in
+                            Text("\(row.volunteerName) · \(row.roleLabel ?? row.volunteerType)")
+                                .font(.subheadline)
+                                .foregroundStyle(.primary)
+                        }
+                        Text("View details")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(BrandColors.lake)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding()
+                    .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
+                }
+                .buttonStyle(.plain)
+            } else {
+                Text("No volunteering yet — recommendations are coming soon.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding()
+                    .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
+            }
+        }
+
+        Button { selectedTab = .chat } label: {
+            Label("Open chat", systemImage: "bubble.left.and.bubble.right.fill")
+                .font(.subheadline.weight(.semibold))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding()
+                .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func paymentLabel(_ status: String) -> String {
+        switch status {
+        case "paid_in_full": return "Paid in full"
+        case "deposit_paid": return "Deposit paid"
+        case "payment_due": return "Payment due"
+        default: return status
         }
     }
 
@@ -346,12 +517,21 @@ struct HomeView: View {
     private func refreshBoard() async {
         async let updates: Void = repository.loadUpdates()
         async let scheduleLoad: Void = loadScheduleForBoard()
+        async let yearHubTask: Void = loadYearHub()
         async let boardTask: Void = loadHomeBoard()
         async let checkInTask: Void = loadCheckIn()
         async let volunteeringTask: Void = loadVolunteering()
         async let chatTask: Void = loadChatUnread()
-        _ = await (updates, scheduleLoad, boardTask, checkInTask, volunteeringTask, chatTask)
+        _ = await (updates, scheduleLoad, yearHubTask, boardTask, checkInTask, volunteeringTask, chatTask)
         nextMealLine = computeNextMealLine()
+    }
+
+    private func loadYearHub() async {
+        guard let client = session.apiClient else {
+            yearHub = nil
+            return
+        }
+        yearHub = try? await client.getYearHub()
     }
 
     private func loadHomeBoard() async {

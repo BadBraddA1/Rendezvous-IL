@@ -219,6 +219,10 @@ actor APIClient {
         try await get("/api/family/check-in?year=\(year)")
     }
 
+    func getYearHub(year: Int = AppConfig.eventYear) async throws -> YearHubResponse {
+        try await get("/api/family/year-hub?year=\(year)")
+    }
+
     func getChatChannels() async throws -> ChatChannelsResponse {
         try await get("/api/chat/channels")
     }
