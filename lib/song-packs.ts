@@ -623,6 +623,47 @@ export async function addSongPackItem(input: {
   return mapItem(row as SqlRow)
 }
 
+export async function rebakeSongPackItemTitle(
+  itemId: string,
+  verseCount: number,
+): Promise<SongPackItem | null> {
+  await ensureSongPacksSchema()
+  const [existing] = await sql`
+    SELECT * FROM song_pack_items WHERE id = ${itemId} LIMIT 1
+  `
+  if (!existing) return null
+  if (String(existing.file_type) !== "pdf") {
+    throw new Error("Only PDF songs have title slides to rebake")
+  }
+  const vc = Math.max(1, Math.min(12, Math.floor(verseCount)))
+  const title = String(existing.title)
+  const fileUrl = String(existing.file_url)
+  const res = await fetch(fileUrl)
+  if (!res.ok) throw new Error(`Download failed (${res.status})`)
+  const { prependSongTitleSlide, countPdfPages } = await import("@/lib/song-pdf-title-slide")
+  let pdfBytes = new Uint8Array(await res.arrayBuffer())
+  pdfBytes = await prependSongTitleSlide(pdfBytes, cleanSongTitle(title), {
+    verseCount: vc,
+    force: true,
+  })
+  const pageCount = await countPdfPages(pdfBytes)
+  const contentHash = createHash("sha256").update(Buffer.from(pdfBytes)).digest("hex")
+  const packId = String(existing.pack_id)
+  const pageMatch = title.match(/^(\d+)\s*·/)
+  const pageKey = pageMatch ? pageMatch[1]!.padStart(4, "0") : "xxxx"
+  const key = `song-packs/${packId}/${pageKey}-${contentHash.slice(0, 12)}.pdf`
+  const { url } = await putMediaObject(key, Buffer.from(pdfBytes), "application/pdf")
+  await deleteSongBlob(fileUrl)
+  return updateSongPackItem(itemId, {
+    fileUrl: url,
+    fileType: "pdf",
+    byteSize: pdfBytes.byteLength,
+    contentHash,
+    pageCount,
+    verseCount: vc,
+  })
+}
+
 export async function updateSongPackItem(
   itemId: string,
   updates: {

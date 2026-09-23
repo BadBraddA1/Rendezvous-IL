@@ -257,7 +257,8 @@ pnpm db:verify
 | `npx tsx --env-file=.env.local scripts/backfill-media-urls.ts` | Dry-run rewrite of stored Blob URLs → R2 |
 | `npx tsx --env-file=.env.local scripts/bake-sfp-title-slides.ts --all --apply` | Strip old PPT openers; write uniform title slides to sibling `- titled/` folder |
 | `npx tsx --env-file=.env.local scripts/map-song-verse-pages.ts --apply` | OCR verse page indices into `song_pack_items.verse_pages` |
-| `npx tsx --env-file=.env.local scripts/persist-sfp-ocr.ts --from=/tmp/sfp-fulltext.jsonl --apply` | Upload per-page OCR JSON to R2; set `ocr_url` / `verse_count` / `verse_pages` |
+| `npx tsx --env-file=.env.local scripts/sanitize-sfp-verse-counts.ts [--apply] [--rebake]` | Fix impossible/OCR-junk verse counts (page heuristic); optional title rebake |
+| Admin → Songs → item **vr** field | Staff sets verse count; PDF title slide rebakes immediately |
 
 **Localhost page tour:** open [`/dev/page-tour`](http://localhost:3000/dev/page-tour) during `pnpm dev` to auto-cycle routes with a countdown bar (2s default) — for fast header/layout QA. Keyboard: Space pause, ←/→ step, Esc stop.
 

@@ -3,6 +3,7 @@ import { getCurrentAdmin, getAdminPermissions } from "@/lib/clerk-auth"
 import {
   deleteSongPackItem,
   getSongPackDetail,
+  rebakeSongPackItemTitle,
   updateSongPackItem,
   uploadSongPackFile,
   validateSongPackFile,
@@ -69,9 +70,33 @@ export async function PATCH(request: Request, { params }: Params) {
     }
 
     const body = await request.json()
+    const verseCount =
+      typeof body.verse_count === "number"
+        ? body.verse_count
+        : typeof body.verse_count === "string" && body.verse_count.trim()
+          ? Number(body.verse_count)
+          : undefined
+    const rebake = body.rebake_title === true
+
+    if (rebake && verseCount != null && Number.isFinite(verseCount)) {
+      const item = await rebakeSongPackItemTitle(itemId, verseCount)
+      if (!item || item.pack_id !== packId) {
+        return NextResponse.json({ error: "Not found" }, { status: 404 })
+      }
+      const pack = await getSongPackDetail(packId)
+      if (pack?.is_published) {
+        void notifySongPackUpdated(pack.name)
+      }
+      return NextResponse.json({ item, pack })
+    }
+
     const item = await updateSongPackItem(itemId, {
       title: typeof body.title === "string" ? body.title : undefined,
       sortOrder: typeof body.sort_order === "number" ? body.sort_order : undefined,
+      verseCount:
+        verseCount != null && Number.isFinite(verseCount)
+          ? Math.max(1, Math.min(12, Math.floor(verseCount)))
+          : undefined,
     })
     if (!item || item.pack_id !== packId) {
       return NextResponse.json({ error: "Not found" }, { status: 404 })

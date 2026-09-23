@@ -248,6 +248,31 @@ export function SongPacksManager({ canEdit }: { canEdit: boolean }) {
     }
   }
 
+  const setItemVerses = async (item: SongPackItem, verseCount: number) => {
+    if (!canEdit || !detail) return
+    const vc = Math.max(1, Math.min(12, Math.floor(verseCount)))
+    try {
+      const res = await fetch(`/api/admin/songs/${detail.id}/items/${item.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ verse_count: vc, rebake_title: item.file_type === "pdf" }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || "Update failed")
+      if (data.pack) setDetail(data.pack)
+      toast({
+        title: "Verses updated",
+        description: `${item.title} → ${vc === 1 ? "1 verse" : `${vc} verses`}`,
+      })
+    } catch (error) {
+      toast({
+        title: "Could not update verses",
+        description: error instanceof Error ? error.message : "Try again",
+        variant: "destructive",
+      })
+    }
+  }
+
   const moveItem = async (index: number, direction: -1 | 1) => {
     if (!canEdit || !detail) return
     const next = index + direction
@@ -716,6 +741,32 @@ export function SongPacksManager({ canEdit }: { canEdit: boolean }) {
                               <Badge variant="secondary">
                                 {item.verse_count === 1 ? "1 verse" : `${item.verse_count} verses`}
                               </Badge>
+                            ) : null}
+                            {canEdit && item.file_type === "pdf" ? (
+                              <label className="flex items-center gap-1 text-xs text-muted-foreground">
+                                <span className="sr-only">Verses</span>
+                                <Input
+                                  type="number"
+                                  min={1}
+                                  max={12}
+                                  className="h-7 w-14 px-1 text-xs tabular-nums"
+                                  defaultValue={item.verse_count ?? ""}
+                                  key={`${item.id}-${item.verse_count}-${item.content_hash}`}
+                                  onBlur={(e) => {
+                                    const n = Number(e.target.value)
+                                    if (!Number.isFinite(n) || n < 1) return
+                                    if (n === item.verse_count) return
+                                    void setItemVerses(item, n)
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") {
+                                      ;(e.target as HTMLInputElement).blur()
+                                    }
+                                  }}
+                                  title="Set verse count (rebakes title slide)"
+                                />
+                                <span>vr</span>
+                              </label>
                             ) : null}
                             {item.page_count != null && item.page_count > 0 ? (
                               <span className="text-xs text-muted-foreground tabular-nums">
