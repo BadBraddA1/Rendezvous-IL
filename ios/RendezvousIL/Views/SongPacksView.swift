@@ -8,13 +8,18 @@ struct SongPacksView: View {
     @State private var isLoading = true
     @State private var errorMessage: String?
     @State private var packSearch = ""
+    @State private var songHits: [SongSearchHit] = []
+    @State private var isSearchingSongs = false
+
+    private var query: String {
+        packSearch.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
 
     private var filteredPacks: [SongPackSummary] {
-        let q = packSearch.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !q.isEmpty else { return packs }
+        guard !query.isEmpty else { return packs }
         return packs.filter {
-            $0.name.localizedCaseInsensitiveContains(q)
-                || ($0.description?.localizedCaseInsensitiveContains(q) ?? false)
+            $0.name.localizedCaseInsensitiveContains(query)
+                || ($0.description?.localizedCaseInsensitiveContains(query) ?? false)
         }
     }
 
@@ -24,6 +29,10 @@ struct SongPacksView: View {
 
     private var eventPacks: [SongPackSummary] {
         filteredPacks.filter { $0.is_library != true }
+    }
+
+    private var showEmptySearch: Bool {
+        !query.isEmpty && filteredPacks.isEmpty && songHits.isEmpty && !isSearchingSongs
     }
 
     var body: some View {
@@ -42,37 +51,71 @@ struct SongPacksView: View {
                     systemImage: "music.note.list",
                     description: Text("Full song books and event packs will show up here when published.")
                 )
-            } else if filteredPacks.isEmpty {
+            } else if showEmptySearch {
                 ContentUnavailableView.search(text: packSearch)
             } else {
                 List {
-                    if !songBooks.isEmpty {
+                    if !songHits.isEmpty {
                         Section {
-                            ForEach(songBooks) { pack in
-                                packRow(pack, fallback: "Full song book")
+                            ForEach(songHits) { hit in
+                                NavigationLink {
+                                    SongPackDetailView(
+                                        packId: hit.pack_id,
+                                        packName: hit.pack_name,
+                                        startItemId: hit.item_id
+                                    )
+                                } label: {
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(hit.title)
+                                            .font(.headline)
+                                        Text(hit.pack_name)
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                }
                             }
                         } header: {
-                            Text("Song books")
-                        } footer: {
-                            Text("Open a book to download it — nothing downloads until you tap in.")
+                            Text("Songs")
                         }
                     }
-                    if !eventPacks.isEmpty {
-                        Section {
-                            ForEach(eventPacks) { pack in
-                                packRow(pack, fallback: nil)
+                    if query.isEmpty || !songBooks.isEmpty {
+                        if !songBooks.isEmpty {
+                            Section {
+                                ForEach(songBooks) { pack in
+                                    packRow(pack, fallback: "Full song book")
+                                }
+                            } header: {
+                                Text("Song books")
+                            } footer: {
+                                if query.isEmpty {
+                                    Text("Open a book to download it — nothing downloads until you tap in.")
+                                }
                             }
-                        } header: {
-                            Text("Packs")
-                        } footer: {
-                            Text("Campfire, racket ball, and other set lists for the week.")
+                        }
+                    }
+                    if query.isEmpty || !eventPacks.isEmpty {
+                        if !eventPacks.isEmpty {
+                            Section {
+                                ForEach(eventPacks) { pack in
+                                    packRow(pack, fallback: nil)
+                                }
+                            } header: {
+                                Text("Packs")
+                            } footer: {
+                                if query.isEmpty {
+                                    Text("Campfire, racket ball, and other set lists for the week.")
+                                }
+                            }
                         }
                     }
                 }
             }
         }
         .navigationTitle("Songs")
-        .searchable(text: $packSearch, prompt: "Search packs")
+        .searchable(text: $packSearch, prompt: "Search songs or packs")
+        .onChange(of: packSearch) { _, _ in
+            Task { await searchSongs() }
+        }
         .toolbar {
             if session.canEdit {
                 ToolbarItem(placement: .primaryAction) {
@@ -129,11 +172,36 @@ struct SongPacksView: View {
             errorMessage = error.localizedDescription
         }
     }
+
+    private func searchSongs() async {
+        let q = query
+        guard q.count >= 1 else {
+            songHits = []
+            isSearchingSongs = false
+            return
+        }
+        guard let client = session.apiClient else { return }
+        isSearchingSongs = true
+        defer { isSearchingSongs = false }
+        // Debounce lightly
+        try? await Task.sleep(nanoseconds: 250_000_000)
+        guard packSearch.trimmingCharacters(in: .whitespacesAndNewlines) == q else { return }
+        do {
+            let encoded = q.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? q
+            let response: SongSearchResponse = try await client.get(
+                "/api/songs/search?year=\(AppConfig.eventYear)&q=\(encoded)"
+            )
+            songHits = response.results ?? []
+        } catch {
+            songHits = []
+        }
+    }
 }
 
 struct SongPackDetailView: View {
     let packId: String
     let packName: String
+    var startItemId: String? = nil
 
     @Environment(AppSession.self) private var session
     @State private var pack: SongPackDetail?
@@ -142,6 +210,7 @@ struct SongPackDetailView: View {
     @State private var errorMessage: String?
     @State private var statusMessage: String?
     @State private var songSearch = ""
+    @State private var openViewerItemId: String? = nil
 
     private var filteredItems: [SongPackItem] {
         guard let pack else { return [] }
@@ -231,6 +300,12 @@ struct SongPackDetailView: View {
         }
         .navigationTitle(packName)
         .searchable(text: $songSearch, prompt: "Search songs")
+        .navigationDestination(item: $openViewerItemId) { itemId in
+            if let pack,
+               let idx = pack.items.firstIndex(where: { $0.id == itemId }) {
+                SongItemViewer(packId: pack.id, items: pack.items, startIndex: idx)
+            }
+        }
         .task { await load() }
         .refreshable { await load() }
     }
@@ -248,6 +323,9 @@ struct SongPackDetailView: View {
             pack = response.pack
             if let pack, !SongPackStore.isFullyDownloaded(pack: pack) {
                 await download()
+            }
+            if let startItemId, pack?.items.contains(where: { $0.id == startItemId }) == true {
+                openViewerItemId = startItemId
             }
         } catch {
             errorMessage = error.localizedDescription

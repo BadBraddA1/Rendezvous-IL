@@ -265,6 +265,9 @@ fun RendezvousApp(
                     onOpenPack = { packId, packName ->
                         navController.navigate(Routes.songPack(packId, packName))
                     },
+                    onOpenSong = { packId, packName, itemId ->
+                        navController.navigate(Routes.songPack(packId, packName, itemId))
+                    },
                     onBuildPacks = if (canEdit) {
                         {
                             scope.launch {
@@ -289,10 +292,15 @@ fun RendezvousApp(
                         type = NavType.StringType
                         defaultValue = "Songs"
                     },
+                    navArgument("itemId") {
+                        type = NavType.StringType
+                        defaultValue = ""
+                    },
                 ),
             ) { entry ->
                 val packId = entry.arguments?.getString("packId").orEmpty()
                 val packName = entry.arguments?.getString("name") ?: "Songs"
+                val startItemId = entry.arguments?.getString("itemId")?.takeIf { it.isNotBlank() }
                 val parentEntry = remember(entry) {
                     runCatching { navController.getBackStackEntry(Routes.MORE_SONGS) }.getOrNull()
                 }
@@ -304,6 +312,7 @@ fun RendezvousApp(
                 SongPackDetailScreen(
                     packId = packId,
                     packName = packName,
+                    startItemId = startItemId,
                     viewModel = songsViewModel,
                     onBack = { navController.popBackStack() },
                     onOpenSong = { index ->

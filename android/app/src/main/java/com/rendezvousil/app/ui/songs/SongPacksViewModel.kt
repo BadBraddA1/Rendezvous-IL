@@ -9,6 +9,9 @@ import com.rendezvousil.core.network.ApiException
 import com.rendezvousil.core.network.dto.SongPackDetail
 import com.rendezvousil.core.network.dto.SongPackItem
 import com.rendezvousil.core.network.dto.SongPackSummary
+import com.rendezvousil.core.network.dto.SongSearchHit
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,6 +24,8 @@ data class SongPacksUiState(
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val searchQuery: String = "",
+    val songHits: List<SongSearchHit> = emptyList(),
+    val isSearchingSongs: Boolean = false,
 ) {
     val filteredPacks: List<SongPackSummary>
         get() {
@@ -79,8 +84,29 @@ class SongPacksViewModel(
         viewModelScope.launch { appSession.refreshAuth() }
     }
 
+    private var searchJob: Job? = null
+
     fun setPackSearchQuery(query: String) {
         _listState.update { it.copy(searchQuery = query) }
+        searchJob?.cancel()
+        val q = query.trim()
+        if (q.isEmpty()) {
+            _listState.update { it.copy(songHits = emptyList(), isSearchingSongs = false) }
+            return
+        }
+        searchJob = viewModelScope.launch {
+            _listState.update { it.copy(isSearchingSongs = true) }
+            delay(250)
+            val client = appSession.authenticatedApiClient ?: return@launch
+            try {
+                val response = client.searchSongs(q)
+                _listState.update {
+                    it.copy(songHits = response.results, isSearchingSongs = false)
+                }
+            } catch (_: Exception) {
+                _listState.update { it.copy(songHits = emptyList(), isSearchingSongs = false) }
+            }
+        }
     }
 
     fun setSongSearchQuery(query: String) {

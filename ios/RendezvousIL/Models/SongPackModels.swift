@@ -1,9 +1,21 @@
 import Foundation
 
-struct SongPacksResponse: Decodable, Sendable {
-    let packs: [SongPackSummary]?
+struct SongSearchResponse: Decodable, Sendable {
+    let results: [SongSearchHit]?
     let year: Int?
+    let q: String?
     let error: String?
+}
+
+struct SongSearchHit: Decodable, Identifiable, Sendable, Hashable {
+    var id: String { item_id }
+    let pack_id: String
+    let pack_name: String
+    let is_library: Bool?
+    let item_id: String
+    let title: String
+    let verse_count: Int?
+    let sort_order: Int?
 }
 
 struct SongPackDetailResponse: Decodable, Sendable {

@@ -43,6 +43,7 @@ import com.rendezvousil.core.network.dto.RatesPayload
 import com.rendezvousil.core.network.dto.ScheduleAnnouncementsResponse
 import com.rendezvousil.core.network.dto.SongPackDetailResponse
 import com.rendezvousil.core.network.dto.SongPacksResponse
+import com.rendezvousil.core.network.dto.SongSearchResponse
 import com.rendezvousil.core.network.dto.UserActivityBody
 import com.rendezvousil.core.network.dto.UserActivityResponse
 import com.rendezvousil.core.network.dto.VolunteerWeekResponse
@@ -265,6 +266,15 @@ class ApiClient private constructor(
         getJson(
             path = "api/songs/packs",
             queryParameters = mapOf("year" to year.toString()),
+        )
+
+    suspend fun searchSongs(query: String, year: Int = AppConfig.EVENT_YEAR): SongSearchResponse =
+        getJson(
+            path = "api/songs/search",
+            queryParameters = mapOf(
+                "year" to year.toString(),
+                "q" to query,
+            ),
         )
 
     suspend fun getSongPack(id: String): SongPackDetailResponse =

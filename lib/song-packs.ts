@@ -378,6 +378,60 @@ export async function listSongPacks(options: {
   )
 }
 
+export interface SongSearchHit {
+  pack_id: string
+  pack_name: string
+  is_library: boolean
+  item_id: string
+  title: string
+  verse_count: number | null
+  sort_order: number
+}
+
+export async function searchSongPackItems(options: {
+  eventYear?: RegistrationEventYear
+  query: string
+  limit?: number
+}): Promise<SongSearchHit[]> {
+  await ensureSongPacksSchema()
+  const year = options.eventYear ?? DEFAULT_REGISTRATION_EVENT_YEAR
+  const q = options.query.trim()
+  if (!q) return []
+  const limit = Math.min(Math.max(options.limit ?? 40, 1), 80)
+  const like = `%${q.replace(/[%_]/g, "")}%`
+
+  const rows = await sql`
+    SELECT
+      p.id AS pack_id,
+      p.name AS pack_name,
+      COALESCE(p.is_library, 0) AS is_library,
+      i.id AS item_id,
+      i.title,
+      i.verse_count,
+      i.sort_order
+    FROM song_pack_items i
+    INNER JOIN song_packs p ON p.id = i.pack_id
+    WHERE p.event_year = ${year}
+      AND p.is_published = 1
+      AND i.title LIKE ${like}
+    ORDER BY COALESCE(p.is_library, 0) DESC, i.sort_order ASC, i.title ASC
+    LIMIT ${limit}
+  `
+
+  return rows.map((row) => ({
+    pack_id: String(row.pack_id),
+    pack_name: String(row.pack_name),
+    is_library: Number(row.is_library) === 1,
+    item_id: String(row.item_id),
+    title: String(row.title),
+    verse_count:
+      row.verse_count != null && row.verse_count !== ""
+        ? Number(row.verse_count)
+        : null,
+    sort_order: Number(row.sort_order ?? 0),
+  }))
+}
+
 export async function getSongPackDetail(
   packId: string,
   options: { publishedOnly?: boolean } = {},

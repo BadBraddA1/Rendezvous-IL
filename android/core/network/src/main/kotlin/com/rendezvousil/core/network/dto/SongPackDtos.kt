@@ -3,6 +3,25 @@ package com.rendezvousil.core.network.dto
 import kotlinx.serialization.Serializable
 
 @Serializable
+data class SongSearchResponse(
+    val results: List<SongSearchHit> = emptyList(),
+    val year: Int? = null,
+    val q: String? = null,
+    val error: String? = null,
+)
+
+@Serializable
+data class SongSearchHit(
+    val pack_id: String,
+    val pack_name: String,
+    val is_library: Boolean = false,
+    val item_id: String,
+    val title: String,
+    val verse_count: Int? = null,
+    val sort_order: Int = 0,
+)
+
+@Serializable
 data class SongPacksResponse(
     val packs: List<SongPackSummary> = emptyList(),
     val year: Int? = null,

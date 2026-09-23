@@ -62,6 +62,7 @@ fun SongPacksScreen(
     viewModel: SongPacksViewModel,
     onBack: () -> Unit,
     onOpenPack: (packId: String, packName: String) -> Unit,
+    onOpenSong: ((packId: String, packName: String, itemId: String) -> Unit)? = null,
     onBuildPacks: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
@@ -101,7 +102,7 @@ fun SongPacksScreen(
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 8.dp),
                     singleLine = true,
-                    label = { Text("Search packs") },
+                    label = { Text("Search songs or packs") },
                 )
             }
             when {
@@ -154,9 +155,9 @@ fun SongPacksScreen(
                         )
                     }
                 }
-                state.filteredPacks.isEmpty() -> {
+                state.filteredPacks.isEmpty() && state.songHits.isEmpty() && state.searchQuery.isNotBlank() && !state.isSearchingSongs -> {
                     Text(
-                        text = "No packs match “${state.searchQuery}”.",
+                        text = "No songs match “${state.searchQuery}”.",
                         modifier = Modifier.padding(24.dp),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -164,6 +165,29 @@ fun SongPacksScreen(
                 }
                 else -> {
                     LazyColumn(modifier = Modifier.fillMaxSize()) {
+                        if (state.songHits.isNotEmpty()) {
+                            item {
+                                Text(
+                                    text = "Songs",
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = BrandColors.Lake,
+                                )
+                            }
+                            itemsIndexed(state.songHits, key = { _, hit -> hit.item_id }) { _, hit ->
+                                ListItem(
+                                    headlineContent = { Text(hit.title) },
+                                    supportingContent = { Text(hit.pack_name) },
+                                    modifier = Modifier.clickable {
+                                        if (onOpenSong != null) {
+                                            onOpenSong(hit.pack_id, hit.pack_name, hit.item_id)
+                                        } else {
+                                            onOpenPack(hit.pack_id, hit.pack_name)
+                                        }
+                                    },
+                                )
+                            }
+                        }
                         if (state.songBooks.isNotEmpty()) {
                             item {
                                 Text(
@@ -230,12 +254,27 @@ fun SongPackDetailScreen(
     viewModel: SongPacksViewModel,
     onBack: () -> Unit,
     onOpenSong: (index: Int) -> Unit,
+    startItemId: String? = null,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.detailState.collectAsStateWithLifecycle()
+    var didAutoOpen by androidx.compose.runtime.remember(packId, startItemId) {
+        androidx.compose.runtime.mutableStateOf(false)
+    }
 
     androidx.compose.runtime.LaunchedEffect(packId) {
         viewModel.loadPack(packId)
+    }
+
+    androidx.compose.runtime.LaunchedEffect(state.pack?.id, startItemId, didAutoOpen) {
+        if (didAutoOpen) return@LaunchedEffect
+        val id = startItemId ?: return@LaunchedEffect
+        val pack = state.pack ?: return@LaunchedEffect
+        val index = pack.items.indexOfFirst { it.id == id }
+        if (index >= 0) {
+            didAutoOpen = true
+            onOpenSong(index)
+        }
     }
 
     Scaffold(
