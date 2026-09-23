@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import type { YearHubPayload } from "@/lib/year-hub"
 import { isRegistrationOpen } from "@/lib/year-hub"
+import { StealthCheckInMark } from "@/components/year-hub/stealth-checkin-mark"
 
 function PaymentBadge({
   status,
@@ -169,6 +170,10 @@ export function YearHubRegistered({
               Your {hub.eventYear} registration, family, and volunteering — all in one place.
             </p>
           </div>
+
+          {reg?.checkinQrCode ? (
+            <StealthCheckInMark code={reg.checkinQrCode} familyLastName={reg.familyLastName} />
+          ) : null}
 
           {reg ? (
             <Card>

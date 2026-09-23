@@ -229,6 +229,12 @@ private fun SeasonHubContent(
                         }
                     }
                 }
+                reg.checkinQrCode?.takeIf { it.isNotBlank() }?.let { code ->
+                    StealthCheckInMark(
+                        code = code,
+                        familyLastName = reg.familyLastName,
+                    )
+                }
             }
             yearHub.family?.members?.takeIf { it.isNotEmpty() }?.let { members ->
                 Surface(

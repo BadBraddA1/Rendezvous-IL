@@ -64,6 +64,7 @@ struct YearHubRegistration: Codable, Sendable {
     let checkedIn: Bool
     let totalCost: Double?
     let paymentStatus: String?
+    let checkinQrCode: String?
 }
 
 struct YearHubVolunteerRow: Codable, Sendable, Identifiable {

@@ -23,6 +23,7 @@ googleServices = "4.4.2"
 datastore = "1.1.1"
 camerax = "1.4.0"
 mlkitBarcode = "17.3.0"
+zxing = "3.5.3"
 ably = "1.4.2"
 
 [libraries]
@@ -60,6 +61,7 @@ androidx-camera-camera2 = { group = "androidx.camera", name = "camera-camera2", 
 androidx-camera-lifecycle = { group = "androidx.camera", name = "camera-lifecycle", version.ref = "camerax" }
 androidx-camera-view = { group = "androidx.camera", name = "camera-view", version.ref = "camerax" }
 mlkit-barcode-scanning = { group = "com.google.mlkit", name = "barcode-scanning", version.ref = "mlkitBarcode" }
+zxing-core = { group = "com.google.zxing", name = "core", version.ref = "zxing" }
 ably-android = { group = "io.ably", name = "ably-android", version.ref = "ably" }
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
 firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging" }

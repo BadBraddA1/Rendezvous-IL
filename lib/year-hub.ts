@@ -1,6 +1,7 @@
 import { sql } from "@/lib/db"
 import type { Family, FamilyMember } from "@/lib/family-auth"
 import { getFamilyMembers } from "@/lib/family-auth"
+import { ensureCheckinQrCode } from "@/lib/checkin-qr"
 import { getFamilyCheckIn } from "@/lib/family-check-in"
 import {
   getFamilyVolunteering,
@@ -70,6 +71,8 @@ export type YearHubRegistrationSummary = {
   paymentStatus: YearHubPaymentStatus
   registrationFeePaid: boolean
   fullPaymentPaid: boolean
+  /** Family check-in code — rendered as a stealth watermark on Home. */
+  checkinQrCode: string | null
 }
 
 export type YearHubPayload = {
@@ -136,6 +139,7 @@ type RegDetailRow = {
   full_payment_paid: unknown
   checked_in: unknown
   attendee_count: unknown
+  checkin_qr_code: unknown
 }
 
 async function loadRegistrationDetail(
@@ -154,6 +158,7 @@ async function loadRegistrationDetail(
       r.registration_fee_paid,
       r.full_payment_paid,
       r.checked_in,
+      r.checkin_qr_code,
       (
         SELECT COUNT(*)
         FROM family_members fm
@@ -231,6 +236,11 @@ function mapRegistration(row: RegDetailRow): YearHubRegistrationSummary {
     paymentStatus: paymentStatus(registrationFeePaid, fullPaymentPaid),
     registrationFeePaid,
     fullPaymentPaid,
+    checkinQrCode: (() => {
+      if (row.checkin_qr_code == null) return null
+      const code = String(row.checkin_qr_code).trim().toUpperCase()
+      return code || null
+    })(),
   }
 }
 
@@ -326,7 +336,13 @@ export async function getYearHub(
       paymentStatus: null,
       registrationFeePaid: false,
       fullPaymentPaid: false,
+      checkinQrCode: null,
     }
+  }
+
+  if (registration.id > 0) {
+    const code = await ensureCheckinQrCode(registration.id)
+    registration = { ...registration, checkinQrCode: code }
   }
 
   const volunteeringPayload = await getFamilyVolunteering(family, String(eventYear))

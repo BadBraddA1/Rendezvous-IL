@@ -147,6 +147,10 @@ struct HomeView: View {
                 .padding()
                 .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
             }
+
+            if let code = reg.checkinQrCode, !code.isEmpty {
+                StealthCheckInMarkView(code: code, familyLastName: reg.familyLastName)
+            }
         }
 
         if let family = hub.family, !family.members.isEmpty {

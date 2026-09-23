@@ -72,6 +72,7 @@ data class YearHubRegistration(
     val checkedIn: Boolean = false,
     val totalCost: Double? = null,
     val paymentStatus: String? = null,
+    val checkinQrCode: String? = null,
 )
 
 @Serializable
