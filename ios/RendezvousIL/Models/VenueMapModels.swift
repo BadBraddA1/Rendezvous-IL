@@ -53,9 +53,9 @@ enum VenueMapStore {
                 imageAspectWidthOverHeight: 1.34,
                 venue: .init(
                     name: "Lake Williamson Christian Center",
-                    address: "17080 IL Route 4, Carlinville, IL 62626",
-                    latitude: 39.3142,
-                    longitude: -89.8818,
+                    address: "17280 Lakeside Drive, Carlinville, IL 62626",
+                    latitude: 39.2853,
+                    longitude: -89.8807,
                     campusRadiusMeters: 1200
                 ),
                 locations: []

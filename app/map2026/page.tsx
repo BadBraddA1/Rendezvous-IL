@@ -75,7 +75,7 @@ type FamilyMember = {
 
 const EVENT_CENTER = {
   name: "Lake Williamson",
-  address: "17280 Lakeside Dr, Carlinville, IL 62626",
+  address: "17280 Lakeside Drive, Carlinville, IL 62626",
   lat: 39.2853,
   lng: -89.8807,
 }

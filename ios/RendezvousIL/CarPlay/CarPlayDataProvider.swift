@@ -6,9 +6,10 @@ import UIKit
 @MainActor
 enum CarPlayDataProvider {
     /// Lake Williamson Christian Center (Carlinville, IL).
-    static let venueCoordinate = CLLocationCoordinate2D(latitude: 39.3142, longitude: -89.8818)
+    // Official physical address from lakewilliamson.org (not Route 4 — that sent GPS elsewhere).
+    static let venueCoordinate = CLLocationCoordinate2D(latitude: 39.2853, longitude: -89.8807)
     static let venueName = "Lake Williamson Christian Center"
-    static let venueAddress = "17080 IL Route 4, Carlinville, IL 62626"
+    static let venueAddress = "17280 Lakeside Drive, Carlinville, IL 62626"
 
     struct TodayItem: Identifiable {
         let id: String
