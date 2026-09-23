@@ -1,22 +1,19 @@
 import SwiftUI
 import UIKit
 
-/// PLANNED: Remove search-by-family-name-or-email from check-in.
-/// Keep QR scan + code entry only (see root README “Planned — check-in lookup”).
+/// Staff check-in station: persistent QR scanner only (no code entry / name search).
 struct CheckInView: View {
     @Environment(AppSession.self) private var session
 
-    @State private var code = ""
-    @State private var searchQuery = ""
-    @State private var searchResults: [CheckInRegistrationSummary] = []
     @State private var lookup: CheckInLookupResponse?
     @State private var roomKeys = ""
     @State private var tshirtsDistributed = false
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var successMessage: String?
-    @State private var showScanner = false
-    @State private var keepDisplayAlive = false
+    @State private var keepDisplayAlive = true
+
+    private var scannerPaused: Bool { lookup != nil || isLoading }
 
     var body: some View {
         Group {
@@ -27,25 +24,12 @@ struct CheckInView: View {
             }
         }
         .navigationTitle("Check-In")
-        .toolbar {
-            if session.canCheckIn {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showScanner = true
-                    } label: {
-                        Label("Scan QR", systemImage: "qrcode.viewfinder")
-                    }
-                }
-            }
-        }
-        .sheet(isPresented: $showScanner) {
-            CheckInQRScannerView { scanned in
-                code = scanned
-                Task { await lookupByCode() }
-            }
-        }
+        .navigationBarTitleDisplayMode(.inline)
         .onChange(of: keepDisplayAlive) { _, enabled in
             UIApplication.shared.isIdleTimerDisabled = enabled
+        }
+        .onAppear {
+            UIApplication.shared.isIdleTimerDisabled = keepDisplayAlive
         }
         .onDisappear {
             UIApplication.shared.isIdleTimerDisabled = false
@@ -69,18 +53,13 @@ struct CheckInView: View {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
-            Link(destination: AppConfig.url(for: "/admin/checkin")) {
-                Label("Open web check-in", systemImage: "safari")
-            }
-            .font(.subheadline)
-            .padding(.top, 4)
         }
         .padding()
     }
 
     private var checkInStation: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 16) {
                 if let name = session.adminName ?? session.userDisplayName {
                     Text("Staff: \(name)")
                         .font(.footnote)
@@ -89,18 +68,31 @@ struct CheckInView: View {
 
                 keepDisplayAliveToggle
 
-                scanButton
-                lookupSection
-                searchSection
+                CheckInQRScannerView(
+                    onCode: { code in
+                        Task { await lookupByCode(code) }
+                    },
+                    isPaused: scannerPaused
+                )
+                .aspectRatio(1, contentMode: .fit)
+                .frame(maxWidth: .infinity)
+
+                if lookup == nil {
+                    Text("Point at a family QR — lookup happens automatically.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
 
                 if let lookup {
                     resultSection(lookup)
 
-                    Button("Clear and start over") {
+                    Button("Scan next family") {
                         resetStation()
                     }
-                    .font(.subheadline)
+                    .font(.subheadline.weight(.semibold))
                     .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                    .buttonStyle(.bordered)
                 }
 
                 if let errorMessage {
@@ -143,101 +135,6 @@ struct CheckInView: View {
         .padding(14)
         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
         .tint(BrandColors.lake)
-    }
-
-    private var scanButton: some View {
-        Button {
-            showScanner = true
-        } label: {
-            Label("Scan QR code", systemImage: "qrcode.viewfinder")
-                .font(.headline)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
-        }
-        .buttonStyle(.borderedProminent)
-        .tint(BrandColors.lake)
-    }
-
-    private var lookupSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Or enter check-in code")
-                .font(.headline)
-
-            HStack {
-                TextField("Enter code", text: $code)
-                    .textInputAutocapitalization(.characters)
-                    .autocorrectionDisabled()
-                    .textFieldStyle(.roundedBorder)
-                    .submitLabel(.search)
-                    .onSubmit {
-                        Task { await lookupByCode() }
-                    }
-
-                Button("Look up") {
-                    Task { await lookupByCode() }
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(BrandColors.lake)
-                .disabled(code.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isLoading)
-            }
-        }
-    }
-
-    private var searchSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Search by family name or email")
-                .font(.headline)
-
-            HStack {
-                TextField("Smith", text: $searchQuery)
-                    .textFieldStyle(.roundedBorder)
-                    .submitLabel(.search)
-                    .onSubmit {
-                        Task { await searchFamilies() }
-                    }
-
-                Button("Search") {
-                    Task { await searchFamilies() }
-                }
-                .buttonStyle(.bordered)
-                .disabled(searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isLoading)
-            }
-
-            if !searchResults.isEmpty {
-                VStack(spacing: 8) {
-                    ForEach(searchResults) { result in
-                        Button {
-                            Task { await selectSearchResult(result) }
-                        } label: {
-                            HStack {
-                                VStack(alignment: .leading) {
-                                    Text("\(result.family_last_name) Family")
-                                        .font(.subheadline.weight(.semibold))
-                                    if let email = result.email {
-                                        Text(email)
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                    }
-                                }
-                                Spacer()
-                                if result.checked_in == true {
-                                    Text("Checked in")
-                                        .font(.caption)
-                                        .foregroundStyle(.green)
-                                }
-                            }
-                            .padding(12)
-                            .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 10))
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-            } else if !searchQuery.isEmpty && !isLoading && lookup == nil && errorMessage == nil {
-                Text("No families match that search.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
-        }
     }
 
     private func resultSection(_ lookup: CheckInLookupResponse) -> some View {
@@ -301,17 +198,17 @@ struct CheckInView: View {
 
     private func resetStation() {
         lookup = nil
-        code = ""
-        searchQuery = ""
-        searchResults = []
         roomKeys = ""
         tshirtsDistributed = false
         errorMessage = nil
         successMessage = nil
     }
 
-    private func lookupByCode() async {
+    private func lookupByCode(_ raw: String) async {
         guard let client = session.apiClient else { return }
+        let code = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !code.isEmpty else { return }
+
         isLoading = true
         errorMessage = nil
         successMessage = nil
@@ -319,54 +216,16 @@ struct CheckInView: View {
 
         do {
             let response = try await RepositoryFetch.withTimeout {
-                try await client.lookupCheckIn(code: code.trimmingCharacters(in: .whitespacesAndNewlines))
+                try await client.lookupCheckIn(code: code)
             }
             lookup = response
             roomKeys = (response.registration.pre_assigned_keys ?? []).joined(separator: ", ")
             tshirtsDistributed = response.registration.tshirts_distributed ?? false
-            searchResults = []
+            CheckInBoopPlayer.play(.good)
         } catch {
             lookup = nil
             errorMessage = error.localizedDescription
-        }
-    }
-
-    private func searchFamilies() async {
-        guard let client = session.apiClient else { return }
-        isLoading = true
-        errorMessage = nil
-        successMessage = nil
-        defer { isLoading = false }
-
-        do {
-            searchResults = try await RepositoryFetch.withTimeout {
-                try await client.searchCheckIn(query: searchQuery.trimmingCharacters(in: .whitespacesAndNewlines))
-            }
-            lookup = nil
-        } catch {
-            searchResults = []
-            errorMessage = error.localizedDescription
-        }
-    }
-
-    private func selectSearchResult(_ result: CheckInRegistrationSummary) async {
-        guard let client = session.apiClient else { return }
-        isLoading = true
-        errorMessage = nil
-        successMessage = nil
-        defer { isLoading = false }
-
-        do {
-            let response = try await RepositoryFetch.withTimeout {
-                try await client.loadCheckInDetails(id: result.id)
-            }
-            lookup = response
-            roomKeys = (response.registration.pre_assigned_keys ?? []).joined(separator: ", ")
-            tshirtsDistributed = response.registration.tshirts_distributed ?? false
-            searchResults = []
-            code = ""
-        } catch {
-            errorMessage = error.localizedDescription
+            CheckInBoopPlayer.play(.bad)
         }
     }
 
@@ -398,8 +257,10 @@ struct CheckInView: View {
                 )
             }
             successMessage = "\(registration.family_last_name) family checked in."
+            CheckInBoopPlayer.play(.good)
         } catch {
             errorMessage = error.localizedDescription
+            CheckInBoopPlayer.play(.bad)
         }
     }
 
@@ -421,8 +282,10 @@ struct CheckInView: View {
             roomKeys = (refreshed.registration.pre_assigned_keys ?? []).joined(separator: ", ")
             tshirtsDistributed = refreshed.registration.tshirts_distributed ?? false
             successMessage = "Check-in undone."
+            CheckInBoopPlayer.play(.good)
         } catch {
             errorMessage = error.localizedDescription
+            CheckInBoopPlayer.play(.bad)
         }
     }
 }

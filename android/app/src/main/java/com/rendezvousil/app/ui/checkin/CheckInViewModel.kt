@@ -4,17 +4,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rendezvousil.app.auth.AppSession
 import com.rendezvousil.core.network.dto.CheckInLookupResponse
-import com.rendezvousil.core.network.dto.CheckInRegistrationSummary
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class CheckInUiState(
-    val code: String = "",
-    val searchQuery: String = "",
-    val searchResults: List<CheckInRegistrationSummary> = emptyList(),
     val lookup: CheckInLookupResponse? = null,
     val roomKeys: String = "",
     val tshirtsDistributed: Boolean = false,
@@ -23,24 +22,24 @@ data class CheckInUiState(
     val successMessage: String? = null,
 )
 
+sealed interface CheckInBoopEvent {
+    data object Good : CheckInBoopEvent
+    data object Bad : CheckInBoopEvent
+}
+
 class CheckInViewModel(
     private val appSession: AppSession,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(CheckInUiState())
     val uiState: StateFlow<CheckInUiState> = _uiState.asStateFlow()
 
+    private val _boops = MutableSharedFlow<CheckInBoopEvent>(extraBufferCapacity = 4)
+    val boops: SharedFlow<CheckInBoopEvent> = _boops.asSharedFlow()
+
     init {
         viewModelScope.launch {
             appSession.refreshAuth()
         }
-    }
-
-    fun onCodeChange(code: String) {
-        _uiState.update { it.copy(code = code.uppercase()) }
-    }
-
-    fun onSearchQueryChange(query: String) {
-        _uiState.update { it.copy(searchQuery = query) }
     }
 
     fun onRoomKeysChange(keys: String) {
@@ -52,13 +51,15 @@ class CheckInViewModel(
     }
 
     fun onScannedCode(code: String) {
-        _uiState.update { it.copy(code = code.trim().uppercase()) }
-        lookupByCode()
+        lookupByCode(code.trim())
     }
 
-    fun lookupByCode() {
+    fun resetStation() {
+        _uiState.value = CheckInUiState()
+    }
+
+    private fun lookupByCode(trimmed: String) {
         val client = appSession.authenticatedApiClient ?: return
-        val trimmed = _uiState.value.code.trim()
         if (trimmed.isEmpty()) return
 
         viewModelScope.launch {
@@ -75,9 +76,9 @@ class CheckInViewModel(
                             ?.joinToString(", ")
                             .orEmpty(),
                         tshirtsDistributed = response.registration.tshirts_distributed ?: false,
-                        searchResults = emptyList(),
                     )
                 }
+                _boops.emit(CheckInBoopEvent.Good)
             } catch (error: Exception) {
                 _uiState.update {
                     it.copy(
@@ -86,63 +87,7 @@ class CheckInViewModel(
                         errorMessage = error.message ?: "Lookup failed",
                     )
                 }
-            }
-        }
-    }
-
-    fun searchFamilies() {
-        val client = appSession.authenticatedApiClient ?: return
-        val trimmed = _uiState.value.searchQuery.trim()
-        if (trimmed.isEmpty()) return
-
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-            try {
-                val results = client.searchCheckIn(trimmed)
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        searchResults = results,
-                        lookup = null,
-                    )
-                }
-            } catch (error: Exception) {
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        searchResults = emptyList(),
-                        errorMessage = error.message ?: "Search failed",
-                    )
-                }
-            }
-        }
-    }
-
-    fun selectSearchResult(result: CheckInRegistrationSummary) {
-        val client = appSession.authenticatedApiClient ?: return
-
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-            try {
-                val response = client.loadCheckInDetails(result.id)
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        lookup = response,
-                        roomKeys = response.registration.pre_assigned_keys
-                            ?.joinToString(", ")
-                            .orEmpty(),
-                        tshirtsDistributed = response.registration.tshirts_distributed ?: false,
-                        searchResults = emptyList(),
-                    )
-                }
-            } catch (error: Exception) {
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        errorMessage = error.message ?: "Could not load registration",
-                    )
-                }
+                _boops.emit(CheckInBoopEvent.Bad)
             }
         }
     }
@@ -179,6 +124,7 @@ class CheckInViewModel(
                         successMessage = "${registration.family_last_name} family checked in.",
                     )
                 }
+                _boops.emit(CheckInBoopEvent.Good)
             } catch (error: Exception) {
                 _uiState.update {
                     it.copy(
@@ -186,6 +132,7 @@ class CheckInViewModel(
                         errorMessage = error.message ?: "Check-in failed",
                     )
                 }
+                _boops.emit(CheckInBoopEvent.Bad)
             }
         }
     }
@@ -205,11 +152,14 @@ class CheckInViewModel(
                     it.copy(
                         isLoading = false,
                         lookup = refreshed,
-                        roomKeys = "",
-                        tshirtsDistributed = false,
+                        roomKeys = refreshed.registration.pre_assigned_keys
+                            ?.joinToString(", ")
+                            .orEmpty(),
+                        tshirtsDistributed = refreshed.registration.tshirts_distributed ?: false,
                         successMessage = "Check-in undone.",
                     )
                 }
+                _boops.emit(CheckInBoopEvent.Good)
             } catch (error: Exception) {
                 _uiState.update {
                     it.copy(
@@ -217,6 +167,7 @@ class CheckInViewModel(
                         errorMessage = error.message ?: "Undo failed",
                     )
                 }
+                _boops.emit(CheckInBoopEvent.Bad)
             }
         }
     }

@@ -21,8 +21,8 @@ export default async function CheckinPage() {
           <header className="admin-page-header">
             <h1 className="text-section-title text-balance">Check-In Station</h1>
             <p className="text-lead text-muted-foreground">
-              Scan a QR code, enter a code, or search by name
-              {/* PLANNED: drop name/email search — QR + code only */}
+              Scan family QR codes from the persistent camera — preferred on the iOS/Android staff
+              check-in screen (More → Check-In / Admin).
             </p>
           </header>
           <CheckinStation />

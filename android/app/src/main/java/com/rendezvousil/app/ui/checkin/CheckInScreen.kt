@@ -1,12 +1,8 @@
 package com.rendezvousil.app.ui.checkin
 
-import android.app.Activity
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -14,14 +10,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.OpenInBrowser
-import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -45,7 +39,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -57,8 +50,8 @@ import com.rendezvousil.app.auth.WebLinks
 import com.rendezvousil.app.di.RendezvousViewModelFactory
 import com.rendezvousil.app.theme.BrandColors
 import com.rendezvousil.core.network.dto.CheckInLookupResponse
-import com.rendezvousil.core.network.dto.CheckInRegistrationSummary
 import java.util.Locale
+import kotlinx.coroutines.flow.collectLatest
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -77,19 +70,17 @@ fun CheckInScreen(
     val clerkSetupError by appSession.clerkSetupErrorFlow.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
-    val qrLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult(),
-    ) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            val code = result.data?.getStringExtra(QrScanActivity.EXTRA_SCANNED_CODE)
-            if (!code.isNullOrBlank()) {
-                viewModel.onScannedCode(code)
-            }
-        }
-    }
-
     LaunchedEffect(Unit) {
         appSession.refreshAuth()
+    }
+
+    LaunchedEffect(viewModel) {
+        viewModel.boops.collectLatest { event ->
+            when (event) {
+                CheckInBoopEvent.Good -> CheckInBoopPlayer.playGood(context)
+                CheckInBoopEvent.Bad -> CheckInBoopPlayer.playBad(context)
+            }
+        }
     }
 
     Scaffold(
@@ -131,18 +122,12 @@ fun CheckInScreen(
                 CheckInStationContent(
                     adminName = adminName,
                     uiState = uiState,
-                    onCodeChange = viewModel::onCodeChange,
-                    onSearchQueryChange = viewModel::onSearchQueryChange,
                     onRoomKeysChange = viewModel::onRoomKeysChange,
                     onTshirtsDistributedChange = viewModel::onTshirtsDistributedChange,
-                    onLookup = viewModel::lookupByCode,
-                    onSearch = viewModel::searchFamilies,
-                    onSelectResult = viewModel::selectSearchResult,
                     onSubmit = viewModel::submitCheckIn,
                     onUndo = viewModel::undoCheckIn,
-                    onScanQr = {
-                        qrLauncher.launch(QrScanActivity.createIntent(context))
-                    },
+                    onScanNext = viewModel::resetStation,
+                    onScannedCode = viewModel::onScannedCode,
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(padding)
@@ -261,46 +246,40 @@ private fun CheckInAccessDeniedContent(
 private fun CheckInStationContent(
     adminName: String?,
     uiState: CheckInUiState,
-    onCodeChange: (String) -> Unit,
-    onSearchQueryChange: (String) -> Unit,
     onRoomKeysChange: (String) -> Unit,
     onTshirtsDistributedChange: (Boolean) -> Unit,
-    onLookup: () -> Unit,
-    onSearch: () -> Unit,
-    onSelectResult: (CheckInRegistrationSummary) -> Unit,
     onSubmit: () -> Unit,
     onUndo: () -> Unit,
-    onScanQr: () -> Unit,
+    onScanNext: () -> Unit,
+    onScannedCode: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val scannerPaused = uiState.lookup != null || uiState.isLoading
+
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(20.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         adminName?.let { name ->
             Text(
-                text = "Signed in as $name",
+                text = "Staff: $name",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
 
-        LookupSection(
-            code = uiState.code,
-            isLoading = uiState.isLoading,
-            onCodeChange = onCodeChange,
-            onLookup = onLookup,
-            onScanQr = onScanQr,
+        PersistentQrScanner(
+            isPaused = scannerPaused,
+            onCode = onScannedCode,
         )
 
-        SearchSection(
-            searchQuery = uiState.searchQuery,
-            searchResults = uiState.searchResults,
-            isLoading = uiState.isLoading,
-            onSearchQueryChange = onSearchQueryChange,
-            onSearch = onSearch,
-            onSelectResult = onSelectResult,
-        )
+        if (uiState.lookup == null) {
+            Text(
+                text = "Point at a family QR — lookup happens automatically.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
 
         uiState.lookup?.let { lookup ->
             ResultSection(
@@ -313,6 +292,12 @@ private fun CheckInStationContent(
                 onSubmit = onSubmit,
                 onUndo = onUndo,
             )
+            OutlinedButton(
+                onClick = onScanNext,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text("Scan next family")
+            }
         }
 
         uiState.errorMessage?.let { message ->
@@ -336,150 +321,6 @@ private fun CheckInStationContent(
                 modifier = Modifier.align(Alignment.CenterHorizontally),
                 color = BrandColors.Lake,
             )
-        }
-    }
-}
-
-@Composable
-private fun LookupSection(
-    code: String,
-    isLoading: Boolean,
-    onCodeChange: (String) -> Unit,
-    onLookup: () -> Unit,
-    onScanQr: () -> Unit,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text(
-            text = "QR / check-in code",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-        )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            OutlinedTextField(
-                value = code,
-                onValueChange = onCodeChange,
-                modifier = Modifier.weight(1f),
-                placeholder = { Text("Enter code") },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(
-                    capitalization = KeyboardCapitalization.Characters,
-                ),
-            )
-            IconButton(
-                onClick = onScanQr,
-                enabled = !isLoading,
-            ) {
-                Icon(
-                    Icons.Default.QrCodeScanner,
-                    contentDescription = "Scan QR code",
-                    tint = BrandColors.Lake,
-                )
-            }
-            Button(
-                onClick = onLookup,
-                enabled = code.trim().isNotEmpty() && !isLoading,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = BrandColors.Lake,
-                    contentColor = Color.White,
-                ),
-            ) {
-                Text("Look up")
-            }
-        }
-    }
-}
-
-@Composable
-private fun SearchSection(
-    searchQuery: String,
-    searchResults: List<CheckInRegistrationSummary>,
-    isLoading: Boolean,
-    onSearchQueryChange: (String) -> Unit,
-    onSearch: () -> Unit,
-    onSelectResult: (CheckInRegistrationSummary) -> Unit,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text(
-            text = "Search by family name or email",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-        )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = onSearchQueryChange,
-                modifier = Modifier.weight(1f),
-                placeholder = { Text("Smith") },
-                singleLine = true,
-            )
-            OutlinedButton(
-                onClick = onSearch,
-                enabled = searchQuery.trim().isNotEmpty() && !isLoading,
-            ) {
-                Text("Search")
-            }
-        }
-
-        if (searchResults.isNotEmpty()) {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                searchResults.forEach { result ->
-                    SearchResultRow(
-                        result = result,
-                        onClick = { onSelectResult(result) },
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun SearchResultRow(
-    result: CheckInRegistrationSummary,
-    onClick: () -> Unit,
-) {
-    Surface(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(10.dp),
-        color = BrandColors.SecondaryGroupedBackground,
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column {
-                Text(
-                    text = "${result.family_last_name} Family",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                result.email?.let { email ->
-                    Text(
-                        text = email,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-            if (result.checked_in == true) {
-                Text(
-                    text = "Checked in",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color(0xFF2E7D32),
-                )
-            }
         }
     }
 }
