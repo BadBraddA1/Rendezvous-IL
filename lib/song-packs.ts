@@ -77,6 +77,11 @@ export interface SongPackItem {
   page_count: number | null
   /** Distinct verse numbers found in the PDF (or `-Nvr` filename hint). */
   verse_count: number | null
+  /**
+   * 0-based PDF page index where each verse starts (verse 1 → index 0 in this array).
+   * Example: `[1,5,9]` means jump to pages 2/6/10 in a 1-based UI.
+   */
+  verse_pages: number[] | null
   created_at: string
   updated_at: string
 }
@@ -144,6 +149,7 @@ export async function ensureSongPacksSchema(): Promise<void> {
   for (const statement of [
     `ALTER TABLE song_pack_items ADD COLUMN page_count INTEGER`,
     `ALTER TABLE song_pack_items ADD COLUMN verse_count INTEGER`,
+    `ALTER TABLE song_pack_items ADD COLUMN verse_pages TEXT`,
   ]) {
     try {
       await sql.query(statement)
@@ -211,6 +217,21 @@ function mapPack(row: SqlRow, itemCount?: number): SongPack {
   }
 }
 
+function parseVersePages(raw: unknown): number[] | null {
+  if (raw == null || raw === "") return null
+  try {
+    const parsed = typeof raw === "string" ? JSON.parse(raw) : raw
+    if (!Array.isArray(parsed)) return null
+    const pages = parsed
+      .map((n) => Number(n))
+      .filter((n) => Number.isFinite(n) && n >= 0)
+      .map((n) => Math.floor(n))
+    return pages.length > 0 ? pages : null
+  } catch {
+    return null
+  }
+}
+
 function mapItem(row: SqlRow): SongPackItem {
   const fileType = String(row.file_type) === "pdf" ? "pdf" : "image"
   const pageCount =
@@ -228,6 +249,7 @@ function mapItem(row: SqlRow): SongPackItem {
     content_hash: String(row.content_hash),
     page_count: Number.isFinite(pageCount) ? pageCount : null,
     verse_count: Number.isFinite(verseCount) ? verseCount : null,
+    verse_pages: parseVersePages(row.verse_pages),
     created_at: String(row.created_at),
     updated_at: String(row.updated_at),
   }
@@ -501,6 +523,7 @@ export async function addSongPackItem(input: {
   contentHash: string
   pageCount?: number | null
   verseCount?: number | null
+  versePages?: number[] | null
 }): Promise<SongPackItem> {
   await ensureSongPacksSchema()
   const pack = await getSongPackDetail(input.packId)
@@ -517,15 +540,17 @@ export async function addSongPackItem(input: {
   const id = randomUUID()
   const pageCount = input.pageCount ?? null
   const verseCount = input.verseCount ?? null
+  const versePagesJson =
+    input.versePages && input.versePages.length > 0 ? JSON.stringify(input.versePages) : null
 
   await sql`
     INSERT INTO song_pack_items (
       id, pack_id, title, sort_order, file_url, file_type, byte_size, content_hash,
-      page_count, verse_count
+      page_count, verse_count, verse_pages
     ) VALUES (
       ${id}, ${input.packId}, ${title}, ${sortOrder},
       ${input.fileUrl}, ${input.fileType}, ${input.byteSize}, ${input.contentHash},
-      ${pageCount}, ${verseCount}
+      ${pageCount}, ${verseCount}, ${versePagesJson}
     )
   `
   await touchPack(input.packId)
@@ -545,6 +570,7 @@ export async function updateSongPackItem(
     contentHash?: string
     pageCount?: number | null
     verseCount?: number | null
+    versePages?: number[] | null
   },
 ): Promise<SongPackItem | null> {
   await ensureSongPacksSchema()
@@ -587,6 +613,12 @@ export async function updateSongPackItem(
       : existing.verse_count != null
         ? Number(existing.verse_count)
         : null
+  const versePages =
+    updates.versePages !== undefined
+      ? updates.versePages
+      : parseVersePages(existing.verse_pages)
+  const versePagesJson =
+    versePages && versePages.length > 0 ? JSON.stringify(versePages) : null
 
   if (updates.fileUrl && updates.fileUrl !== String(existing.file_url)) {
     await deleteSongBlob(String(existing.file_url))
@@ -602,6 +634,7 @@ export async function updateSongPackItem(
         content_hash = ${contentHash},
         page_count = ${pageCount},
         verse_count = ${verseCount},
+        verse_pages = ${versePagesJson},
         updated_at = datetime('now')
     WHERE id = ${itemId}
   `
@@ -676,6 +709,7 @@ export async function copySongPackItemsToPack(
       contentHash: String(row.content_hash),
       pageCount: row.page_count != null ? Number(row.page_count) : null,
       verseCount: row.verse_count != null ? Number(row.verse_count) : null,
+      versePages: parseVersePages(row.verse_pages),
     })
     added += 1
   }

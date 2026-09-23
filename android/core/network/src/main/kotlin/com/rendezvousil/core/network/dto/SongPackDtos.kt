@@ -55,4 +55,6 @@ data class SongPackItem(
     val content_hash: String,
     val page_count: Int? = null,
     val verse_count: Int? = null,
+    /** 0-based PDF page index for verse 1, 2, 3… */
+    val verse_pages: List<Int>? = null,
 )

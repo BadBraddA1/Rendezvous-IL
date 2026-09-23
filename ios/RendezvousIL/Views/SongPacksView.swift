@@ -274,16 +274,53 @@ struct SongItemViewer: View {
     let startIndex: Int
 
     @State private var index: Int = 0
+    @State private var jumpPage: Int? = nil
+
+    private var item: SongPackItem { items[index] }
+
+    private var verseJumpPages: [Int] {
+        if let pages = item.verse_pages, !pages.isEmpty { return pages }
+        // Fallback: even spacing across music pages (skip likely title page).
+        guard let verses = item.verse_count, verses > 1,
+              let pageCount = item.page_count, pageCount > verses
+        else { return [] }
+        let musicStart = 1
+        let musicPages = max(1, pageCount - musicStart)
+        return (0..<verses).map { v in
+            musicStart + (v * musicPages) / verses
+        }
+    }
 
     var body: some View {
-        let item = items[index]
         VStack(spacing: 0) {
-            SongFileRepresentable(packId: packId, item: item)
+            SongFileRepresentable(packId: packId, item: item, targetPage: jumpPage)
                 .id(item.id)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
+            if verseJumpPages.count > 1 {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        Text("Verse")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                        ForEach(Array(verseJumpPages.enumerated()), id: \.offset) { offset, page in
+                            let verse = offset + 1
+                            Button("\(verse)") {
+                                jumpPage = page
+                            }
+                            .buttonStyle(.bordered)
+                            .tint(BrandColors.lake)
+                        }
+                    }
+                    .padding(.horizontal)
+                    .padding(.vertical, 8)
+                }
+                .background(.bar)
+            }
+
             HStack {
                 Button {
+                    jumpPage = nil
                     index = max(0, index - 1)
                 } label: {
                     Label("Previous", systemImage: "chevron.left")
@@ -296,6 +333,7 @@ struct SongItemViewer: View {
                 Spacer()
 
                 Button {
+                    jumpPage = nil
                     index = min(items.count - 1, index + 1)
                 } label: {
                     Label("Next", systemImage: "chevron.right")
@@ -308,19 +346,27 @@ struct SongItemViewer: View {
         .navigationTitle(item.title)
         .navigationBarTitleDisplayMode(.inline)
         .onAppear { index = startIndex }
+        .onChange(of: index) { _, _ in jumpPage = nil }
     }
 }
 
 private struct SongFileRepresentable: UIViewControllerRepresentable {
     let packId: String
     let item: SongPackItem
+    var targetPage: Int? = nil
 
     func makeUIViewController(context: Context) -> UIViewController {
         let local = SongPackStore.localFileURL(packId: packId, item: item)
         if item.file_type == "pdf", FileManager.default.fileExists(atPath: local.path) {
             let pdf = PDFView()
             pdf.autoScales = true
+            pdf.displayMode = .singlePageContinuous
+            pdf.displayDirection = .vertical
             pdf.document = PDFDocument(url: local)
+            context.coordinator.pdfView = pdf
+            if let targetPage {
+                context.coordinator.goToPage(targetPage)
+            }
             let host = UIViewController()
             host.view = pdf
             return host
@@ -336,7 +382,6 @@ private struct SongFileRepresentable: UIViewControllerRepresentable {
 
         if let remote = URL(string: item.file_url) {
             let web = UIViewController()
-            // Fallback: open remote URL via QL if possible, else blank with message.
             let label = UILabel()
             label.text = "File not downloaded yet.\nGo back and tap Download."
             label.numberOfLines = 0
@@ -357,7 +402,11 @@ private struct SongFileRepresentable: UIViewControllerRepresentable {
         return UIViewController()
     }
 
-    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}
+    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {
+        if let targetPage {
+            context.coordinator.goToPage(targetPage)
+        }
+    }
 
     func makeCoordinator() -> Coordinator {
         Coordinator()
@@ -365,6 +414,14 @@ private struct SongFileRepresentable: UIViewControllerRepresentable {
 
     final class Coordinator {
         var dataSource: SongPreviewDataSource?
+        weak var pdfView: PDFView?
+
+        func goToPage(_ index: Int) {
+            guard let pdfView, let doc = pdfView.document, index >= 0, index < doc.pageCount,
+                  let page = doc.page(at: index)
+            else { return }
+            pdfView.go(to: page)
+        }
     }
 }
 

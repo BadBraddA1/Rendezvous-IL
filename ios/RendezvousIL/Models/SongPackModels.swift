@@ -48,4 +48,6 @@ struct SongPackItem: Decodable, Identifiable, Sendable, Hashable {
     let content_hash: String
     let page_count: Int?
     let verse_count: Int?
+    /// 0-based PDF page for verse 1, 2, 3… (jump targets).
+    let verse_pages: [Int]?
 }

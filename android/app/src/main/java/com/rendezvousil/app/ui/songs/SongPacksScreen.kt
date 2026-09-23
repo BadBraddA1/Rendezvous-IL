@@ -454,7 +454,12 @@ fun SongItemViewerScreen(
                                 color = Color.White,
                             )
                         }
-                        item.file_type == "pdf" -> PdfPagesViewer(file = local)
+                        item.file_type == "pdf" -> PdfPagesViewer(
+                            file = local,
+                            versePages = item.verse_pages,
+                            verseCount = item.verse_count,
+                            pageCountHint = item.page_count,
+                        )
                         else -> ZoomableImageFile(file = local)
                     }
                 }
@@ -509,10 +514,29 @@ private fun ZoomableImageFile(file: File) {
 }
 
 @Composable
-private fun PdfPagesViewer(file: File) {
+private fun PdfPagesViewer(
+    file: File,
+    versePages: List<Int>? = null,
+    verseCount: Int? = null,
+    pageCountHint: Int? = null,
+) {
     var pageCount by remember { mutableIntStateOf(0) }
-    var pageIndex by remember { mutableIntStateOf(0) }
+    var pageIndex by remember(file.path) { mutableIntStateOf(0) }
     var bitmap by remember { mutableStateOf<Bitmap?>(null) }
+
+    val jumpTargets = remember(versePages, verseCount, pageCountHint, pageCount) {
+        when {
+            !versePages.isNullOrEmpty() -> versePages
+            (verseCount ?: 0) > 1 && (pageCountHint ?: pageCount) > (verseCount ?: 0) -> {
+                val verses = verseCount!!
+                val total = pageCountHint ?: pageCount
+                val musicStart = 1
+                val musicPages = (total - musicStart).coerceAtLeast(1)
+                (0 until verses).map { v -> musicStart + (v * musicPages) / verses }
+            }
+            else -> emptyList()
+        }
+    }
 
     DisposableEffect(file, pageIndex) {
         val descriptor = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
@@ -544,6 +568,25 @@ private fun PdfPagesViewer(file: File) {
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Fit,
                 )
+            }
+        }
+        if (jumpTargets.size > 1) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("Verse", color = Color.White)
+                jumpTargets.forEachIndexed { offset, page ->
+                    val verse = offset + 1
+                    TextButton(onClick = {
+                        pageIndex = page.coerceIn(0, (pageCount - 1).coerceAtLeast(0))
+                    }) {
+                        Text("$verse")
+                    }
+                }
             }
         }
         if (pageCount > 1) {
