@@ -20,7 +20,6 @@ data class SongPacksUiState(
     val packs: List<SongPackSummary> = emptyList(),
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
-    val downloadingPackIds: Set<String> = emptySet(),
     val searchQuery: String = "",
 ) {
     val filteredPacks: List<SongPackSummary>
