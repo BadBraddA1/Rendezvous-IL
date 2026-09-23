@@ -1,11 +1,12 @@
 import Foundation
 
-/// Payload at `SongPackItem.ocr_url` (R2 JSON from RunPod fulltext OCR).
+/// Payload at `SongPackItem.ocr_url` (R2 JSON from lyric-band / fulltext OCR).
 struct SongOcrDocument: Decodable, Sendable {
     struct Page: Decodable, Sendable, Identifiable {
         var id: Int { index }
         let index: Int
         let text: String?
+        let confidence: Double?
     }
 
     let item_id: String?
@@ -14,6 +15,10 @@ struct SongOcrDocument: Decodable, Sendable {
     let page_count: Int?
     let pages: [Page]?
     let verse_pages: [Int]?
+    /// auto | needs_review | confirmed
+    let status: String?
+    let confidence: Double?
+    let method: String?
 }
 
 enum SongOcrStore {

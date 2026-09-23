@@ -399,9 +399,10 @@ struct SongItemViewer: View {
     @State private var index: Int = 0
     @State private var jumpPage: Int? = nil
     @State private var displayMode: DisplayMode = .slides
-    @State private var visionPages: [SongVisionOcr.PageText] = []
+    @State private var serverPages: [(index: Int, text: String)] = []
     @State private var ocrLoading = false
     @State private var ocrFailed = false
+    @State private var ocrNeedsReview = false
 
     private var item: SongPackItem { items[index] }
 
@@ -488,44 +489,51 @@ struct SongItemViewer: View {
         .onAppear { index = startIndex }
         .onChange(of: index) { _, _ in
             jumpPage = nil
-            visionPages = []
+            serverPages = []
             ocrFailed = false
+            ocrNeedsReview = false
             if displayMode == .text {
-                Task { await loadVisionText() }
+                Task { await loadServerText() }
             }
         }
         .onChange(of: displayMode) { _, mode in
             if mode == .text {
-                Task { await loadVisionText() }
+                Task { await loadServerText() }
             }
         }
         .task(id: "\(item.id)-\(displayMode.rawValue)") {
             if displayMode == .text {
-                await loadVisionText()
+                await loadServerText()
             }
         }
     }
 
     @ViewBuilder
     private var songTextBody: some View {
-        if ocrLoading && visionPages.isEmpty {
-            ProgressView("Reading lyrics…")
-        } else if ocrFailed && visionPages.isEmpty {
+        if ocrLoading && serverPages.isEmpty {
+            ProgressView("Loading lyrics…")
+        } else if ocrNeedsReview && serverPages.isEmpty {
             ContentUnavailableView(
-                "Couldn’t read lyrics",
-                systemImage: "text.page.slash",
-                description: Text("Try Slides, or check your connection.")
+                "Lyrics awaiting review",
+                systemImage: "text.badge.checkmark",
+                description: Text("This song’s OCR needs a staff confirm. Use Slides for now.")
             )
-        } else if visionPages.isEmpty {
+        } else if ocrFailed || (item.ocr_url == nil && serverPages.isEmpty) {
+            ContentUnavailableView(
+                "No lyrics yet",
+                systemImage: "text.page",
+                description: Text("Server lyric OCR hasn’t finished for this song. Use Slides.")
+            )
+        } else if serverPages.isEmpty {
             ContentUnavailableView(
                 "No lyrics found",
                 systemImage: "text.page",
-                description: Text("This slide didn’t yield readable words. Use Slides for the music.")
+                description: Text("Use Slides for the music.")
             )
         } else {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 24) {
-                    ForEach(visionPages) { page in
+                    ForEach(serverPages, id: \.index) { page in
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Page \(page.index + 1)")
                                 .font(.caption.weight(.semibold))
@@ -542,18 +550,35 @@ struct SongItemViewer: View {
         }
     }
 
-    private func loadVisionText() async {
+    private func loadServerText() async {
         ocrFailed = false
-        if !visionPages.isEmpty { return }
+        ocrNeedsReview = false
+        if !serverPages.isEmpty { return }
+        guard let raw = item.ocr_url, let url = URL(string: raw) else {
+            ocrFailed = true
+            return
+        }
         ocrLoading = true
         defer { ocrLoading = false }
         do {
-            let data = try await SongPackStore.fileData(packId: packId, item: item)
-            visionPages = try await SongVisionOcr.recognize(
-                pdfData: data,
-                contentHash: item.content_hash,
-                skipTitlePage: true
-            )
+            let (data, response) = try await URLSession.shared.data(from: url)
+            if let http = response as? HTTPURLResponse, !(200 ... 299).contains(http.statusCode) {
+                ocrFailed = true
+                return
+            }
+            let doc = try JSONDecoder().decode(SongOcrDocument.self, from: data)
+            if doc.status == "needs_review" {
+                // Still show text if present so staff-tested phones can preview; flag empty.
+                let pages = SongOcrStore.displayPages(from: doc)
+                if pages.isEmpty {
+                    ocrNeedsReview = true
+                    return
+                }
+                serverPages = pages
+                return
+            }
+            serverPages = SongOcrStore.displayPages(from: doc)
+            if serverPages.isEmpty { ocrFailed = true }
         } catch {
             ocrFailed = true
         }

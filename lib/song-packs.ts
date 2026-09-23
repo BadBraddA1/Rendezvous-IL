@@ -87,6 +87,10 @@ export interface SongPackItem {
    * Lets clients render text-only mode without re-OCR.
    */
   ocr_url: string | null
+  /** auto | needs_review | confirmed — lyric-band OCR review state. */
+  ocr_status: string | null
+  /** 0–1 confidence from lyric-band Vision OCR. */
+  ocr_confidence: number | null
   created_at: string
   updated_at: string
 }
@@ -156,6 +160,8 @@ export async function ensureSongPacksSchema(): Promise<void> {
     `ALTER TABLE song_pack_items ADD COLUMN verse_count INTEGER`,
     `ALTER TABLE song_pack_items ADD COLUMN verse_pages TEXT`,
     `ALTER TABLE song_pack_items ADD COLUMN ocr_url TEXT`,
+    `ALTER TABLE song_pack_items ADD COLUMN ocr_status TEXT`,
+    `ALTER TABLE song_pack_items ADD COLUMN ocr_confidence REAL`,
   ]) {
     try {
       await sql.query(statement)
@@ -257,6 +263,11 @@ function mapItem(row: SqlRow): SongPackItem {
     verse_count: Number.isFinite(verseCount) ? verseCount : null,
     verse_pages: parseVersePages(row.verse_pages),
     ocr_url: row.ocr_url ? toPublicMediaUrl(String(row.ocr_url)) ?? String(row.ocr_url) : null,
+    ocr_status: row.ocr_status != null ? String(row.ocr_status) : null,
+    ocr_confidence:
+      row.ocr_confidence != null && row.ocr_confidence !== ""
+        ? Number(row.ocr_confidence)
+        : null,
     created_at: String(row.created_at),
     updated_at: String(row.updated_at),
   }
@@ -677,6 +688,8 @@ export async function updateSongPackItem(
     verseCount?: number | null
     versePages?: number[] | null
     ocrUrl?: string | null
+    ocrStatus?: string | null
+    ocrConfidence?: number | null
   },
 ): Promise<SongPackItem | null> {
   await ensureSongPacksSchema()
@@ -731,6 +744,18 @@ export async function updateSongPackItem(
       : existing.ocr_url != null
         ? String(existing.ocr_url)
         : null
+  const ocrStatus =
+    updates.ocrStatus !== undefined
+      ? updates.ocrStatus
+      : existing.ocr_status != null
+        ? String(existing.ocr_status)
+        : null
+  const ocrConfidence =
+    updates.ocrConfidence !== undefined
+      ? updates.ocrConfidence
+      : existing.ocr_confidence != null
+        ? Number(existing.ocr_confidence)
+        : null
 
   if (updates.fileUrl && updates.fileUrl !== String(existing.file_url)) {
     await deleteSongBlob(String(existing.file_url))
@@ -748,6 +773,8 @@ export async function updateSongPackItem(
         verse_count = ${verseCount},
         verse_pages = ${versePagesJson},
         ocr_url = ${ocrUrl},
+        ocr_status = ${ocrStatus},
+        ocr_confidence = ${ocrConfidence},
         updated_at = datetime('now')
     WHERE id = ${itemId}
   `

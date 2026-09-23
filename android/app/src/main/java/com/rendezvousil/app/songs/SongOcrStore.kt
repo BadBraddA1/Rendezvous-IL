@@ -13,6 +13,7 @@ import java.net.URL
 data class SongOcrPage(
     val index: Int = 0,
     val text: String? = null,
+    val confidence: Double? = null,
 )
 
 @Serializable
@@ -23,6 +24,10 @@ data class SongOcrDocument(
     val page_count: Int? = null,
     val pages: List<SongOcrPage> = emptyList(),
     val verse_pages: List<Int>? = null,
+    /** auto | needs_review | confirmed */
+    val status: String? = null,
+    val confidence: Double? = null,
+    val method: String? = null,
 )
 
 class SongOcrStore(context: Context) {
