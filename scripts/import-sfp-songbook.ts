@@ -4,10 +4,12 @@
  *
  * Uses original .ppt → PDF (LibreOffice) + Vision OCR for verse counts, then uploads to R2/Turso.
  *
- *   npx tsx --env-file=.env.local scripts/import-sfp-songbook.ts [--apply] [--limit=N] [--resume]
+ *   npx tsx --env-file=.env.local scripts/import-sfp-songbook.ts [--apply] [--limit=N] [--resume] [--fast] [--shard=i/n]
  *
- * --limit=N  process at most N *new* songs this run (skips resume hits). Use with --resume for chunks.
- * --resume   keep existing pack rows; skip pages already in DB / done.json
+ * --limit=N   process at most N *new* songs this run (skips resume hits). Use with --resume for chunks.
+ * --resume    keep existing pack rows; skip pages already in DB / done.json
+ * --fast      skip Vision OCR; estimate verses from PDF page count (much faster)
+ * --shard=i/n only process pages where page % n === i (parallel workers)
  */
 import { createHash, randomUUID } from "crypto"
 import { createClient } from "@libsql/client"
@@ -55,8 +57,21 @@ function loadEnv() {
 
 const APPLY = process.argv.includes("--apply")
 const RESUME = process.argv.includes("--resume")
+/** Skip Vision OCR — estimate verses from PDF page count (much faster). */
+const FAST = process.argv.includes("--fast")
 const limitArg = process.argv.find((a) => a.startsWith("--limit="))
 const LIMIT = limitArg ? Number(limitArg.split("=")[1]) : 0
+const shardArg = process.argv.find((a) => a.startsWith("--shard="))
+/** e.g. --shard=0/3 — process only pages where page % 3 === 0 */
+const SHARD = (() => {
+  if (!shardArg) return { i: 0, n: 1 }
+  const [i, n] = shardArg
+    .slice("--shard=".length)
+    .split("/")
+    .map((x) => Number(x))
+  if (!Number.isFinite(i) || !Number.isFinite(n) || n < 1) return { i: 0, n: 1 }
+  return { i: Math.max(0, i), n }
+})()
 
 const SOFFICE =
   process.env.SOFFICE ||
@@ -66,6 +81,9 @@ const SRC =
   "/Volumes/PRO-G40-Bradd/Song Books/SFP Songbook/SFP Shape note PP 16X9 by Page number"
 const PACK_SLUG = process.env.SFP_PACK_SLUG || "sfp-pilot-10"
 const PACK_ID = "3eac16b6-fc68-43db-9d82-5cd7ccd2d5ce"
+const LO_PROFILE =
+  process.env.LO_USER_INSTALLATION ||
+  `file://${join(tmpdir(), `lo-sfp-${process.pid}-s${SHARD.i}`)}`
 
 const SWIFT_HELPER = `
 import Vision
@@ -227,8 +245,19 @@ function convertPptToPdf(pptPath: string, outDir: string): string | null {
   copyFileSync(pptPath, simple)
   const result = spawnSync(
     SOFFICE,
-    ["--headless", "--norestore", "--convert-to", "pdf", "--outdir", outDir, simple],
-    { encoding: "utf8", timeout: 180_000 },
+    [
+      "--headless",
+      "--norestore",
+      "--nologo",
+      "--nodefault",
+      `-env:UserInstallation=${LO_PROFILE}`,
+      "--convert-to",
+      "pdf",
+      "--outdir",
+      outDir,
+      simple,
+    ],
+    { encoding: "utf8", timeout: 120_000 },
   )
   try {
     unlinkSync(simple)
@@ -280,7 +309,7 @@ async function main() {
     .sort((a, b) => (pageFromName(a) ?? 0) - (pageFromName(b) ?? 0))
 
   console.log(
-    `src=${SRC}\npack=${PACK_SLUG} id=${PACK_ID}\nfiles=${files.length} apply=${APPLY} resume=${RESUME} limit=${LIMIT || "all"}`,
+    `src=${SRC}\npack=${PACK_SLUG} id=${PACK_ID}\nfiles=${files.length} apply=${APPLY} resume=${RESUME} limit=${LIMIT || "all"} fast=${FAST} shard=${SHARD.i}/${SHARD.n}`,
   )
 
   const workRoot = join(
@@ -332,13 +361,8 @@ async function main() {
 
   let ok = 0
   let fail = 0
-  const [maxSort] = (
-    await db.execute({
-      sql: "SELECT COALESCE(MAX(sort_order), -1) AS m FROM song_pack_items WHERE pack_id = ?",
-      args: [PACK_ID],
-    })
-  ).rows
-  let sortOrder = Number(maxSort?.m ?? -1) + 1
+  // Page number is stable across parallel shards (avoid racing MAX(sort_order))
+  void 0
 
   // If resuming after a partial apply, mark DB pages as done
   if (APPLY && RESUME) {
@@ -356,6 +380,9 @@ async function main() {
   let attempted = 0
   for (const name of files) {
     const page = pageFromName(name)!
+    if (SHARD.n > 1 && page % SHARD.n !== SHARD.i) {
+      continue
+    }
     if (donePages.has(page)) {
       continue
     }
@@ -379,23 +406,28 @@ async function main() {
     pdfBytes = await stripLegacyDarkTitleSlides(pdfBytes)
     writeFileSync(pdfPath, Buffer.from(pdfBytes))
 
-    const info = inspectPdf(pdfPath, helperPath)
-    if (info.hasNativeTitle && info.pages > 1) {
-      pdfBytes = await dropFirstPage(pdfBytes)
-      writeFileSync(pdfPath, Buffer.from(pdfBytes))
+    const hint = extractVerseCountHint(name)
+    let verseCount = hint && hint > 0 ? hint : 0
+
+    if (!FAST) {
+      const info = inspectPdf(pdfPath, helperPath)
+      if (info.hasNativeTitle && info.pages > 1) {
+        pdfBytes = await dropFirstPage(pdfBytes)
+        writeFileSync(pdfPath, Buffer.from(pdfBytes))
+      }
+      if (info.verseCount > 0) verseCount = info.verseCount
+      if (verseCount > 0) {
+        console.log(
+          `  verses=${verseCount} ink0=${info.ink0.toFixed(3)} nativeTitle=${info.hasNativeTitle}`,
+        )
+      }
     }
 
-    const hint = extractVerseCountHint(name)
-    let verseCount =
-      info.verseCount > 0 ? info.verseCount : hint && hint > 0 ? hint : 0
     if (verseCount <= 0) {
-      // Always show a verse line — estimate from remaining music pages
       const pages = await countPdfPages(pdfBytes)
       verseCount = Math.max(1, Math.min(12, Math.round(pages / 2) || 1))
-      console.log(`  verses estimated=${verseCount} (ocr=0 pages=${pages})`)
-    } else {
       console.log(
-        `  verses=${verseCount} ink0=${info.ink0.toFixed(3)} nativeTitle=${info.hasNativeTitle}`,
+        `  verses estimated=${verseCount} (pages=${pages}${FAST ? " fast" : " ocr=0"})`,
       )
     }
 
@@ -435,7 +467,7 @@ async function main() {
         id,
         PACK_ID,
         title,
-        sortOrder,
+        page, // page number = sort order (safe for parallel shards)
         fileUrl,
         withTitle.byteLength,
         contentHash,
@@ -446,7 +478,6 @@ async function main() {
 
     donePages.add(page)
     writeFileSync(donePath, JSON.stringify([...donePages]))
-    sortOrder++
     ok++
     console.log(`  ok ${fileUrl}`)
 
