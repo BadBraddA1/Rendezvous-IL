@@ -92,7 +92,7 @@ struct SongPacksView: View {
                                 Text("Song books")
                             } footer: {
                                 if query.isEmpty {
-                                    Text("Browse song books — songs download only when you open one. Event packs download when you open the pack.")
+                                    Text("Browse online — open a song to view it. Save offline only if you need it without Wi‑Fi.")
                                 }
                             }
                         }
@@ -107,7 +107,7 @@ struct SongPacksView: View {
                                 Text("Packs")
                             } footer: {
                                 if query.isEmpty {
-                                    Text("Campfire, racket ball, and other set lists — opening a pack downloads just those songs.")
+                                    Text("Campfire, racket ball, and other set lists — streams online; optional offline save.")
                                 }
                             }
                         }
@@ -245,18 +245,18 @@ struct SongPackDetailView: View {
                                 downloadStatusLabel(pack: pack),
                                 systemImage: SongPackStore.isFullyDownloaded(pack: pack)
                                     ? "checkmark.circle.fill"
-                                    : "arrow.down.circle"
+                                    : "icloud"
                             )
                             Spacer()
                             if isDownloading {
                                 ProgressView()
-                            } else if isLibrary {
-                                Button("Download all…") {
-                                    confirmDownloadAll = true
-                                }
                             } else {
-                                Button("Download") {
-                                    Task { await download() }
+                                Button(isLibrary ? "Save all offline…" : "Save offline") {
+                                    if isLibrary {
+                                        confirmDownloadAll = true
+                                    } else {
+                                        Task { await download() }
+                                    }
                                 }
                             }
                         }
@@ -266,11 +266,7 @@ struct SongPackDetailView: View {
                                 .foregroundStyle(.secondary)
                         }
                     } footer: {
-                        if isLibrary {
-                            Text("Song books stay online — each song downloads only when you open it. Use Download all only if you need the whole book offline.")
-                        } else {
-                            Text("Opening this pack downloads its songs for offline use.")
-                        }
+                        Text("Songs stream online — nothing is saved unless you tap Save offline.")
                     }
                     Section {
                         if filteredItems.isEmpty {
@@ -323,16 +319,16 @@ struct SongPackDetailView: View {
             }
         }
         .confirmationDialog(
-            "Download entire song book?",
+            "Save entire song book offline?",
             isPresented: $confirmDownloadAll,
             titleVisibility: .visible
         ) {
-            Button("Download all \(pack?.items.count ?? 0) songs", role: .destructive) {
+            Button("Save all \(pack?.items.count ?? 0) songs", role: .destructive) {
                 Task { await download() }
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("This can use a lot of storage and data. Prefer opening songs one at a time unless you need the whole book offline.")
+            Text("Only needed if you want the whole book without Wi‑Fi. Opening songs streams them online.")
         }
         .task { await load() }
         .refreshable { await load() }
@@ -340,15 +336,13 @@ struct SongPackDetailView: View {
 
     private func downloadStatusLabel(pack: SongPackDetail) -> String {
         if SongPackStore.isFullyDownloaded(pack: pack) {
-            return "Downloaded for offline use"
+            return "Saved for offline use"
         }
         let n = SongPackStore.downloadedCount(pack: pack)
-        if isLibrary {
-            return n == 0
-                ? "Browse only — open a song to download it"
-                : "\(n) of \(pack.items.count) opened on this phone"
+        if n == 0 {
+            return "Streaming online"
         }
-        return "\(n) of \(pack.items.count) downloaded"
+        return "\(n) of \(pack.items.count) saved offline"
     }
 
     private func load() async {
@@ -356,16 +350,13 @@ struct SongPackDetailView: View {
         errorMessage = nil
         defer { isLoading = false }
         guard let client = session.apiClient else {
-            errorMessage = "Sign in with your family account to download song packs."
+            errorMessage = "Sign in with your family account to view song packs."
             return
         }
         do {
             let response: SongPackDetailResponse = try await client.get("/api/songs/packs/\(packId)")
             pack = response.pack
-            // Event packs auto-download; song books never — avoid pulling ~900 files by accident.
-            if let pack, pack.is_library != true, !SongPackStore.isFullyDownloaded(pack: pack) {
-                await download()
-            }
+            // Never auto-download — songs stream from CDN when opened.
             if let startItemId, pack?.items.contains(where: { $0.id == startItemId }) == true {
                 openViewerItemId = startItemId
             }
@@ -383,7 +374,7 @@ struct SongPackDetailView: View {
             statusMessage = "Saved \(count) of \(pack.items.count) files on this phone."
             self.pack = pack
         } catch {
-            statusMessage = "Download failed — try again on Wi‑Fi."
+            statusMessage = "Save failed — try again on Wi‑Fi."
         }
     }
 }
@@ -407,9 +398,6 @@ struct SongItemViewer: View {
 
     @State private var index: Int = 0
     @State private var jumpPage: Int? = nil
-    @State private var isFetchingFile = false
-    @State private var fetchFailed = false
-    @State private var fileEpoch = 0
     @State private var displayMode: DisplayMode = .slides
     @State private var visionPages: [SongVisionOcr.PageText] = []
     @State private var ocrLoading = false
@@ -419,7 +407,6 @@ struct SongItemViewer: View {
 
     private var verseJumpPages: [Int] {
         if let pages = item.verse_pages, !pages.isEmpty { return pages }
-        // Fallback: even spacing across music pages (skip likely title page).
         guard let verses = item.verse_count, verses > 1,
               let pageCount = item.page_count, pageCount > verses
         else { return [] }
@@ -441,29 +428,12 @@ struct SongItemViewer: View {
             .padding(.horizontal)
             .padding(.vertical, 8)
 
-            ZStack {
+            Group {
                 if displayMode == .text {
                     songTextBody
                 } else {
-                    SongFileRepresentable(packId: packId, item: item, targetPage: jumpPage)
-                        .id("\(item.id)-\(fileEpoch)")
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-                    if isFetchingFile {
-                        ProgressView("Downloading song…")
-                            .padding()
-                            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
-                    } else if fetchFailed, !SongPackStore.isDownloaded(packId: packId, item: item) {
-                        VStack(spacing: 12) {
-                            Text("Couldn’t download this song.")
-                                .multilineTextAlignment(.center)
-                            Button("Try again") {
-                                Task { await ensureDownloaded() }
-                            }
-                            .buttonStyle(.borderedProminent)
-                        }
-                        .padding()
-                    }
+                    SongStreamingViewer(packId: packId, item: item, targetPage: jumpPage)
+                        .id(item.id)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -475,8 +445,7 @@ struct SongItemViewer: View {
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(.secondary)
                         ForEach(Array(verseJumpPages.enumerated()), id: \.offset) { offset, page in
-                            let verse = offset + 1
-                            Button("\(verse)") {
+                            Button("\(offset + 1)") {
                                 jumpPage = page
                             }
                             .buttonStyle(.bordered)
@@ -521,21 +490,19 @@ struct SongItemViewer: View {
             jumpPage = nil
             visionPages = []
             ocrFailed = false
-            Task {
-                await ensureDownloaded()
-                if displayMode == .text { await loadVisionText() }
+            if displayMode == .text {
+                Task { await loadVisionText() }
             }
         }
         .onChange(of: displayMode) { _, mode in
             if mode == .text {
                 Task { await loadVisionText() }
-            } else {
-                Task { await ensureDownloaded() }
             }
         }
-        .task(id: item.id) {
-            await ensureDownloaded()
-            if displayMode == .text { await loadVisionText() }
+        .task(id: "\(item.id)-\(displayMode.rawValue)") {
+            if displayMode == .text {
+                await loadVisionText()
+            }
         }
     }
 
@@ -547,7 +514,7 @@ struct SongItemViewer: View {
             ContentUnavailableView(
                 "Couldn’t read lyrics",
                 systemImage: "text.page.slash",
-                description: Text("Try slides, or open again on Wi‑Fi after the PDF finishes downloading.")
+                description: Text("Try Slides, or check your connection.")
             )
         } else if visionPages.isEmpty {
             ContentUnavailableView(
@@ -575,73 +542,71 @@ struct SongItemViewer: View {
         }
     }
 
-    private func ensureDownloaded() async {
-        guard displayMode == .slides || !SongPackStore.isDownloaded(packId: packId, item: item) else {
-            return
-        }
-        fetchFailed = false
-        guard !SongPackStore.isDownloaded(packId: packId, item: item) else {
-            fileEpoch += 1
-            return
-        }
-        isFetchingFile = true
-        defer { isFetchingFile = false }
-        do {
-            let ok = try await SongPackStore.downloadItem(packId: packId, item: item)
-            fetchFailed = !ok
-            if ok { fileEpoch += 1 }
-        } catch {
-            fetchFailed = true
-        }
-    }
-
     private func loadVisionText() async {
         ocrFailed = false
         if !visionPages.isEmpty { return }
         ocrLoading = true
         defer { ocrLoading = false }
-
-        // Need local PDF for Vision; download just this song if needed.
-        if !SongPackStore.isDownloaded(packId: packId, item: item) {
-            do {
-                let ok = try await SongPackStore.downloadItem(packId: packId, item: item)
-                if !ok {
-                    ocrFailed = true
-                    return
-                }
-            } catch {
-                ocrFailed = true
-                return
-            }
-        }
-
-        let url = SongPackStore.localFileURL(packId: packId, item: item)
         do {
+            let data = try await SongPackStore.fileData(packId: packId, item: item)
             visionPages = try await SongVisionOcr.recognize(
-                pdfURL: url,
+                pdfData: data,
                 contentHash: item.content_hash,
                 skipTitlePage: true
             )
-            if visionPages.isEmpty { ocrFailed = false }
         } catch {
             ocrFailed = true
         }
     }
 }
 
-private struct SongFileRepresentable: UIViewControllerRepresentable {
+/// Streams a song from CDN (or offline cache) without requiring Save offline.
+private struct SongStreamingViewer: View {
     let packId: String
     let item: SongPackItem
     var targetPage: Int? = nil
 
+    @State private var data: Data?
+    @State private var failed = false
+
+    var body: some View {
+        Group {
+            if let data {
+                SongFileRepresentable(data: data, fileType: item.file_type, targetPage: targetPage)
+            } else if failed {
+                ContentUnavailableView(
+                    "Couldn’t load song",
+                    systemImage: "wifi.exclamationmark",
+                    description: Text("Check your connection and try again.")
+                )
+            } else {
+                ProgressView("Loading…")
+            }
+        }
+        .task(id: item.id) {
+            data = nil
+            failed = false
+            do {
+                data = try await SongPackStore.fileData(packId: packId, item: item)
+            } catch {
+                failed = true
+            }
+        }
+    }
+}
+
+private struct SongFileRepresentable: UIViewControllerRepresentable {
+    let data: Data
+    let fileType: String
+    var targetPage: Int? = nil
+
     func makeUIViewController(context: Context) -> UIViewController {
-        let local = SongPackStore.localFileURL(packId: packId, item: item)
-        if item.file_type == "pdf", FileManager.default.fileExists(atPath: local.path) {
+        if fileType == "pdf", let doc = PDFDocument(data: data) {
             let pdf = PDFView()
             pdf.autoScales = true
             pdf.displayMode = .singlePageContinuous
             pdf.displayDirection = .vertical
-            pdf.document = PDFDocument(url: local)
+            pdf.document = doc
             context.coordinator.pdfView = pdf
             if let targetPage {
                 context.coordinator.goToPage(targetPage)
@@ -651,39 +616,29 @@ private struct SongFileRepresentable: UIViewControllerRepresentable {
             return host
         }
 
-        if FileManager.default.fileExists(atPath: local.path) {
-            let preview = QLPreviewController()
-            let dataSource = SongPreviewDataSource(url: local)
-            context.coordinator.dataSource = dataSource
-            preview.dataSource = dataSource
-            return preview
-        }
+        let ext = fileType == "pdf" ? "pdf" : "jpg"
+        let temp = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension(ext)
+        try? data.write(to: temp, options: .atomic)
+        context.coordinator.tempURL = temp
 
-        if let remote = URL(string: item.file_url) {
-            let web = UIViewController()
-            let label = UILabel()
-            label.text = "File not downloaded yet.\nGo back and tap Download."
-            label.numberOfLines = 0
-            label.textAlignment = .center
-            label.translatesAutoresizingMaskIntoConstraints = false
-            web.view.backgroundColor = .systemBackground
-            web.view.addSubview(label)
-            NSLayoutConstraint.activate([
-                label.centerXAnchor.constraint(equalTo: web.view.centerXAnchor),
-                label.centerYAnchor.constraint(equalTo: web.view.centerYAnchor),
-                label.leadingAnchor.constraint(equalTo: web.view.leadingAnchor, constant: 24),
-                label.trailingAnchor.constraint(equalTo: web.view.trailingAnchor, constant: -24),
-            ])
-            _ = remote
-            return web
-        }
-
-        return UIViewController()
+        let preview = QLPreviewController()
+        let dataSource = SongPreviewDataSource(url: temp)
+        context.coordinator.dataSource = dataSource
+        preview.dataSource = dataSource
+        return preview
     }
 
     func updateUIViewController(_ uiViewController: UIViewController, context: Context) {
         if let targetPage {
             context.coordinator.goToPage(targetPage)
+        }
+    }
+
+    static func dismantleUIViewController(_ uiViewController: UIViewController, coordinator: Coordinator) {
+        if let temp = coordinator.tempURL {
+            try? FileManager.default.removeItem(at: temp)
         }
     }
 
@@ -693,6 +648,7 @@ private struct SongFileRepresentable: UIViewControllerRepresentable {
 
     final class Coordinator {
         var dataSource: SongPreviewDataSource?
+        var tempURL: URL?
         weak var pdfView: PDFView?
 
         func goToPage(_ index: Int) {

@@ -181,15 +181,13 @@ class SongPacksViewModel(
                     }
                     return@launch
                 }
+                // Never auto-download — songs stream when opened.
                 _detailState.update {
                     it.copy(
                         isLoading = false,
                         pack = pack,
                         downloadedCount = store.downloadedCount(pack),
                     )
-                }
-                if (!pack.is_library && !store.isFullyDownloaded(pack)) {
-                    downloadCurrentPack()
                 }
             } catch (e: Exception) {
                 _detailState.update {

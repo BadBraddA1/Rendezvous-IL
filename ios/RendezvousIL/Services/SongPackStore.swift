@@ -43,6 +43,23 @@ enum SongPackStore {
         !pack.items.isEmpty && downloadedCount(pack: pack) == pack.items.count
     }
 
+    /// Fetch song bytes for streaming (uses disk cache if already saved offline).
+    static func fileData(packId: String, item: SongPackItem) async throws -> Data {
+        let local = localFileURL(packId: packId, item: item)
+        if FileManager.default.fileExists(atPath: local.path),
+           let data = try? Data(contentsOf: local) {
+            return data
+        }
+        guard let remote = URL(string: item.file_url) else {
+            throw URLError(.badURL)
+        }
+        let (data, response) = try await URLSession.shared.data(from: remote)
+        if let http = response as? HTTPURLResponse, !(200 ... 299).contains(http.statusCode) {
+            throw URLError(.badServerResponse)
+        }
+        return data
+    }
+
     @discardableResult
     static func downloadItem(packId: String, item: SongPackItem) async throws -> Bool {
         let dest = localFileURL(packId: packId, item: item)

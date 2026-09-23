@@ -44,13 +44,13 @@ enum SongVisionOcr {
     private static func cacheFile(for contentHash: String) -> URL { cacheFile(contentHash: contentHash) }
 
     static func recognize(
-        pdfURL: URL,
+        pdfData: Data,
         contentHash: String,
         skipTitlePage: Bool = true
     ) async throws -> [PageText] {
         if let hit = cached(contentHash: contentHash) { return hit }
 
-        guard let doc = PDFDocument(url: pdfURL), doc.pageCount > 0 else { return [] }
+        guard let doc = PDFDocument(data: pdfData), doc.pageCount > 0 else { return [] }
 
         var pages: [PageText] = []
         let start = skipTitlePage && doc.pageCount > 1 ? 1 : 0
@@ -73,6 +73,15 @@ enum SongVisionOcr {
         memory[contentHash] = pages
         lock.unlock()
         return pages
+    }
+
+    static func recognize(
+        pdfURL: URL,
+        contentHash: String,
+        skipTitlePage: Bool = true
+    ) async throws -> [PageText] {
+        let data = try Data(contentsOf: pdfURL)
+        return try await recognize(pdfData: data, contentHash: contentHash, skipTitlePage: skipTitlePage)
     }
 
     private static func render(page: PDFPage, scale: CGFloat = 2.5) -> CGImage? {
