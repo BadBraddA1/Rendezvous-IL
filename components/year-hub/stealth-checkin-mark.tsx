@@ -2,10 +2,10 @@
 
 /**
  * Stealth check-in mark — Walmart Digimarc spirit, standard QR under the hood.
- * Quiet lake-teal watermark on Home; hold/tap to brighten for the desk scanner.
+ * Quiet lake-teal watermark on Home; double-tap to brighten for the desk scanner.
  */
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import QRCode from "qrcode"
 
 export function StealthCheckInMark({
@@ -17,6 +17,8 @@ export function StealthCheckInMark({
 }) {
   const [dataUrl, setDataUrl] = useState<string | null>(null)
   const [bright, setBright] = useState(false)
+  const lastTap = useRef(0)
+  const dimTimer = useRef<number | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -33,21 +35,54 @@ export function StealthCheckInMark({
     })
     return () => {
       cancelled = true
+      if (dimTimer.current != null) window.clearTimeout(dimTimer.current)
     }
   }, [code])
+
+  const toggleBright = () => {
+    if (dimTimer.current != null) {
+      window.clearTimeout(dimTimer.current)
+      dimTimer.current = null
+    }
+    setBright((prev) => {
+      const next = !prev
+      if (next) {
+        dimTimer.current = window.setTimeout(() => {
+          setBright(false)
+          dimTimer.current = null
+        }, 12_000)
+      }
+      return next
+    })
+  }
+
+  const onPointerUp = () => {
+    const now = Date.now()
+    if (now - lastTap.current < 320) {
+      toggleBright()
+      lastTap.current = 0
+    } else {
+      lastTap.current = now
+    }
+  }
 
   if (!dataUrl) return null
 
   return (
     <section
       className="relative overflow-hidden rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/[0.07] via-card to-surface-highlight p-4"
-      onPointerDown={() => setBright(true)}
-      onPointerUp={() => setBright(false)}
-      onPointerLeave={() => setBright(false)}
-      onPointerCancel={() => setBright(false)}
-      aria-label="Check-in watermark — hold to brighten for staff scan"
+      onPointerUp={onPointerUp}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault()
+          toggleBright()
+        }
+      }}
+      aria-label="Check-in watermark — double-tap to brighten for staff scan"
+      aria-pressed={bright}
     >
-      {/* Soft geometric “wallpaper” so the QR feels woven into the card */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 opacity-[0.35]"
@@ -82,7 +117,7 @@ export function StealthCheckInMark({
             {familyLastName ? `${familyLastName} family` : "Your check-in mark"}
           </p>
           <p className="text-xs text-muted-foreground">
-            Staff can scan this Home screen. Hold to brighten.
+            Staff can scan this Home screen. Double-tap to brighten.
           </p>
         </div>
       </div>

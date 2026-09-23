@@ -9,6 +9,7 @@ struct StealthCheckInMarkView: View {
 
     @State private var bright = false
     @State private var qrImage: UIImage?
+    @State private var dimTask: Task<Void, Never>?
 
     var body: some View {
         HStack(alignment: .center, spacing: 16) {
@@ -37,7 +38,7 @@ struct StealthCheckInMarkView: View {
                     .foregroundStyle(BrandColors.lake)
                 Text(familyLastName.map { "\($0) family" } ?? "Your check-in mark")
                     .font(.subheadline.weight(.semibold))
-                Text("Staff can scan this Home screen. Hold to brighten.")
+                Text("Staff can scan this Home screen. Double-tap to brighten.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -58,7 +59,6 @@ struct StealthCheckInMarkView: View {
                             endPoint: .bottomTrailing
                         )
                     )
-                // Soft dot field — “woven” texture, not a loud ticket card.
                 Canvas { context, size in
                     let step: CGFloat = 14
                     var y: CGFloat = 8
@@ -79,14 +79,33 @@ struct StealthCheckInMarkView: View {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .strokeBorder(BrandColors.lake.opacity(0.16), lineWidth: 1)
         )
-        .gesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { _ in bright = true }
-                .onEnded { _ in bright = false }
-        )
-        .accessibilityLabel("Check-in watermark. Hold to brighten for staff scan.")
+        .onTapGesture(count: 2) {
+            toggleBright()
+        }
+        .accessibilityLabel("Check-in watermark. Double-tap to brighten for staff scan.")
+        .accessibilityHint(bright ? "Bright. Double-tap again to dim." : "Dim. Double-tap to brighten.")
+        .accessibilityAddTraits(.isButton)
         .task(id: code) {
             qrImage = Self.makeQRImage(code)
+        }
+        .onDisappear {
+            dimTask?.cancel()
+        }
+    }
+
+    private func toggleBright() {
+        dimTask?.cancel()
+        withAnimation(.easeInOut(duration: 0.2)) {
+            bright.toggle()
+        }
+        if bright {
+            dimTask = Task { @MainActor in
+                try? await Task.sleep(for: .seconds(12))
+                guard !Task.isCancelled else { return }
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    bright = false
+                }
+            }
         }
     }
 

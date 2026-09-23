@@ -16,6 +16,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -33,6 +34,7 @@ import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
 import com.rendezvousil.app.theme.BrandColors
+import kotlinx.coroutines.delay
 
 @Composable
 fun StealthCheckInMark(
@@ -43,16 +45,19 @@ fun StealthCheckInMark(
     var bright by remember { mutableStateOf(false) }
     val bitmap = remember(code) { encodeStealthQr(code) }
 
+    LaunchedEffect(bright) {
+        if (bright) {
+            delay(12_000)
+            bright = false
+        }
+    }
+
     Surface(
         modifier = modifier
             .fillMaxWidth()
             .pointerInput(Unit) {
                 detectTapGestures(
-                    onPress = {
-                        bright = true
-                        tryAwaitRelease()
-                        bright = false
-                    },
+                    onDoubleTap = { bright = !bright },
                 )
             },
         shape = RoundedCornerShape(16.dp),
@@ -96,7 +101,7 @@ fun StealthCheckInMark(
                     fontWeight = FontWeight.SemiBold,
                 )
                 Text(
-                    text = "Staff can scan this Home screen. Hold to brighten.",
+                    text = "Staff can scan this Home screen. Double-tap to brighten.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
