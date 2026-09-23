@@ -36,6 +36,8 @@ npm-debug.log*
 scripts/backfill-media-urls-rollback-*.json
 scripts/sfp-lyric-band-ocr/.venv/
 scripts/sfp-lyric-band-ocr/vision_ocr
+scripts/runpod-sfp-book-ocr/__pycache__/
+scripts/runpod-sfp-book-ocr/vision_ocr
 testsprite_tests/tmp/
 xcuserdata/
 yarn-debug.log*
