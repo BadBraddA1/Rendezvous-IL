@@ -15,6 +15,7 @@ import {
 } from "../lib/song-pdf-title-slide"
 
 const APPLY = process.argv.includes("--apply")
+const FORCE = process.argv.includes("--force")
 const fromArg = process.argv.find((a) => a.startsWith("--from="))
 const FROM = fromArg?.slice("--from=".length)
 const limitArg = process.argv.find((a) => a.startsWith("--limit="))
@@ -95,7 +96,7 @@ async function main() {
   }
   const { byPage, byTitle } = parseVerseMap(JSON.parse(readFileSync(FROM, "utf8")))
   console.log(
-    `verse map pages=${byPage.size} titles=${byTitle.size} apply=${APPLY}`,
+    `verse map pages=${byPage.size} titles=${byTitle.size} apply=${APPLY} force=${FORCE}`,
   )
 
   const env = loadEnv()
@@ -133,7 +134,7 @@ async function main() {
       continue
     }
     const prev = row.verse_count != null ? Number(row.verse_count) : null
-    if (prev === next) {
+    if (!FORCE && prev === next) {
       skip++
       continue
     }
