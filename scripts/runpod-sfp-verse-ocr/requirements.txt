@@ -1,0 +1,5 @@
+runpod
+requests
+pymupdf
+pytesseract
+Pillow
