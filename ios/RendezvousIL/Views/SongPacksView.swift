@@ -8,6 +8,16 @@ struct SongPacksView: View {
     @State private var isLoading = true
     @State private var errorMessage: String?
     @State private var downloadingPackIds: Set<String> = []
+    @State private var packSearch = ""
+
+    private var filteredPacks: [SongPackSummary] {
+        let q = packSearch.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !q.isEmpty else { return packs }
+        return packs.filter {
+            $0.name.localizedCaseInsensitiveContains(q)
+                || ($0.description?.localizedCaseInsensitiveContains(q) ?? false)
+        }
+    }
 
     var body: some View {
         Group {
@@ -25,8 +35,10 @@ struct SongPacksView: View {
                     systemImage: "music.note.list",
                     description: Text("When Campfire or Racket Ball packs are published, they’ll show up here for offline download.")
                 )
+            } else if filteredPacks.isEmpty {
+                ContentUnavailableView.search(text: packSearch)
             } else {
-                List(packs) { pack in
+                List(filteredPacks) { pack in
                     NavigationLink {
                         SongPackDetailView(packId: pack.id, packName: pack.name)
                     } label: {
@@ -47,6 +59,7 @@ struct SongPacksView: View {
             }
         }
         .navigationTitle("Songs")
+        .searchable(text: $packSearch, prompt: "Search packs")
         .refreshable { await loadPacks() }
         .task { await loadPacks() }
     }
@@ -99,6 +112,14 @@ struct SongPackDetailView: View {
     @State private var isDownloading = false
     @State private var errorMessage: String?
     @State private var statusMessage: String?
+    @State private var songSearch = ""
+
+    private var filteredItems: [SongPackItem] {
+        guard let pack else { return [] }
+        let q = songSearch.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !q.isEmpty else { return pack.items }
+        return pack.items.filter { $0.title.localizedCaseInsensitiveContains(q) }
+    }
 
     var body: some View {
         Group {
@@ -138,26 +159,42 @@ struct SongPackDetailView: View {
                                 .foregroundStyle(.secondary)
                         }
                     }
-                    Section("Songs") {
-                        ForEach(Array(pack.items.enumerated()), id: \.element.id) { index, item in
-                            NavigationLink {
-                                SongItemViewer(packId: pack.id, items: pack.items, startIndex: index)
-                            } label: {
-                                HStack {
-                                    Text("\(index + 1). \(item.title)")
-                                    Spacer()
-                                    if SongPackStore.isDownloaded(packId: pack.id, item: item) {
-                                        Image(systemName: "checkmark.circle.fill")
-                                            .foregroundStyle(BrandColors.lake)
+                    Section {
+                        if filteredItems.isEmpty {
+                            Text("No songs match “\(songSearch)”.")
+                                .foregroundStyle(.secondary)
+                        } else {
+                            ForEach(Array(filteredItems.enumerated()), id: \.element.id) { index, item in
+                                NavigationLink {
+                                    SongItemViewer(
+                                        packId: pack.id,
+                                        items: filteredItems,
+                                        startIndex: index
+                                    )
+                                } label: {
+                                    HStack {
+                                        Text(item.title)
+                                        Spacer()
+                                        if SongPackStore.isDownloaded(packId: pack.id, item: item) {
+                                            Image(systemName: "checkmark.circle.fill")
+                                                .foregroundStyle(BrandColors.lake)
+                                        }
                                     }
                                 }
                             }
                         }
+                    } header: {
+                        Text(
+                            songSearch.isEmpty
+                                ? "Songs"
+                                : "Songs (\(filteredItems.count) of \(pack.items.count))"
+                        )
                     }
                 }
             }
         }
         .navigationTitle(packName)
+        .searchable(text: $songSearch, prompt: "Search songs")
         .task { await load() }
         .refreshable { await load() }
     }

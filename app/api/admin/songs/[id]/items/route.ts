@@ -4,6 +4,7 @@ import {
   addSongPackItem,
   cleanSongPackTitles,
   cleanSongTitle,
+  copySongPackItemsToPack,
   getSongPackDetail,
   reorderSongPackItems,
   uploadSongPackFile,
@@ -40,6 +41,14 @@ export async function POST(request: Request, { params }: Params) {
         const updated = await getSongPackDetail(packId)
         return NextResponse.json({ pack: updated, changed })
       }
+      if (Array.isArray(body.copyFromItemIds)) {
+        const added = await copySongPackItemsToPack(
+          packId,
+          body.copyFromItemIds.map(String),
+        )
+        const updated = await getSongPackDetail(packId)
+        return NextResponse.json({ pack: updated, added })
+      }
       return NextResponse.json({ error: "Unsupported request" }, { status: 400 })
     }
 
@@ -58,7 +67,9 @@ export async function POST(request: Request, { params }: Params) {
         ? String(form.get("title")).trim()
         : cleanSongTitle(file.name.replace(/\.[^.]+$/, "") || "Song")
 
-    const uploaded = await uploadSongPackFile(packId, await file.arrayBuffer(), file.type)
+    const uploaded = await uploadSongPackFile(packId, await file.arrayBuffer(), file.type, {
+      title,
+    })
     const item = await addSongPackItem({
       packId,
       title,

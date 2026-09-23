@@ -236,6 +236,7 @@ export async function uploadSongPackFile(
   packId: string,
   bytes: ArrayBuffer,
   contentType: string,
+  options?: { title?: string },
 ): Promise<{ url: string; byteSize: number; contentHash: string; fileType: SongFileType }> {
   if (!isR2MediaConfigured()) {
     throw new Error(
@@ -243,15 +244,24 @@ export async function uploadSongPackFile(
     )
   }
 
-  const fileType = songFileTypeForContentType(contentType)
-  const extension = extensionForContentType(contentType)
-  const contentHash = hashSongFileBytes(bytes)
+  let payload = Buffer.from(bytes)
+  let type = contentType
+  if (contentType.toLowerCase() === "application/pdf" && options?.title?.trim()) {
+    const { prependSongTitleSlide } = await import("@/lib/song-pdf-title-slide")
+    const withTitle = await prependSongTitleSlide(bytes, cleanSongTitle(options.title))
+    payload = Buffer.from(withTitle)
+    type = "application/pdf"
+  }
+
+  const fileType = songFileTypeForContentType(type)
+  const extension = extensionForContentType(type)
+  const contentHash = createHash("sha256").update(payload).digest("hex")
   const key = `song-packs/${packId}/${Date.now()}-${contentHash.slice(0, 12)}.${extension}`
-  const { url } = await putMediaObject(key, Buffer.from(bytes), contentType)
+  const { url } = await putMediaObject(key, payload, type)
 
   return {
     url,
-    byteSize: bytes.byteLength,
+    byteSize: payload.byteLength,
     contentHash,
     fileType,
   }
@@ -548,6 +558,45 @@ export async function reorderSongPackItems(
     `
   }
   await touchPack(packId)
+}
+
+/** Copy songs into another pack by reusing the same R2 file (no re-upload). */
+export async function copySongPackItemsToPack(
+  targetPackId: string,
+  sourceItemIds: string[],
+): Promise<number> {
+  await ensureSongPacksSchema()
+  const target = await getSongPackDetail(targetPackId)
+  if (!target) throw new Error("Pack not found")
+
+  let added = 0
+  for (const rawId of sourceItemIds) {
+    const id = String(rawId || "").trim()
+    if (!id) continue
+    const [row] = await sql`SELECT * FROM song_pack_items WHERE id = ${id} LIMIT 1`
+    if (!row) continue
+    if (String(row.pack_id) === targetPackId) continue
+
+    // Skip duplicate title+hash already in target
+    const [dup] = await sql`
+      SELECT id FROM song_pack_items
+      WHERE pack_id = ${targetPackId}
+        AND content_hash = ${String(row.content_hash)}
+      LIMIT 1
+    `
+    if (dup) continue
+
+    await addSongPackItem({
+      packId: targetPackId,
+      title: String(row.title),
+      fileUrl: String(row.file_url),
+      fileType: String(row.file_type) === "pdf" ? "pdf" : "image",
+      byteSize: Number(row.byte_size),
+      contentHash: String(row.content_hash),
+    })
+    added += 1
+  }
+  return added
 }
 
 /** Re-run filename cleanup on every item title in a pack. Returns how many changed. */

@@ -28,6 +28,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -78,82 +79,99 @@ fun SongPacksScreen(
         },
         containerColor = BrandColors.GroupedBackground,
     ) { padding ->
-        when {
-            state.isLoading && state.packs.isEmpty() -> {
-                Box(
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
+        ) {
+            if (state.packs.isNotEmpty() || state.searchQuery.isNotBlank()) {
+                OutlinedTextField(
+                    value = state.searchQuery,
+                    onValueChange = viewModel::setPackSearchQuery,
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    CircularProgressIndicator()
-                }
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    singleLine = true,
+                    label = { Text("Search packs") },
+                )
             }
-            state.errorMessage != null && state.packs.isEmpty() -> {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding)
-                        .padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                ) {
-                    Icon(Icons.Default.MusicNote, contentDescription = null, tint = BrandColors.Lake)
-                    Text(
-                        text = state.errorMessage ?: "Songs unavailable",
-                        modifier = Modifier.padding(top = 12.dp),
-                        style = MaterialTheme.typography.bodyLarge,
-                    )
-                    TextButton(onClick = { viewModel.refreshPacks() }) {
-                        Text("Try again")
+            when {
+                state.isLoading && state.packs.isEmpty() -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        CircularProgressIndicator()
                     }
                 }
-            }
-            state.packs.isEmpty() -> {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding)
-                        .padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                ) {
-                    Icon(Icons.Default.MusicNote, contentDescription = null, tint = BrandColors.Lake)
+                state.errorMessage != null && state.packs.isEmpty() -> {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                    ) {
+                        Icon(Icons.Default.MusicNote, contentDescription = null, tint = BrandColors.Lake)
+                        Text(
+                            text = state.errorMessage ?: "Songs unavailable",
+                            modifier = Modifier.padding(top = 12.dp),
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                        TextButton(onClick = { viewModel.refreshPacks() }) {
+                            Text("Try again")
+                        }
+                    }
+                }
+                state.packs.isEmpty() -> {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                    ) {
+                        Icon(Icons.Default.MusicNote, contentDescription = null, tint = BrandColors.Lake)
+                        Text(
+                            text = "No song packs yet",
+                            modifier = Modifier.padding(top = 12.dp),
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                        Text(
+                            text = "When Campfire or Racket Ball packs are published, they’ll show up here for offline download.",
+                            modifier = Modifier.padding(top = 8.dp),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                state.filteredPacks.isEmpty() -> {
                     Text(
-                        text = "No song packs yet",
-                        modifier = Modifier.padding(top = 12.dp),
-                        style = MaterialTheme.typography.titleMedium,
-                    )
-                    Text(
-                        text = "When Campfire or Racket Ball packs are published, they’ll show up here for offline download.",
-                        modifier = Modifier.padding(top = 8.dp),
-                        style = MaterialTheme.typography.bodyMedium,
+                        text = "No packs match “${state.searchQuery}”.",
+                        modifier = Modifier.padding(24.dp),
+                        style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-            }
-            else -> {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
-                ) {
-                    itemsIndexed(state.packs, key = { _, pack -> pack.id }) { _, pack ->
-                        ListItem(
-                            headlineContent = { Text(pack.name) },
-                            supportingContent = {
-                                val desc = pack.description?.takeIf { it.isNotBlank() }
-                                Text(
-                                    buildString {
-                                        if (desc != null) append(desc).append("\n")
-                                        append("${pack.item_count ?: 0} songs")
-                                    },
-                                )
-                            },
-                            modifier = Modifier.clickable {
-                                onOpenPack(pack.id, pack.name)
-                            },
-                        )
+                else -> {
+                    LazyColumn(modifier = Modifier.fillMaxSize()) {
+                        itemsIndexed(state.filteredPacks, key = { _, pack -> pack.id }) { _, pack ->
+                            ListItem(
+                                headlineContent = { Text(pack.name) },
+                                supportingContent = {
+                                    val desc = pack.description?.takeIf { it.isNotBlank() }
+                                    Text(
+                                        buildString {
+                                            if (desc != null) append(desc).append("\n")
+                                            append("${pack.item_count ?: 0} songs")
+                                        },
+                                    )
+                                },
+                                modifier = Modifier.clickable {
+                                    onOpenPack(pack.id, pack.name)
+                                },
+                            )
+                        }
                     }
                 }
             }
@@ -217,61 +235,87 @@ fun SongPackDetailScreen(
             }
             else -> {
                 val pack = state.pack ?: return@Scaffold
-                LazyColumn(
+                val filtered = state.filteredItems
+                Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(padding),
                 ) {
-                    item {
-                        ListItem(
-                            headlineContent = {
-                                Text(
-                                    if (state.downloadedCount >= pack.items.size && pack.items.isNotEmpty()) {
-                                        "Downloaded for offline use"
-                                    } else {
-                                        "${state.downloadedCount} of ${pack.items.size} downloaded"
-                                    },
-                                )
-                            },
-                            supportingContent = {
-                                state.statusMessage?.let { Text(it) }
-                            },
-                            trailingContent = {
-                                if (state.isDownloading) {
-                                    CircularProgressIndicator()
-                                } else {
-                                    Button(onClick = { viewModel.downloadCurrentPack() }) {
-                                        Icon(Icons.Default.Download, contentDescription = null)
-                                        Text("Download", modifier = Modifier.padding(start = 8.dp))
-                                    }
-                                }
-                            },
-                        )
-                    }
-                    if (!pack.description.isNullOrBlank()) {
+                    OutlinedTextField(
+                        value = state.searchQuery,
+                        onValueChange = viewModel::setSongSearchQuery,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        singleLine = true,
+                        label = { Text("Search songs") },
+                    )
+                    LazyColumn(modifier = Modifier.fillMaxSize()) {
                         item {
-                            Text(
-                                text = pack.description.orEmpty(),
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                                style = MaterialTheme.typography.bodyMedium,
+                            ListItem(
+                                headlineContent = {
+                                    Text(
+                                        if (state.downloadedCount >= pack.items.size && pack.items.isNotEmpty()) {
+                                            "Downloaded for offline use"
+                                        } else {
+                                            "${state.downloadedCount} of ${pack.items.size} downloaded"
+                                        },
+                                    )
+                                },
+                                supportingContent = {
+                                    state.statusMessage?.let { Text(it) }
+                                },
+                                trailingContent = {
+                                    if (state.isDownloading) {
+                                        CircularProgressIndicator()
+                                    } else {
+                                        Button(onClick = { viewModel.downloadCurrentPack() }) {
+                                            Icon(Icons.Default.Download, contentDescription = null)
+                                            Text("Download", modifier = Modifier.padding(start = 8.dp))
+                                        }
+                                    }
+                                },
                             )
                         }
-                    }
-                    itemsIndexed(pack.items, key = { _, item -> item.id }) { index, item ->
-                        val downloaded = viewModel.store().isDownloaded(pack.id, item)
-                        ListItem(
-                            headlineContent = { Text("${index + 1}. ${item.title}") },
-                            trailingContent = {
-                                if (downloaded) {
-                                    Icon(
-                                        Icons.Default.CheckCircle,
-                                        contentDescription = "Downloaded",
-                                        tint = BrandColors.Lake,
-                                    )
-                                }
-                            },
-                            modifier = Modifier.clickable { onOpenSong(index) },
-                        )
+                        if (!pack.description.isNullOrBlank()) {
+                            item {
+                                Text(
+                                    text = pack.description.orEmpty(),
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                            }
+                        }
+                        if (filtered.isEmpty() && state.searchQuery.isNotBlank()) {
+                            item {
+                                Text(
+                                    text = "No songs match “${state.searchQuery}”.",
+                                    modifier = Modifier.padding(16.dp),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        } else {
+                            itemsIndexed(filtered, key = { _, item -> item.id }) { _, item ->
+                                val fullIndex = pack.items.indexOfFirst { it.id == item.id }
+                                val downloaded = viewModel.store().isDownloaded(pack.id, item)
+                                ListItem(
+                                    headlineContent = { Text(item.title) },
+                                    trailingContent = {
+                                        if (downloaded) {
+                                            Icon(
+                                                Icons.Default.CheckCircle,
+                                                contentDescription = "Downloaded",
+                                                tint = BrandColors.Lake,
+                                            )
+                                        }
+                                    },
+                                    modifier = Modifier.clickable {
+                                        if (fullIndex >= 0) onOpenSong(fullIndex)
+                                    },
+                                )
+                            }
+                        }
                     }
                 }
             }

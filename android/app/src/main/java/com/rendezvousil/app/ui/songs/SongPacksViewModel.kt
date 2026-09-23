@@ -7,6 +7,7 @@ import com.rendezvousil.app.auth.AppSession
 import com.rendezvousil.app.songs.SongPackStore
 import com.rendezvousil.core.network.ApiException
 import com.rendezvousil.core.network.dto.SongPackDetail
+import com.rendezvousil.core.network.dto.SongPackItem
 import com.rendezvousil.core.network.dto.SongPackSummary
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,7 +21,18 @@ data class SongPacksUiState(
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val downloadingPackIds: Set<String> = emptySet(),
-)
+    val searchQuery: String = "",
+) {
+    val filteredPacks: List<SongPackSummary>
+        get() {
+            val q = searchQuery.trim()
+            if (q.isEmpty()) return packs
+            return packs.filter { pack ->
+                pack.name.contains(q, ignoreCase = true) ||
+                    (pack.description?.contains(q, ignoreCase = true) == true)
+            }
+        }
+}
 
 data class SongPackDetailUiState(
     val pack: SongPackDetail? = null,
@@ -29,7 +41,16 @@ data class SongPackDetailUiState(
     val downloadedCount: Int = 0,
     val statusMessage: String? = null,
     val errorMessage: String? = null,
-)
+    val searchQuery: String = "",
+) {
+    val filteredItems: List<SongPackItem>
+        get() {
+            val items = pack?.items.orEmpty()
+            val q = searchQuery.trim()
+            if (q.isEmpty()) return items
+            return items.filter { it.title.contains(q, ignoreCase = true) }
+        }
+}
 
 class SongPacksViewModel(
     private val appSession: AppSession,
@@ -51,6 +72,14 @@ class SongPacksViewModel(
             }
         }
         viewModelScope.launch { appSession.refreshAuth() }
+    }
+
+    fun setPackSearchQuery(query: String) {
+        _listState.update { it.copy(searchQuery = query) }
+    }
+
+    fun setSongSearchQuery(query: String) {
+        _detailState.update { it.copy(searchQuery = query) }
     }
 
     fun refreshPacks() {
@@ -105,7 +134,7 @@ class SongPacksViewModel(
     fun loadPack(packId: String) {
         viewModelScope.launch {
             _detailState.update {
-                it.copy(isLoading = true, errorMessage = null, statusMessage = null)
+                it.copy(isLoading = true, errorMessage = null, statusMessage = null, searchQuery = "")
             }
             val client = appSession.authenticatedApiClient
             if (client == null) {
