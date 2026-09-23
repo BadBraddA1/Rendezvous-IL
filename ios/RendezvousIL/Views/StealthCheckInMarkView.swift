@@ -44,17 +44,20 @@ struct StealthCheckInMarkView: View {
             Spacer(minLength: 0)
         }
         .padding(16)
-        .background(
+        .background {
             ZStack {
-                LinearGradient(
-                    colors: [
-                        BrandColors.lake.opacity(0.1),
-                        Color(.secondarySystemGroupedBackground),
-                        BrandColors.lakeLight.opacity(0.55),
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                BrandColors.lake.opacity(0.1),
+                                Color(.secondarySystemGroupedBackground),
+                                BrandColors.lakeLight.opacity(0.55),
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
                 // Soft dot field — “woven” texture, not a loud ticket card.
                 Canvas { context, size in
                     let step: CGFloat = 14
@@ -69,10 +72,9 @@ struct StealthCheckInMarkView: View {
                         y += step
                     }
                 }
-                .opacity(0.9)
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             }
-            , in: RoundedRectangle(cornerRadius: 16, style: .continuous)
-        )
+        }
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .strokeBorder(BrandColors.lake.opacity(0.16), lineWidth: 1)
