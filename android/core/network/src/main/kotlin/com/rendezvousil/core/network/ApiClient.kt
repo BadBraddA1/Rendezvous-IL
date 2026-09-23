@@ -47,6 +47,8 @@ import com.rendezvousil.core.network.dto.UserActivityBody
 import com.rendezvousil.core.network.dto.UserActivityResponse
 import com.rendezvousil.core.network.dto.VolunteerWeekResponse
 import com.rendezvousil.core.network.dto.WeatherPayload
+import com.rendezvousil.core.network.dto.WebHandoffRequest
+import com.rendezvousil.core.network.dto.WebHandoffResponse
 import com.rendezvousil.core.schedule.model.SchedulePayload
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
@@ -122,6 +124,9 @@ interface RendezvousApi {
 
     @GET("api/family/year-hub")
     suspend fun getYearHub(@Query("year") year: Int): YearHubResponse
+
+    @POST("api/auth/web-handoff")
+    suspend fun createWebHandoff(@Body body: WebHandoffRequest): WebHandoffResponse
 }
 
 class ApiClient private constructor(
@@ -252,6 +257,9 @@ class ApiClient private constructor(
 
     suspend fun getYearHub(year: Int = AppConfig.EVENT_YEAR): YearHubResponse =
         apiCall { api.getYearHub(year) }
+
+    suspend fun createWebHandoff(redirectUrl: String): WebHandoffResponse =
+        apiCall { api.createWebHandoff(WebHandoffRequest(redirect_url = redirectUrl)) }
 
     suspend fun getSongPacks(year: Int = AppConfig.EVENT_YEAR): SongPacksResponse =
         getJson(

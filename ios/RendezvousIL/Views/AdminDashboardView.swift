@@ -55,7 +55,9 @@ struct AdminDashboardView: View {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
-            Link(destination: AppConfig.url(for: "/admin")) {
+            Button {
+                Task { await WebHandoff.open(path: "/admin", session: session) }
+            } label: {
                 Label("Open admin on web", systemImage: "safari")
             }
             .font(.subheadline)
@@ -251,10 +253,14 @@ struct AdminDashboardView: View {
                 .font(.headline)
                 .foregroundStyle(BrandColors.lake)
 
-            Link(destination: AppConfig.url(for: "/admin")) {
+            Button {
+                Task { await WebHandoff.open(path: "/admin", session: session) }
+            } label: {
                 linkRow(title: "Full admin dashboard", icon: "chart.bar.doc.horizontal")
             }
-            Link(destination: AppConfig.url(for: "/admin/registrations")) {
+            Button {
+                Task { await WebHandoff.open(path: "/admin/registrations", session: session) }
+            } label: {
                 linkRow(title: "Registrations", icon: "list.bullet.rectangle")
             }
             if session.canManageUsers {
@@ -270,7 +276,9 @@ struct AdminDashboardView: View {
                 } label: {
                     linkRow(title: "Check-in station (app)", icon: "person.badge.key")
                 }
-                Link(destination: AppConfig.url(for: "/admin/checkin")) {
+                Button {
+                    Task { await WebHandoff.open(path: "/admin/checkin", session: session) }
+                } label: {
                     linkRow(title: "Check-in on web", icon: "safari")
                 }
             }
@@ -365,7 +373,9 @@ struct AdminDashboardView: View {
         highlight: Bool = false,
         detail: String? = nil
     ) -> some View {
-        Link(destination: AppConfig.url(for: link)) {
+        Button {
+            Task { await WebHandoff.open(path: link, session: session) }
+        } label: {
             HStack(spacing: 12) {
                 Image(systemName: icon)
                     .foregroundStyle(highlight ? BrandColors.coral : BrandColors.lake)
@@ -389,6 +399,7 @@ struct AdminDashboardView: View {
                     .foregroundStyle(.tertiary)
             }
         }
+        .buttonStyle(.plain)
     }
 
     private func lodgingRow(label: String, count: Int, icon: String) -> some View {

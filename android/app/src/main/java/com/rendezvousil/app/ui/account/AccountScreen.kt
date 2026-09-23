@@ -116,7 +116,14 @@ fun AccountScreen(
                 SignedInAccountContent(
                     displayName = displayName,
                     onOpenWebLink = { path ->
-                        WebLinks.open(context, WebLinks.url(BuildConfig.BASE_URL, path))
+                        scope.launch {
+                            WebLinks.openAuthenticated(
+                                context = context,
+                                baseUrl = BuildConfig.BASE_URL,
+                                path = path,
+                                client = appSession.authenticatedApiClient,
+                            )
+                        }
                     },
                     onNavigateToDirectoryManage = onNavigateToDirectoryManage,
                     onNavigateToDirectory = onNavigateToDirectory,
@@ -294,15 +301,15 @@ private fun SignedInAccountContent(
         )
 
         AccountActionButton(
-            label = "Change password on web",
-            icon = { Icon(Icons.Default.Key, contentDescription = null) },
-            onClick = { onOpenWebLink("/account/settings") },
+            label = "Express registration on web",
+            icon = { Icon(Icons.Default.CalendarMonth, contentDescription = null) },
+            onClick = { onOpenWebLink("/account/express-registration") },
         )
 
         AccountActionButton(
-            label = "Reset password (email code)",
-            icon = { Icon(Icons.Default.Email, contentDescription = null) },
-            onClick = { onOpenWebLink("/sign-in/forgot-password") },
+            label = "Change password on web",
+            icon = { Icon(Icons.Default.Key, contentDescription = null) },
+            onClick = { onOpenWebLink("/account/settings") },
         )
 
         AccountActionButton(

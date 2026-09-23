@@ -17,22 +17,30 @@ struct AccountView: View {
                 .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
 
                 VStack(spacing: 12) {
-                    accountLink(
-                        title: "Family dashboard on web",
-                        icon: "safari",
-                        url: AppConfig.url(for: "/account"),
-                        prominent: true
-                    )
-                    accountLink(
-                        title: "Manage registration",
-                        icon: "doc.text",
-                        url: AppConfig.url(for: "/register")
-                    )
-                    accountLink(
-                        title: "Change password on web",
-                        icon: "key",
-                        url: AppConfig.url(for: "/account/settings")
-                    )
+                    Button {
+                        Task { await WebHandoff.open(path: "/account", session: session) }
+                    } label: {
+                        Label("Family dashboard on web", systemImage: "safari")
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(BrandColors.lake, in: RoundedRectangle(cornerRadius: 12))
+                            .foregroundStyle(.white)
+                    }
+                    Button {
+                        Task { await WebHandoff.open(path: "/register", session: session) }
+                    } label: {
+                        inAppLinkLabel(title: "Manage registration", icon: "doc.text")
+                    }
+                    Button {
+                        Task { await WebHandoff.open(path: "/account/settings", session: session) }
+                    } label: {
+                        inAppLinkLabel(title: "Change password on web", icon: "key")
+                    }
+                    Button {
+                        Task { await WebHandoff.open(path: "/account/express-registration", session: session) }
+                    } label: {
+                        inAppLinkLabel(title: "Express registration on web", icon: "bolt.fill")
+                    }
                 }
 
                 VStack(spacing: 12) {
@@ -104,8 +112,10 @@ struct AccountView: View {
         }
     }
 
-    private func accountLink(title: String, icon: String, url: URL, prominent: Bool = false) -> some View {
-        Link(destination: url) {
+    private func accountLink(title: String, icon: String, path: String, prominent: Bool = false) -> some View {
+        Button {
+            Task { await WebHandoff.open(path: path, session: session) }
+        } label: {
             Group {
                 if prominent {
                     Label(title, systemImage: icon)

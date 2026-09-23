@@ -6,6 +6,8 @@ Handles public event pages, family registration (2027), admin dashboard (registr
 
 **Home (year hub):** `/` is the **2027 season hub**, not a marketing brochure. Signed-out → compact entry (countdown / sign-in / register). Signed-in without a 2027 registration → register CTA only (no year data). Signed-in with registration → family roster, lodging/payment summary, volunteering list, plus a **stealth desk-scan mark** (low-contrast check-in QR watermark — Digimarc *spirit*, standard QR under the hood; double-tap to brighten). Volunteering includes a **Next up** chirp (soonest upcoming worship/special: person · role/event · when) from `pickNextUp` in `lib/year-hub.ts`. Long-form marketing stays on `/about`, `/schedule`, etc. Shared payload: `lib/year-hub.ts` + `GET /api/family/year-hub` (includes `registration.checkinQrCode`, minting via `lib/checkin-qr.ts` if missing). Apps use the same API: Home shows the season hub until retreat week (May 3–7, 2027), then the live day board.
 
+**App → web auto-login:** Account / admin “open on web” links mint a short-lived Clerk **sign-in token** (`POST /api/auth/web-handoff`) and open `/sso-handoff?ticket=…&redirect_url=…`, which redeems the ticket into a real browser session — no password re-entry.
+
 **About / OG:** Rendezvous 2026 group photo (`public/images/rendezvous-group-2026.jpg`) with caption headcount from `lib/attendance-history.ts`. Social OG image uses the cropped group photo (`rendezvous-group-2026-og.jpg`).
 
 ## Tech stack

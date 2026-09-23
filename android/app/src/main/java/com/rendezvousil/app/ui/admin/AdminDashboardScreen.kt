@@ -56,6 +56,7 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -82,6 +83,7 @@ import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.Locale
 import kotlin.math.min
+import kotlinx.coroutines.launch
 
 private data class StatTile(
     val title: String,
@@ -158,6 +160,7 @@ fun AdminDashboardScreen(
                 ) {
                     DashboardContent(
                         payload = uiState.dashboard!!,
+                        appSession = appSession,
                         canCheckIn = appSession.canCheckIn,
                         canManageUsers = appSession.canManageUsers,
                         onNavigateToUsers = onNavigateToUsers,
@@ -328,14 +331,23 @@ private fun EmptyDashboardContent(
 @Composable
 private fun DashboardContent(
     payload: AdminDashboardResponse,
+    appSession: AppSession,
     canCheckIn: Boolean,
     canManageUsers: Boolean,
     onNavigateToUsers: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val openWeb: (String) -> Unit = { path ->
-        WebLinks.open(context, WebLinks.url(BuildConfig.BASE_URL, path))
+        scope.launch {
+            WebLinks.openAuthenticated(
+                context = context,
+                baseUrl = BuildConfig.BASE_URL,
+                path = path,
+                client = appSession.authenticatedApiClient,
+            )
+        }
     }
 
     Column(

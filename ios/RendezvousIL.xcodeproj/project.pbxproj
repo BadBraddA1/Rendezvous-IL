@@ -28,6 +28,7 @@
 		41BED9B78B70B30C4B4C4CAF /* SongPackModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = F709048C8F9858BA207E54F2 /* SongPackModels.swift */; };
 		43BD0772D15AB8DEBBBF9D40 /* CheckInQRScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8B82CB3618AEAA7A00515AB /* CheckInQRScannerView.swift */; };
 		AA57E4FCA0997E9097D38B47 /* CheckInBoopPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EEB630FE5672758131248FD /* CheckInBoopPlayer.swift */; };
+		25496662C2F93869D7BB30E5 /* WebHandoff.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3707BDD893E5925AA7A8E30B /* WebHandoff.swift */; };
 		BCD623EDD189E9374D38832B /* CheckInCelebrationOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0BFC6C266FCF98CA5E6BD73 /* CheckInCelebrationOverlay.swift */; };
 		5F188BECFEF3CBDE9CB5FE06 /* CheckInMuteAlertOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = B260B7314B6D26B401C1F21A /* CheckInMuteAlertOverlay.swift */; };
 		807F004546422BC147CB2359 /* StealthCheckInMarkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3643493AF2EDBC8C208DA70 /* StealthCheckInMarkView.swift */; };
@@ -178,6 +179,7 @@
 		A296DCF541E135FC128C1E7A /* FAQView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FAQView.swift; sourceTree = "<group>"; };
 		A8B82CB3618AEAA7A00515AB /* CheckInQRScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckInQRScannerView.swift; sourceTree = "<group>"; };
 		5EEB630FE5672758131248FD /* CheckInBoopPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckInBoopPlayer.swift; sourceTree = "<group>"; };
+		3707BDD893E5925AA7A8E30B /* WebHandoff.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebHandoff.swift; sourceTree = "<group>"; };
 		B0BFC6C266FCF98CA5E6BD73 /* CheckInCelebrationOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckInCelebrationOverlay.swift; sourceTree = "<group>"; };
 		B260B7314B6D26B401C1F21A /* CheckInMuteAlertOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckInMuteAlertOverlay.swift; sourceTree = "<group>"; };
 		C3643493AF2EDBC8C208DA70 /* StealthCheckInMarkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StealthCheckInMarkView.swift; sourceTree = "<group>"; };
@@ -265,6 +267,7 @@
 				41FB932F01023F1967486D44 /* AblyService.swift */,
 				1A62644C156B0B0D6EADBF84 /* APIClient.swift */,
 				5EEB630FE5672758131248FD /* CheckInBoopPlayer.swift */,
+				3707BDD893E5925AA7A8E30B /* WebHandoff.swift */,
 				466D237AE8A926FC5CADD2F6 /* AppSession.swift */,
 				CE395596786297E49CC999A2 /* BundledContent.swift */,
 				008D20E8BE6CD25A13CBA988 /* CampusLocationMonitor.swift */,
@@ -558,6 +561,7 @@
 			files = (
 				66742AE51B59989BF039B477 /* APIClient.swift in Sources */,
 				AA57E4FCA0997E9097D38B47 /* CheckInBoopPlayer.swift in Sources */,
+				25496662C2F93869D7BB30E5 /* WebHandoff.swift in Sources */,
 				A24919D11C464AEF4CC1FD46 /* AblyService.swift in Sources */,
 				A5C7F695E3ACBC367467F167 /* AboutView.swift in Sources */,
 				FA4F95660BD093B3CD651F30 /* AccountView.swift in Sources */,
