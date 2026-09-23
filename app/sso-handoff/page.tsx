@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useRef, useState } from "react"
 import { useSearchParams } from "next/navigation"
-import { useAuth, useSignIn } from "@clerk/nextjs"
+import { useAuth, useClerk, useSignIn } from "@clerk/nextjs"
 import { AuthPending } from "@/components/auth/auth-pending"
 import { afterAuth, safeReturnPath } from "@/lib/after-auth"
 
@@ -15,6 +15,7 @@ function SsoHandoffInner() {
   const ticket = search.get("ticket") || search.get("__clerk_ticket")
   const redirectUrl = safeReturnPath(search.get("redirect_url") || undefined) || "/account"
 
+  const clerk = useClerk()
   const { isLoaded, isSignedIn } = useAuth()
   const { signIn } = useSignIn()
   const [error, setError] = useState<string | null>(null)
@@ -34,15 +35,13 @@ function SsoHandoffInner() {
       return
     }
 
-    if (!signIn) return
+    if (!signIn || !clerk.loaded) return
 
     started.current = true
     void (async () => {
       try {
-        const { error: ticketError } = await signIn.create({
-          strategy: "ticket",
-          ticket,
-        })
+        // Core 3 helper — sends strategy: 'ticket' (required by FAPI).
+        const { error: ticketError } = await signIn.ticket({ ticket })
         if (ticketError) {
           setError(ticketError.longMessage || ticketError.message || "Sign-in failed")
           return
@@ -53,13 +52,34 @@ function SsoHandoffInner() {
           return
         }
 
-        setError("Could not complete sign-in from the app link. Try signing in on the website.")
+        // Browser already had a Clerk session — activate it instead of failing.
+        const existingSessionId = signIn.existingSession?.sessionId
+        if (existingSessionId) {
+          await clerk.setActive({
+            session: existingSessionId,
+            navigate: afterAuth(redirectUrl),
+          })
+          return
+        }
+
+        const createdSessionId = signIn.createdSessionId
+        if (createdSessionId) {
+          await clerk.setActive({
+            session: createdSessionId,
+            navigate: afterAuth(redirectUrl),
+          })
+          return
+        }
+
+        setError(
+          `Could not complete sign-in from the app link (${signIn.status || "unknown"}). Try signing in on the website.`,
+        )
       } catch (err) {
         const message = err instanceof Error ? err.message : "Sign-in failed"
         setError(message)
       }
     })()
-  }, [isLoaded, isSignedIn, ticket, redirectUrl, signIn])
+  }, [isLoaded, isSignedIn, ticket, redirectUrl, signIn, clerk])
 
   if (error) {
     return (
@@ -76,7 +96,13 @@ function SsoHandoffInner() {
     )
   }
 
-  return <AuthPending label="Signing you in from the app…" />
+  return (
+    <>
+      <AuthPending label="Signing you in from the app…" />
+      {/* Load-bearing for Clerk bot protection on some ticket flows. */}
+      <div id="clerk-captcha" />
+    </>
+  )
 }
 
 export default function SsoHandoffPage() {
