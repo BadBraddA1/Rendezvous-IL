@@ -255,6 +255,19 @@ export function YearHubRegistered({
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
+              {volunteering?.nextUp ? (
+                <div className="relative overflow-hidden rounded-xl border border-primary/25 bg-gradient-to-br from-primary/10 via-card to-surface-highlight p-4">
+                  <p className="mb-1 text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-primary">
+                    Next up
+                  </p>
+                  <p className="text-base font-semibold text-balance">
+                    <span className="text-primary">{volunteering.nextUp.personName}</span>
+                    {" · "}
+                    {volunteering.nextUp.eventLabel}
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">{volunteering.nextUp.whenLabel}</p>
+                </div>
+              ) : null}
               {volunteering?.hasContent ? (
                 <ul className="space-y-2">
                   {volunteering.volunteers.map((v) => (

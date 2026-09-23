@@ -171,6 +171,29 @@ struct HomeView: View {
 
         VStack(alignment: .leading, spacing: 8) {
             sectionTitle("Volunteering")
+            if let next = hub.volunteering?.nextUp {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("NEXT UP")
+                        .font(.caption2.weight(.bold))
+                        .tracking(1.2)
+                        .foregroundStyle(BrandColors.lake)
+                    Text("\(next.personName) · \(next.eventLabel)")
+                        .font(.subheadline.weight(.semibold))
+                    Text(next.whenLabel)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding()
+                .background(
+                    LinearGradient(
+                        colors: [BrandColors.lakeLight.opacity(0.85), Color(.secondarySystemGroupedBackground)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    in: RoundedRectangle(cornerRadius: 12)
+                )
+            }
             if let volunteering = hub.volunteering, volunteering.hasContent {
                 NavigationLink {
                     FamilyVolunteeringView()

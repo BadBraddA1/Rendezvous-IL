@@ -77,6 +77,15 @@ struct YearHubVolunteering: Codable, Sendable {
     let hasContent: Bool
     let volunteers: [YearHubVolunteerRow]
     let specialAssignmentCount: Int
+    let nextUp: YearHubNextUp?
+}
+
+struct YearHubNextUp: Codable, Sendable {
+    let kind: String
+    let personName: String
+    let eventLabel: String
+    let whenLabel: String
+    let startsAt: String?
 }
 
 struct YearHubLinks: Codable, Sendable {

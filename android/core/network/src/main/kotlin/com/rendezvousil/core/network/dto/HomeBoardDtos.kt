@@ -87,6 +87,16 @@ data class YearHubVolunteering(
     val hasContent: Boolean = false,
     val volunteers: List<YearHubVolunteerRow> = emptyList(),
     val specialAssignmentCount: Int = 0,
+    val nextUp: YearHubNextUp? = null,
+)
+
+@Serializable
+data class YearHubNextUp(
+    val kind: String,
+    val personName: String,
+    val eventLabel: String,
+    val whenLabel: String,
+    val startsAt: String? = null,
 )
 
 @Serializable

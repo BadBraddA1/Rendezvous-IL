@@ -39,6 +39,17 @@ export function isRetreatWeek(now = new Date()): boolean {
 
 export type YearHubPaymentStatus = "paid_in_full" | "deposit_paid" | "payment_due" | null
 
+/** Chirp-style “who’s up next” for the season hub volunteering block. */
+export type YearHubNextUp = {
+  kind: "worship" | "special"
+  personName: string
+  /** e.g. "Leading prayer (Opening Prayer)" or activity name */
+  eventLabel: string
+  /** e.g. "Tue May 5 · Morning Devotion" */
+  whenLabel: string
+  startsAt: string | null
+}
+
 export type YearHubMember = {
   id: number
   firstName: string
@@ -91,6 +102,8 @@ export type YearHubPayload = {
       roleLabel: string | null
     }>
     specialAssignmentCount: number
+    /** Next upcoming assignment — chirp-style Home highlight. */
+    nextUp: YearHubNextUp | null
   } | null
   links: {
     profile: string
@@ -327,6 +340,7 @@ export async function getYearHub(
       roleLabel: v.worshipAssignment?.roleLabel ?? null,
     })),
     specialAssignmentCount: volunteeringPayload.specialAssignments.length,
+    nextUp: pickNextUp(volunteeringPayload),
   }
 
   return {
@@ -338,4 +352,73 @@ export async function getYearHub(
     registration,
     volunteering,
   }
+}
+
+function formatWhenLabel(startsAt: string | null, assignedDate: string | null, timeSlot: string | null): string {
+  if (startsAt) {
+    try {
+      const d = new Date(startsAt)
+      if (!Number.isNaN(d.getTime())) {
+        const weekday = new Intl.DateTimeFormat("en-US", {
+          timeZone: "America/Chicago",
+          weekday: "short",
+        }).format(d)
+        const monthDay = new Intl.DateTimeFormat("en-US", {
+          timeZone: "America/Chicago",
+          month: "short",
+          day: "numeric",
+        }).format(d)
+        const slot = (timeSlot || "").trim()
+        return slot ? `${weekday} ${monthDay} · ${slot}` : `${weekday} ${monthDay}`
+      }
+    } catch {
+      /* fall through */
+    }
+  }
+  const datePart = assignedDate?.slice(0, 10) || ""
+  const slot = (timeSlot || "").trim()
+  if (datePart && slot) return `${datePart} · ${slot}`
+  return datePart || slot || "Soon"
+}
+
+/** Soonest upcoming worship or special assignment (Chicago “now”). */
+export function pickNextUp(payload: FamilyVolunteeringPayload, now = new Date()): YearHubNextUp | null {
+  const nowMs = now.getTime()
+  type Candidate = YearHubNextUp & { sortMs: number }
+  const candidates: Candidate[] = []
+
+  for (const v of payload.volunteers) {
+    const wa = v.worshipAssignment
+    if (!wa) continue
+    const startsAt = wa.startsAt
+    const sortMs = startsAt ? Date.parse(startsAt) : Number.POSITIVE_INFINITY
+    if (Number.isFinite(sortMs) && sortMs < nowMs - 60 * 60 * 1000) continue // skip >1h past
+    candidates.push({
+      kind: "worship",
+      personName: v.volunteerName,
+      eventLabel: wa.roleLabel || v.volunteerType,
+      whenLabel: formatWhenLabel(startsAt, wa.assignedDate, wa.timeSlot),
+      startsAt,
+      sortMs: Number.isFinite(sortMs) ? sortMs : Number.MAX_SAFE_INTEGER,
+    })
+  }
+
+  for (const s of payload.specialAssignments) {
+    const startsAt = s.startsAt
+    const sortMs = startsAt ? Date.parse(startsAt) : Number.POSITIVE_INFINITY
+    if (Number.isFinite(sortMs) && sortMs < nowMs - 60 * 60 * 1000) continue
+    candidates.push({
+      kind: "special",
+      personName: s.matchedName,
+      eventLabel: s.activityName,
+      whenLabel: formatWhenLabel(startsAt, s.assignedDate, s.timeSlot),
+      startsAt,
+      sortMs: Number.isFinite(sortMs) ? sortMs : Number.MAX_SAFE_INTEGER,
+    })
+  }
+
+  if (candidates.length === 0) return null
+  candidates.sort((a, b) => a.sortMs - b.sortMs)
+  const { sortMs: _s, ...next } = candidates[0]
+  return next
 }

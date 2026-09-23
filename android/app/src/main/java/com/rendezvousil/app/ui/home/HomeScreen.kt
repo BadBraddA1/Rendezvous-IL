@@ -245,6 +245,35 @@ private fun SeasonHubContent(
                 }
             }
             val volunteering = yearHub.volunteering
+            volunteering?.nextUp?.let { next ->
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = BrandColors.LakeLight.copy(alpha = 0.55f),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Text(
+                            text = "NEXT UP",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = BrandColors.Lake,
+                        )
+                        Text(
+                            text = "${next.personName} · ${next.eventLabel}",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        Text(
+                            text = next.whenLabel,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
             if (volunteering != null && volunteering.hasContent) {
                 ActionCard(
                     title = "Volunteering",
