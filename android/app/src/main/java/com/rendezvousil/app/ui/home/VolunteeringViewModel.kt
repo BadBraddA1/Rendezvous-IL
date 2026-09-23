@@ -24,6 +24,12 @@ class VolunteeringViewModel(
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
+    private val _uploadingSignupId = MutableStateFlow<Int?>(null)
+    val uploadingSignupId: StateFlow<Int?> = _uploadingSignupId.asStateFlow()
+
+    private val _statusMessage = MutableStateFlow<String?>(null)
+    val statusMessage: StateFlow<String?> = _statusMessage.asStateFlow()
+
     init {
         refresh()
     }
@@ -40,6 +46,31 @@ class VolunteeringViewModel(
             _volunteering.value = payload
             withContext(Dispatchers.Default) { volunteerReminders.sync(payload) }
             _isLoading.value = false
+        }
+    }
+
+    fun uploadLessonSlides(
+        signupId: Int,
+        bytes: ByteArray,
+        filename: String,
+        mimeType: String,
+    ) {
+        viewModelScope.launch {
+            val client = appSession.authenticatedApiClient ?: run {
+                _statusMessage.value = "Sign in to upload."
+                return@launch
+            }
+            _uploadingSignupId.value = signupId
+            _statusMessage.value = "Uploading…"
+            try {
+                client.uploadLessonSlides(signupId, bytes, filename, mimeType)
+                _statusMessage.value = "Slides uploaded."
+                refresh()
+            } catch (e: Exception) {
+                _statusMessage.value = e.message ?: "Upload failed"
+            } finally {
+                _uploadingSignupId.value = null
+            }
         }
     }
 }

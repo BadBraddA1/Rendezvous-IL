@@ -211,6 +211,22 @@ actor APIClient {
         try await get("/api/family/volunteering?year=\(year)")
     }
 
+    func uploadLessonSlides(
+        signupId: Int,
+        fileData: Data,
+        filename: String,
+        mimeType: String,
+        year: Int = AppConfig.eventYear
+    ) async throws -> LessonSlideUploadResponse {
+        try await uploadMultipart(
+            "/api/family/lessons/\(signupId)/slides?year=\(year)",
+            fieldName: "file",
+            fileData: fileData,
+            filename: filename,
+            mimeType: mimeType
+        )
+    }
+
     func getHomeBoard(year: Int = AppConfig.eventYear) async throws -> HomeBoardConfig {
         try await get("/api/home-board?year=\(year)")
     }
@@ -671,13 +687,33 @@ struct FamilyVolunteeringLesson: Codable, Hashable, Sendable {
     let scriptureReading: String?
 }
 
+struct FamilyVolunteeringLessonSlides: Codable, Hashable, Sendable {
+    let fileName: String
+    let fileUrl: String
+    let fileType: String
+    let byteSize: Int
+    let updatedAt: String
+}
+
 struct FamilyVolunteerEntry: Codable, Hashable, Identifiable, Sendable {
     let id: Int
     let volunteerName: String
     let volunteerType: String
     let worshipAssignment: FamilyVolunteeringWorship?
     let lessonTopic: FamilyVolunteeringLesson?
+    let lessonSlides: FamilyVolunteeringLessonSlides?
     let pendingActions: [FamilyVolunteeringPendingAction]
+}
+
+struct LessonSlideUploadResponse: Decodable, Sendable {
+    let slide: LessonSlideUploaded?
+    let error: String?
+}
+
+struct LessonSlideUploaded: Decodable, Sendable {
+    let id: String
+    let file_name: String?
+    let file_url: String?
 }
 
 struct FamilySpecialAssignment: Codable, Hashable, Identifiable, Sendable {

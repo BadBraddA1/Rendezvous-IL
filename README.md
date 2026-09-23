@@ -85,7 +85,7 @@ photo booth.
 | Key/URL helpers | `lib/media-keys.ts` |
 | Worker client (scripts too) | `lib/media-store.ts` |
 | App facade (`server-only`) | `lib/r2-media.ts` |
-| Keys | `family-photos/`, `chat-photos/`, `photoshow/`, `song-packs/`, `site/`, `Tshirts/` |
+| Keys | `family-photos/`, `chat-photos/`, `photoshow/`, `song-packs/`, `lesson-slides/`, `site/`, `Tshirts/` |
 
 Env is set on Production, Preview, and Development. The Worker secret is
 `UPLOAD_SECRET` via `wrangler secret put`.
@@ -231,6 +231,14 @@ pnpm db:verify
 - **Push:** Publishing a pack (or replacing a file on a published pack) sends a best-effort APNs/FCM broadcast via `lib/song-packs-notify.ts` — “open the app to finish downloading.”
 - **Apps:** iOS/Android **More → Songs** — sectioned list (**Song books** then **Packs**) → song list → PDF/image viewer; **global search** (number or title → opens that song in its pack); verse count under titles; **verse jump** chips (1 / 2 / 3…) when `verse_pages` is known from OCR (`scripts/map-song-verse-pages.ts`). Files download **only when that pack is opened**. Editors/admins get **Build packs** (iOS in-app: create pack, publish, multi-select from a song book; Android opens `/admin/songs` via web handoff). Cache keyed by `content_hash`.
 - **Pack workflow:** import the full book once as a **song book** (e.g. Songs of Faith and Praise) and publish it; build **Campfire** / **Racket** / day packs by copying items; publish those under Packs. PDF title-slide + verse backfill: `npx tsx --env-file=.env.local scripts/prepend-song-title-slides.ts --apply`. **Source PPT bake** (strip old openers, insert uniform page · “title” · N verses into sibling folder): `npx tsx --env-file=.env.local scripts/bake-sfp-title-slides.ts --all --apply` → writes `…/SFP Shape note PP 16X9 by Page number - titled/`. Schedule deep-links come next.
+
+## Lesson slides (presenter uploads)
+
+- **Member API** (Clerk + family registration): `POST/DELETE /api/family/lessons/[signupId]/slides` — PowerPoint (`.ppt`/`.pptx`) or PDF up to **50 MB**, stored under R2 `lesson-slides/{year}/{signupId}/…`. Signup must belong to the family’s registration and be a lesson presenter (or have a claimed topic).
+- **Family volunteering** (`GET /api/family/volunteering`): includes `lessonSlides` on each entry and a pending action `upload_lesson_slides` when a topic is awarded but no deck is uploaded yet.
+- **Admin:** `/admin/lesson-slides` (Communication → Lesson slides) — inbox of submitted decks with download/remove; staff can also `POST /api/admin/lesson-slides` with `file` + `volunteerSignupId`.
+- **Apps:** More → Your volunteering — upload / replace slides in-app (iOS document picker, Android file picker).
+- **Worker:** allowlist `lesson-slides/` and 50 MB max — redeploy `worker/media.ts` after pull (`npx wrangler deploy` from `worker/` per that folder’s README).
 
 ## App Home board (remote config)
 

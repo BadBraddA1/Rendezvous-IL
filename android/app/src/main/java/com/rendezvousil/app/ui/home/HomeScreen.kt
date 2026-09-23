@@ -2,6 +2,8 @@ package com.rendezvousil.app.ui.home
 
 import android.content.Intent
 import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -24,6 +26,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
@@ -731,8 +734,31 @@ fun VolunteeringScreen(
 ) {
     val volunteering by viewModel.volunteering.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val uploadingSignupId by viewModel.uploadingSignupId.collectAsState()
+    val statusMessage by viewModel.statusMessage.collectAsState()
     val context = LocalContext.current
     val payload = volunteering
+    var pendingUploadSignupId by remember { mutableStateOf<Int?>(null) }
+
+    val pickSlides = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent(),
+    ) { uri: Uri? ->
+        val signupId = pendingUploadSignupId
+        pendingUploadSignupId = null
+        if (uri == null || signupId == null) return@rememberLauncherForActivityResult
+        val bytes = runCatching {
+            context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+        }.getOrNull()
+        if (bytes == null) return@rememberLauncherForActivityResult
+        val name = uri.lastPathSegment?.substringAfterLast('/') ?: "lesson.pptx"
+        val mime = context.contentResolver.getType(uri)
+            ?: when {
+                name.endsWith(".pdf", ignoreCase = true) -> "application/pdf"
+                name.endsWith(".ppt", ignoreCase = true) -> "application/vnd.ms-powerpoint"
+                else -> "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+            }
+        viewModel.uploadLessonSlides(signupId, bytes, name, mime)
+    }
 
     Scaffold(
         modifier = modifier,
@@ -767,16 +793,32 @@ fun VolunteeringScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             } else {
+                statusMessage?.let { msg ->
+                    Text(msg, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+
                 val pending = payload.volunteers.flatMap { it.pendingActions }
                 if (pending.isNotEmpty()) {
                     Text("Needs your attention", fontWeight = FontWeight.Bold)
                     pending.forEach { action ->
                         Surface(
                             onClick = {
-                                runCatching {
-                                    context.startActivity(
-                                        Intent(Intent.ACTION_VIEW, Uri.parse(action.href)),
-                                    )
+                                if (action.type == "upload_lesson_slides") {
+                                    val volunteer = payload.volunteers.firstOrNull { v ->
+                                        v.pendingActions.any { it.type == action.type && it.label == action.label }
+                                    }
+                                    if (volunteer != null) {
+                                        pendingUploadSignupId = volunteer.id
+                                        pickSlides.launch(
+                                            "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                                        )
+                                    }
+                                } else {
+                                    runCatching {
+                                        context.startActivity(
+                                            Intent(Intent.ACTION_VIEW, Uri.parse(action.href)),
+                                        )
+                                    }
                                 }
                             },
                             modifier = Modifier.fillMaxWidth(),
@@ -795,7 +837,7 @@ fun VolunteeringScreen(
                 }
 
                 val assigned = payload.volunteers.filter {
-                    it.worshipAssignment != null || it.lessonTopic != null
+                    it.worshipAssignment != null || it.lessonTopic != null || it.lessonSlides != null
                 }
                 if (assigned.isNotEmpty()) {
                     Text("Your assignments", fontWeight = FontWeight.Bold)
@@ -820,6 +862,41 @@ fun VolunteeringScreen(
                                 }
                                 volunteer.lessonTopic?.let { lesson ->
                                     Text("Topic: ${lesson.topicTitle}", style = MaterialTheme.typography.bodySmall)
+                                    lesson.lessonTitle?.takeIf { it.isNotBlank() }?.let {
+                                        Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                }
+                                volunteer.lessonSlides?.let { slides ->
+                                    Text(
+                                        "Slides: ${slides.fileName}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = BrandColors.Lake,
+                                    )
+                                    TextButton(
+                                        onClick = {
+                                            pendingUploadSignupId = volunteer.id
+                                            pickSlides.launch("*/*")
+                                        },
+                                        enabled = uploadingSignupId == null,
+                                    ) {
+                                        Text(if (uploadingSignupId == volunteer.id) "Uploading…" else "Replace slides")
+                                    }
+                                } ?: volunteer.lessonTopic?.let {
+                                    TextButton(
+                                        onClick = {
+                                            pendingUploadSignupId = volunteer.id
+                                            pickSlides.launch("*/*")
+                                        },
+                                        enabled = uploadingSignupId == null,
+                                    ) {
+                                        Text(
+                                            if (uploadingSignupId == volunteer.id) {
+                                                "Uploading…"
+                                            } else {
+                                                "Upload lesson slides"
+                                            },
+                                        )
+                                    }
                                 }
                             }
                         }

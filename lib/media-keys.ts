@@ -8,6 +8,7 @@ export const MEDIA_PREFIXES = [
   "chat-photos/",
   "photoshow/",
   "song-packs/",
+  "lesson-slides/",
   "site/",
   "Tshirts/",
 ] as const

@@ -28,13 +28,36 @@ data class FamilyVolunteeringLesson(
 )
 
 @Serializable
+data class FamilyVolunteeringLessonSlides(
+    val fileName: String = "",
+    val fileUrl: String = "",
+    val fileType: String = "",
+    val byteSize: Int = 0,
+    val updatedAt: String = "",
+)
+
+@Serializable
 data class FamilyVolunteerEntry(
     val id: Int,
     val volunteerName: String = "",
     val volunteerType: String = "",
     val worshipAssignment: FamilyVolunteeringWorship? = null,
     val lessonTopic: FamilyVolunteeringLesson? = null,
+    val lessonSlides: FamilyVolunteeringLessonSlides? = null,
     val pendingActions: List<FamilyVolunteeringPendingAction> = emptyList(),
+)
+
+@Serializable
+data class LessonSlideUploadResponse(
+    val slide: LessonSlideUploaded? = null,
+    val error: String? = null,
+)
+
+@Serializable
+data class LessonSlideUploaded(
+    val id: String = "",
+    val file_name: String? = null,
+    val file_url: String? = null,
 )
 
 @Serializable

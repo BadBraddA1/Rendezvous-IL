@@ -38,6 +38,7 @@ import com.rendezvousil.core.network.dto.FamilyDirectorySettingsBody
 import com.rendezvousil.core.network.dto.FamilyDirectorySettingsEnvelope
 import com.rendezvousil.core.network.dto.FamilyDirectorySettingsResponse
 import com.rendezvousil.core.network.dto.HomeBoardConfig
+import com.rendezvousil.core.network.dto.LessonSlideUploadResponse
 import com.rendezvousil.core.network.dto.MealsResponse
 import com.rendezvousil.core.network.dto.RatesPayload
 import com.rendezvousil.core.network.dto.ScheduleAnnouncementsResponse
@@ -249,6 +250,35 @@ class ApiClient private constructor(
 
     suspend fun getFamilyVolunteering(year: Int = AppConfig.EVENT_YEAR): FamilyVolunteeringResponse =
         apiCall { api.getFamilyVolunteering(year) }
+
+    suspend fun uploadLessonSlides(
+        signupId: Int,
+        bytes: ByteArray,
+        filename: String,
+        mimeType: String,
+        year: Int = AppConfig.EVENT_YEAR,
+    ): LessonSlideUploadResponse {
+        val multipartBody = MultipartBody.Builder()
+            .setType(MultipartBody.FORM)
+            .addFormDataPart(
+                "file",
+                filename,
+                bytes.toRequestBody(mimeType.toMediaType()),
+            )
+            .build()
+
+        val request = Request.Builder()
+            .url(
+                baseUrl.toHttpUrlOrNull()!!
+                    .newBuilder()
+                    .addPathSegments("api/family/lessons/$signupId/slides")
+                    .addQueryParameter("year", year.toString())
+                    .build(),
+            )
+            .post(multipartBody)
+            .build()
+        return executeJsonRequest(request)
+    }
 
     suspend fun getHomeBoard(year: Int = AppConfig.EVENT_YEAR): HomeBoardConfig =
         apiCall { api.getHomeBoard(year) }

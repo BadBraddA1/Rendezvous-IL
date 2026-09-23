@@ -12,18 +12,23 @@ interface Env {
   UPLOAD_SECRET: string
 }
 
-const MAX_BYTES = 20 * 1024 * 1024
+const MAX_BYTES = 50 * 1024 * 1024
 const ALLOWED_PREFIXES = [
   "family-photos/",
   "chat-photos/",
   "photoshow/",
   "song-packs/",
+  "lesson-slides/",
   "site/",
   "Tshirts/",
 ]
 
 function cacheControlFor(key: string): string {
-  if (key.startsWith("song-packs/") || key.startsWith("site/")) {
+  if (
+    key.startsWith("song-packs/") ||
+    key.startsWith("lesson-slides/") ||
+    key.startsWith("site/")
+  ) {
     return "public, max-age=31536000, immutable"
   }
   // Photo keys are unique per upload, so a long TTL would keep a replaced

@@ -1,5 +1,6 @@
 import { sql } from "@/lib/db"
 import { ensureLessonTables } from "@/lib/lesson-bids"
+import { ensureLessonSlidesSchema } from "@/lib/lesson-slides"
 import { listSpecialAssignments } from "@/lib/special-assignments"
 import { ensureVolunteerEmailColumn } from "@/lib/volunteer-scheduling"
 import { parseRegistrationEventYear } from "@/lib/registration-event-years"
@@ -8,9 +9,18 @@ import type { Family } from "@/lib/family-auth"
 const SITE_ORIGIN = process.env.NEXT_PUBLIC_SITE_URL || "https://rendezvousil.com"
 
 export type FamilyVolunteerPendingAction = {
-  type: "claim_lesson_topic" | "submit_lesson_details"
+  type: "claim_lesson_topic" | "submit_lesson_details" | "upload_lesson_slides"
   label: string
+  /** Web deep-link when applicable; apps may handle upload_lesson_slides in-app. */
   href: string
+}
+
+export type FamilyVolunteerLessonSlides = {
+  fileName: string
+  fileUrl: string
+  fileType: string
+  byteSize: number
+  updatedAt: string
 }
 
 export type FamilyVolunteerWorshipAssignment = {
@@ -36,6 +46,8 @@ export type FamilyVolunteerEntry = {
   volunteerType: string
   worshipAssignment: FamilyVolunteerWorshipAssignment | null
   lessonTopic: FamilyVolunteerLessonTopic | null
+  /** Uploaded PPT/PDF when this person is presenting a lesson. */
+  lessonSlides: FamilyVolunteerLessonSlides | null
   pendingActions: FamilyVolunteerPendingAction[]
 }
 
@@ -155,6 +167,7 @@ export async function getFamilyVolunteering(
 ): Promise<FamilyVolunteeringPayload> {
   await ensureLessonTables()
   await ensureVolunteerEmailColumn()
+  await ensureLessonSlidesSchema()
 
   const eventYear = parseRegistrationEventYear(yearInput ?? null)
   const registrationId = await findRegistrationId(family, eventYear)
@@ -187,9 +200,15 @@ export async function getFamilyVolunteering(
       vs.lesson_bid_sent_at,
       vs.lesson_bid_token,
       vs.claimed_lesson_id,
-      lt.title as claimed_lesson_title
+      lt.title as claimed_lesson_title,
+      slides.file_name as slides_file_name,
+      slides.file_url as slides_file_url,
+      slides.file_type as slides_file_type,
+      slides.byte_size as slides_byte_size,
+      slides.updated_at as slides_updated_at
     FROM volunteer_signups vs
     LEFT JOIN lesson_topics lt ON vs.claimed_lesson_id = lt.id
+    LEFT JOIN lesson_slide_submissions slides ON slides.volunteer_signup_id = vs.id
     WHERE vs.registration_id = ${registrationId}
     ORDER BY vs.volunteer_type, vs.volunteer_name
   `
@@ -204,6 +223,7 @@ export async function getFamilyVolunteering(
     const bidHref = token ? `${SITE_ORIGIN}/lesson-bid/${token}` : `${SITE_ORIGIN}/account`
     const claimedLessonId = row.claimed_lesson_id ? Number(row.claimed_lesson_id) : null
     const pendingActions: FamilyVolunteerPendingAction[] = []
+    const signupId = Number(row.id)
 
     const isPresenter = /presenting a lesson/i.test(volunteerType)
     if (isPresenter && row.lesson_bid_sent_at && !claimedLessonId && token) {
@@ -222,6 +242,25 @@ export async function getFamilyVolunteering(
         type: "submit_lesson_details",
         label: `Add lesson title & scripture for ${String(row.volunteer_name ?? "you")}`,
         href: bidHref,
+      })
+    }
+
+    const lessonSlides =
+      row.slides_file_url && row.slides_file_name
+        ? {
+            fileName: String(row.slides_file_name),
+            fileUrl: String(row.slides_file_url),
+            fileType: String(row.slides_file_type ?? ""),
+            byteSize: Number(row.slides_byte_size ?? 0),
+            updatedAt: String(row.slides_updated_at ?? ""),
+          }
+        : null
+
+    if (isPresenter && claimedLessonId && !lessonSlides) {
+      pendingActions.push({
+        type: "upload_lesson_slides",
+        label: `Upload lesson slides for ${String(row.volunteer_name ?? "you")}`,
+        href: `${SITE_ORIGIN}/account`,
       })
     }
 
@@ -248,11 +287,12 @@ export async function getFamilyVolunteering(
         : null
 
     return {
-      id: Number(row.id),
+      id: signupId,
       volunteerName: String(row.volunteer_name ?? ""),
       volunteerType,
       worshipAssignment,
       lessonTopic,
+      lessonSlides,
       pendingActions,
     }
   })
@@ -319,6 +359,6 @@ export function hasVolunteeringContent(payload: FamilyVolunteeringPayload): bool
     payload.summary.pendingActionCount > 0 ||
     payload.summary.confirmedWorshipCount > 0 ||
     payload.summary.specialAssignmentCount > 0 ||
-    payload.volunteers.some((v) => v.lessonTopic != null)
+    payload.volunteers.some((v) => v.lessonTopic != null || v.lessonSlides != null)
   )
 }

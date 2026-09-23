@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// Shows what your family signed up for / was assigned, plus pending lesson-bid actions.
 struct FamilyVolunteeringView: View {
@@ -6,6 +7,9 @@ struct FamilyVolunteeringView: View {
     @State private var payload: FamilyVolunteeringResponse?
     @State private var isLoading = false
     @State private var errorMessage: String?
+    @State private var uploadingSignupId: Int?
+    @State private var statusMessage: String?
+    @State private var fileImporterSignupId: Int?
 
     var body: some View {
         Group {
@@ -31,16 +35,56 @@ struct FamilyVolunteeringView: View {
         .navigationBarTitleDisplayMode(.inline)
         .refreshable { await load() }
         .task { await load() }
+        .fileImporter(
+            isPresented: Binding(
+                get: { fileImporterSignupId != nil },
+                set: { if !$0 { fileImporterSignupId = nil } }
+            ),
+            allowedContentTypes: [
+                .pdf,
+                UTType(filenameExtension: "pptx") ?? .data,
+                UTType(filenameExtension: "ppt") ?? .data,
+            ],
+            allowsMultipleSelection: false
+        ) { result in
+            guard let signupId = fileImporterSignupId else { return }
+            fileImporterSignupId = nil
+            switch result {
+            case .success(let urls):
+                guard let url = urls.first else { return }
+                Task { await uploadSlides(signupId: signupId, from: url) }
+            case .failure(let error):
+                statusMessage = error.localizedDescription
+            }
+        }
     }
 
     @ViewBuilder
     private func volunteeringContent(_ payload: FamilyVolunteeringResponse) -> some View {
         List {
+            if let statusMessage {
+                Section {
+                    Text(statusMessage)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
             let pending = payload.volunteers.flatMap(\.pendingActions)
             if !pending.isEmpty {
                 Section("Needs your attention") {
                     ForEach(pending) { action in
-                        if let url = URL(string: action.href) {
+                        if action.type == "upload_lesson_slides",
+                           let volunteer = payload.volunteers.first(where: {
+                               $0.pendingActions.contains(where: { $0.id == action.id })
+                           }) {
+                            Button {
+                                fileImporterSignupId = volunteer.id
+                            } label: {
+                                Label(action.label, systemImage: "arrow.up.doc.fill")
+                            }
+                            .disabled(uploadingSignupId != nil)
+                        } else if let url = URL(string: action.href) {
                             Link(destination: url) {
                                 Label(action.label, systemImage: "exclamationmark.circle.fill")
                             }
@@ -51,7 +95,9 @@ struct FamilyVolunteeringView: View {
                 }
             }
 
-            let assigned = payload.volunteers.filter { $0.worshipAssignment != nil || $0.lessonTopic != nil }
+            let assigned = payload.volunteers.filter {
+                $0.worshipAssignment != nil || $0.lessonTopic != nil || $0.lessonSlides != nil
+            }
             if !assigned.isEmpty {
                 Section("Your assignments") {
                     ForEach(assigned) { volunteer in
@@ -79,6 +125,28 @@ struct FamilyVolunteeringView: View {
                                 if let scripture = lesson.scriptureReading, !scripture.isEmpty {
                                     Text(scripture).font(.footnote).foregroundStyle(.secondary)
                                 }
+                            }
+                            if let slides = volunteer.lessonSlides {
+                                Text("Slides: \(slides.fileName)")
+                                    .font(.footnote)
+                                    .foregroundStyle(BrandColors.lake)
+                                Button("Replace slides") {
+                                    fileImporterSignupId = volunteer.id
+                                }
+                                .font(.footnote)
+                                .disabled(uploadingSignupId != nil)
+                            } else if volunteer.lessonTopic != nil {
+                                Button {
+                                    fileImporterSignupId = volunteer.id
+                                } label: {
+                                    if uploadingSignupId == volunteer.id {
+                                        ProgressView()
+                                    } else {
+                                        Label("Upload lesson slides", systemImage: "arrow.up.doc")
+                                    }
+                                }
+                                .font(.footnote)
+                                .disabled(uploadingSignupId != nil)
                             }
                         }
                         .padding(.vertical, 4)
@@ -129,6 +197,43 @@ struct FamilyVolunteeringView: View {
             if payload == nil {
                 errorMessage = error.localizedDescription
             }
+        }
+    }
+
+    private func uploadSlides(signupId: Int, from url: URL) async {
+        guard let client = session.apiClient else {
+            statusMessage = "Sign in to upload."
+            return
+        }
+        uploadingSignupId = signupId
+        statusMessage = "Uploading…"
+        defer { uploadingSignupId = nil }
+
+        let accessed = url.startAccessingSecurityScopedResource()
+        defer {
+            if accessed { url.stopAccessingSecurityScopedResource() }
+        }
+
+        do {
+            let data = try Data(contentsOf: url)
+            let name = url.lastPathComponent
+            let mime: String
+            switch url.pathExtension.lowercased() {
+            case "pdf": mime = "application/pdf"
+            case "ppt": mime = "application/vnd.ms-powerpoint"
+            default:
+                mime = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+            }
+            _ = try await client.uploadLessonSlides(
+                signupId: signupId,
+                fileData: data,
+                filename: name,
+                mimeType: mime
+            )
+            statusMessage = "Slides uploaded."
+            await load()
+        } catch {
+            statusMessage = error.localizedDescription
         }
     }
 }
