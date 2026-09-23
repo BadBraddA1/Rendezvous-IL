@@ -2,6 +2,8 @@ import { NextResponse } from "next/server"
 import { getCurrentAdmin, getAdminPermissions } from "@/lib/clerk-auth"
 import {
   addSongPackItem,
+  cleanSongPackTitles,
+  cleanSongTitle,
   getSongPackDetail,
   reorderSongPackItems,
   uploadSongPackFile,
@@ -33,6 +35,11 @@ export async function POST(request: Request, { params }: Params) {
         const updated = await getSongPackDetail(packId)
         return NextResponse.json({ pack: updated })
       }
+      if (body.cleanTitles === true) {
+        const changed = await cleanSongPackTitles(packId)
+        const updated = await getSongPackDetail(packId)
+        return NextResponse.json({ pack: updated, changed })
+      }
       return NextResponse.json({ error: "Unsupported request" }, { status: 400 })
     }
 
@@ -49,7 +56,7 @@ export async function POST(request: Request, { params }: Params) {
     const title =
       typeof form.get("title") === "string" && String(form.get("title")).trim()
         ? String(form.get("title")).trim()
-        : file.name.replace(/\.[^.]+$/, "") || "Song"
+        : cleanSongTitle(file.name.replace(/\.[^.]+$/, "") || "Song")
 
     const uploaded = await uploadSongPackFile(packId, await file.arrayBuffer(), file.type)
     const item = await addSongPackItem({

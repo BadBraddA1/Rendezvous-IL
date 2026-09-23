@@ -10,6 +10,45 @@ import {
 
 export type SongFileType = "pdf" | "image"
 
+/**
+ * Turn SFP / Sacred Songs filenames into display titles.
+ * `0002 We Praise Thee O God-SFP-HD` → `2 · We Praise Thee O God`
+ * `0580 The Joy of the Lord-Vale` → `580 · The Joy of the Lord`
+ */
+export function cleanSongTitle(raw: string): string {
+  let s = raw.trim()
+  if (!s) return s
+
+  // Basename + drop extension
+  s = s.replace(/^.*[/\\]/, "").replace(/\.[^.]+$/i, "")
+
+  // Strip common slide/export suffixes (order matters — longer first)
+  s = s
+    .replace(/-W-Opt[^-]*(?:-[^-]+)*/gi, "")
+    .replace(/-SFP(?:-HD|-Full|-full)?(?:copy)?/gi, "")
+    .replace(/-Full(?:-SFP)?/gi, "")
+    .replace(/-HDcopy/gi, "")
+    .replace(/-HD(?:copy)?/gi, "")
+    .replace(/-3vr/gi, "")
+    .replace(/-Moz\b/gi, "")
+    .replace(/-Vale\b/gi, "")
+    .replace(/-copy\b/gi, "")
+    .replace(/\s+-?HDcopy$/i, "")
+    .replace(/[_]+/g, " ")
+    .replace(/\s{2,}/g, " ")
+    .replace(/[\s-]+$/g, "")
+    .trim()
+
+  const numbered = s.match(/^(\d+)\s+(.+)$/)
+  if (numbered) {
+    const page = Number(numbered[1])
+    const name = numbered[2].replace(/^[\s.-]+/, "").trim()
+    if (Number.isFinite(page) && name) return `${page} · ${name}`
+  }
+
+  return s || raw.trim()
+}
+
 export interface SongPack {
   id: string
   name: string
@@ -396,7 +435,7 @@ export async function addSongPackItem(input: {
   const pack = await getSongPackDetail(input.packId)
   if (!pack) throw new Error("Pack not found")
 
-  const title = input.title.trim()
+  const title = cleanSongTitle(input.title)
   if (!title) throw new Error("Song title is required")
 
   const [maxRow] = await sql`
@@ -438,7 +477,9 @@ export async function updateSongPackItem(
   if (!existing) return null
 
   const title =
-    updates.title !== undefined ? updates.title.trim() : String(existing.title)
+    updates.title !== undefined
+      ? cleanSongTitle(updates.title)
+      : String(existing.title)
   if (!title) throw new Error("Song title is required")
 
   const sortOrder =
@@ -507,4 +548,27 @@ export async function reorderSongPackItems(
     `
   }
   await touchPack(packId)
+}
+
+/** Re-run filename cleanup on every item title in a pack. Returns how many changed. */
+export async function cleanSongPackTitles(packId: string): Promise<number> {
+  await ensureSongPacksSchema()
+  const rows = await sql`
+    SELECT id, title FROM song_pack_items WHERE pack_id = ${packId}
+  `
+  let changed = 0
+  for (const row of rows) {
+    const id = String(row.id)
+    const before = String(row.title)
+    const after = cleanSongTitle(before)
+    if (!after || after === before) continue
+    await sql`
+      UPDATE song_pack_items
+      SET title = ${after}, updated_at = datetime('now')
+      WHERE id = ${id}
+    `
+    changed += 1
+  }
+  if (changed > 0) await touchPack(packId)
+  return changed
 }

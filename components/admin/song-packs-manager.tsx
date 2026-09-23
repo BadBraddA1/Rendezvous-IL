@@ -45,6 +45,7 @@ export function SongPacksManager({ canEdit }: { canEdit: boolean }) {
   const [deletePackPending, setDeletePackPending] = useState<SongPack | null>(null)
   const [deleteItemPending, setDeleteItemPending] = useState<SongPackItem | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [cleaningTitles, setCleaningTitles] = useState(false)
   const { toast } = useToast()
 
   const fetchPacks = useCallback(async () => {
@@ -229,6 +230,36 @@ export function SongPacksManager({ canEdit }: { canEdit: boolean }) {
     } catch {
       toast({ title: "Could not reorder", variant: "destructive" })
       void fetchDetail(detail.id)
+    }
+  }
+
+  const cleanTitles = async () => {
+    if (!detail || !canEdit) return
+    setCleaningTitles(true)
+    try {
+      const res = await fetch(`/api/admin/songs/${detail.id}/items`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cleanTitles: true }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || "Clean failed")
+      if (data.pack) setDetail(data.pack)
+      toast({
+        title: "Titles cleaned",
+        description:
+          typeof data.changed === "number"
+            ? `${data.changed} title${data.changed === 1 ? "" : "s"} updated`
+            : undefined,
+      })
+    } catch (error) {
+      toast({
+        title: "Could not clean titles",
+        description: error instanceof Error ? error.message : undefined,
+        variant: "destructive",
+      })
+    } finally {
+      setCleaningTitles(false)
     }
   }
 
@@ -418,6 +449,17 @@ export function SongPacksManager({ canEdit }: { canEdit: boolean }) {
                   <div className="admin-action-row flex flex-wrap gap-2">
                     <Button type="button" onClick={() => void savePackMeta()}>
                       Save pack details
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={cleaningTitles || detail.items.length === 0}
+                      onClick={() => void cleanTitles()}
+                    >
+                      {cleaningTitles ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : null}
+                      Clean titles
                     </Button>
                     <Button
                       type="button"
