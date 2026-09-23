@@ -205,9 +205,19 @@ struct CheckInView: View {
     }
 
     private func lookupByCode(_ raw: String) async {
-        guard let client = session.apiClient else { return }
         let code = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !code.isEmpty else { return }
+
+        // Offline good-boop test QR (see /tmp/ren-checkin-good-qr) — not a real family.
+        if code.uppercased() == "RENTESTGOOD" {
+            errorMessage = nil
+            successMessage = "Good boop test — not a real check-in."
+            lookup = nil
+            CheckInBoopPlayer.play(.good)
+            return
+        }
+
+        guard let client = session.apiClient else { return }
 
         isLoading = true
         errorMessage = nil
