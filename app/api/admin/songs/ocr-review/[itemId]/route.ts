@@ -12,6 +12,53 @@ export const dynamic = "force-dynamic"
 
 type Params = { params: Promise<{ itemId: string }> }
 
+/** Proxy OCR JSON (CDN has no CORS — browser can't fetch ocr_url directly). */
+export async function GET(request: Request, { params }: Params) {
+  const admin = await getCurrentAdmin(request)
+  if (!admin) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  }
+  await ensureSongPacksSchema()
+  const { itemId } = await params
+  const [existing] = await sql`
+    SELECT id, title, ocr_url, ocr_status, ocr_confidence
+    FROM song_pack_items WHERE id = ${itemId} LIMIT 1
+  `
+  if (!existing) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 })
+  }
+  const ocrUrl = existing.ocr_url != null ? String(existing.ocr_url) : null
+  if (!ocrUrl) {
+    return NextResponse.json({ error: "No OCR yet" }, { status: 404 })
+  }
+  try {
+    const res = await fetch(ocrUrl, { cache: "no-store" })
+    if (!res.ok) {
+      return NextResponse.json(
+        { error: `OCR fetch failed (${res.status})` },
+        { status: 502 },
+      )
+    }
+    const doc = (await res.json()) as Record<string, unknown>
+    return NextResponse.json({
+      ...doc,
+      ocr_status:
+        existing.ocr_status != null ? String(existing.ocr_status) : null,
+      ocr_confidence:
+        existing.ocr_confidence != null
+          ? Number(existing.ocr_confidence)
+          : null,
+    })
+  } catch (e) {
+    return NextResponse.json(
+      {
+        error: e instanceof Error ? e.message : "OCR fetch failed",
+      },
+      { status: 502 },
+    )
+  }
+}
+
 /**
  * Confirm or edit lyric OCR for one song.
  * Body: { status?: "confirmed"|"needs_review"|"auto", pages?: [{index,text}], confidence?: number }

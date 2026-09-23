@@ -54,11 +54,11 @@ export function SongOcrReviewQueue({ canEdit }: { canEdit: boolean }) {
   const openItem = async (item: ReviewItem) => {
     setActiveId(item.id)
     setPages([])
-    if (!item.ocr_url) return
     try {
-      const res = await fetch(item.ocr_url)
-      if (!res.ok) throw new Error("OCR JSON fetch failed")
-      const doc = await res.json()
+      // Proxy via admin API — CDN has no CORS, so browser can't fetch ocr_url.
+      const res = await fetch(`/api/admin/songs/ocr-review/${item.id}`)
+      const doc = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(doc.error || "OCR JSON fetch failed")
       setPages(Array.isArray(doc.pages) ? doc.pages : [])
     } catch (e) {
       toast({
