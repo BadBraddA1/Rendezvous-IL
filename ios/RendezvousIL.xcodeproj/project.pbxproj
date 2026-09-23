@@ -43,6 +43,7 @@
 		66742AE51B59989BF039B477 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A62644C156B0B0D6EADBF84 /* APIClient.swift */; };
 		6D8BC41F7C03FC8F8DAB1AE9 /* SongPackStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0049423000EBBF7C4E0A582 /* SongPackStore.swift */; };
 		B2C3D4E5F60718293A4B5C6D /* SongOcrStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B5C /* SongOcrStore.swift */; };
+		D4E5F60718293A4B5C6D7E8F /* SongVisionOcr.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F60718293A4B5C6D7E /* SongVisionOcr.swift */; };
 		6F04D2E56C2CE153D799C678 /* NativeAuthFlow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 551C9D3B6AA6C6B122E83B81 /* NativeAuthFlow.swift */; };
 		709C33B84426E71DA13A5F19 /* DirectoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDFCA925CF2F46C536CF5593 /* DirectoryView.swift */; };
 		718DD8A9588F81A8C097D994 /* CheckInMuteAlertOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03808965C7411F95735470FC /* CheckInMuteAlertOverlay.swift */; };
@@ -196,6 +197,7 @@
 		CE395596786297E49CC999A2 /* BundledContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BundledContent.swift; sourceTree = "<group>"; };
 		D0049423000EBBF7C4E0A582 /* SongPackStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SongPackStore.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F60718293A4B5C /* SongOcrStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SongOcrStore.swift; sourceTree = "<group>"; };
+		C3D4E5F60718293A4B5C6D7E /* SongVisionOcr.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SongVisionOcr.swift; sourceTree = "<group>"; };
 		D039A64635C0EF6FF3B6D3E3 /* AdminUsersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminUsersView.swift; sourceTree = "<group>"; };
 		D66BDCCA5D305FAB5A6D4D80 /* CheckInCelebrationOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckInCelebrationOverlay.swift; sourceTree = "<group>"; };
 		D6BCF9EAD6FCEF5E52A74CD5 /* RendezvousILNotificationService.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = RendezvousILNotificationService.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -286,6 +288,7 @@
 				773D9EE7847452C39057563C /* ScheduleDataStore.swift */,
 				D0049423000EBBF7C4E0A582 /* SongPackStore.swift */,
 				A1B2C3D4E5F60718293A4B5C /* SongOcrStore.swift */,
+				C3D4E5F60718293A4B5C6D7E /* SongVisionOcr.swift */,
 				4297DFF22E728AAA08368FF3 /* VolunteerReminderService.swift */,
 				1C11F1904357CAE4B5C4944F /* WebHandoff.swift */,
 			);
@@ -630,6 +633,7 @@
 				41BED9B78B70B30C4B4C4CAF /* SongPackModels.swift in Sources */,
 				6D8BC41F7C03FC8F8DAB1AE9 /* SongPackStore.swift in Sources */,
 				B2C3D4E5F60718293A4B5C6D /* SongOcrStore.swift in Sources */,
+				D4E5F60718293A4B5C6D7E8F /* SongVisionOcr.swift in Sources */,
 				488099655F0EE0D23E18315E /* SongPacksView.swift in Sources */,
 				7243D5A875DFBB79EFECA5AA /* StealthCheckInMarkView.swift in Sources */,
 				A6695420B13B1E422B58B7AA /* UpdatesView.swift in Sources */,

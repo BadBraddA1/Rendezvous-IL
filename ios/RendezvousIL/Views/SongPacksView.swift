@@ -411,7 +411,7 @@ struct SongItemViewer: View {
     @State private var fetchFailed = false
     @State private var fileEpoch = 0
     @State private var displayMode: DisplayMode = .slides
-    @State private var ocrDoc: SongOcrDocument?
+    @State private var visionPages: [SongVisionOcr.PageText] = []
     @State private var ocrLoading = false
     @State private var ocrFailed = false
 
@@ -430,23 +430,16 @@ struct SongItemViewer: View {
         }
     }
 
-    private var textPages: [(index: Int, text: String)] {
-        guard let ocrDoc else { return [] }
-        return SongOcrStore.displayPages(from: ocrDoc)
-    }
-
     var body: some View {
         VStack(spacing: 0) {
-            if item.ocr_url != nil {
-                Picker("View", selection: $displayMode) {
-                    ForEach(DisplayMode.allCases) { mode in
-                        Text(mode.label).tag(mode)
-                    }
+            Picker("View", selection: $displayMode) {
+                ForEach(DisplayMode.allCases) { mode in
+                    Text(mode.label).tag(mode)
                 }
-                .pickerStyle(.segmented)
-                .padding(.horizontal)
-                .padding(.vertical, 8)
             }
+            .pickerStyle(.segmented)
+            .padding(.horizontal)
+            .padding(.vertical, 8)
 
             ZStack {
                 if displayMode == .text {
@@ -526,48 +519,46 @@ struct SongItemViewer: View {
         .onAppear { index = startIndex }
         .onChange(of: index) { _, _ in
             jumpPage = nil
-            ocrDoc = nil
+            visionPages = []
             ocrFailed = false
             Task {
                 await ensureDownloaded()
-                await loadOcrIfNeeded()
+                if displayMode == .text { await loadVisionText() }
             }
         }
         .onChange(of: displayMode) { _, mode in
             if mode == .text {
-                Task { await loadOcrIfNeeded() }
+                Task { await loadVisionText() }
             } else {
                 Task { await ensureDownloaded() }
             }
         }
         .task(id: item.id) {
             await ensureDownloaded()
-            if displayMode == .text || item.ocr_url != nil {
-                await loadOcrIfNeeded()
-            }
+            if displayMode == .text { await loadVisionText() }
         }
     }
 
     @ViewBuilder
     private var songTextBody: some View {
-        if ocrLoading && textPages.isEmpty {
-            ProgressView("Loading text…")
-        } else if ocrFailed && textPages.isEmpty {
+        if ocrLoading && visionPages.isEmpty {
+            ProgressView("Reading lyrics…")
+        } else if ocrFailed && visionPages.isEmpty {
             ContentUnavailableView(
-                "Text unavailable",
+                "Couldn’t read lyrics",
                 systemImage: "text.page.slash",
-                description: Text("Couldn’t load lyrics for this song.")
+                description: Text("Try slides, or open again on Wi‑Fi after the PDF finishes downloading.")
             )
-        } else if textPages.isEmpty {
+        } else if visionPages.isEmpty {
             ContentUnavailableView(
-                "No text yet",
+                "No lyrics found",
                 systemImage: "text.page",
-                description: Text("Lyrics OCR isn’t available for this song.")
+                description: Text("This slide didn’t yield readable words. Use Slides for the music.")
             )
         } else {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 24) {
-                    ForEach(textPages, id: \.index) { page in
+                    ForEach(visionPages) { page in
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Page \(page.index + 1)")
                                 .font(.caption.weight(.semibold))
@@ -585,7 +576,9 @@ struct SongItemViewer: View {
     }
 
     private func ensureDownloaded() async {
-        guard displayMode == .slides else { return }
+        guard displayMode == .slides || !SongPackStore.isDownloaded(packId: packId, item: item) else {
+            return
+        }
         fetchFailed = false
         guard !SongPackStore.isDownloaded(packId: packId, item: item) else {
             fileEpoch += 1
@@ -602,18 +595,34 @@ struct SongItemViewer: View {
         }
     }
 
-    private func loadOcrIfNeeded() async {
-        guard item.ocr_url != nil else {
-            ocrDoc = nil
-            return
-        }
-        if ocrDoc != nil { return }
-        ocrLoading = true
+    private func loadVisionText() async {
         ocrFailed = false
+        if !visionPages.isEmpty { return }
+        ocrLoading = true
         defer { ocrLoading = false }
+
+        // Need local PDF for Vision; download just this song if needed.
+        if !SongPackStore.isDownloaded(packId: packId, item: item) {
+            do {
+                let ok = try await SongPackStore.downloadItem(packId: packId, item: item)
+                if !ok {
+                    ocrFailed = true
+                    return
+                }
+            } catch {
+                ocrFailed = true
+                return
+            }
+        }
+
+        let url = SongPackStore.localFileURL(packId: packId, item: item)
         do {
-            ocrDoc = try await SongOcrStore.load(item: item)
-            if ocrDoc == nil { ocrFailed = true }
+            visionPages = try await SongVisionOcr.recognize(
+                pdfURL: url,
+                contentHash: item.content_hash,
+                skipTitlePage: true
+            )
+            if visionPages.isEmpty { ocrFailed = false }
         } catch {
             ocrFailed = true
         }
