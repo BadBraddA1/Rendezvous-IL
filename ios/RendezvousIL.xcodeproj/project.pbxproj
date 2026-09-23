@@ -214,7 +214,7 @@
 		F96773E3A3A26024702E5D84 /* VenueMapModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VenueMapModels.swift; sourceTree = "<group>"; };
 		FCDBD34429936681124138B5 /* schedule-fallback.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "schedule-fallback.json"; sourceTree = "<group>"; };
 		FFAD31AE0B70D848AA02648A /* ChatDataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatDataStore.swift; sourceTree = "<group>"; };
-		"TEMP_F6707F81-C933-4C51-A6C8-730BE9268B7C" /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
+		"TEMP_7C4955DF-4F66-4191-9D5B-AE6DA7D29137" /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -419,10 +419,10 @@
 			path = RendezvousIL;
 			sourceTree = "<group>";
 		};
-		"TEMP_333EB49D-015E-4DB0-9ADF-1B67ADBFFDA4" /* ios */ = {
+		"TEMP_19A14845-F7DF-4E53-BB86-7A946D5FF62E" /* ios */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_F6707F81-C933-4C51-A6C8-730BE9268B7C" /* Config.xcconfig */,
+				"TEMP_7C4955DF-4F66-4191-9D5B-AE6DA7D29137" /* Config.xcconfig */,
 			);
 			path = ios;
 			sourceTree = "<group>";
@@ -776,7 +776,7 @@
 		};
 		7ADBCEC1B448B95857681847 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_F6707F81-C933-4C51-A6C8-730BE9268B7C" /* Config.xcconfig */;
+			baseConfigurationReference = "TEMP_7C4955DF-4F66-4191-9D5B-AE6DA7D29137" /* Config.xcconfig */;
 			buildSettings = {
 				APS_ENVIRONMENT = production;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -902,7 +902,7 @@
 		};
 		F8122583B54F4443475E1AD8 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_F6707F81-C933-4C51-A6C8-730BE9268B7C" /* Config.xcconfig */;
+			baseConfigurationReference = "TEMP_7C4955DF-4F66-4191-9D5B-AE6DA7D29137" /* Config.xcconfig */;
 			buildSettings = {
 				APS_ENVIRONMENT = development;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
