@@ -263,6 +263,13 @@ struct AdminDashboardView: View {
             } label: {
                 linkRow(title: "Registrations", icon: "list.bullet.rectangle")
             }
+            if session.canEdit {
+                NavigationLink {
+                    AdminSongPacksView()
+                } label: {
+                    linkRow(title: "Song packs (build from book)", icon: "music.note.list")
+                }
+            }
             if session.canManageUsers {
                 NavigationLink {
                     AdminUsersView()

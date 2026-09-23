@@ -49,7 +49,8 @@ export async function POST(request: Request) {
     const name = typeof body.name === "string" ? body.name : ""
     const description = typeof body.description === "string" ? body.description : null
     const year = parseRegistrationEventYear(body.year ?? DEFAULT_REGISTRATION_EVENT_YEAR)
-    const pack = await createSongPack({ name, description, eventYear: year })
+    const isLibrary = body.is_library === true
+    const pack = await createSongPack({ name, description, eventYear: year, isLibrary })
     return NextResponse.json({ pack })
   } catch (error) {
     console.error("[admin/songs] POST error:", error)

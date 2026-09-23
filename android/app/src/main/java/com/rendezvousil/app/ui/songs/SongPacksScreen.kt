@@ -53,6 +53,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.rendezvousil.app.theme.BrandColors
+import com.rendezvousil.core.network.dto.SongPackSummary
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -61,6 +62,7 @@ fun SongPacksScreen(
     viewModel: SongPacksViewModel,
     onBack: () -> Unit,
     onOpenPack: (packId: String, packName: String) -> Unit,
+    onBuildPacks: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.listState.collectAsStateWithLifecycle()
@@ -73,6 +75,13 @@ fun SongPacksScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    if (onBuildPacks != null) {
+                        TextButton(onClick = onBuildPacks) {
+                            Text("Build")
+                        }
                     }
                 },
             )
@@ -138,7 +147,7 @@ fun SongPacksScreen(
                             style = MaterialTheme.typography.titleMedium,
                         )
                         Text(
-                            text = "When Campfire or Racket Ball packs are published, they’ll show up here for offline download.",
+                            text = "Full song books and event packs will show up here when published.",
                             modifier = Modifier.padding(top = 8.dp),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -155,28 +164,62 @@ fun SongPacksScreen(
                 }
                 else -> {
                     LazyColumn(modifier = Modifier.fillMaxSize()) {
-                        itemsIndexed(state.filteredPacks, key = { _, pack -> pack.id }) { _, pack ->
-                            ListItem(
-                                headlineContent = { Text(pack.name) },
-                                supportingContent = {
-                                    val desc = pack.description?.takeIf { it.isNotBlank() }
-                                    Text(
-                                        buildString {
-                                            if (desc != null) append(desc).append("\n")
-                                            append("${pack.item_count ?: 0} songs")
-                                        },
-                                    )
-                                },
-                                modifier = Modifier.clickable {
+                        if (state.songBooks.isNotEmpty()) {
+                            item {
+                                Text(
+                                    text = "Song books",
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = BrandColors.Lake,
+                                )
+                            }
+                            itemsIndexed(state.songBooks, key = { _, pack -> pack.id }) { _, pack ->
+                                PackListRow(pack, fallback = "Full song book") {
                                     onOpenPack(pack.id, pack.name)
-                                },
-                            )
+                                }
+                            }
+                        }
+                        if (state.eventPacks.isNotEmpty()) {
+                            item {
+                                Text(
+                                    text = "Packs",
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = BrandColors.Lake,
+                                )
+                            }
+                            itemsIndexed(state.eventPacks, key = { _, pack -> "e-${pack.id}" }) { _, pack ->
+                                PackListRow(pack, fallback = null) {
+                                    onOpenPack(pack.id, pack.name)
+                                }
+                            }
                         }
                     }
                 }
             }
         }
     }
+}
+
+@Composable
+private fun PackListRow(
+    pack: SongPackSummary,
+    fallback: String?,
+    onClick: () -> Unit,
+) {
+    ListItem(
+        headlineContent = { Text(pack.name) },
+        supportingContent = {
+            val desc = pack.description?.takeIf { it.isNotBlank() } ?: fallback
+            Text(
+                buildString {
+                    if (desc != null) append(desc).append("\n")
+                    append("${pack.item_count ?: 0} songs")
+                },
+            )
+        },
+        modifier = Modifier.clickable(onClick = onClick),
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

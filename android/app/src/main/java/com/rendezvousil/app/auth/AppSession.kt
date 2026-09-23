@@ -14,6 +14,7 @@ interface AppSession {
     val canViewDashboard: Boolean
     val canCheckIn: Boolean
     val canManageUsers: Boolean
+    val canEdit: Boolean
     val adminRole: String?
     val adminName: String?
     val isLoading: Boolean
@@ -24,6 +25,7 @@ interface AppSession {
     val canViewDashboardFlow: StateFlow<Boolean>
     val canCheckInFlow: StateFlow<Boolean>
     val canManageUsersFlow: StateFlow<Boolean>
+    val canEditFlow: StateFlow<Boolean>
     val adminRoleFlow: StateFlow<String?>
     val adminNameFlow: StateFlow<String?>
     val isLoadingFlow: StateFlow<Boolean>

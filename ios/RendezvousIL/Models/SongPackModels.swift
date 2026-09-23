@@ -19,6 +19,7 @@ struct SongPackSummary: Decodable, Identifiable, Sendable, Hashable {
     let event_year: Int
     let sort_order: Int
     let is_published: Bool
+    let is_library: Bool?
     let updated_at: String
     let item_count: Int?
 }
@@ -31,6 +32,7 @@ struct SongPackDetail: Decodable, Identifiable, Sendable {
     let event_year: Int
     let sort_order: Int
     let is_published: Bool
+    let is_library: Bool?
     let updated_at: String
     let items: [SongPackItem]
 }

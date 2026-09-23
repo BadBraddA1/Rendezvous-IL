@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.FamilyRestroom
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.OpenInBrowser
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Person
@@ -359,7 +360,7 @@ private fun DashboardContent(
         StatsGrid(payload.summary)
         ActionItemsCard(payload.summary, openWeb)
         LodgingCard(payload.summary.lodgingBreakdown)
-        QuickLinksCard(canCheckIn, canManageUsers, onNavigateToUsers, openWeb)
+        QuickLinksCard(canCheckIn, canManageUsers, canEdit = appSession.canEdit, onNavigateToUsers, openWeb)
         FooterCard(payload)
     }
 }
@@ -692,6 +693,7 @@ private fun LodgingRow(label: String, count: Int, icon: ImageVector) {
 private fun QuickLinksCard(
     canCheckIn: Boolean,
     canManageUsers: Boolean,
+    canEdit: Boolean,
     onNavigateToUsers: (() -> Unit)?,
     openWeb: (String) -> Unit,
 ) {
@@ -708,6 +710,11 @@ private fun QuickLinksCard(
         }
         WebLinkRow("Registrations", Icons.Default.EditNote) {
             openWeb("/admin/registrations")
+        }
+        if (canEdit) {
+            WebLinkRow("Song packs", Icons.Default.MusicNote) {
+                openWeb("/admin/songs")
+            }
         }
         if (canManageUsers) {
             val userManagementClick = onNavigateToUsers ?: { openWeb("/admin/users") }

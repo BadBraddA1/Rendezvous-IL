@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
+import { Checkbox } from "@/components/ui/checkbox"
 import { useToast } from "@/hooks/use-toast"
 import {
   ArrowDown,
@@ -46,7 +47,14 @@ export function SongPacksManager({ canEdit }: { canEdit: boolean }) {
   const [deleteItemPending, setDeleteItemPending] = useState<SongPackItem | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [cleaningTitles, setCleaningTitles] = useState(false)
+  const [librarySourceId, setLibrarySourceId] = useState<string | null>(null)
+  const [libraryItems, setLibraryItems] = useState<SongPackItem[]>([])
+  const [librarySelected, setLibrarySelected] = useState<Set<string>>(new Set())
+  const [librarySearch, setLibrarySearch] = useState("")
+  const [copyingFromLibrary, setCopyingFromLibrary] = useState(false)
   const { toast } = useToast()
+
+  const libraryPacks = packs.filter((p) => p.is_library && p.id !== selectedId)
 
   const fetchPacks = useCallback(async () => {
     setLoading(true)
@@ -127,7 +135,7 @@ export function SongPacksManager({ canEdit }: { canEdit: boolean }) {
   }
 
   const togglePublished = async (pack: SongPackDetail) => {
-    if (!canEdit || pack.is_library) return
+    if (!canEdit) return
     try {
       const res = await fetch(`/api/admin/songs/${pack.id}`, {
         method: "PATCH",
@@ -141,7 +149,9 @@ export function SongPacksManager({ canEdit }: { canEdit: boolean }) {
       toast({
         title: !pack.is_published ? "Pack published" : "Pack unpublished",
         description: !pack.is_published
-          ? "Registered families can download it in the app."
+          ? pack.is_library
+            ? "Shown under Songs → Song books in the app."
+            : "Registered families can download it in the app."
           : "Hidden from the app until published again.",
       })
     } catch (error) {
@@ -167,10 +177,10 @@ export function SongPacksManager({ canEdit }: { canEdit: boolean }) {
       setDetail(data.pack)
       void fetchPacks()
       toast({
-        title: next ? "Marked as library" : "Event pack",
+        title: next ? "Marked as song book" : "Event pack",
         description: next
-          ? "Hidden from the app. Copy songs into published event packs for download."
-          : "Can be published for families to download.",
+          ? "Shows under Song books when published. Copy songs into event packs for set lists."
+          : "Shows under Packs when published.",
       })
     } catch (error) {
       toast({
@@ -291,6 +301,58 @@ export function SongPacksManager({ canEdit }: { canEdit: boolean }) {
     }
   }
 
+  const loadLibrarySource = async (packId: string) => {
+    setLibrarySourceId(packId)
+    setLibrarySelected(new Set())
+    setLibrarySearch("")
+    try {
+      const res = await fetch(`/api/admin/songs/${packId}`)
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || "Could not load song book")
+      const pack = data.pack as SongPackDetail | null
+      setLibraryItems(pack?.items ?? [])
+    } catch (error) {
+      setLibraryItems([])
+      toast({
+        title: "Could not load song book",
+        description: error instanceof Error ? error.message : undefined,
+        variant: "destructive",
+      })
+    }
+  }
+
+  const copyFromLibrary = async () => {
+    if (!canEdit || !detail || librarySelected.size === 0) return
+    setCopyingFromLibrary(true)
+    try {
+      const res = await fetch(`/api/admin/songs/${detail.id}/items`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ copyFromItemIds: Array.from(librarySelected) }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || "Copy failed")
+      if (data.pack) setDetail(data.pack)
+      void fetchPacks()
+      setLibrarySelected(new Set())
+      toast({
+        title: "Songs added",
+        description:
+          typeof data.added === "number"
+            ? `${data.added} song${data.added === 1 ? "" : "s"} copied into this pack`
+            : undefined,
+      })
+    } catch (error) {
+      toast({
+        title: "Could not copy songs",
+        description: error instanceof Error ? error.message : undefined,
+        variant: "destructive",
+      })
+    } finally {
+      setCopyingFromLibrary(false)
+    }
+  }
+
   const confirmDeletePack = async () => {
     if (!deletePackPending) return
     setDeleting(true)
@@ -358,9 +420,9 @@ export function SongPacksManager({ canEdit }: { canEdit: boolean }) {
             Song packs
           </CardTitle>
           <CardDescription>
-            Upload PDFs or images for Campfire, Racket Ball Singing, and other nights. Mark a full
-            book as a <strong>library</strong> (hidden from the app), then copy songs into published
-            event packs so families only download what they need.
+            Upload PDFs into a full <strong>song book</strong> (e.g. Songs of Faith and Praise), publish it so
+            families see it under Songs → Song books, then copy songs into smaller event packs for campfire /
+            racket sets. Admins can also build packs from the iOS/Android app.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -416,7 +478,7 @@ export function SongPacksManager({ canEdit }: { canEdit: boolean }) {
                   </Badge>
                   {pack.is_library ? (
                     <Badge variant="outline" className="ml-1">
-                      Library
+                      Song book
                     </Badge>
                   ) : pack.is_published ? null : (
                     <Badge variant="outline" className="ml-1">
@@ -462,18 +524,16 @@ export function SongPacksManager({ canEdit }: { canEdit: boolean }) {
                         disabled={!canEdit}
                         onCheckedChange={() => void toggleLibrary(detail)}
                       />
-                      <Label htmlFor="pack-library">Library (admin only)</Label>
+                      <Label htmlFor="pack-library">Song book (full book)</Label>
                     </div>
                     <div className="flex items-center gap-2">
                       <Switch
                         id="pack-published"
                         checked={detail.is_published}
-                        disabled={!canEdit || detail.is_library}
+                        disabled={!canEdit}
                         onCheckedChange={() => void togglePublished(detail)}
                       />
-                      <Label htmlFor="pack-published">
-                        {detail.is_library ? "Not published (library)" : "Published to app"}
-                      </Label>
+                      <Label htmlFor="pack-published">Published to app</Label>
                     </div>
                   </div>
                 </div>
@@ -513,6 +573,85 @@ export function SongPacksManager({ canEdit }: { canEdit: boolean }) {
                       <Trash2 className="mr-2 h-4 w-4" />
                       Delete pack
                     </Button>
+                  </div>
+                )}
+
+                {canEdit && !detail.is_library && (
+                  <div className="rounded-lg border p-4 space-y-3">
+                    <p className="text-sm font-medium">Add from song book</p>
+                    <p className="text-xs text-muted-foreground">
+                      Pick songs from a published full book (same files, no re-upload).
+                    </p>
+                    {libraryPacks.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        Mark a pack as Song book first, then come back here.
+                      </p>
+                    ) : (
+                      <>
+                        <div className="flex flex-wrap gap-2">
+                          {libraryPacks.map((lib) => (
+                            <Button
+                              key={lib.id}
+                              type="button"
+                              size="sm"
+                              variant={librarySourceId === lib.id ? "default" : "outline"}
+                              onClick={() => void loadLibrarySource(lib.id)}
+                            >
+                              {lib.name}
+                            </Button>
+                          ))}
+                        </div>
+                        {librarySourceId ? (
+                          <>
+                            <Input
+                              value={librarySearch}
+                              onChange={(e) => setLibrarySearch(e.target.value)}
+                              placeholder="Search songs in book"
+                            />
+                            <div className="max-h-56 space-y-2 overflow-y-auto rounded-md border p-2">
+                              {libraryItems
+                                .filter((item) => {
+                                  const q = librarySearch.trim().toLowerCase()
+                                  if (!q) return true
+                                  return item.title.toLowerCase().includes(q)
+                                })
+                                .map((item) => {
+                                  const checked = librarySelected.has(item.id)
+                                  return (
+                                    <label
+                                      key={item.id}
+                                      className="flex cursor-pointer items-start gap-2 rounded px-1 py-1 hover:bg-muted/60"
+                                    >
+                                      <Checkbox
+                                        checked={checked}
+                                        onCheckedChange={(value) => {
+                                          setLibrarySelected((prev) => {
+                                            const next = new Set(prev)
+                                            if (value === true) next.add(item.id)
+                                            else next.delete(item.id)
+                                            return next
+                                          })
+                                        }}
+                                      />
+                                      <span className="text-sm leading-snug">{item.title}</span>
+                                    </label>
+                                  )
+                                })}
+                            </div>
+                            <Button
+                              type="button"
+                              onClick={() => void copyFromLibrary()}
+                              disabled={copyingFromLibrary || librarySelected.size === 0}
+                            >
+                              {copyingFromLibrary ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              ) : null}
+                              Add {librarySelected.size || ""} selected
+                            </Button>
+                          </>
+                        ) : null}
+                      </>
+                    )}
                   </div>
                 )}
 

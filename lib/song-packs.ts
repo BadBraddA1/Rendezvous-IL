@@ -57,7 +57,7 @@ export interface SongPack {
   event_year: RegistrationEventYear
   sort_order: number
   is_published: boolean
-  /** Admin library (full book) — never shown to members / never auto-downloaded. */
+  /** Full songbook shown under “Song books” in the app (vs event packs). */
   is_library: boolean
   updated_at: string
   created_at: string
@@ -341,15 +341,14 @@ export async function listSongPacks(options: {
         FROM song_packs p
         WHERE p.event_year = ${year}
           AND p.is_published = 1
-          AND COALESCE(p.is_library, 0) = 0
-        ORDER BY p.sort_order ASC, p.name ASC
+        ORDER BY COALESCE(p.is_library, 0) DESC, p.sort_order ASC, p.name ASC
       `
     : await sql`
         SELECT p.*,
           (SELECT COUNT(*) FROM song_pack_items i WHERE i.pack_id = p.id) AS item_count
         FROM song_packs p
         WHERE p.event_year = ${year}
-        ORDER BY p.sort_order ASC, p.name ASC
+        ORDER BY COALESCE(p.is_library, 0) DESC, p.sort_order ASC, p.name ASC
       `
 
   return rows.map((row) =>
@@ -368,7 +367,7 @@ export async function getSongPackDetail(
   const packs = options.publishedOnly
     ? await sql`
         SELECT * FROM song_packs
-        WHERE id = ${id} AND is_published = 1 AND COALESCE(is_library, 0) = 0
+        WHERE id = ${id} AND is_published = 1
         LIMIT 1
       `
     : await sql`
@@ -393,6 +392,7 @@ export async function createSongPack(input: {
   name: string
   description?: string | null
   eventYear?: RegistrationEventYear
+  isLibrary?: boolean
 }): Promise<SongPack> {
   await ensureSongPacksSchema()
   const name = input.name.trim()
@@ -412,12 +412,13 @@ export async function createSongPack(input: {
   const sortOrder = Number(maxRow?.max_order ?? -1) + 1
   const id = randomUUID()
   const description = input.description?.trim() || null
+  const isLibrary = input.isLibrary ? 1 : 0
 
   await sql`
     INSERT INTO song_packs (
-      id, name, slug, description, event_year, sort_order, is_published
+      id, name, slug, description, event_year, sort_order, is_published, is_library
     ) VALUES (
-      ${id}, ${name}, ${slug}, ${description}, ${eventYear}, ${sortOrder}, 0
+      ${id}, ${name}, ${slug}, ${description}, ${eventYear}, ${sortOrder}, 0, ${isLibrary}
     )
   `
 
@@ -448,10 +449,8 @@ export async function updateSongPack(
       : existing.description
   const isLibrary =
     updates.isLibrary !== undefined ? (updates.isLibrary ? 1 : 0) : existing.is_library ? 1 : 0
-  // Library packs are never published to members
-  let isPublished =
+  const isPublished =
     updates.isPublished !== undefined ? (updates.isPublished ? 1 : 0) : existing.is_published ? 1 : 0
-  if (isLibrary) isPublished = 0
   const sortOrder =
     updates.sortOrder !== undefined ? updates.sortOrder : existing.sort_order
 

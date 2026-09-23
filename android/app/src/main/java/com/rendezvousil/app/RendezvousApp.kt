@@ -256,11 +256,28 @@ fun RendezvousApp(
             }
             composable(Routes.MORE_SONGS) {
                 val songsViewModel: SongPacksViewModel = viewModel(factory = viewModelFactory)
+                val canEdit by appSession.canEditFlow.collectAsState()
+                val context = androidx.compose.ui.platform.LocalContext.current
+                val scope = androidx.compose.runtime.rememberCoroutineScope()
                 SongPacksScreen(
                     viewModel = songsViewModel,
                     onBack = { navController.popBackStack() },
                     onOpenPack = { packId, packName ->
                         navController.navigate(Routes.songPack(packId, packName))
+                    },
+                    onBuildPacks = if (canEdit) {
+                        {
+                            scope.launch {
+                                com.rendezvousil.app.auth.WebLinks.openAuthenticated(
+                                    context = context,
+                                    baseUrl = com.rendezvousil.app.BuildConfig.BASE_URL,
+                                    path = "/admin/songs",
+                                    client = appSession.authenticatedApiClient,
+                                )
+                            }
+                        }
+                    } else {
+                        null
                     },
                 )
             }

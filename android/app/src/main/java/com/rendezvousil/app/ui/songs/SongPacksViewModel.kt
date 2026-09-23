@@ -31,6 +31,12 @@ data class SongPacksUiState(
                     (pack.description?.contains(q, ignoreCase = true) == true)
             }
         }
+
+    val songBooks: List<SongPackSummary>
+        get() = filteredPacks.filter { it.is_library }
+
+    val eventPacks: List<SongPackSummary>
+        get() = filteredPacks.filter { !it.is_library }
 }
 
 data class SongPackDetailUiState(

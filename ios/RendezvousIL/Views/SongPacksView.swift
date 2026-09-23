@@ -18,6 +18,14 @@ struct SongPacksView: View {
         }
     }
 
+    private var songBooks: [SongPackSummary] {
+        filteredPacks.filter { $0.is_library == true }
+    }
+
+    private var eventPacks: [SongPackSummary] {
+        filteredPacks.filter { $0.is_library != true }
+    }
+
     var body: some View {
         Group {
             if isLoading && packs.isEmpty {
@@ -32,26 +40,32 @@ struct SongPacksView: View {
                 ContentUnavailableView(
                     "No song packs yet",
                     systemImage: "music.note.list",
-                    description: Text("When Campfire or Racket Ball packs are published, they’ll show up here for offline download.")
+                    description: Text("Full song books and event packs will show up here when published.")
                 )
             } else if filteredPacks.isEmpty {
                 ContentUnavailableView.search(text: packSearch)
             } else {
-                List(filteredPacks) { pack in
-                    NavigationLink {
-                        SongPackDetailView(packId: pack.id, packName: pack.name)
-                    } label: {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(pack.name)
-                                .font(.headline)
-                            if let description = pack.description, !description.isEmpty {
-                                Text(description)
-                                    .font(.subheadline)
-                                    .foregroundStyle(.secondary)
+                List {
+                    if !songBooks.isEmpty {
+                        Section {
+                            ForEach(songBooks) { pack in
+                                packRow(pack, fallback: "Full song book")
                             }
-                            Text("\(pack.item_count ?? 0) songs")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                        } header: {
+                            Text("Song books")
+                        } footer: {
+                            Text("Open a book to download it — nothing downloads until you tap in.")
+                        }
+                    }
+                    if !eventPacks.isEmpty {
+                        Section {
+                            ForEach(eventPacks) { pack in
+                                packRow(pack, fallback: nil)
+                            }
+                        } header: {
+                            Text("Packs")
+                        } footer: {
+                            Text("Campfire, racket ball, and other set lists for the week.")
                         }
                     }
                 }
@@ -59,8 +73,43 @@ struct SongPacksView: View {
         }
         .navigationTitle("Songs")
         .searchable(text: $packSearch, prompt: "Search packs")
+        .toolbar {
+            if session.canEdit {
+                ToolbarItem(placement: .primaryAction) {
+                    NavigationLink {
+                        AdminSongPacksView()
+                    } label: {
+                        Label("Build packs", systemImage: "plus.rectangle.on.folder")
+                    }
+                }
+            }
+        }
         .refreshable { await loadPacks() }
         .task { await loadPacks() }
+    }
+
+    @ViewBuilder
+    private func packRow(_ pack: SongPackSummary, fallback: String?) -> some View {
+        NavigationLink {
+            SongPackDetailView(packId: pack.id, packName: pack.name)
+        } label: {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(pack.name)
+                    .font(.headline)
+                if let description = pack.description, !description.isEmpty {
+                    Text(description)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                } else if let fallback {
+                    Text(fallback)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                Text("\(pack.item_count ?? 0) songs")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
     }
 
     private func loadPacks() async {
@@ -76,7 +125,6 @@ struct SongPacksView: View {
                 "/api/songs/packs?year=\(AppConfig.eventYear)"
             )
             packs = response.packs ?? []
-            // Download only when a pack is opened — never pull an entire library up front.
         } catch {
             errorMessage = error.localizedDescription
         }

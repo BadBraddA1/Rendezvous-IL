@@ -24,6 +24,7 @@ data class SongPackSummary(
     val event_year: Int = 0,
     val sort_order: Int = 0,
     val is_published: Boolean = false,
+    val is_library: Boolean = false,
     val updated_at: String = "",
     val item_count: Int? = null,
 )
@@ -37,6 +38,7 @@ data class SongPackDetail(
     val event_year: Int = 0,
     val sort_order: Int = 0,
     val is_published: Boolean = false,
+    val is_library: Boolean = false,
     val updated_at: String = "",
     val items: List<SongPackItem> = emptyList(),
 )

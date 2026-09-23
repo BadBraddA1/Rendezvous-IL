@@ -51,6 +51,11 @@ class ClerkAppSession(
     override val canManageUsers: Boolean
         get() = _canManageUsers.value
 
+    private val _canEdit = MutableStateFlow(false)
+    override val canEditFlow: StateFlow<Boolean> = _canEdit.asStateFlow()
+    override val canEdit: Boolean
+        get() = _canEdit.value
+
     private val _adminRole = MutableStateFlow<String?>(null)
     override val adminRoleFlow: StateFlow<String?> = _adminRole.asStateFlow()
     override val adminRole: String?
@@ -157,6 +162,8 @@ class ClerkAppSession(
                     ?: (admin.role == "admin" || admin.role == "editor" || admin.role == "checkin")
                 _canManageUsers.value = response.permissions?.canManageUsers
                     ?: (admin.role == "admin")
+                _canEdit.value = response.permissions?.canEdit
+                    ?: (admin.role == "admin" || admin.role == "editor")
             } else {
                 clearAdminFlags()
             }
@@ -210,6 +217,7 @@ class ClerkAppSession(
         _canViewDashboard.value = false
         _canCheckIn.value = false
         _canManageUsers.value = false
+        _canEdit.value = false
         _adminRole.value = null
         _adminName.value = null
     }

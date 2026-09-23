@@ -1,48 +1,40 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# dependencies
-/node_modules
-
-# next.js
+.agents/
+.dev.vars
+.DS_Store
+.env*
+.impeccable/
+.pnpm-debug.log*
+.tmp-song-inspect/
+.tmp-song-pilot/
+.vercel
+*.tsbuildinfo
+*.xcuserstate
+/.clerk/
 /.next/
-/out/
-
-# production
 /build
-
+/node_modules
+/out/
+# clerk configuration (can include secrets)
 # debug
+# dependencies
+# env files
+# impeccable live mode (local dev only)
+# local test tooling
+# macOS
+# next.js
+# production
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# typescript
+# vercel
+android/app/google-services.json
+android/local.properties
+ios/build/
+ios/Config.local.xcconfig
+next-env.d.ts
 npm-debug.log*
+scripts/backfill-media-urls-rollback-*.json
+testsprite_tests/tmp/
+xcuserdata/
 yarn-debug.log*
 yarn-error.log*
-.pnpm-debug.log*
-
-# env files
-.env*
-.dev.vars
-scripts/backfill-media-urls-rollback-*.json
-ios/Config.local.xcconfig
-android/local.properties
-android/app/google-services.json
-
-# macOS
-.DS_Store
-
-# local test tooling
-testsprite_tests/tmp/
-
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
-# clerk configuration (can include secrets)
-/.clerk/
-
-# impeccable live mode (local dev only)
-.impeccable/
-ios/build/
-xcuserdata/
-*.xcuserstate
-.agents/
-.tmp-song-pilot/

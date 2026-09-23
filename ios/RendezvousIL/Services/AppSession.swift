@@ -9,6 +9,7 @@ final class AppSession {
     var canViewDashboard = false
     var canCheckIn = false
     var canManageUsers = false
+    var canEdit = false
     var adminRole: String?
     var adminName: String?
     var isLoading = false
@@ -64,6 +65,7 @@ final class AppSession {
         canViewDashboard = false
         canCheckIn = false
         canManageUsers = false
+        canEdit = false
         adminRole = nil
         adminName = nil
         authError = nil
@@ -86,6 +88,7 @@ final class AppSession {
         canViewDashboard = false
         canCheckIn = false
         canManageUsers = false
+        canEdit = false
         adminRole = nil
         adminName = nil
         authError = nil
@@ -221,6 +224,7 @@ final class AppSession {
             canViewDashboard = false
             canCheckIn = false
             canManageUsers = false
+            canEdit = false
             adminRole = nil
             adminName = nil
             return
@@ -235,11 +239,13 @@ final class AppSession {
                 canViewDashboard = response.permissions?.canViewDashboard ?? true
                 canCheckIn = response.permissions?.canCheckIn ?? (admin.role == "admin" || admin.role == "editor" || admin.role == "checkin")
                 canManageUsers = response.permissions?.canManageUsers ?? (admin.role == "admin")
+                canEdit = response.permissions?.canEdit ?? (admin.role == "admin" || admin.role == "editor")
             } else {
                 isAdmin = false
                 canViewDashboard = false
                 canCheckIn = false
                 canManageUsers = false
+                canEdit = false
                 adminRole = nil
                 adminName = nil
             }
@@ -252,6 +258,7 @@ final class AppSession {
                 canViewDashboard = false
                 canCheckIn = false
                 canManageUsers = false
+                canEdit = false
                 adminRole = nil
                 adminName = nil
             }
@@ -312,6 +319,7 @@ final class AppSession {
         canViewDashboard = false
         canCheckIn = false
         canManageUsers = false
+        canEdit = false
         adminRole = nil
         adminName = nil
         authError = nil
