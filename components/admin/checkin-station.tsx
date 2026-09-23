@@ -127,6 +127,15 @@ export function CheckinStation() {
   const celebrationTimer = useRef<number | null>(null)
   const { toast } = useToast()
 
+  const reset = useCallback(() => {
+    setResult(null)
+    setRoomKeys("")
+    setTshirtsDist(false)
+    setPendingSignatures([])
+    setScannerActive(true)
+    setScanError(null)
+  }, [])
+
   const dismissCelebration = useCallback(() => {
     if (celebrationTimer.current != null) {
       window.clearTimeout(celebrationTimer.current)
@@ -134,7 +143,8 @@ export function CheckinStation() {
     }
     window.speechSynthesis?.cancel()
     setCelebrationFamily(null)
-  }, [])
+    reset()
+  }, [reset])
 
   const showCelebration = useCallback(
     (familyLastName: string) => {
@@ -325,14 +335,6 @@ export function CheckinStation() {
     }
   }
 
-  const reset = () => {
-    setResult(null)
-    setRoomKeys("")
-    setTshirtsDist(false)
-    setPendingSignatures([])
-    setScannerActive(true)
-  }
-
   return (
     <>
       {celebrationFamily ? (
@@ -380,7 +382,8 @@ export function CheckinStation() {
           <p className="relative z-10 text-sm text-white/75">Tap to dismiss</p>
         </button>
       ) : null}
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6">
+        {!result ? (
         <Card>
           <CardHeader>
             <CardTitle>Scan family QR</CardTitle>
@@ -388,16 +391,15 @@ export function CheckinStation() {
           <CardContent className="space-y-3">
             <div
               id="qr-reader"
-              className="aspect-square w-full overflow-hidden rounded-xl border bg-muted"
+              className="mx-auto aspect-square w-full max-w-md overflow-hidden rounded-xl border bg-muted"
             />
             <div className="flex gap-2">
               <Button
                 onClick={() => setScannerActive((s) => !s)}
-                variant={scannerActive && !result ? "destructive" : "default"}
+                variant={scannerActive ? "destructive" : "default"}
                 className="flex-1 gap-2"
-                disabled={!!result}
               >
-                {scannerActive && !result ? (
+                {scannerActive ? (
                   <>
                     <CameraOff className="h-4 w-4" />
                     Pause camera
@@ -414,25 +416,19 @@ export function CheckinStation() {
               <p className="text-xs text-destructive">{scanError}</p>
             ) : (
               <p className="text-xs text-muted-foreground">
-                Camera stays on. Point at a printed or phone QR — lookup is automatic. No manual
-                code or name search for check-in staff.
+                {loading
+                  ? "Looking up…"
+                  : "Camera stays on. Point at a printed or phone QR — lookup is automatic."}
               </p>
             )}
           </CardContent>
         </Card>
-
+        ) : (
         <Card>
           <CardHeader>
             <CardTitle>Family Details</CardTitle>
           </CardHeader>
           <CardContent>
-            {!result ? (
-              <div className="flex h-full min-h-[300px] items-center justify-center text-center">
-                <p className="text-sm text-muted-foreground">
-                  {loading ? "Looking up…" : "Scan a family QR to begin check-in."}
-                </p>
-              </div>
-            ) : (
               <div className="space-y-4">
                 <div>
                   <div className="flex items-center justify-between">
@@ -545,39 +541,48 @@ export function CheckinStation() {
                   </div>
                 </div>
 
-                <div className="flex gap-2">
-                  {result.registration.checked_in ? (
-                    <Button
-                      onClick={() => setUndoConfirmOpen(true)}
-                      variant="outline"
-                      className="flex-1 gap-2 bg-transparent"
-                      disabled={loading}
-                    >
-                      <RotateCcw className="h-4 w-4" />
-                      Undo Check-In
+                <div className="flex flex-col gap-2">
+                  <div className="flex gap-2">
+                    {result.registration.checked_in ? (
+                      <Button
+                        onClick={() => setUndoConfirmOpen(true)}
+                        variant="outline"
+                        className="flex-1 gap-2 bg-transparent"
+                        disabled={loading}
+                      >
+                        <RotateCcw className="h-4 w-4" />
+                        Undo Check-In
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={handleCheckIn}
+                        className="flex-1 gap-2"
+                        disabled={loading || pendingSignatures.length > 0}
+                      >
+                        {loading ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <CheckCircle2 className="h-4 w-4" />
+                        )}
+                        Finalize
+                      </Button>
+                    )}
+                    {result.registration.checked_in ? (
+                      <Button onClick={reset} variant="secondary" className="flex-1">
+                        Scan next family
+                      </Button>
+                    ) : null}
+                  </div>
+                  {!result.registration.checked_in ? (
+                    <Button onClick={reset} variant="ghost" className="w-full">
+                      Wrong family — scan again
                     </Button>
-                  ) : (
-                    <Button
-                      onClick={handleCheckIn}
-                      className="flex-1 gap-2"
-                      disabled={loading || pendingSignatures.length > 0}
-                    >
-                      {loading ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <CheckCircle2 className="h-4 w-4" />
-                      )}
-                      Check In Family
-                    </Button>
-                  )}
-                  <Button onClick={reset} variant="ghost">
-                    Scan next
-                  </Button>
+                  ) : null}
                 </div>
               </div>
-            )}
           </CardContent>
         </Card>
+        )}
       </div>
 
       <AdminConfirmDialog

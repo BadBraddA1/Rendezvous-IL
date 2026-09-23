@@ -80,6 +80,7 @@ class CheckInViewModel(
 
     fun dismissCelebration() {
         _uiState.update { it.copy(celebrationFamily = null) }
+        resetStation()
     }
 
     fun dismissMuteAlert() {

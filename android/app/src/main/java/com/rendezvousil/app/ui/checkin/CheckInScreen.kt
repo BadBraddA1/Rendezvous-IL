@@ -430,8 +430,6 @@ private fun CheckInStationContent(
     onScannedCode: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val scannerPaused = uiState.lookup != null || uiState.isLoading
-
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -444,12 +442,11 @@ private fun CheckInStationContent(
             )
         }
 
-        PersistentQrScanner(
-            isPaused = scannerPaused,
-            onCode = onScannedCode,
-        )
-
         if (uiState.lookup == null) {
+            PersistentQrScanner(
+                isPaused = false,
+                onCode = onScannedCode,
+            )
             Text(
                 text = "Point at a family QR — lookup happens automatically.",
                 style = MaterialTheme.typography.bodySmall,
@@ -467,13 +464,8 @@ private fun CheckInStationContent(
                 onTshirtsDistributedChange = onTshirtsDistributedChange,
                 onSubmit = onSubmit,
                 onUndo = onUndo,
+                onScanNext = onScanNext,
             )
-            OutlinedButton(
-                onClick = onScanNext,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text("Scan next family")
-            }
         }
 
         uiState.errorMessage?.let { message ->
@@ -511,6 +503,7 @@ private fun ResultSection(
     onTshirtsDistributedChange: (Boolean) -> Unit,
     onSubmit: () -> Unit,
     onUndo: () -> Unit,
+    onScanNext: () -> Unit,
 ) {
     val registration = lookup.registration
     val lodgingLabel = registration.lodging_type
@@ -622,9 +615,9 @@ private fun ResultSection(
                 ) {
                     Text(
                         if (registration.checked_in == true) {
-                            "Update check-in"
+                            "Update"
                         } else {
-                            "Check in family"
+                            "Finalize"
                         },
                     )
                 }
@@ -638,6 +631,22 @@ private fun ResultSection(
                     ) {
                         Text("Undo")
                     }
+                }
+            }
+
+            if (registration.checked_in == true) {
+                OutlinedButton(
+                    onClick = onScanNext,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("Scan next family")
+                }
+            } else {
+                TextButton(
+                    onClick = onScanNext,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("Wrong family — scan again")
                 }
             }
         }

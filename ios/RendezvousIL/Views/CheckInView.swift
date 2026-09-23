@@ -20,8 +20,6 @@ struct CheckInView: View {
     /// Obnoxious clear-to-dismiss banner when volume is too low to hear boops.
     @State private var muteAlertKind: CheckInBoopPlayer.Kind?
 
-    private var scannerPaused: Bool { lookup != nil || isLoading }
-
     var body: some View {
         Group {
             if !session.canCheckIn {
@@ -75,16 +73,16 @@ struct CheckInView: View {
 
                 keepDisplayAliveToggle
 
-                CheckInQRScannerView(
-                    onCode: { code in
-                        Task { await lookupByCode(code) }
-                    },
-                    isPaused: scannerPaused
-                )
-                .aspectRatio(1, contentMode: .fit)
-                .frame(maxWidth: .infinity)
-
                 if lookup == nil {
+                    CheckInQRScannerView(
+                        onCode: { code in
+                            Task { await lookupByCode(code) }
+                        },
+                        isPaused: false
+                    )
+                    .aspectRatio(1, contentMode: .fit)
+                    .frame(maxWidth: .infinity)
+
                     Text("Point at a family QR — lookup happens automatically.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
@@ -97,14 +95,6 @@ struct CheckInView: View {
                             .foregroundStyle(BrandColors.lake)
                     }
                     resultSection(lookup)
-
-                    Button("Scan next family") {
-                        resetStation()
-                    }
-                    .font(.subheadline.weight(.semibold))
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 10)
-                    .buttonStyle(.bordered)
                 }
 
                 if let errorMessage {
@@ -231,7 +221,7 @@ struct CheckInView: View {
             Toggle("T-shirts distributed", isOn: $tshirtsDistributed)
 
             HStack {
-                Button(registration.checked_in == true ? "Update check-in" : "Check in family") {
+                Button(registration.checked_in == true ? "Update" : "Finalize") {
                     Task { await submitCheckIn() }
                 }
                 .buttonStyle(.borderedProminent)
@@ -244,6 +234,23 @@ struct CheckInView: View {
                     }
                     .disabled(isLoading)
                 }
+            }
+
+            if registration.checked_in == true {
+                Button("Scan next family") {
+                    resetStation()
+                }
+                .font(.subheadline.weight(.semibold))
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 10)
+                .buttonStyle(.bordered)
+            } else {
+                Button("Wrong family — scan again") {
+                    resetStation()
+                }
+                .font(.subheadline.weight(.medium))
+                .frame(maxWidth: .infinity)
+                .foregroundStyle(.secondary)
             }
         }
         .padding()
@@ -292,6 +299,8 @@ struct CheckInView: View {
         withAnimation(.easeIn(duration: 0.25)) {
             celebrationFamily = nil
         }
+        // Back to the camera immediately — less scrolling for the next family.
+        resetStation()
     }
 
     private func lookupByCode(_ raw: String) async {
