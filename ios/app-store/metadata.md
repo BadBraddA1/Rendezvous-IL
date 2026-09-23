@@ -1,6 +1,6 @@
 # App Store Connect — Rendezvous IL
 
-Paste these into **App Store Connect → Rendezvous IL → App Information / version 2.0.1**.
+Paste these into **App Store Connect → Rendezvous IL → App Information / version 2.0.7**.
 
 | Field | Value |
 | --- | --- |
@@ -45,6 +45,15 @@ Questions? Contact Stephen@Bradd.us or visit rendezvousil.com.
 
 ```
 Your Rendezvous retreat companion: schedule, live updates, year chat, and family directory — all in one place.
+```
+
+## What's New (2.0.7)
+
+```
+• Open the website from the app and stay signed in automatically
+• Check-in celebrations with boops, plus mute banners when you need quiet
+• Stealth QR: double-tap to brighten the code for scanners
+• See what's next for volunteering right on Home
 ```
 
 ## What's New (2.0.6)
