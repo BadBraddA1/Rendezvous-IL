@@ -52,7 +52,11 @@ struct SongPacksView: View {
                     description: Text("Full song books and event packs will show up here when published.")
                 )
             } else if showEmptySearch {
-                ContentUnavailableView.search(text: packSearch)
+                ContentUnavailableView(
+                    "No songs match “\(packSearch)”",
+                    systemImage: "magnifyingglass",
+                    description: Text("Try a page number or part of the title. Songs appear here as the song book finishes importing.")
+                )
             } else {
                 List {
                     if !songHits.isEmpty {

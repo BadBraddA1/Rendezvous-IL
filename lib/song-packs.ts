@@ -398,7 +398,8 @@ export async function searchSongPackItems(options: {
   const q = options.query.trim()
   if (!q) return []
   const limit = Math.min(Math.max(options.limit ?? 40, 1), 80)
-  const like = `%${q.replace(/[%_]/g, "")}%`
+  // Case-insensitive match on page · title (e.g. "4 · To God Be the Glory")
+  const like = `%${q.replace(/[%_]/g, "").toLowerCase()}%`
 
   const rows = await sql`
     SELECT
@@ -413,7 +414,7 @@ export async function searchSongPackItems(options: {
     INNER JOIN song_packs p ON p.id = i.pack_id
     WHERE p.event_year = ${year}
       AND p.is_published = 1
-      AND i.title LIKE ${like}
+      AND lower(i.title) LIKE ${like}
     ORDER BY COALESCE(p.is_library, 0) DESC, i.sort_order ASC, i.title ASC
     LIMIT ${limit}
   `
