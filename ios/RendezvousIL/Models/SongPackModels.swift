@@ -1,5 +1,11 @@
 import Foundation
 
+struct SongPacksResponse: Decodable, Sendable {
+    let packs: [SongPackSummary]?
+    let year: Int?
+    let error: String?
+}
+
 struct SongSearchResponse: Decodable, Sendable {
     let results: [SongSearchHit]?
     let year: Int?

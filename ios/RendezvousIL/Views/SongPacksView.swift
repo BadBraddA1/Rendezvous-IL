@@ -272,7 +272,8 @@ struct SongPackDetailView: View {
                                 } label: {
                                     HStack {
                                         VStack(alignment: .leading, spacing: 2) {
-                                            Text(item.title)
+                                            // Verbatim — titles already include page · name; never prefix list index.
+                                            Text(verbatim: item.title)
                                             if let verses = item.verse_count, verses > 0 {
                                                 Text(verses == 1 ? "1 verse" : "\(verses) verses")
                                                     .font(.caption)

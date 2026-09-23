@@ -31,6 +31,7 @@
 		43C393DA7DDE7C0CA8C161E8 /* FAQView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A296DCF541E135FC128C1E7A /* FAQView.swift */; };
 		488099655F0EE0D23E18315E /* SongPacksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49C9C10A07058E0E383EC1BA /* SongPacksView.swift */; };
 		49286F0D8C03FD5E8CA4B77F /* RendezvousActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = C081E03DADF196CFEE5740DD /* RendezvousActivityAttributes.swift */; };
+		49EB42FCD9C1CF92BBF86E6B /* AdminSongPacksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 486A5C5C5D546121467012C4 /* AdminSongPacksView.swift */; };
 		4CF50DE85564341CA1932D0B /* NotificationSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 237B5BF5B8B77520EE65C132 /* NotificationSettingsView.swift */; };
 		4E4A2FD796842CED9F8567FD /* RetreatNowNextSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC36F7ED80F15611CD11B94D /* RetreatNowNextSection.swift */; };
 		51ED2EABA9D44315EABB8AAA /* ChatListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2B21229B8C516E3A062368E /* ChatListView.swift */; };
@@ -155,6 +156,7 @@
 		4297DFF22E728AAA08368FF3 /* VolunteerReminderService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolunteerReminderService.swift; sourceTree = "<group>"; };
 		466D237AE8A926FC5CADD2F6 /* AppSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSession.swift; sourceTree = "<group>"; };
 		470F82732BB7CA2F2667959E /* AccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountView.swift; sourceTree = "<group>"; };
+		486A5C5C5D546121467012C4 /* AdminSongPacksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminSongPacksView.swift; sourceTree = "<group>"; };
 		49C9C10A07058E0E383EC1BA /* SongPacksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SongPacksView.swift; sourceTree = "<group>"; };
 		4BF3FBBFCE2EF235B3B1F1D9 /* AdminUserModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminUserModels.swift; sourceTree = "<group>"; };
 		4D1AD3F114E29E028A68BB4E /* AppConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfig.swift; sourceTree = "<group>"; };
@@ -212,7 +214,7 @@
 		F96773E3A3A26024702E5D84 /* VenueMapModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VenueMapModels.swift; sourceTree = "<group>"; };
 		FCDBD34429936681124138B5 /* schedule-fallback.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "schedule-fallback.json"; sourceTree = "<group>"; };
 		FFAD31AE0B70D848AA02648A /* ChatDataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatDataStore.swift; sourceTree = "<group>"; };
-		"TEMP_BC75CBE2-BEC4-4281-9766-8F18C7A15F85" /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
+		"TEMP_B3C0FB5C-7769-4440-8C91-F120B27D384F" /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -234,6 +236,7 @@
 				17E9348A90094B82009B4CBD /* AboutView.swift */,
 				470F82732BB7CA2F2667959E /* AccountView.swift */,
 				C481A10CBFA7092E0BDAC5AA /* AdminDashboardView.swift */,
+				486A5C5C5D546121467012C4 /* AdminSongPacksView.swift */,
 				D039A64635C0EF6FF3B6D3E3 /* AdminUsersView.swift */,
 				8BDA213F53DB325886659882 /* BibleBowlView.swift */,
 				690D7795EC8B080C69972765 /* CalculatorView.swift */,
@@ -416,10 +419,10 @@
 			path = RendezvousIL;
 			sourceTree = "<group>";
 		};
-		"TEMP_98F8CD66-98C6-4949-8932-7672F45DB102" /* ios */ = {
+		"TEMP_DA99C8D5-8C69-47F0-81E8-3DCFB59E446A" /* ios */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_BC75CBE2-BEC4-4281-9766-8F18C7A15F85" /* Config.xcconfig */,
+				"TEMP_B3C0FB5C-7769-4440-8C91-F120B27D384F" /* Config.xcconfig */,
 			);
 			path = ios;
 			sourceTree = "<group>";
@@ -564,6 +567,7 @@
 				A5C7F695E3ACBC367467F167 /* AboutView.swift in Sources */,
 				FA4F95660BD093B3CD651F30 /* AccountView.swift in Sources */,
 				56D096FAE066C36B12EDC251 /* AdminDashboardView.swift in Sources */,
+				49EB42FCD9C1CF92BBF86E6B /* AdminSongPacksView.swift in Sources */,
 				7DA728921F342EA02A46E62B /* AdminUserModels.swift in Sources */,
 				EB813C8733397959B05BC1E9 /* AdminUsersView.swift in Sources */,
 				A500969739655BF5628136F0 /* AppConfig.swift in Sources */,
@@ -730,13 +734,13 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = RendezvousILNotificationService/RendezvousILNotificationService.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 215;
+				CURRENT_PROJECT_VERSION = 216;
 				DEVELOPMENT_TEAM = F5HPRRCC5H;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = RendezvousILNotificationService/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Rendezvous Notifications";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
-				MARKETING_VERSION = 2.0.7;
+				MARKETING_VERSION = 2.0.8;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.rendezvousil.braddcorp.app.notification-service";
 				PRODUCT_NAME = RendezvousILNotificationService;
 				SDKROOT = iphoneos;
@@ -750,7 +754,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = RendezvousILWidgets/RendezvousILWidgets.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 215;
+				CURRENT_PROJECT_VERSION = 216;
 				DEVELOPMENT_TEAM = F5HPRRCC5H;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = RendezvousILWidgets/Info.plist;
@@ -761,7 +765,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 2.0.7;
+				MARKETING_VERSION = 2.0.8;
 				PRODUCT_BUNDLE_IDENTIFIER = com.rendezvousil.braddcorp.app.widgets;
 				PRODUCT_NAME = RendezvousILWidgets;
 				SDKROOT = iphoneos;
@@ -772,21 +776,21 @@
 		};
 		7ADBCEC1B448B95857681847 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_BC75CBE2-BEC4-4281-9766-8F18C7A15F85" /* Config.xcconfig */;
+			baseConfigurationReference = "TEMP_B3C0FB5C-7769-4440-8C91-F120B27D384F" /* Config.xcconfig */;
 			buildSettings = {
 				APS_ENVIRONMENT = production;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = RendezvousIL/RendezvousIL.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 215;
+				CURRENT_PROJECT_VERSION = 216;
 				DEVELOPMENT_TEAM = F5HPRRCC5H;
 				INFOPLIST_FILE = RendezvousIL/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.0.7;
+				MARKETING_VERSION = 2.0.8;
 				PRODUCT_BUNDLE_IDENTIFIER = com.rendezvousil.braddcorp.app;
 				PRODUCT_NAME = "Rendezvous IL";
 				SDKROOT = iphoneos;
@@ -856,7 +860,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = RendezvousILWidgets/RendezvousILWidgets.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 215;
+				CURRENT_PROJECT_VERSION = 216;
 				DEVELOPMENT_TEAM = F5HPRRCC5H;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = RendezvousILWidgets/Info.plist;
@@ -867,7 +871,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 2.0.7;
+				MARKETING_VERSION = 2.0.8;
 				PRODUCT_BUNDLE_IDENTIFIER = com.rendezvousil.braddcorp.app.widgets;
 				PRODUCT_NAME = RendezvousILWidgets;
 				SDKROOT = iphoneos;
@@ -881,13 +885,13 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = RendezvousILNotificationService/RendezvousILNotificationService.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 215;
+				CURRENT_PROJECT_VERSION = 216;
 				DEVELOPMENT_TEAM = F5HPRRCC5H;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = RendezvousILNotificationService/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Rendezvous Notifications";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
-				MARKETING_VERSION = 2.0.7;
+				MARKETING_VERSION = 2.0.8;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.rendezvousil.braddcorp.app.notification-service";
 				PRODUCT_NAME = RendezvousILNotificationService;
 				SDKROOT = iphoneos;
@@ -898,21 +902,21 @@
 		};
 		F8122583B54F4443475E1AD8 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_BC75CBE2-BEC4-4281-9766-8F18C7A15F85" /* Config.xcconfig */;
+			baseConfigurationReference = "TEMP_B3C0FB5C-7769-4440-8C91-F120B27D384F" /* Config.xcconfig */;
 			buildSettings = {
 				APS_ENVIRONMENT = development;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = RendezvousIL/RendezvousIL.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 215;
+				CURRENT_PROJECT_VERSION = 216;
 				DEVELOPMENT_TEAM = F5HPRRCC5H;
 				INFOPLIST_FILE = RendezvousIL/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.0.7;
+				MARKETING_VERSION = 2.0.8;
 				PRODUCT_BUNDLE_IDENTIFIER = com.rendezvousil.braddcorp.app;
 				PRODUCT_NAME = "Rendezvous IL";
 				SDKROOT = iphoneos;
