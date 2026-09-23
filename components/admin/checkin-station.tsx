@@ -57,6 +57,9 @@ type LookupResult = {
 
 function playBoop(kind: "good" | "bad") {
   try {
+    if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
+      navigator.vibrate(kind === "good" ? [40, 40, 40] : [160])
+    }
     const AudioCtx =
       window.AudioContext ||
       (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
@@ -73,7 +76,7 @@ function playBoop(kind: "good" | "bad") {
         osc.connect(gain)
         const start = now + i * 0.11
         gain.gain.setValueAtTime(0.0001, start)
-        gain.gain.exponentialRampToValueAtTime(0.22, start + 0.02)
+        gain.gain.exponentialRampToValueAtTime(0.45, start + 0.02)
         gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.09)
         osc.start(start)
         osc.stop(start + 0.1)
@@ -84,7 +87,7 @@ function playBoop(kind: "good" | "bad") {
       osc.frequency.value = 220
       osc.connect(gain)
       gain.gain.setValueAtTime(0.0001, now)
-      gain.gain.exponentialRampToValueAtTime(0.18, now + 0.02)
+      gain.gain.exponentialRampToValueAtTime(0.4, now + 0.02)
       gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.22)
       osc.start(now)
       osc.stop(now + 0.24)

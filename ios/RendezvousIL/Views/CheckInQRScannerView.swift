@@ -152,6 +152,9 @@ private final class ScannerViewController: UIViewController, AVCaptureMetadataOu
         else { return }
 
         session.beginConfiguration()
+        // Keep camera from stealing AVAudioSession — otherwise check-in boops
+        // fall back to the ringer path and stay silent when the switch is muted.
+        session.automaticallyConfiguresApplicationAudioSession = false
         session.addInput(input)
 
         let output = AVCaptureMetadataOutput()
