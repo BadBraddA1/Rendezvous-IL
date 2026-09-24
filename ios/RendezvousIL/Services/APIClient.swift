@@ -695,6 +695,17 @@ struct FamilyVolunteeringLessonSlides: Codable, Hashable, Sendable {
     let updatedAt: String
 }
 
+struct FamilyVolunteerSongPick: Codable, Hashable, Sendable {
+    let title: String
+    let versesLabel: String
+}
+
+struct FamilyVolunteerSongSet: Codable, Hashable, Sendable {
+    let songs: [FamilyVolunteerSongPick]
+    let note: String?
+    let updatedAt: String
+}
+
 struct FamilyVolunteerEntry: Codable, Hashable, Identifiable, Sendable {
     let id: Int
     let volunteerName: String
@@ -702,6 +713,7 @@ struct FamilyVolunteerEntry: Codable, Hashable, Identifiable, Sendable {
     let worshipAssignment: FamilyVolunteeringWorship?
     let lessonTopic: FamilyVolunteeringLesson?
     let lessonSlides: FamilyVolunteeringLessonSlides?
+    let songSet: FamilyVolunteerSongSet?
     let pendingActions: [FamilyVolunteeringPendingAction]
 }
 

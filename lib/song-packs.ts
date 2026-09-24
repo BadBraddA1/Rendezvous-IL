@@ -430,8 +430,8 @@ export async function searchSongPackItems(options: {
       i.sort_order
     FROM song_pack_items i
     INNER JOIN song_packs p ON p.id = i.pack_id
-    WHERE p.event_year = ${year}
-      AND p.is_published = 1
+    WHERE p.is_published = 1
+      AND (p.event_year = ${year} OR COALESCE(p.is_library, 0) = 1)
       AND lower(i.title) LIKE ${like}
     ORDER BY COALESCE(p.is_library, 0) DESC, i.sort_order ASC, i.title ASC
     LIMIT ${limit}

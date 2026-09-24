@@ -96,7 +96,10 @@ struct FamilyVolunteeringView: View {
             }
 
             let assigned = payload.volunteers.filter {
-                $0.worshipAssignment != nil || $0.lessonTopic != nil || $0.lessonSlides != nil
+                $0.worshipAssignment != nil
+                    || $0.lessonTopic != nil
+                    || $0.lessonSlides != nil
+                    || $0.songSet != nil
             }
             if !assigned.isEmpty {
                 Section("Your assignments") {
@@ -147,6 +150,30 @@ struct FamilyVolunteeringView: View {
                                 }
                                 .font(.footnote)
                                 .disabled(uploadingSignupId != nil)
+                            }
+                                if let songSet = volunteer.songSet {
+                                ForEach(Array(songSet.songs.enumerated()), id: \.offset) { _, song in
+                                    Text("\(song.title) · \(song.versesLabel)")
+                                        .font(.footnote)
+                                        .foregroundStyle(BrandColors.lake)
+                                }
+                                if let note = songSet.note, !note.isEmpty {
+                                    Text(note)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                                if let url = URL(
+                                    string: "https://rendezvousil.com/account/volunteering/songs/\(volunteer.id)?year=\(payload.eventYear)"
+                                ) {
+                                    Link("Edit songs", destination: url)
+                                        .font(.footnote)
+                                }
+                            } else if volunteer.worshipAssignment != nil,
+                                      volunteer.volunteerType.localizedCaseInsensitiveContains("leading singing"),
+                                      let action = volunteer.pendingActions.first(where: { $0.type == "submit_song_setlist" }),
+                                      let url = URL(string: action.href) {
+                                Link("Pick songs", destination: url)
+                                    .font(.footnote)
                             }
                         }
                         .padding(.vertical, 4)

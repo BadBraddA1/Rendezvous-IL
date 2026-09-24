@@ -837,7 +837,10 @@ fun VolunteeringScreen(
                 }
 
                 val assigned = payload.volunteers.filter {
-                    it.worshipAssignment != null || it.lessonTopic != null || it.lessonSlides != null
+                    it.worshipAssignment != null ||
+                        it.lessonTopic != null ||
+                        it.lessonSlides != null ||
+                        it.songSet != null
                 }
                 if (assigned.isNotEmpty()) {
                     Text("Your assignments", fontWeight = FontWeight.Bold)
@@ -896,6 +899,38 @@ fun VolunteeringScreen(
                                                 "Upload lesson slides"
                                             },
                                         )
+                                    }
+                                }
+                                volunteer.songSet?.let { songSet ->
+                                    songSet.songs.forEach { song ->
+                                        Text(
+                                            "${song.title} · ${song.versesLabel}",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = BrandColors.Lake,
+                                        )
+                                    }
+                                    songSet.note?.takeIf { it.isNotBlank() }?.let { note ->
+                                        Text(
+                                            note,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                    TextButton(
+                                        onClick = {
+                                            runCatching {
+                                                context.startActivity(
+                                                    Intent(
+                                                        Intent.ACTION_VIEW,
+                                                        Uri.parse(
+                                                            "https://rendezvousil.com/account/volunteering/songs/${volunteer.id}?year=${payload.eventYear}",
+                                                        ),
+                                                    ),
+                                                )
+                                            }
+                                        },
+                                    ) {
+                                        Text("Edit songs")
                                     }
                                 }
                             }

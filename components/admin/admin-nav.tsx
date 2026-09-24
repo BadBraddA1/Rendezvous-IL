@@ -137,6 +137,13 @@ export function AdminNav({ currentPage, admin }: AdminNavProps) {
           show: (role) => getAdminPermissions(role).canEdit,
         },
         {
+          href: "/admin/worship-songs",
+          label: "Worship songs",
+          icon: Music,
+          page: "worship-songs",
+          show: (role) => getAdminPermissions(role).canEdit,
+        },
+        {
           href: "/admin/messaging",
           label: "Messaging",
           icon: MessageSquare,

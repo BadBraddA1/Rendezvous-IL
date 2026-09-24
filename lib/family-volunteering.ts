@@ -5,13 +5,22 @@ import { listSpecialAssignments } from "@/lib/special-assignments"
 import { ensureVolunteerEmailColumn } from "@/lib/volunteer-scheduling"
 import { parseRegistrationEventYear } from "@/lib/registration-event-years"
 import type { Family } from "@/lib/family-auth"
+import {
+  ensureWorshipSongSubmissionsSchema,
+  formatVerseChoice,
+  songsFromJsonString,
+} from "@/lib/worship-song-submissions"
 
 const SITE_ORIGIN = process.env.NEXT_PUBLIC_SITE_URL || "https://rendezvousil.com"
 
 export type FamilyVolunteerPendingAction = {
-  type: "claim_lesson_topic" | "submit_lesson_details" | "upload_lesson_slides"
+  type:
+    | "claim_lesson_topic"
+    | "submit_lesson_details"
+    | "upload_lesson_slides"
+    | "submit_song_setlist"
   label: string
-  /** Web deep-link when applicable; apps may handle upload_lesson_slides in-app. */
+  /** Web deep-link when applicable; apps may handle submit_song_setlist in-app. */
   href: string
 }
 
@@ -20,6 +29,16 @@ export type FamilyVolunteerLessonSlides = {
   fileUrl: string
   fileType: string
   byteSize: number
+  updatedAt: string
+}
+
+export type FamilyVolunteerSongSet = {
+  songs: Array<
+    WorshipSongPick & {
+      versesLabel: string
+    }
+  >
+  note: string | null
   updatedAt: string
 }
 
@@ -48,6 +67,8 @@ export type FamilyVolunteerEntry = {
   lessonTopic: FamilyVolunteerLessonTopic | null
   /** Uploaded PPT/PDF when this person is presenting a lesson. */
   lessonSlides: FamilyVolunteerLessonSlides | null
+  /** Songs picked when this person is Leading singing. */
+  songSet: FamilyVolunteerSongSet | null
   pendingActions: FamilyVolunteerPendingAction[]
 }
 
@@ -168,6 +189,7 @@ export async function getFamilyVolunteering(
   await ensureLessonTables()
   await ensureVolunteerEmailColumn()
   await ensureLessonSlidesSchema()
+  await ensureWorshipSongSubmissionsSchema()
 
   const eventYear = parseRegistrationEventYear(yearInput ?? null)
   const registrationId = await findRegistrationId(family, eventYear)
@@ -205,10 +227,15 @@ export async function getFamilyVolunteering(
       slides.file_url as slides_file_url,
       slides.file_type as slides_file_type,
       slides.byte_size as slides_byte_size,
-      slides.updated_at as slides_updated_at
+      slides.updated_at as slides_updated_at,
+      songs.id as songs_submission_id,
+      songs.songs_json as songs_json,
+      songs.note as songs_note,
+      songs.updated_at as songs_updated_at
     FROM volunteer_signups vs
     LEFT JOIN lesson_topics lt ON vs.claimed_lesson_id = lt.id
     LEFT JOIN lesson_slide_submissions slides ON slides.volunteer_signup_id = vs.id
+    LEFT JOIN worship_song_submissions songs ON songs.volunteer_signup_id = vs.id
     WHERE vs.registration_id = ${registrationId}
     ORDER BY vs.volunteer_type, vs.volunteer_name
   `
@@ -264,6 +291,22 @@ export async function getFamilyVolunteering(
       })
     }
 
+    const isSongLeader = /leading singing/i.test(volunteerType)
+    let songSet: FamilyVolunteerSongSet | null = null
+    const parsedSongs = songsFromJsonString(
+      row.songs_json != null ? String(row.songs_json) : null,
+    )
+    if (parsedSongs.length > 0) {
+      songSet = {
+        songs: parsedSongs.map((s) => ({
+          ...s,
+          versesLabel: formatVerseChoice(s.verses),
+        })),
+        note: row.songs_note ? String(row.songs_note) : null,
+        updatedAt: String(row.songs_updated_at ?? ""),
+      }
+    }
+
     const worshipAssignment =
       assignedDate || timeSlot
         ? {
@@ -275,6 +318,19 @@ export async function getFamilyVolunteering(
             startsAt: resolveVolunteerStartsAt(assignedDate, timeSlot),
           }
         : null
+
+    if (isSongLeader && worshipAssignment && !songSet) {
+      pendingActions.push({
+        type: "submit_song_setlist",
+        label: `Pick songs for ${String(row.volunteer_name ?? "you")} · ${[
+          assignedDate,
+          timeSlot,
+        ]
+          .filter(Boolean)
+          .join(" ")}`.trim(),
+        href: `${SITE_ORIGIN}/account/volunteering/songs/${signupId}?year=${eventYear}`,
+      })
+    }
 
     const lessonTopic =
       claimedLessonId && row.claimed_lesson_title
@@ -293,6 +349,7 @@ export async function getFamilyVolunteering(
       worshipAssignment,
       lessonTopic,
       lessonSlides,
+      songSet,
       pendingActions,
     }
   })
@@ -359,6 +416,8 @@ export function hasVolunteeringContent(payload: FamilyVolunteeringPayload): bool
     payload.summary.pendingActionCount > 0 ||
     payload.summary.confirmedWorshipCount > 0 ||
     payload.summary.specialAssignmentCount > 0 ||
-    payload.volunteers.some((v) => v.lessonTopic != null || v.lessonSlides != null)
+    payload.volunteers.some(
+      (v) => v.lessonTopic != null || v.lessonSlides != null || v.songSet != null,
+    )
   )
 }

@@ -37,6 +37,19 @@ data class FamilyVolunteeringLessonSlides(
 )
 
 @Serializable
+data class FamilyVolunteerSongPick(
+    val title: String = "",
+    val versesLabel: String = "",
+)
+
+@Serializable
+data class FamilyVolunteerSongSet(
+    val songs: List<FamilyVolunteerSongPick> = emptyList(),
+    val note: String? = null,
+    val updatedAt: String = "",
+)
+
+@Serializable
 data class FamilyVolunteerEntry(
     val id: Int,
     val volunteerName: String = "",
@@ -44,6 +57,7 @@ data class FamilyVolunteerEntry(
     val worshipAssignment: FamilyVolunteeringWorship? = null,
     val lessonTopic: FamilyVolunteeringLesson? = null,
     val lessonSlides: FamilyVolunteeringLessonSlides? = null,
+    val songSet: FamilyVolunteerSongSet? = null,
     val pendingActions: List<FamilyVolunteeringPendingAction> = emptyList(),
 )
 
