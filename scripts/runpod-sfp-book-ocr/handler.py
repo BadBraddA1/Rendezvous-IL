@@ -4,26 +4,15 @@ RunPod serverless handler: full-song / book-page OCR → verses + confidence.
 Input:
   {
     "input": {
-      "file_url": "https://cdn.../0002-....pdf",   # required
-      "item_id": "uuid",                           # optional
-      "title": "2 · We Praise Thee O God",         # optional
-      "printed_page": 2,                           # optional
-      "dpi": 200                                   # optional
+      "file_url": "https://cdn.../0002-....pdf",
+      "item_id": "uuid",
+      "title": "2 · We Praise Thee O God",
+      "printed_page": 2,
+      "dpi": 200
     }
   }
 
-Output:
-  {
-    "item_id", "title", "printed_page",
-    "verses": [{"index": 1, "text": "..."}],
-    "pages": [{"index": 0, "text": "...", "confidence": 0.9}],
-    "confidence": 0.91,
-    "status": "auto" | "needs_review",
-    "method": "paddleocr_serverless",
-    "page_count": 1
-  }
-
-Deploy: see deploy-serverless.sh
+Engines: OCR_ENGINE=rapid (default, fast cold start) | paddle
 """
 from __future__ import annotations
 
@@ -50,42 +39,60 @@ from postprocess import (
 _OCR = None
 DPI_DEFAULT = int(os.environ.get("OCR_DPI", "200"))
 AUTO_MIN = float(os.environ.get("OCR_AUTO_MIN", "0.65"))
+ENGINE = os.environ.get("OCR_ENGINE", "rapid").strip().lower()
 
 
 def get_ocr():
     global _OCR
     if _OCR is not None:
         return _OCR
-    from paddleocr import PaddleOCR
+    if ENGINE == "paddle":
+        from paddleocr import PaddleOCR
 
-    use_gpu = os.environ.get("OCR_CPU", "").strip() not in ("1", "true", "yes")
-    _OCR = PaddleOCR(
-        use_angle_cls=True,
-        lang="en",
-        use_gpu=use_gpu,
-        show_log=False,
-    )
+        use_gpu = os.environ.get("OCR_CPU", "").strip() not in ("1", "true", "yes")
+        _OCR = ("paddle", PaddleOCR(use_angle_cls=True, lang="en", use_gpu=use_gpu, show_log=False))
+    else:
+        from rapidocr_onnxruntime import RapidOCR
+
+        _OCR = ("rapid", RapidOCR())
     return _OCR
 
 
-def ocr_image(ocr, img: Image.Image) -> tuple[str, float]:
+def ocr_image(ocr_pack, img: Image.Image) -> tuple[str, float]:
     import numpy as np
 
+    kind, engine = ocr_pack
     arr = np.array(img.convert("RGB"))
-    result = ocr.ocr(arr, cls=True)
-    if not result or not result[0]:
-        return "", 0.0
     lines: list[str] = []
     confs: list[float] = []
-    for item in result[0]:
-        try:
-            text = item[1][0]
-            conf = float(item[1][1])
-        except (IndexError, TypeError, ValueError):
-            continue
-        if text and str(text).strip():
-            lines.append(str(text).strip())
-            confs.append(conf)
+
+    if kind == "paddle":
+        result = engine.ocr(arr, cls=True)
+        if not result or not result[0]:
+            return "", 0.0
+        for item in result[0]:
+            try:
+                text = item[1][0]
+                conf = float(item[1][1])
+            except (IndexError, TypeError, ValueError):
+                continue
+            if text and str(text).strip():
+                lines.append(str(text).strip())
+                confs.append(conf)
+    else:
+        result, _ = engine(arr)
+        if not result:
+            return "", 0.0
+        for item in result:
+            try:
+                text = item[1]
+                conf = float(item[2])
+            except (IndexError, TypeError, ValueError):
+                continue
+            if text and str(text).strip():
+                lines.append(str(text).strip())
+                confs.append(conf)
+
     mean = sum(confs) / len(confs) if confs else 0.0
     return "\n".join(lines), mean
 
@@ -149,12 +156,13 @@ def handler(job: dict[str, Any]) -> dict[str, Any]:
     except Exception as e:
         return {"error": f"ocr failed: {e}", "file_url": url}
 
+    method = "rapidocr_serverless" if ENGINE != "paddle" else "paddleocr_serverless"
     return {
         "item_id": inp.get("item_id"),
         "title": inp.get("title"),
         "printed_page": inp.get("printed_page") or inp.get("page"),
         "file_url": url,
-        "method": "paddleocr_serverless",
+        "method": method,
         **result,
     }
 

@@ -1,29 +1,20 @@
 #!/usr/bin/env bash
-# Cold-start bootstrap for RunPod serverless (no custom image registry).
-# Downloads worker from CDN, installs deps once per worker disk, starts handler.
-set -euo pipefail
+# Fast cold-start — log everything so RunPod worker logs show failures.
+set -euxo pipefail
 mkdir -p /app
 cd /app
 
-WORKER_URL="${WORKER_URL:-https://cdn.rendezvousil.com/song-packs/sfp-book-scan/ocr-worker.tgz}"
+WORKER_URL="${WORKER_URL:-https://cdn.rendezvousil.com/song-packs/sfp-book-scan/ocr-worker-v2.tgz}"
 
+echo "[bootstrap] cwd=$(pwd) python=$(command -v python || true) $(python --version 2>&1 || true)"
 if [[ ! -f /app/handler.py ]]; then
-  echo "[bootstrap] fetching worker…"
+  echo "[bootstrap] fetching $WORKER_URL"
   curl -fsSL "$WORKER_URL" | tar xz
+  ls -la /app
 fi
 
-MARKER=/app/.deps-ok
-if [[ ! -f "$MARKER" ]]; then
-  echo "[bootstrap] installing Python deps (first start; may take several minutes)…"
-  python -m pip install -q --upgrade pip
-  # Paddle GPU wheels: cu118 works on RunPod CUDA 12.x images
-  python -m pip install -q \
-    "paddlepaddle-gpu==2.6.2" \
-    -i https://www.paddlepaddle.org.cn/packages/stable/cu118/
-  python -m pip install -q -r requirements-serverless.txt \
-    --extra-index-url https://www.paddlepaddle.org.cn/packages/stable/cu118/
-  touch "$MARKER"
-  echo "[bootstrap] deps ready"
-fi
-
+export OCR_ENGINE="${OCR_ENGINE:-rapid}"
+python -m pip install -q --upgrade pip
+python -m pip install -q -r requirements-serverless.txt
+echo "[bootstrap] starting handler OCR_ENGINE=$OCR_ENGINE"
 exec python -u handler.py

@@ -35,6 +35,22 @@ npx tsx --env-file=.env.local scripts/persist-sfp-book-ocr.ts \
   --from=/tmp/sfp-book-ocr.jsonl --apply --pilot
 ```
 
+
+## Live HTTP worker (community pod)
+
+When serverless is cold/stuck, a community GPU pod runs RapidOCR over HTTP:
+
+```bash
+# Health
+curl https://$POD-8000.proxy.runpod.net/health
+
+# OCR
+npx tsx scripts/call-sfp-ocr-http.ts --file-url=https://cdn…/song.pdf
+
+# URL saved in ~/.config/runpod/agent.env as SFP_OCR_HTTP_URL
+# Pod id in /tmp/sfp-ocr-http-pod.id — terminate when done to stop $0.34/hr
+```
+
 ## Serverless API (hit whenever you need OCR)
 
 Live endpoint (scale-to-zero):
