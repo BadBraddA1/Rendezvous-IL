@@ -465,8 +465,12 @@ struct SongItemViewer: View {
     private var item: SongPackItem { items[index] }
 
     private var verseJumpPages: [Int] {
-        if let pages = item.verse_pages, !pages.isEmpty { return pages }
-        guard let verses = item.verse_count, verses > 1,
+        let verses = item.verse_count ?? 0
+        // Prefer verse_pages only when it matches the known verse count (stale OCR maps are common).
+        if let pages = item.verse_pages, !pages.isEmpty, verses <= 1 || pages.count == verses {
+            return pages
+        }
+        guard verses > 1,
               let pageCount = item.page_count, pageCount > verses
         else { return [] }
         let musicStart = 1
