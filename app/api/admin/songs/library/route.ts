@@ -6,10 +6,35 @@ import { toPublicMediaUrl } from "@/lib/media-keys"
 
 export const dynamic = "force-dynamic"
 
+/** Admin-only book codes — do not change stored titles (apps stay as-is). */
+const BOOK_BY_SLUG: Record<string, { code: "A" | "B"; label: string }> = {
+  "songs-of-faith-and-praise": { code: "A", label: "Songs of Faith and Praise" },
+  "sacred-songs-of-the-church": { code: "B", label: "Sacred Songs of the Church" },
+}
+
+function pageFromTitle(title: string): number | null {
+  const m = title.trim().match(/^(\d{1,4})\s*[·.•\-–— ]/)
+  return m ? Number(m[1]) : null
+}
+
+function adminLabel(code: "A" | "B" | null, title: string): string {
+  const page = pageFromTitle(title)
+  if (code && page != null) {
+    const rest = title.replace(/^\d{1,4}\s*[·.•\-–—]\s*/, "").trim()
+    return rest ? `${code}-${page} · ${rest}` : `${code}-${page}`
+  }
+  if (code) return `${code} · ${title}`
+  return title
+}
+
 /**
- * GET /api/admin/songs/library?q=957&filter=all|missing|high|low|gemini&limit=200
+ * GET /api/admin/songs/library
+ *   ?q=A-446|B-12|957|title
+ *   &book=all|A|B
+ *   &filter=all|missing|high|low|gemini
+ *   &limit=200
  *
- * Browse song-book items (is_library packs) for OCR QA — search by page # / title.
+ * Browse library packs for OCR QA. Admin display uses A-### (SFP) / B-### (SSOC).
  */
 export async function GET(request: Request) {
   const admin = await getCurrentAdmin(request)
@@ -19,12 +44,30 @@ export async function GET(request: Request) {
   await ensureSongPacksSchema()
 
   const url = new URL(request.url)
-  const q = (url.searchParams.get("q") || "").trim()
+  let q = (url.searchParams.get("q") || "").trim()
   const filter = (url.searchParams.get("filter") || "all").toLowerCase()
+  const bookParam = (url.searchParams.get("book") || "all").toUpperCase()
   const limit = Math.min(500, Math.max(1, Number(url.searchParams.get("limit") || 200)))
 
   const where: string[] = ["COALESCE(p.is_library, 0) = 1"]
   const args: unknown[] = []
+
+  // Parse A-123 / B-45 from query
+  let bookFromQ: "A" | "B" | null = null
+  const bookMatch = q.match(/^([ABab])\s*[-–—]?\s*(\d{1,4})$/)
+  if (bookMatch) {
+    bookFromQ = bookMatch[1]!.toUpperCase() as "A" | "B"
+    q = bookMatch[2]!
+  }
+
+  const book = bookFromQ || (bookParam === "A" || bookParam === "B" ? bookParam : null)
+  if (book === "A") {
+    where.push(`p.slug = ?`)
+    args.push("songs-of-faith-and-praise")
+  } else if (book === "B") {
+    where.push(`p.slug = ?`)
+    args.push("sacred-songs-of-the-church")
+  }
 
   if (q) {
     if (/^\d{1,4}$/.test(q)) {
@@ -55,11 +98,16 @@ export async function GET(request: Request) {
   const rows = await sql.query(
     `SELECT i.id, i.pack_id, i.title, i.file_url, i.file_type, i.page_count, i.verse_count,
             i.ocr_url, i.ocr_status, i.ocr_confidence, i.sort_order,
-            p.name AS pack_name
+            p.name AS pack_name, p.slug AS pack_slug
      FROM song_pack_items i
      INNER JOIN song_packs p ON p.id = i.pack_id
      WHERE ${where.join(" AND ")}
      ORDER BY
+       CASE p.slug
+         WHEN 'songs-of-faith-and-praise' THEN 0
+         WHEN 'sacred-songs-of-the-church' THEN 1
+         ELSE 2
+       END ASC,
        CAST(
          CASE
            WHEN i.title GLOB '[0-9]*'
@@ -85,16 +133,22 @@ export async function GET(request: Request) {
       ? toPublicMediaUrl(String(row.ocr_url)) ?? String(row.ocr_url)
       : null
     const method =
-      ocrUrl?.includes("v4-gemini")
-        ? "gemini"
-        : ocrUrl
-          ? "other"
-          : "none"
+      ocrUrl?.includes("v4-gemini") ? "gemini" : ocrUrl ? "other" : "none"
+    const slug = row.pack_slug != null ? String(row.pack_slug) : ""
+    const bookMeta = BOOK_BY_SLUG[slug] || null
+    const title = String(row.title)
+    const page = pageFromTitle(title)
+    const code = bookMeta?.code ?? null
     return {
       id: String(row.id),
       pack_id: String(row.pack_id),
       pack_name: row.pack_name != null ? String(row.pack_name) : undefined,
-      title: String(row.title),
+      pack_slug: slug || undefined,
+      book_code: code,
+      book_label: bookMeta?.label,
+      page_number: page,
+      title,
+      admin_title: adminLabel(code, title),
       file_url: toPublicMediaUrl(String(row.file_url)) ?? String(row.file_url),
       file_type: String(row.file_type) === "pdf" ? "pdf" : "image",
       page_count: Number.isFinite(pageCount) ? pageCount : null,
@@ -107,5 +161,11 @@ export async function GET(request: Request) {
     }
   })
 
-  return NextResponse.json({ q, filter, count: items.length, items })
+  return NextResponse.json({
+    q,
+    book: book || "all",
+    filter,
+    count: items.length,
+    items,
+  })
 }

@@ -31,6 +31,7 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
+  statSync,
   writeFileSync,
 } from "fs"
 import { basename, join } from "path"
@@ -153,7 +154,12 @@ function pageFromTitle(title: string): number | null {
 
 function indexLocalPdfs(dir: string): Map<number, string> {
   const map = new Map<number, string>()
-  if (!existsSync(dir)) return map
+  if (!dir || !existsSync(dir)) return map
+  try {
+    if (!statSync(dir).isDirectory()) return map
+  } catch {
+    return map
+  }
   for (const name of readdirSync(dir)) {
     if (!name.toLowerCase().endsWith(".pdf")) continue
     const m = name.match(/^0*(\d+)/)

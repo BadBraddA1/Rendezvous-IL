@@ -17,7 +17,12 @@ type LibraryItem = {
   id: string
   pack_id: string
   pack_name?: string
+  pack_slug?: string
+  book_code?: "A" | "B" | null
+  book_label?: string
+  page_number?: number | null
   title: string
+  admin_title: string
   file_url: string
   file_type: "pdf" | "image"
   page_count: number | null
@@ -40,6 +45,7 @@ type OcrDoc = {
 }
 
 type Filter = "all" | "missing" | "high" | "low" | "gemini"
+type BookFilter = "all" | "A" | "B"
 
 const FILTERS: { id: Filter; label: string }[] = [
   { id: "all", label: "All" },
@@ -49,11 +55,18 @@ const FILTERS: { id: Filter; label: string }[] = [
   { id: "gemini", label: "Gemini" },
 ]
 
+const BOOKS: { id: BookFilter; label: string }[] = [
+  { id: "all", label: "Both books" },
+  { id: "A", label: "A · SFP" },
+  { id: "B", label: "B · SSOC" },
+]
+
 export function SongLibraryInspector() {
   const { toast } = useToast()
   const [q, setQ] = useState("")
   const [debouncedQ, setDebouncedQ] = useState("")
   const [filter, setFilter] = useState<Filter>("all")
+  const [book, setBook] = useState<BookFilter>("all")
   const [items, setItems] = useState<LibraryItem[]>([])
   const [loading, setLoading] = useState(true)
   const [activeId, setActiveId] = useState<string | null>(null)
@@ -67,14 +80,20 @@ export function SongLibraryInspector() {
     return () => clearTimeout(t)
   }, [q])
 
-  // Deep-link ?song=957
+  // Deep-link ?song=A-957 or ?song=957
   useEffect(() => {
     if (typeof window === "undefined") return
     const params = new URLSearchParams(window.location.search)
     const song = params.get("song")
-    if (song && /^\d{1,4}$/.test(song)) {
-      setQ(song)
-      setDebouncedQ(song)
+    if (!song) return
+    const m = song.trim().match(/^([ABab])\s*[-–—]?\s*(\d{1,4})$/)
+    if (m) {
+      setBook(m[1]!.toUpperCase() as "A" | "B")
+      setQ(m[2]!)
+      setDebouncedQ(m[2]!)
+    } else if (/^\d{1,4}$/.test(song.trim())) {
+      setQ(song.trim())
+      setDebouncedQ(song.trim())
     }
   }, [])
 
@@ -83,6 +102,7 @@ export function SongLibraryInspector() {
     try {
       const params = new URLSearchParams({
         filter,
+        book,
         limit: "400",
       })
       if (debouncedQ) params.set("q", debouncedQ)
@@ -107,13 +127,12 @@ export function SongLibraryInspector() {
     } finally {
       setLoading(false)
     }
-  }, [debouncedQ, filter, toast, activeId])
+  }, [debouncedQ, filter, book, toast, activeId])
 
   useEffect(() => {
     void load()
-    // intentionally omit activeId from deps to avoid reload loops
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedQ, filter])
+  }, [debouncedQ, filter, book])
 
   const active = useMemo(
     () => items.find((i) => i.id === activeId) ?? null,
@@ -165,10 +184,24 @@ export function SongLibraryInspector() {
           <Input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Search page # or title (e.g. 957)"
+            placeholder="A-446, B-12, or title"
             className="h-10 pl-9"
             aria-label="Search songs"
           />
+        </div>
+        <div className="flex flex-wrap gap-1">
+          {BOOKS.map((b) => (
+            <Button
+              key={b.id}
+              type="button"
+              size="sm"
+              variant={book === b.id ? "default" : "outline"}
+              className="min-h-9"
+              onClick={() => setBook(b.id)}
+            >
+              {b.label}
+            </Button>
+          ))}
         </div>
         <div className="flex flex-wrap gap-1">
           {FILTERS.map((f) => (
@@ -224,9 +257,14 @@ export function SongLibraryInspector() {
                       }`}
                     >
                       <div className="font-medium leading-snug line-clamp-2">
-                        {item.title}
+                        {item.admin_title || item.title}
                       </div>
                       <div className="mt-1 flex flex-wrap gap-1">
+                        {item.book_code ? (
+                          <Badge variant="outline" className="text-[10px]">
+                            {item.book_code}
+                          </Badge>
+                        ) : null}
                         <Badge variant="outline" className="text-[10px]">
                           {item.verse_count != null
                             ? `${item.verse_count} vr`
@@ -264,9 +302,11 @@ export function SongLibraryInspector() {
             <>
               <header className="flex flex-wrap items-start justify-between gap-2 border-b border-border px-3 py-2.5">
                 <div className="min-w-0">
-                  <h3 className="text-subheading text-balance">{active.title}</h3>
+                  <h3 className="text-subheading text-balance">
+                    {active.admin_title || active.title}
+                  </h3>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    {active.pack_name || "Song book"}
+                    {active.book_label || active.pack_name || "Song book"}
                     {active.ocr_status ? ` · ${active.ocr_status}` : ""}
                     {active.ocr_confidence != null
                       ? ` · ${Math.round(active.ocr_confidence * 100)}%`
