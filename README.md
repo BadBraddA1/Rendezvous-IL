@@ -273,6 +273,7 @@ pnpm db:verify
 | `npx tsx --env-file=.env.local scripts/gemini-sfp-book-ocr.ts --apply` | **Gemini vision lyrics** (AI Gateway `google/gemini-2.5-flash`) for the whole song book → R2 `*.v4-gemini.json`. Chorus extracted like pilot #2/#4, then **appended under every verse** for Text mode. Paces paid concurrency. Resume-safe. launchd: `com.braddcorp.sfp-gemini-ocr` (log: `~/Library/Logs/sfp-ocr/gemini-book.log`) |
 | `npx tsx --env-file=.env.local scripts/gemini-sfp-book-ocr.ts --apply --suspect-verses` | Re-check odd verse counts: **high** (`verse_count≥7`), **low on fat packs** (`≤1` verse but `page_count≥9`), or still missing Gemini. Forces a fresh read. |
 | `npx tsx --env-file=.env.local scripts/call-sfp-ocr-endpoint.ts --file-url=…` | Hit RunPod serverless OCR (`RUNPOD_SFP_OCR_ENDPOINT_ID`) |
+| Admin → Songs → Library inspector | Search page # / title; PDF preview + lyrics / raw JSON side by side (`?song=957`) |
 | Admin → Songs → Lyric OCR review | Confirm/edit low-confidence Text mode lyrics (`j`/`k`/`c`/`s`) |
 | Admin → Songs → item **vr** field | Staff sets verse count; PDF title slide rebakes immediately |
 
