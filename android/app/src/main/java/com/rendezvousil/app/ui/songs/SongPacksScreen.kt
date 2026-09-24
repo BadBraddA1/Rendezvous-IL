@@ -44,12 +44,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.focus.FocusRequester
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import androidx.compose.foundation.lazy.items
@@ -102,12 +104,17 @@ fun SongPacksScreen(
                 .padding(padding),
         ) {
             if (state.packs.isNotEmpty() || state.searchQuery.isNotBlank()) {
+                val searchFocus = remember { FocusRequester() }
+                LaunchedEffect(Unit) {
+                    searchFocus.requestFocus()
+                }
                 OutlinedTextField(
                     value = state.searchQuery,
                     onValueChange = viewModel::setPackSearchQuery,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .focusRequester(searchFocus),
                     singleLine = true,
                     label = { Text("Search songs or packs") },
                 )

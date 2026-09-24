@@ -75,6 +75,7 @@ export function WorshipSongSetEditor({
 }) {
   const { toast } = useToast()
   const searchRef = useRef<HTMLInputElement>(null)
+  const browseFilterRef = useRef<HTMLInputElement>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [volunteerName, setVolunteerName] = useState("")
@@ -121,6 +122,41 @@ export function WorshipSongSetEditor({
   useEffect(() => {
     void load()
   }, [load])
+
+  // F / ⌘F focuses search without clicking — skip when already typing in a field.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "f" && e.key !== "F") return
+      const target = e.target as HTMLElement | null
+      const tag = target?.tagName?.toLowerCase()
+      const typing =
+        tag === "input" ||
+        tag === "textarea" ||
+        target?.isContentEditable
+      if (typing && !e.metaKey && !e.ctrlKey) return
+
+      e.preventDefault()
+      if (browseOpen) {
+        browseFilterRef.current?.focus()
+        browseFilterRef.current?.select()
+      } else {
+        searchRef.current?.focus()
+        searchRef.current?.select()
+      }
+    }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  }, [browseOpen])
+
+  useEffect(() => {
+    if (!browseOpen || browseLoading) return
+    const t = window.setTimeout(() => {
+      if (browsePackId) {
+        browseFilterRef.current?.focus()
+      }
+    }, 50)
+    return () => window.clearTimeout(t)
+  }, [browseOpen, browsePackId, browseLoading])
 
   useEffect(() => {
     const t = setTimeout(async () => {
@@ -589,10 +625,12 @@ export function WorshipSongSetEditor({
                     ← All song books
                   </Button>
                   <Input
+                    ref={browseFilterRef}
                     value={browseFilter}
                     onChange={(e) => setBrowseFilter(e.target.value)}
                     placeholder="Filter by number or title…"
                     className="h-11"
+                    autoFocus
                   />
                   <ul className="divide-y rounded-md border border-border">
                     {filteredBrowseItems.map((item) => {
