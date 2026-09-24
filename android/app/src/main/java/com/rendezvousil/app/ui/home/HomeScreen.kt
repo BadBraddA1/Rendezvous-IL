@@ -20,9 +20,11 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.VolunteerActivism
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -47,6 +49,7 @@ import com.rendezvousil.core.network.YearFormatting
 import com.rendezvousil.core.network.dto.FamilyCheckInResponse
 import com.rendezvousil.core.network.dto.FamilyVolunteeringResponse
 import com.rendezvousil.core.network.dto.HomeBoardSection
+import com.rendezvousil.core.network.dto.SongSearchHit
 import com.rendezvousil.core.network.dto.YearHubResponse
 import com.rendezvousil.core.network.dto.WeatherCurrent
 import com.rendezvousil.core.schedule.model.Announcement
@@ -736,6 +739,7 @@ fun VolunteeringScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val uploadingSignupId by viewModel.uploadingSignupId.collectAsState()
     val statusMessage by viewModel.statusMessage.collectAsState()
+    val songSetEditor by viewModel.songSetEditor.collectAsState()
     val context = LocalContext.current
     val payload = volunteering
     var pendingUploadSignupId by remember { mutableStateOf<Int?>(null) }
@@ -758,6 +762,22 @@ fun VolunteeringScreen(
                 else -> "application/vnd.openxmlformats-officedocument.presentationml.presentation"
             }
         viewModel.uploadLessonSlides(signupId, bytes, name, mime)
+    }
+
+    if (songSetEditor != null) {
+        WorshipSongSetScreen(
+            state = songSetEditor!!,
+            onBack = viewModel::closeSongSetEditor,
+            onQueryChange = viewModel::setSongSetQuery,
+            onAddHit = viewModel::addSongHit,
+            onRemoveAt = viewModel::removeSongAt,
+            onNoteChange = viewModel::setSongNote,
+            onAllVerses = viewModel::setAllVerses,
+            onToggleVerse = viewModel::toggleVerse,
+            onSave = viewModel::saveSongSet,
+            modifier = modifier,
+        )
+        return
     }
 
     Scaffold(
@@ -803,21 +823,36 @@ fun VolunteeringScreen(
                     pending.forEach { action ->
                         Surface(
                             onClick = {
-                                if (action.type == "upload_lesson_slides") {
-                                    val volunteer = payload.volunteers.firstOrNull { v ->
-                                        v.pendingActions.any { it.type == action.type && it.label == action.label }
+                                when (action.type) {
+                                    "upload_lesson_slides" -> {
+                                        val volunteer = payload.volunteers.firstOrNull { v ->
+                                            v.pendingActions.any { it.type == action.type && it.label == action.label }
+                                        }
+                                        if (volunteer != null) {
+                                            pendingUploadSignupId = volunteer.id
+                                            pickSlides.launch(
+                                                "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                                            )
+                                        }
                                     }
-                                    if (volunteer != null) {
-                                        pendingUploadSignupId = volunteer.id
-                                        pickSlides.launch(
-                                            "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-                                        )
+                                    "submit_song_setlist" -> {
+                                        val volunteer = payload.volunteers.firstOrNull { v ->
+                                            v.pendingActions.any { it.type == action.type && it.label == action.label }
+                                        }
+                                        if (volunteer != null) {
+                                            viewModel.openSongSetEditor(
+                                                signupId = volunteer.id,
+                                                volunteerName = volunteer.volunteerName,
+                                                eventYear = payload.eventYear,
+                                            )
+                                        }
                                     }
-                                } else {
-                                    runCatching {
-                                        context.startActivity(
-                                            Intent(Intent.ACTION_VIEW, Uri.parse(action.href)),
-                                        )
+                                    else -> {
+                                        runCatching {
+                                            context.startActivity(
+                                                Intent(Intent.ACTION_VIEW, Uri.parse(action.href)),
+                                            )
+                                        }
                                     }
                                 }
                             },
@@ -918,19 +953,31 @@ fun VolunteeringScreen(
                                     }
                                     TextButton(
                                         onClick = {
-                                            runCatching {
-                                                context.startActivity(
-                                                    Intent(
-                                                        Intent.ACTION_VIEW,
-                                                        Uri.parse(
-                                                            "https://rendezvousil.com/account/volunteering/songs/${volunteer.id}?year=${payload.eventYear}",
-                                                        ),
-                                                    ),
-                                                )
-                                            }
+                                            viewModel.openSongSetEditor(
+                                                signupId = volunteer.id,
+                                                volunteerName = volunteer.volunteerName,
+                                                eventYear = payload.eventYear,
+                                            )
                                         },
                                     ) {
                                         Text("Edit songs")
+                                    }
+                                } ?: run {
+                                    if (
+                                        volunteer.worshipAssignment != null &&
+                                        volunteer.volunteerType.contains("Leading singing", ignoreCase = true)
+                                    ) {
+                                        TextButton(
+                                            onClick = {
+                                                viewModel.openSongSetEditor(
+                                                    signupId = volunteer.id,
+                                                    volunteerName = volunteer.volunteerName,
+                                                    eventYear = payload.eventYear,
+                                                )
+                                            },
+                                        ) {
+                                            Text("Pick songs")
+                                        }
                                     }
                                 }
                             }
@@ -961,6 +1008,151 @@ fun VolunteeringScreen(
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun WorshipSongSetScreen(
+    state: SongSetEditorState,
+    onBack: () -> Unit,
+    onQueryChange: (String) -> Unit,
+    onAddHit: (SongSearchHit) -> Unit,
+    onRemoveAt: (Int) -> Unit,
+    onNoteChange: (String) -> Unit,
+    onAllVerses: (Int) -> Unit,
+    onToggleVerse: (Int, Int) -> Unit,
+    onSave: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Scaffold(
+        modifier = modifier,
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        if (state.volunteerName.isBlank()) "Songs" else state.volunteerName,
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                        )
+                    }
+                },
+                actions = {
+                    TextButton(
+                        onClick = onSave,
+                        enabled = !state.isSaving && state.songs.isNotEmpty(),
+                    ) {
+                        Text(if (state.isSaving) "Saving…" else "Submit")
+                    }
+                },
+            )
+        },
+        containerColor = BrandColors.GroupedBackground,
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            if (state.isLoading) {
+                Text("Loading…", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                return@Column
+            }
+            Text(
+                "Search the song book, add songs, and tap which verses you’ll lead.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            OutlinedTextField(
+                value = state.query,
+                onValueChange = onQueryChange,
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                label = { Text("Search 957 or title") },
+            )
+            if (state.isSearching) {
+                Text("Searching…", style = MaterialTheme.typography.bodySmall)
+            }
+            state.hits.take(12).forEach { hit ->
+                Surface(
+                    onClick = { onAddHit(hit) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp),
+                    color = BrandColors.SecondaryGroupedBackground,
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(hit.title, fontWeight = FontWeight.SemiBold)
+                        Text(
+                            hit.pack_name,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+            Text("Your songs (${state.songs.size})", fontWeight = FontWeight.Bold)
+            if (state.songs.isEmpty()) {
+                Text("No songs yet", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            state.songs.forEachIndexed { index, song ->
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    color = BrandColors.SecondaryGroupedBackground,
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            Text(song.title, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                            TextButton(onClick = { onRemoveAt(index) }) { Text("Remove") }
+                        }
+                        val label = if (song.verses.mode == "list" && !song.verses.verses.isNullOrEmpty()) {
+                            "verses ${song.verses.verses!!.joinToString(", ")}"
+                        } else {
+                            "all verses"
+                        }
+                        Text(label, style = MaterialTheme.typography.bodySmall, color = BrandColors.Lake)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            FilterChip(
+                                selected = song.verses.mode != "list",
+                                onClick = { onAllVerses(index) },
+                                label = { Text("All") },
+                            )
+                            (1..8).forEach { n ->
+                                val on = song.verses.mode == "list" && song.verses.verses.orEmpty().contains(n)
+                                FilterChip(
+                                    selected = on,
+                                    onClick = { onToggleVerse(index, n) },
+                                    label = { Text("$n") },
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+            OutlinedTextField(
+                value = state.note,
+                onValueChange = onNoteChange,
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Note (optional)") },
+            )
+            state.statusMessage?.let {
+                Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }

@@ -50,6 +50,48 @@ data class FamilyVolunteerSongSet(
 )
 
 @Serializable
+data class WorshipSongVerseChoice(
+    val mode: String = "all",
+    val verses: List<Int>? = null,
+)
+
+@Serializable
+data class WorshipSongPickPayload(
+    val song_pack_item_id: String = "",
+    val pack_id: String = "",
+    val title: String = "",
+    val verses: WorshipSongVerseChoice = WorshipSongVerseChoice(),
+    val note: String? = null,
+)
+
+@Serializable
+data class WorshipSongSetGetResponse(
+    val signupId: Int? = null,
+    val volunteerName: String? = null,
+    val eventYear: Int? = null,
+    val submission: WorshipSongSubmissionPayload? = null,
+    val error: String? = null,
+)
+
+@Serializable
+data class WorshipSongSubmissionPayload(
+    val songs: List<WorshipSongPickPayload> = emptyList(),
+    val note: String? = null,
+)
+
+@Serializable
+data class WorshipSongSetSaveBody(
+    val songs: List<WorshipSongPickPayload> = emptyList(),
+    val note: String? = null,
+)
+
+@Serializable
+data class WorshipSongSetSaveResponse(
+    val submission: WorshipSongSubmissionPayload? = null,
+    val error: String? = null,
+)
+
+@Serializable
 data class FamilyVolunteerEntry(
     val id: Int,
     val volunteerName: String = "",

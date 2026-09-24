@@ -65,6 +65,15 @@ actor APIClient {
         return try await request(path, method: "POST", body: data, as: type)
     }
 
+    func put<T: Decodable, Body: Encodable>(
+        _ path: String,
+        body: Body,
+        as type: T.Type = T.self
+    ) async throws -> T {
+        let data = try JSONEncoder().encode(body)
+        return try await request(path, method: "PUT", body: data, as: type)
+    }
+
     func delete<T: Decodable>(_ path: String, as type: T.Type = T.self) async throws -> T {
         try await request(path, method: "DELETE", body: nil, as: type)
     }
@@ -209,6 +218,27 @@ actor APIClient {
 
     func getFamilyVolunteering(year: Int = AppConfig.eventYear) async throws -> FamilyVolunteeringResponse {
         try await get("/api/family/volunteering?year=\(year)")
+    }
+
+    func getWorshipSongSet(signupId: Int, year: Int = AppConfig.eventYear) async throws -> WorshipSongSetResponse {
+        try await get("/api/family/volunteers/\(signupId)/songs?year=\(year)")
+    }
+
+    func putWorshipSongSet(
+        signupId: Int,
+        songs: [WorshipSongPickPayload],
+        note: String?,
+        year: Int = AppConfig.eventYear
+    ) async throws -> WorshipSongSetSaveResponse {
+        try await put(
+            "/api/family/volunteers/\(signupId)/songs?year=\(year)",
+            body: WorshipSongSetSaveBody(songs: songs, note: note)
+        )
+    }
+
+    func searchSongs(query: String, year: Int = AppConfig.eventYear) async throws -> SongSearchResponse {
+        let encoded = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query
+        return try await get("/api/songs/search?year=\(year)&q=\(encoded)")
     }
 
     func uploadLessonSlides(
@@ -704,6 +734,58 @@ struct FamilyVolunteerSongSet: Codable, Hashable, Sendable {
     let songs: [FamilyVolunteerSongPick]
     let note: String?
     let updatedAt: String
+}
+
+struct WorshipSongVerseChoicePayload: Codable, Hashable, Sendable {
+    let mode: String
+    let verses: [Int]?
+
+    static var all: WorshipSongVerseChoicePayload {
+        WorshipSongVerseChoicePayload(mode: "all", verses: nil)
+    }
+
+    static func list(_ verses: [Int]) -> WorshipSongVerseChoicePayload {
+        WorshipSongVerseChoicePayload(mode: "list", verses: verses.sorted())
+    }
+
+    var label: String {
+        if mode == "list", let verses, !verses.isEmpty {
+            return "verses \(verses.map(String.init).joined(separator: ", "))"
+        }
+        return "all verses"
+    }
+}
+
+struct WorshipSongPickPayload: Codable, Hashable, Identifiable, Sendable {
+    var id: String { song_pack_item_id }
+    let song_pack_item_id: String
+    let pack_id: String
+    let title: String
+    var verses: WorshipSongVerseChoicePayload
+    var note: String?
+}
+
+struct WorshipSongSetResponse: Decodable, Sendable {
+    let signupId: Int?
+    let volunteerName: String?
+    let eventYear: Int?
+    let submission: WorshipSongSubmissionPayload?
+    let error: String?
+}
+
+struct WorshipSongSubmissionPayload: Decodable, Sendable {
+    let songs: [WorshipSongPickPayload]?
+    let note: String?
+}
+
+struct WorshipSongSetSaveBody: Encodable, Sendable {
+    let songs: [WorshipSongPickPayload]
+    let note: String?
+}
+
+struct WorshipSongSetSaveResponse: Decodable, Sendable {
+    let submission: WorshipSongSubmissionPayload?
+    let error: String?
 }
 
 struct FamilyVolunteerEntry: Codable, Hashable, Identifiable, Sendable {

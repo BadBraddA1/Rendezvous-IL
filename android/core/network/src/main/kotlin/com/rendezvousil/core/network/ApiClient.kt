@@ -30,6 +30,13 @@ import com.rendezvousil.core.network.dto.CheckInSubmitBody
 import com.rendezvousil.core.network.dto.CheckInUndoResponse
 import com.rendezvousil.core.network.dto.DirectoryResponse
 import com.rendezvousil.core.network.dto.FamilyVolunteeringResponse
+import com.rendezvousil.core.network.dto.WorshipSongSetGetResponse
+import com.rendezvousil.core.network.dto.WorshipSongSetSaveBody
+import com.rendezvousil.core.network.dto.WorshipSongSetSaveResponse
+import com.rendezvousil.core.network.dto.WorshipSongPickPayload
+import com.rendezvousil.core.network.dto.WorshipSongVerseChoice
+import com.rendezvousil.core.network.dto.SongSearchHit
+import com.rendezvousil.core.network.dto.SongSearchResponse
 import com.rendezvousil.core.network.dto.FamilyCheckInResponse
 import com.rendezvousil.core.network.dto.YearHubResponse
 import com.rendezvousil.core.network.dto.DirectoryYearsResponse
@@ -306,6 +313,29 @@ class ApiClient private constructor(
                 "q" to query,
             ),
         )
+
+    suspend fun getWorshipSongSet(signupId: Int, year: Int = AppConfig.EVENT_YEAR): WorshipSongSetGetResponse =
+        getJson(
+            path = "api/family/volunteers/$signupId/songs",
+            queryParameters = mapOf("year" to year.toString()),
+        )
+
+    suspend fun putWorshipSongSet(
+        signupId: Int,
+        body: WorshipSongSetSaveBody,
+        year: Int = AppConfig.EVENT_YEAR,
+    ): WorshipSongSetSaveResponse {
+        val url = urlFor("api/family/volunteers/$signupId/songs")
+            .toHttpUrlOrNull()!!
+            .newBuilder()
+            .addQueryParameter("year", year.toString())
+            .build()
+        val request = Request.Builder()
+            .url(url)
+            .put(json.encodeToString(body).toRequestBody("application/json".toMediaType()))
+            .build()
+        return executeJsonRequest(request)
+    }
 
     suspend fun getSongPack(id: String): SongPackDetailResponse =
         getJson("api/songs/packs/$id")

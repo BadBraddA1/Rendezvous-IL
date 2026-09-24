@@ -238,7 +238,7 @@ pnpm db:verify
 - **Family volunteering** (`GET /api/family/volunteering`): includes `lessonSlides` on each entry and a pending action `upload_lesson_slides` when a topic is awarded but no deck is uploaded yet. **Song leaders** (`Leading singing` + scheduled) get pending `submit_song_setlist` until they pick songs; submitted set is on `songSet`.
 - **Song set submit (v1):** `/account/volunteering/songs/[signupId]` · `GET/PUT /api/family/volunteers/[signupId]/songs` · table `worship_song_submissions`. Search song books, pick verses (All or 1–8 chips), submit. Admin: `/admin/worship-songs`.
 - **Admin:** `/admin/lesson-slides` (Communication → Lesson slides) — inbox of submitted decks with download/remove; staff can also `POST /api/admin/lesson-slides` with `file` + `volunteerSignupId`.
-- **Apps:** More → Your volunteering — upload / replace slides in-app (iOS document picker, Android file picker). Song-set pending opens the web picker; submitted songs show on the assignment card with Edit.
+- **Apps:** More → Your volunteering — upload / replace slides in-app (iOS document picker, Android file picker). **Song leaders pick songs in-app** (search + verse chips All|1–8, Submit) — iOS `WorshipSongSetView`, Android `WorshipSongSetScreen`; no Safari handoff. Submitted songs show on the assignment card with Edit.
 - **Worker:** allowlist `lesson-slides/` and 50 MB max — redeploy `worker/media.ts` after pull (`npx wrangler deploy` from `worker/` per that folder’s README).
 
 ## App Home board (remote config)
@@ -329,7 +329,7 @@ Native **Jetpack Compose** app in `android/` (Phases 1–5). **Not on Google Pla
 - **Chat** — year group chat parity with iOS/web: channel list (unread badges, activity sort), thread (text, up to 6 photos, polls, announcements for mods, reactions behind smile menu, delete), Ably Pub/Sub + 4s HTTP poll fallback (`ably-android`)
 - **Schedule** — opens on today / next upcoming day; **Happening now** only for the in-progress event (Central Time); day picker, meals, volunteer slots, **event reminders** (bell icon), offline fallback; empty announcements hidden. Key-date chips/headers use `weekday` + date label (same as iOS).
 - **Directory** — on-device cache first, background refresh; Father/Mother + **Kids (ages)** like the website; family photo manage stays under More
-- **Volunteering** — `GET /api/family/volunteering`; Home card + More → Your volunteering (pending lesson-topic links + confirmed worship/special jobs). Hidden when empty. Apps auto-schedule a **local push 30 minutes before** each worship/special assignment (`startsAt` from the API)
+- **Volunteering** — `GET /api/family/volunteering`; Home card + More → Your volunteering (pending lesson-topic / song-set actions + confirmed worship/special jobs). **Leading singing** song pick stays in-app (`GET/PUT …/volunteers/[id]/songs`). Hidden when empty. Apps auto-schedule a **local push 30 minutes before** each worship/special assignment (`startsAt` from the API)
 - **Updates** — now/next (Central Time), weather, announcements when active (More → Live updates; not a bottom tab)
 - **More** — calculator, Bible Bowl, FAQ, About, **Clerk account**, directory manage, volunteering, **notifications & widgets**, **admin** (dashboard, user management, staff check-in)
 - **Admin** — mobile dashboard stats, staff check-in with QR scan, user CRUD (role-gated via Clerk session)
