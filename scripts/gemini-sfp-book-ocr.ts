@@ -11,7 +11,8 @@
  *
  *   npx tsx --env-file=.env.local scripts/gemini-sfp-book-ocr.ts \
  *     [--apply] [--limit=N] [--concurrency=4] [--model=google/gemini-2.5-flash] \
- *     [--from-page=N] [--only=2,4,480] [--suspect-verses] [--force]
+ *     [--from-page=N] [--only=2,4,480] [--suspect-verses] [--force] \
+ *     [--pack-id=UUID] [--local-pdf-dir=PATH] [--out=PATH]
  *
  * --suspect-verses: re-check songs with odd verse counts:
  *   - high: verse_count >= 7
@@ -58,11 +59,21 @@ const ONLY = new Set(
     .filter((n) => n > 0),
 )
 const outArg = process.argv.find((a) => a.startsWith("--out="))
-const OUT = outArg?.slice("--out=".length) || "/tmp/sfp-gemini-ocr.jsonl"
-const PACK_ID = "3eac16b6-fc68-43db-9d82-5cd7ccd2d5ce"
+const packIdArg = process.argv.find((a) => a.startsWith("--pack-id="))
+const localPdfArg = process.argv.find((a) => a.startsWith("--local-pdf-dir="))
+const PACK_ID =
+  packIdArg?.slice("--pack-id=".length) ||
+  process.env.SFP_PACK_ID ||
+  "3eac16b6-fc68-43db-9d82-5cd7ccd2d5ce"
 const LOCAL_PDF_DIR =
+  localPdfArg?.slice("--local-pdf-dir=".length) ||
   process.env.SFP_FULL_PDF_DIR ||
   join(process.env.HOME || "", "Code/sfp-full-pdf")
+const OUT =
+  outArg?.slice("--out=".length) ||
+  (PACK_ID === "3eac16b6-fc68-43db-9d82-5cd7ccd2d5ce"
+    ? "/tmp/sfp-gemini-ocr.jsonl"
+    : `/tmp/gemini-ocr-${PACK_ID.slice(0, 8)}.jsonl`)
 const PY =
   process.env.SFP_PY ||
   join(
@@ -78,7 +89,7 @@ const SUSPECT_HIGH_VC = 7
 const SUSPECT_LOW_VC = 1
 const SUSPECT_FAT_PAGES = 9
 
-const SYSTEM = `You extract singable hymn lyrics from Songs of Faith and Praise shape-note slides.
+const SYSTEM = `You extract singable hymn lyrics from church songbook projection slides (shape-note / lyric slides).
 
 Output ONLY valid JSON:
 {"verses":[{"index":1,"text":"line1\\nline2"},...],"chorus":{"text":"line1\\nline2"}|null,"confidence":0.0-1.0}
