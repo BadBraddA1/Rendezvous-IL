@@ -19,7 +19,17 @@ const limitArg = process.argv.find((a) => a.startsWith("--limit="))
 const LIMIT = limitArg ? Number(limitArg.split("=")[1]) : 0
 const concArg = process.argv.find((a) => a.startsWith("--concurrency="))
 const CONCURRENCY = Math.max(1, Number(concArg?.split("=")[1] || 6))
-const MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini"
+/** Prefer Vercel AI Gateway (higher aggregate limits / fallbacks). */
+const USE_GATEWAY = Boolean(
+  process.env.AI_GATEWAY_API_KEY || process.env.USE_AI_GATEWAY === "1",
+)
+const GATEWAY_BASE = "https://ai-gateway.vercel.sh/v1"
+const DIRECT_BASE = "https://api.openai.com/v1"
+const API_BASE = USE_GATEWAY ? GATEWAY_BASE : DIRECT_BASE
+/** Gateway expects provider/model; direct OpenAI wants bare model id. */
+const MODEL = USE_GATEWAY
+  ? process.env.OPENAI_MODEL || "openai/gpt-4o-mini"
+  : (process.env.OPENAI_MODEL || "gpt-4o-mini").replace(/^openai\//, "")
 
 function loadEnv() {
   const env: Record<string, string> = { ...process.env } as Record<string, string>
@@ -160,24 +170,33 @@ OCR text:
 ${blob.slice(0, 6000)}
 ---`
 
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      temperature: 0.2,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: SYSTEM },
-        { role: "user", content: user },
-      ],
-    }),
-  })
-  if (!res.ok) {
-    const err = await res.text()
+  let res: Response | null = null
+  let lastErr = ""
+  for (let attempt = 0; attempt < 5; attempt++) {
+    res = await fetch(`${API_BASE}/chat/completions`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        temperature: 0.2,
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: SYSTEM },
+          { role: "user", content: user },
+        ],
+      }),
+    })
+    if (res.ok) break
+    lastErr = await res.text()
+    if (res.status !== 429 && res.status < 500) break
+    const retryAfter = Number(res.headers.get("retry-after") || 0)
+    const waitMs = Math.max(retryAfter * 1000, 500 * 2 ** attempt)
+    await new Promise((r) => setTimeout(r, waitMs))
+  }
+  if (!res || !res.ok) {
     return {
       verses: row.verses?.map((v) => ({
         index: v.index,
@@ -187,7 +206,7 @@ ${blob.slice(0, 6000)}
       confidence: Number(row.confidence) || 0,
       status: "needs_review",
       method: "agent_cleanup_v2",
-      error: `openai ${res.status}: ${err.slice(0, 200)}`,
+      error: `openai ${res?.status ?? "?"}: ${lastErr.slice(0, 200)}`,
     }
   }
   const data = (await res.json()) as {
@@ -271,10 +290,13 @@ async function main() {
     process.exit(1)
   }
   const env = loadEnv()
-  const apiKey = env.OPENAI_API_KEY
+  const apiKey = env.AI_GATEWAY_API_KEY || env.OPENAI_API_KEY
   if (!apiKey) {
-    console.error("OPENAI_API_KEY missing")
+    console.error("AI_GATEWAY_API_KEY or OPENAI_API_KEY missing")
     process.exit(1)
+  }
+  if (env.AI_GATEWAY_API_KEY) {
+    process.env.AI_GATEWAY_API_KEY = env.AI_GATEWAY_API_KEY
   }
 
   const done = new Set<string>()
@@ -308,7 +330,7 @@ async function main() {
   }
 
   console.log(
-    `clean pending=${pending.length} already=${done.size} concurrency=${CONCURRENCY} model=${MODEL}`,
+    `clean pending=${pending.length} already=${done.size} concurrency=${CONCURRENCY} model=${MODEL} via=${USE_GATEWAY ? "vercel-ai-gateway" : "openai-direct"}`,
   )
 
   let ok = 0
