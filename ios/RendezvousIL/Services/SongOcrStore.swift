@@ -57,11 +57,17 @@ enum SongOcrStore {
     }
 
     static func load(item: SongPackItem) async throws -> SongOcrDocument? {
-        // Bust stale caches when ocr_url changes (same item id, new file).
-        let cacheKey = item.id + "-" + String((item.ocr_url ?? "").hashValue)
+        guard let raw = item.ocr_url, !raw.isEmpty else { return nil }
+        return try await load(itemId: item.id, ocrUrl: raw)
+    }
+
+    static func load(itemId: String, ocrUrl: String) async throws -> SongOcrDocument? {
+        let cacheKey = itemId + "-" + String(ocrUrl.hashValue)
         if let hit = cached(itemId: cacheKey) { return hit }
-        guard let raw = item.ocr_url, let remote = URL(string: raw) else { return nil }
-        let (data, response) = try await URLSession.shared.data(from: remote)
+        guard let remote = URL(string: ocrUrl) else { return nil }
+        var request = URLRequest(url: remote, timeoutInterval: 20)
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+        let (data, response) = try await URLSession.shared.data(for: request)
         if let http = response as? HTTPURLResponse, !(200 ... 299).contains(http.statusCode) {
             return nil
         }
@@ -71,6 +77,15 @@ enum SongOcrStore {
         memory[cacheKey] = doc
         lock.unlock()
         return doc
+    }
+
+    static func removeCached(item: SongPackItem) {
+        let cacheKey = item.id + "-" + String((item.ocr_url ?? "").hashValue)
+        lock.lock()
+        memory.removeValue(forKey: cacheKey)
+        lock.unlock()
+        try? FileManager.default.removeItem(at: cacheFile(for: cacheKey))
+        try? FileManager.default.removeItem(at: cacheFile(for: item.id))
     }
 
     /// Prefer verse blocks from book/full-song OCR; fall back to page text.

@@ -216,6 +216,9 @@ struct SongPackDetailView: View {
     @State private var songSearch = ""
     @State private var openViewerItemId: String? = nil
     @State private var confirmDownloadAll = false
+    @State private var confirmOffload = false
+    /// Bumps when offline files change so checkmarks / status re-render.
+    @State private var offlineEpoch = 0
 
     private var isLibrary: Bool { pack?.is_library == true }
 
@@ -240,6 +243,7 @@ struct SongPackDetailView: View {
                         }
                     }
                     Section {
+                        let saved = SongPackStore.downloadedCount(pack: pack)
                         HStack {
                             Label(
                                 downloadStatusLabel(pack: pack),
@@ -247,6 +251,7 @@ struct SongPackDetailView: View {
                                     ? "checkmark.circle.fill"
                                     : "icloud"
                             )
+                            .id(offlineEpoch)
                             Spacer()
                             if isDownloading {
                                 ProgressView()
@@ -260,13 +265,18 @@ struct SongPackDetailView: View {
                                 }
                             }
                         }
+                        if saved > 0, !isDownloading {
+                            Button("Remove offline copies", role: .destructive) {
+                                confirmOffload = true
+                            }
+                        }
                         if let statusMessage {
                             Text(statusMessage)
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
                     } footer: {
-                        Text("Songs stream online — nothing is saved unless you tap Save offline.")
+                        Text("Songs stream online — nothing is saved unless you tap Save offline. Remove offline copies frees space; you can still open songs on Wi‑Fi.")
                     }
                     Section {
                         if filteredItems.isEmpty {
@@ -296,6 +306,29 @@ struct SongPackDetailView: View {
                                             Image(systemName: "checkmark.circle.fill")
                                                 .foregroundStyle(BrandColors.lake)
                                         }
+                                    }
+                                    .id("\(item.id)-\(offlineEpoch)")
+                                }
+                                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                    if SongPackStore.isDownloaded(packId: pack.id, item: item) {
+                                        Button(role: .destructive) {
+                                            _ = SongPackStore.removeItem(packId: pack.id, item: item)
+                                            offlineEpoch += 1
+                                            statusMessage = "Removed offline copy."
+                                        } label: {
+                                            Label("Offload", systemImage: "externaldrive.badge.minus")
+                                        }
+                                    } else {
+                                        Button {
+                                            Task {
+                                                _ = try? await SongPackStore.downloadItem(packId: pack.id, item: item)
+                                                offlineEpoch += 1
+                                                statusMessage = "Saved offline."
+                                            }
+                                        } label: {
+                                            Label("Save", systemImage: "arrow.down.circle")
+                                        }
+                                        .tint(BrandColors.lake)
                                     }
                                 }
                             }
@@ -329,6 +362,18 @@ struct SongPackDetailView: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("Only needed if you want the whole book without Wi‑Fi. Opening songs streams them online.")
+        }
+        .confirmationDialog(
+            "Remove offline copies?",
+            isPresented: $confirmOffload,
+            titleVisibility: .visible
+        ) {
+            Button("Remove from this phone", role: .destructive) {
+                offload()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Deletes saved PDFs on this device. Songs still open by streaming when you’re online.")
         }
         .task { await load() }
         .refreshable { await load() }
@@ -372,10 +417,20 @@ struct SongPackDetailView: View {
         do {
             let count = try await SongPackStore.downloadPack(pack)
             statusMessage = "Saved \(count) of \(pack.items.count) files on this phone."
+            offlineEpoch += 1
             self.pack = pack
         } catch {
             statusMessage = "Save failed — try again on Wi‑Fi."
         }
+    }
+
+    private func offload() {
+        guard let pack else { return }
+        let n = SongPackStore.removePack(packId: pack.id, items: pack.items)
+        offlineEpoch += 1
+        statusMessage = n > 0
+            ? "Removed \(n) offline file\(n == 1 ? "" : "s"). Streaming online."
+            : "Nothing was saved offline."
     }
 }
 
@@ -563,34 +618,39 @@ struct SongItemViewer: View {
         ocrLoading = true
         defer { ocrLoading = false }
 
-        // Pack detail is often stale from before OCR persist — always re-resolve URL.
+        // Disk cache first (populated by Save offline), then refresh URL if pack was stale.
+        if let cached = try? await SongOcrStore.load(item: item) {
+            applyOcrDocument(cached)
+            if !serverPages.isEmpty || ocrNeedsReview { return }
+        }
+
         let fresh = await fetchFreshOcrUrl(for: item.id)
         let raw = fresh ?? resolvedOcrUrl ?? item.ocr_url
         resolvedOcrUrl = raw
-        guard let raw, let url = URL(string: raw), !raw.isEmpty else {
+        guard let raw, !raw.isEmpty else {
             ocrFailed = true
             return
         }
 
         do {
-            var request = URLRequest(url: url, timeoutInterval: 20)
-            request.cachePolicy = .reloadIgnoringLocalCacheData
-            let (data, response) = try await URLSession.shared.data(for: request)
-            if let http = response as? HTTPURLResponse, !(200 ... 299).contains(http.statusCode) {
+            guard let doc = try await SongOcrStore.load(itemId: item.id, ocrUrl: raw) else {
                 ocrFailed = true
                 return
             }
-            let doc = try JSONDecoder().decode(SongOcrDocument.self, from: data)
-            let pages = SongOcrStore.displayPages(from: doc)
-            if (doc.status == "needs_review" || item.ocr_status == "needs_review"), pages.isEmpty {
-                ocrNeedsReview = true
-                return
-            }
-            serverPages = pages
-            if serverPages.isEmpty { ocrFailed = true }
+            applyOcrDocument(doc)
+            if serverPages.isEmpty && !ocrNeedsReview { ocrFailed = true }
         } catch {
             ocrFailed = true
         }
+    }
+
+    private func applyOcrDocument(_ doc: SongOcrDocument) {
+        let pages = SongOcrStore.displayPages(from: doc)
+        if (doc.status == "needs_review" || item.ocr_status == "needs_review"), pages.isEmpty {
+            ocrNeedsReview = true
+            return
+        }
+        serverPages = pages
     }
 
     /// Re-fetch pack so we pick up `ocr_url` written by the Mac persist job.

@@ -184,9 +184,18 @@ async function main() {
             SET ocr_url = ?,
                 ocr_status = ?,
                 ocr_confidence = ?,
+                verse_count = COALESCE(?, verse_count),
                 updated_at = datetime('now')
             WHERE id = ?`,
-      args: [ocrUrl, status, confidence, id],
+      args: [
+        ocrUrl,
+        status,
+        confidence,
+        payload.verse_count != null && Number(payload.verse_count) > 0
+          ? Math.max(1, Math.min(12, Math.floor(Number(payload.verse_count))))
+          : null,
+        id,
+      ],
     })
     ok++
   }

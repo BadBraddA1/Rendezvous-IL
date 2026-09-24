@@ -64,6 +64,7 @@ enum SongPackStore {
     static func downloadItem(packId: String, item: SongPackItem) async throws -> Bool {
         let dest = localFileURL(packId: packId, item: item)
         if FileManager.default.fileExists(atPath: dest.path) {
+            _ = try? await SongOcrStore.load(item: item)
             return true
         }
         guard let remote = URL(string: item.file_url) else { return false }
@@ -75,6 +76,8 @@ enum SongPackStore {
             try? FileManager.default.removeItem(at: dest)
         }
         try FileManager.default.moveItem(at: temp, to: dest)
+        // Cache lyrics JSON so Text mode works offline after Save.
+        _ = try? await SongOcrStore.load(item: item)
         return true
     }
 
@@ -90,5 +93,32 @@ enum SongPackStore {
             try? data.write(to: metaURL(packId: pack.id), options: .atomic)
         }
         return downloaded
+    }
+
+    /// Delete one song’s offline PDF/image (and its OCR cache). Streaming still works.
+    @discardableResult
+    static func removeItem(packId: String, item: SongPackItem) -> Bool {
+        let dest = localFileURL(packId: packId, item: item)
+        guard FileManager.default.fileExists(atPath: dest.path) else {
+            SongOcrStore.removeCached(item: item)
+            return false
+        }
+        try? FileManager.default.removeItem(at: dest)
+        SongOcrStore.removeCached(item: item)
+        return true
+    }
+
+    /// Delete all offline copies for a pack. Keeps the pack list; songs stream from CDN again.
+    @discardableResult
+    static func removePack(packId: String, items: [SongPackItem] = []) -> Int {
+        for item in items {
+            SongOcrStore.removeCached(item: item)
+        }
+        let dir = packDirectory(packId: packId)
+        guard FileManager.default.fileExists(atPath: dir.path) else { return 0 }
+        let before = (try? FileManager.default.contentsOfDirectory(atPath: dir.path))?
+            .filter { !$0.hasSuffix("meta.json") }.count ?? 0
+        try? FileManager.default.removeItem(at: dir)
+        return before
     }
 }
