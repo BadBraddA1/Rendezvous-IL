@@ -17,7 +17,7 @@ SSOC: Hymnary [`SSC2007`](https://hymnary.org/hymnal/SSC2007) — no free full a
 | A-195 | Behold a Stranger | **919** | A-195 is *Behold the Lamb* |
 | A-290 | The Great Redeemer | **250** | A-290 is *Shine Jesus Shine* |
 | A-623 | I Am Coming Lord | **923** | A-623 is *Tell the Good News* |
-| A-624 | Just As I Am-Worthy is the Lamb | **924** (*Just As I Am*) | A-624 is *Seeking the Lost*; “Worthy is the Lamb” is 205/234 |
+| A-624 | Just As I Am-Worthy is the Lamb | **924** (*Just As I Am*) | A-624 is *Seeking the Lost*; separate “Worthy is the Lamb” songs are **205** / **234** |
 | A-742 | Tell It To Jesus alone | **542** | A-742 is *Count Your Blessings* (“When upon life’s billows…”) |
 | A-918 | Revive Us O Lord | **818** | A-918 is *Out of My Bondage* (Jesus I Come) |
 
@@ -48,4 +48,6 @@ SSOC: Hymnary [`SSC2007`](https://hymnary.org/hymnal/SSC2007) — no free full a
 | 696 | Once To Every Man And Nation |
 | 888 | Lo What A Glorious Sight |
 
-Parsed Taylor index dump: [`sfp-taylor-index-parsed.tsv`](./sfp-taylor-index-parsed.tsv) (machine-parsed; spot-check before bulk renumber).
+## Status
+
+**Applied 2026-09-24** — PRO-G40 Shape-note 16×9 (+ titled) files renamed; Turso titles + R2 keys updated via `scripts/fix-sfp-wrong-page-numbers.ts --apply`. Full-song / 4×3 / MP3 folders were already correct.

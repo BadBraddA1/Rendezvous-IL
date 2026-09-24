@@ -273,7 +273,7 @@ pnpm db:verify
 | `npx tsx --env-file=.env.local scripts/gemini-sfp-book-ocr.ts --apply` | **Gemini vision lyrics** (AI Gateway `google/gemini-2.5-flash`) for the whole song book → R2 `*.v4-gemini.json`. Chorus extracted like pilot #2/#4, then **appended under every verse** for Text mode. Paces paid concurrency. Resume-safe. launchd: `com.braddcorp.sfp-gemini-ocr` (log: `~/Library/Logs/sfp-ocr/gemini-book.log`) |
 | `npx tsx --env-file=.env.local scripts/gemini-sfp-book-ocr.ts --apply --suspect-verses` | Re-check odd verse counts: **high** (`verse_count≥7`), **low on fat packs** (`≤1` verse but `page_count≥9`), or still missing Gemini. Forces a fresh read. |
 | `npx tsx --env-file=.env.local scripts/call-sfp-ocr-endpoint.ts --file-url=…` | Hit RunPod serverless OCR (`RUNPOD_SFP_OCR_ENDPOINT_ID`) |
-| Admin → Songs → Library inspector | **A-###** = Songs of Faith and Praise, **B-###** = Sacred Songs of the Church (admin display only — stored titles unchanged). Search `A-446`, `B-12`, or bare `446` (both books). Book filter + `?song=A-957`. See [`docs/ops/SONG-BOOK-CODES.md`](docs/ops/SONG-BOOK-CODES.md) + overlap TSV. |
+| `npx tsx --env-file=.env.local scripts/fix-sfp-wrong-page-numbers.ts --apply` | Fix nine SFP items imported under wrong page #s: rename PRO-G40 Shape-note 16×9 (+ titled) files, re-key R2 PDFs, update Turso titles (see `docs/ops/SFP-NUMBER-CORRECTIONS.md`) |
 | Admin → Songs → Lyric OCR review | Confirm/edit low-confidence Text mode lyrics (`j`/`k`/`c`/`s`) |
 | Admin → Songs → item **vr** field | Staff sets verse count; PDF title slide rebakes immediately |
 
