@@ -8,7 +8,6 @@ struct SongPacksView: View {
     @State private var isLoading = true
     @State private var errorMessage: String?
     @State private var packSearch = ""
-    @State private var isSearchPresented = false
     @State private var songHits: [SongSearchHit] = []
     @State private var isSearchingSongs = false
 
@@ -123,6 +122,10 @@ struct SongPacksView: View {
             }
         }
         .navigationTitle("Songs")
+        .searchable(text: $packSearch, prompt: "Search songs or packs")
+        .onChange(of: packSearch) { _, _ in
+            Task { await searchSongs() }
+        }
         .toolbar {
             if session.canEdit {
                 ToolbarItem(placement: .primaryAction) {
@@ -136,26 +139,6 @@ struct SongPacksView: View {
         }
         .refreshable { await loadPacks() }
         .task { await loadPacks() }
-        .searchable(
-            text: $packSearch,
-            isPresented: $isSearchPresented,
-            prompt: "Search songs or packs"
-        )
-        .onChange(of: packSearch) { _, _ in
-            Task { await searchSongs() }
-        }
-        .onAppear {
-            // Open search immediately so they can type without tapping (Cmd+F / F also reopen it).
-            isSearchPresented = true
-        }
-        .focusable()
-        .onKeyPress(keys: [KeyEquivalent("f")]) { press in
-            if press.modifiers.contains(.command) || !isSearchPresented {
-                isSearchPresented = true
-                return .handled
-            }
-            return .ignored
-        }
     }
 
     @ViewBuilder
@@ -244,7 +227,6 @@ struct SongPackDetailView: View {
     @State private var errorMessage: String?
     @State private var statusMessage: String?
     @State private var songSearch = ""
-    @State private var isSearchPresented = false
     @State private var openViewerItemId: String? = nil
     @State private var confirmDownloadAll = false
     @State private var confirmOffload = false
@@ -392,22 +374,7 @@ struct SongPackDetailView: View {
             }
         }
         .navigationTitle(packName)
-        .searchable(
-            text: $songSearch,
-            isPresented: $isSearchPresented,
-            prompt: "Search songs"
-        )
-        .onAppear {
-            isSearchPresented = true
-        }
-        .focusable()
-        .onKeyPress(keys: [KeyEquivalent("f")]) { press in
-            if press.modifiers.contains(.command) || !isSearchPresented {
-                isSearchPresented = true
-                return .handled
-            }
-            return .ignored
-        }
+        .searchable(text: $songSearch, prompt: "Search songs")
         .navigationDestination(item: $openViewerItemId) { itemId in
             if let pack,
                let idx = pack.items.firstIndex(where: { $0.id == itemId }) {
