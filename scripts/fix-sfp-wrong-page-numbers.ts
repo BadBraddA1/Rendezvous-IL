@@ -216,7 +216,7 @@ async function main() {
 
     for (const dir of DRIVE_DIRS) {
       const msg = renameDriveFile(dir, move.fromPage, move.toPage, move.driveMatchers)
-      console.log("  Drive", dirname(dir).split("/").pop(), ":", msg)
+      console.log("  Drive", basename(dir), ":", msg)
     }
 
     if (!APPLY) continue

@@ -51,3 +51,5 @@ SSOC: Hymnary [`SSC2007`](https://hymnary.org/hymnal/SSC2007) — no free full a
 ## Status
 
 **Applied 2026-09-24** — PRO-G40 Shape-note 16×9 (+ titled) files renamed; Turso titles + R2 keys updated via `scripts/fix-sfp-wrong-page-numbers.ts --apply`. Full-song / 4×3 / MP3 folders were already correct.
+
+**Title openers rebaked 2026-09-24** — the nine pack PDFs still showed the old page # on the white starter slide; rebaked with `prependSongTitleSlide` so openers match (e.g. `211 "There is a Savior"`). Random sample of 50 other SFP PDFs: **0** opener mismatches.
