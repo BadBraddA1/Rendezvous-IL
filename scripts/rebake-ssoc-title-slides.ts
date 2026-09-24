@@ -6,7 +6,7 @@
  */
 import { createHash } from "crypto"
 import { createClient } from "@libsql/client"
-import { writeFileSync, mkdirSync } from "fs"
+import { writeFileSync, mkdirSync, readFileSync, existsSync } from "fs"
 import { join } from "path"
 import { PDFDocument } from "pdf-lib"
 import {
@@ -15,6 +15,7 @@ import {
 } from "../lib/song-pdf-title-slide"
 
 const APPLY = process.argv.includes("--apply")
+const RESUME = process.argv.includes("--resume")
 const limitArg = process.argv.find((a) => a.startsWith("--limit="))
 const LIMIT = limitArg ? Number(limitArg.split("=")[1]) : 0
 const PACK_ID =
@@ -22,6 +23,10 @@ const PACK_ID =
 const KEEP_PDF_DIR =
   process.env.SSOC_KEEP_PDF_DIR ||
   join(process.env.HOME || "", "Code/ssoc-full-pdf")
+const DONE_PATH = join(
+  process.env.HOME || "",
+  "Code/Rendezvous-IL/.tmp-ssoc-import/rebake-done.json",
+)
 
 async function musicPageSize(
   pdfBytes: Uint8Array,
@@ -62,6 +67,19 @@ async function main() {
   )
 
   mkdirSync(KEEP_PDF_DIR, { recursive: true })
+  mkdirSync(join(process.env.HOME || "", "Code/Rendezvous-IL/.tmp-ssoc-import"), {
+    recursive: true,
+  })
+
+  let done = new Set<string>()
+  if (RESUME && existsSync(DONE_PATH)) {
+    try {
+      done = new Set(JSON.parse(readFileSync(DONE_PATH, "utf8")) as string[])
+      console.log(`resume: ${done.size} already rebaked`)
+    } catch {
+      /* ignore */
+    }
+  }
 
   const items = await db.execute({
     sql: `SELECT id, title, file_url, verse_count, page_count, sort_order
@@ -72,16 +90,21 @@ async function main() {
   })
 
   console.log(
-    `pack=${PACK_ID} items=${items.rows.length} apply=${APPLY} limit=${LIMIT || "all"}`,
+    `pack=${PACK_ID} items=${items.rows.length} apply=${APPLY} resume=${RESUME} limit=${LIMIT || "all"}`,
   )
 
   let ok = 0
   let fail = 0
+  let skipped = 0
   let n = 0
   for (const row of items.rows) {
+    const title = String(row.title)
+    if (done.has(title)) {
+      skipped++
+      continue
+    }
     if (LIMIT > 0 && n >= LIMIT) break
     n++
-    const title = String(row.title)
     const verseCount = Math.max(1, Math.min(12, Number(row.verse_count) || 1))
     try {
       const res = await fetch(String(row.file_url))
@@ -99,7 +122,6 @@ async function main() {
         `${APPLY ? "REBAKE" : "DRY"} ${title} vc=${verseCount} slide=${Math.round(size.width)}x${Math.round(size.height)} pages=${pageCount}`,
       )
 
-      // Keep local copy for Gemini / inspection
       const pageMatch = title.match(/^(\d+)/)
       const pageNum = pageMatch ? pageMatch[1].padStart(3, "0") : "000"
       const namePart = title.replace(/^\d+\s*·\s*/, "")
@@ -136,6 +158,8 @@ async function main() {
           String(row.id),
         ],
       })
+      done.add(title)
+      writeFileSync(DONE_PATH, JSON.stringify([...done]))
       ok++
     } catch (e) {
       fail++
@@ -147,7 +171,9 @@ async function main() {
     sql: "UPDATE song_packs SET updated_at = datetime('now') WHERE id = ?",
     args: [PACK_ID],
   })
-  console.log(`done ok=${ok} fail=${fail}${APPLY ? "" : " (dry — pass --apply)"}`)
+  console.log(
+    `done ok=${ok} skip=${skipped} fail=${fail}${APPLY ? "" : " (dry — pass --apply)"}`,
+  )
 }
 
 main().catch((e) => {
