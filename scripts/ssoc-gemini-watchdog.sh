@@ -29,31 +29,8 @@ ping_phone() {
 }
 
 stats_file=$(mktemp)
-SSOC_PACK_ID="$PACK_ID" npx tsx --env-file=.env.local >"$stats_file" 2>>"$LOG" <<'TS' || true
-import { createClient } from "@libsql/client"
-const db = createClient({
-  url: process.env.TURSO_DATABASE_URL as string,
-  authToken: process.env.TURSO_AUTH_TOKEN as string,
-})
-const id = process.env.SSOC_PACK_ID as string
-const gem = await db.execute({
-  sql: "SELECT COUNT(*) AS n FROM song_pack_items WHERE pack_id = ? AND ocr_url IS NOT NULL AND ocr_url != ''",
-  args: [id],
-})
-const low = await db.execute({
-  sql: `SELECT COUNT(*) AS n FROM song_pack_items
-        WHERE pack_id = ? AND ocr_url IS NOT NULL
-          AND verse_count <= 1 AND page_count >= 9`,
-  args: [id],
-})
-const fails = await db.execute({
-  sql: `SELECT COUNT(*) AS n FROM song_pack_items
-        WHERE pack_id = ? AND ocr_status = 'needs_review'`,
-  args: [id],
-})
-console.log(`${gem.rows[0].n} ${low.rows[0].n} ${fails.rows[0].n}`)
-TS
-
+SSOC_PACK_ID="$PACK_ID" npx tsx --env-file=.env.local \
+  scripts/ssoc-gemini-watch-stats.ts >"$stats_file" 2>>"$LOG" || true
 stats=$(grep -E '^[0-9]+ [0-9]+ [0-9]+$' "$stats_file" | tail -1 || true)
 rm -f "$stats_file"
 
