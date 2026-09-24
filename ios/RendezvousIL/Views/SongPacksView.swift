@@ -396,6 +396,7 @@ struct SongItemViewer: View {
     let items: [SongPackItem]
     let startIndex: Int
 
+    @Environment(AppSession.self) private var session
     @State private var index: Int = 0
     @State private var jumpPage: Int? = nil
     @State private var displayMode: DisplayMode = .slides
@@ -403,6 +404,8 @@ struct SongItemViewer: View {
     @State private var ocrLoading = false
     @State private var ocrFailed = false
     @State private var ocrNeedsReview = false
+    /// Fresh CDN URL after re-fetch (pack list can be stale from before OCR persist).
+    @State private var resolvedOcrUrl: String? = nil
 
     private var item: SongPackItem { items[index] }
 
@@ -490,8 +493,10 @@ struct SongItemViewer: View {
         .onChange(of: index) { _, _ in
             jumpPage = nil
             serverPages = []
+            resolvedOcrUrl = nil
             ocrFailed = false
             ocrNeedsReview = false
+            ocrLoading = false
             if displayMode == .text {
                 Task { await loadServerText() }
             }
@@ -518,11 +523,11 @@ struct SongItemViewer: View {
                 systemImage: "text.badge.checkmark",
                 description: Text("This song’s OCR needs a staff confirm. Use Slides for now.")
             )
-        } else if ocrFailed || (item.ocr_url == nil && serverPages.isEmpty) {
+        } else if ocrFailed || ((resolvedOcrUrl ?? item.ocr_url) == nil && serverPages.isEmpty) {
             ContentUnavailableView(
                 "No lyrics yet",
                 systemImage: "text.page",
-                description: Text("Server lyric OCR hasn’t finished for this song. Use Slides.")
+                description: Text("Pull to refresh the song book, then try Text again. Or use Slides.")
             )
         } else if serverPages.isEmpty {
             ContentUnavailableView(
@@ -554,14 +559,21 @@ struct SongItemViewer: View {
         ocrFailed = false
         ocrNeedsReview = false
         if !serverPages.isEmpty { return }
-        guard let raw = item.ocr_url, let url = URL(string: raw) else {
+
+        ocrLoading = true
+        defer { ocrLoading = false }
+
+        // Pack detail is often stale from before OCR persist — always re-resolve URL.
+        let fresh = await fetchFreshOcrUrl(for: item.id)
+        let raw = fresh ?? resolvedOcrUrl ?? item.ocr_url
+        resolvedOcrUrl = raw
+        guard let raw, let url = URL(string: raw), !raw.isEmpty else {
             ocrFailed = true
             return
         }
-        ocrLoading = true
-        defer { ocrLoading = false }
+
         do {
-            var request = URLRequest(url: url)
+            var request = URLRequest(url: url, timeoutInterval: 20)
             request.cachePolicy = .reloadIgnoringLocalCacheData
             let (data, response) = try await URLSession.shared.data(for: request)
             if let http = response as? HTTPURLResponse, !(200 ... 299).contains(http.statusCode) {
@@ -569,9 +581,8 @@ struct SongItemViewer: View {
                 return
             }
             let doc = try JSONDecoder().decode(SongOcrDocument.self, from: data)
-            // Prefer verses when present (v3 book / full-song OCR).
             let pages = SongOcrStore.displayPages(from: doc)
-            if doc.status == "needs_review", pages.isEmpty {
+            if (doc.status == "needs_review" || item.ocr_status == "needs_review"), pages.isEmpty {
                 ocrNeedsReview = true
                 return
             }
@@ -579,6 +590,17 @@ struct SongItemViewer: View {
             if serverPages.isEmpty { ocrFailed = true }
         } catch {
             ocrFailed = true
+        }
+    }
+
+    /// Re-fetch pack so we pick up `ocr_url` written by the Mac persist job.
+    private func fetchFreshOcrUrl(for itemId: String) async -> String? {
+        guard let client = session.apiClient else { return nil }
+        do {
+            let response: SongPackDetailResponse = try await client.get("/api/songs/packs/\(packId)")
+            return response.pack?.items.first(where: { $0.id == itemId })?.ocr_url
+        } catch {
+            return nil
         }
     }
 }
