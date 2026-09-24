@@ -313,9 +313,14 @@ struct WorshipSongSetView: View {
     @State private var isSaving = false
     @State private var statusMessage: String?
     @State private var searchTask: Task<Void, Never>?
+    @State private var showSongBook = false
 
     private var exactHit: SongSearchHit? {
         Self.findExactNumberHit(hits: hits, query: query)
+    }
+
+    private var pickedItemIds: Set<String> {
+        Set(songs.map(\.song_pack_item_id))
     }
 
     private var readyHint: String {
@@ -337,6 +342,12 @@ struct WorshipSongSetView: View {
             }
 
             Section("Add a song") {
+                Button {
+                    showSongBook = true
+                } label: {
+                    Label("Browse song book", systemImage: "book")
+                        .font(.body.weight(.semibold))
+                }
                 HStack {
                     Image(systemName: "magnifyingglass")
                         .foregroundStyle(.secondary)
@@ -444,6 +455,23 @@ struct WorshipSongSetView: View {
         .overlay {
             if isLoading {
                 ProgressView("Loading…")
+            }
+        }
+        .sheet(isPresented: $showSongBook) {
+            NavigationStack {
+                SongPacksView(
+                    onPickSong: { item in
+                        addPackItem(item)
+                    },
+                    pickedItemIds: pickedItemIds
+                )
+                .navigationTitle("Song book")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Done") { showSongBook = false }
+                    }
+                }
             }
         }
         .task {
@@ -622,6 +650,26 @@ struct WorshipSongSetView: View {
         query = ""
         hits = []
         searchFocused = true
+    }
+
+    private func addPackItem(_ item: SongPackItem) {
+        guard !songs.contains(where: { $0.song_pack_item_id == item.id }) else {
+            statusMessage = "Already in your set."
+            return
+        }
+        songs.append(
+            WorshipSongPickPayload(
+                song_pack_item_id: item.id,
+                pack_id: item.pack_id,
+                title: item.title,
+                verses: .all,
+                note: nil
+            )
+        )
+        if let vc = item.verse_count {
+            verseCounts[item.id] = vc
+        }
+        statusMessage = "Added \(item.title)."
     }
 
     private func toggleVerse(at index: Int, verse: Int) {

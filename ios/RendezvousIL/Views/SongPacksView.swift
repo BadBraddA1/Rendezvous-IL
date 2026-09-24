@@ -11,6 +11,10 @@ struct SongPacksView: View {
     @State private var songHits: [SongSearchHit] = []
     @State private var isSearchingSongs = false
 
+    /// When set, browsing is for picking songs into a worship set (Add buttons appear).
+    var onPickSong: ((SongPackItem) -> Void)? = nil
+    var pickedItemIds: Set<String> = []
+
     private var query: String {
         packSearch.trimmingCharacters(in: .whitespacesAndNewlines)
     }
@@ -66,7 +70,9 @@ struct SongPacksView: View {
                                     SongPackDetailView(
                                         packId: hit.pack_id,
                                         packName: hit.pack_name,
-                                        startItemId: hit.item_id
+                                        startItemId: hit.item_id,
+                                        onPickSong: onPickSong,
+                                        pickedItemIds: pickedItemIds
                                     )
                                 } label: {
                                     VStack(alignment: .leading, spacing: 2) {
@@ -138,7 +144,12 @@ struct SongPacksView: View {
     @ViewBuilder
     private func packRow(_ pack: SongPackSummary, fallback: String?) -> some View {
         NavigationLink {
-            SongPackDetailView(packId: pack.id, packName: pack.name)
+            SongPackDetailView(
+                packId: pack.id,
+                packName: pack.name,
+                onPickSong: onPickSong,
+                pickedItemIds: pickedItemIds
+            )
         } label: {
             VStack(alignment: .leading, spacing: 4) {
                 Text(pack.name)
@@ -206,6 +217,8 @@ struct SongPackDetailView: View {
     let packId: String
     let packName: String
     var startItemId: String? = nil
+    var onPickSong: ((SongPackItem) -> Void)? = nil
+    var pickedItemIds: Set<String> = []
 
     @Environment(AppSession.self) private var session
     @State private var pack: SongPackDetail?
@@ -288,7 +301,9 @@ struct SongPackDetailView: View {
                                     SongItemViewer(
                                         packId: pack.id,
                                         items: filteredItems,
-                                        startIndex: index
+                                        startIndex: index,
+                                        onPickSong: onPickSong,
+                                        pickedItemIds: pickedItemIds
                                     )
                                 } label: {
                                     HStack {
@@ -302,12 +317,27 @@ struct SongPackDetailView: View {
                                             }
                                         }
                                         Spacer()
+                                        if pickedItemIds.contains(item.id) {
+                                            Text("Added")
+                                                .font(.caption.weight(.semibold))
+                                                .foregroundStyle(BrandColors.lake)
+                                        }
                                         if SongPackStore.isDownloaded(packId: pack.id, item: item) {
                                             Image(systemName: "checkmark.circle.fill")
                                                 .foregroundStyle(BrandColors.lake)
                                         }
                                     }
                                     .id("\(item.id)-\(offlineEpoch)")
+                                }
+                                .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                                    if let onPickSong, !pickedItemIds.contains(item.id) {
+                                        Button {
+                                            onPickSong(item)
+                                        } label: {
+                                            Label("Add", systemImage: "plus")
+                                        }
+                                        .tint(BrandColors.lake)
+                                    }
                                 }
                                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                                     if SongPackStore.isDownloaded(packId: pack.id, item: item) {
@@ -348,7 +378,13 @@ struct SongPackDetailView: View {
         .navigationDestination(item: $openViewerItemId) { itemId in
             if let pack,
                let idx = pack.items.firstIndex(where: { $0.id == itemId }) {
-                SongItemViewer(packId: pack.id, items: pack.items, startIndex: idx)
+                SongItemViewer(
+                    packId: pack.id,
+                    items: pack.items,
+                    startIndex: idx,
+                    onPickSong: onPickSong,
+                    pickedItemIds: pickedItemIds
+                )
             }
         }
         .confirmationDialog(
@@ -450,6 +486,8 @@ struct SongItemViewer: View {
     let packId: String
     let items: [SongPackItem]
     let startIndex: Int
+    var onPickSong: ((SongPackItem) -> Void)? = nil
+    var pickedItemIds: Set<String> = []
 
     @Environment(AppSession.self) private var session
     @State private var index: Int = 0
@@ -548,6 +586,21 @@ struct SongItemViewer: View {
         }
         .navigationTitle(item.title)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if let onPickSong {
+                ToolbarItem(placement: .confirmationAction) {
+                    if pickedItemIds.contains(item.id) {
+                        Text("Added")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(BrandColors.lake)
+                    } else {
+                        Button("Add to set") {
+                            onPickSong(item)
+                        }
+                    }
+                }
+            }
+        }
         .onAppear { index = startIndex }
         .onChange(of: index) { _, _ in
             jumpPage = nil

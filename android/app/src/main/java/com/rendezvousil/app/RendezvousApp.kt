@@ -240,8 +240,10 @@ fun RendezvousApp(
             }
             composable(Routes.MORE_VOLUNTEERING) {
                 val volunteeringViewModel: VolunteeringViewModel = viewModel(factory = viewModelFactory)
+                val songsViewModel: SongPacksViewModel = viewModel(factory = viewModelFactory)
                 VolunteeringScreen(
                     viewModel = volunteeringViewModel,
+                    songPacksViewModel = songsViewModel,
                     onBack = { navController.popBackStack() },
                 )
             }

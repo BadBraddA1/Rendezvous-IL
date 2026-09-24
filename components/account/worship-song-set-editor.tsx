@@ -8,6 +8,21 @@ import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
 import { Loader2, Search, Trash2, Plus } from "lucide-react"
 
+type PackSummary = {
+  id: string
+  name: string
+  is_library?: boolean
+  item_count?: number
+}
+
+type PackItem = {
+  id: string
+  pack_id: string
+  title: string
+  file_url: string
+  verse_count: number | null
+}
+
 type SearchHit = {
   pack_id: string
   pack_name: string
@@ -70,6 +85,13 @@ export function WorshipSongSetEditor({
   const [q, setQ] = useState("")
   const [hits, setHits] = useState<SearchHit[]>([])
   const [searching, setSearching] = useState(false)
+  const [browseOpen, setBrowseOpen] = useState(false)
+  const [browsePacks, setBrowsePacks] = useState<PackSummary[]>([])
+  const [browsePackId, setBrowsePackId] = useState<string | null>(null)
+  const [browsePackName, setBrowsePackName] = useState("")
+  const [browseItems, setBrowseItems] = useState<PackItem[]>([])
+  const [browseLoading, setBrowseLoading] = useState(false)
+  const [browseFilter, setBrowseFilter] = useState("")
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -122,6 +144,64 @@ export function WorshipSongSetEditor({
     }, 180)
     return () => clearTimeout(t)
   }, [q, eventYear])
+
+  const openBrowse = async () => {
+    setBrowseOpen(true)
+    setBrowsePackId(null)
+    setBrowseItems([])
+    setBrowseFilter("")
+    setBrowseLoading(true)
+    try {
+      const res = await fetch(`/api/songs/packs?year=${eventYear}`)
+      const data = await res.json().catch(() => ({}))
+      const packs = ((data.packs || []) as PackSummary[]).filter((p) => p.is_library)
+      setBrowsePacks(packs.length ? packs : ((data.packs || []) as PackSummary[]))
+    } catch {
+      setBrowsePacks([])
+    } finally {
+      setBrowseLoading(false)
+    }
+  }
+
+  const openBrowsePack = async (pack: PackSummary) => {
+    setBrowsePackId(pack.id)
+    setBrowsePackName(pack.name)
+    setBrowseFilter("")
+    setBrowseLoading(true)
+    try {
+      const res = await fetch(`/api/songs/packs/${pack.id}`)
+      const data = await res.json().catch(() => ({}))
+      setBrowseItems((data.pack?.items || []) as PackItem[])
+    } catch {
+      setBrowseItems([])
+    } finally {
+      setBrowseLoading(false)
+    }
+  }
+
+  const addPackItem = (item: PackItem) => {
+    if (songs.some((s) => s.song_pack_item_id === item.id)) {
+      toast({ title: "Already in your set" })
+      return
+    }
+    setSongs((prev) => [
+      ...prev,
+      {
+        song_pack_item_id: item.id,
+        pack_id: item.pack_id,
+        title: item.title,
+        verses: { mode: "all" },
+        verse_count: item.verse_count,
+      },
+    ])
+    toast({ title: `Added ${item.title}` })
+  }
+
+  const filteredBrowseItems = useMemo(() => {
+    const f = browseFilter.trim().toLowerCase()
+    if (!f) return browseItems
+    return browseItems.filter((i) => i.title.toLowerCase().includes(f))
+  }, [browseItems, browseFilter])
 
   const exactHit = useMemo(() => findExactNumberHit(hits, q), [hits, q])
 
@@ -247,6 +327,14 @@ export function WorshipSongSetEditor({
       </div>
 
       <div className="space-y-2">
+        <Button
+          type="button"
+          variant="outline"
+          className="h-11 w-full text-base"
+          onClick={() => void openBrowse()}
+        >
+          Browse song book
+        </Button>
         <div className="relative">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -431,6 +519,127 @@ export function WorshipSongSetEditor({
           <Link href="/account">Back to account</Link>
         </Button>
       </div>
+
+      {browseOpen ? (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Browse song book"
+            className="flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-lg border border-border bg-background shadow-lg"
+          >
+            <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
+              <div>
+                <p className="font-medium">
+                  {browsePackId ? browsePackName : "Song books"}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Open a song to look, then Add — you stay on this form.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setBrowseOpen(false)}
+              >
+                Done
+              </Button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto p-3">
+              {browseLoading ? (
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Loading…
+                </div>
+              ) : browsePackId == null ? (
+                <ul className="divide-y rounded-md border border-border">
+                  {browsePacks.map((pack) => (
+                    <li key={pack.id}>
+                      <button
+                        type="button"
+                        className="w-full px-3 py-3 text-left hover:bg-muted/50"
+                        onClick={() => void openBrowsePack(pack)}
+                      >
+                        <span className="font-medium">{pack.name}</span>
+                        <span className="mt-0.5 block text-xs text-muted-foreground">
+                          {pack.item_count != null
+                            ? `${pack.item_count} songs`
+                            : "Song book"}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                  {browsePacks.length === 0 ? (
+                    <li className="px-3 py-4 text-sm text-muted-foreground">
+                      No song books published yet.
+                    </li>
+                  ) : null}
+                </ul>
+              ) : (
+                <div className="space-y-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="px-0"
+                    onClick={() => {
+                      setBrowsePackId(null)
+                      setBrowseItems([])
+                    }}
+                  >
+                    ← All song books
+                  </Button>
+                  <Input
+                    value={browseFilter}
+                    onChange={(e) => setBrowseFilter(e.target.value)}
+                    placeholder="Filter by number or title…"
+                    className="h-11"
+                  />
+                  <ul className="divide-y rounded-md border border-border">
+                    {filteredBrowseItems.map((item) => {
+                      const added = songs.some(
+                        (s) => s.song_pack_item_id === item.id,
+                      )
+                      return (
+                        <li
+                          key={item.id}
+                          className="flex items-center gap-2 px-3 py-2.5"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium">
+                              {item.title}
+                            </p>
+                            <a
+                              href={item.file_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-xs text-muted-foreground underline-offset-2 hover:underline"
+                            >
+                              Open pages
+                            </a>
+                          </div>
+                          {added ? (
+                            <span className="shrink-0 text-xs font-semibold text-muted-foreground">
+                              Added
+                            </span>
+                          ) : (
+                            <Button
+                              type="button"
+                              size="sm"
+                              onClick={() => addPackItem(item)}
+                            >
+                              Add
+                            </Button>
+                          )}
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }

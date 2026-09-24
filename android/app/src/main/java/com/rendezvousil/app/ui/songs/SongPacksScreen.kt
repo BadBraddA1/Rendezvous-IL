@@ -69,6 +69,8 @@ fun SongPacksScreen(
     onOpenPack: (packId: String, packName: String) -> Unit,
     onOpenSong: ((packId: String, packName: String, itemId: String) -> Unit)? = null,
     onBuildPacks: (() -> Unit)? = null,
+    onPickSong: ((com.rendezvousil.core.network.dto.SongPackItem) -> Unit)? = null,
+    pickedItemIds: Set<String> = emptySet(),
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.listState.collectAsStateWithLifecycle()
@@ -260,6 +262,8 @@ fun SongPackDetailScreen(
     onBack: () -> Unit,
     onOpenSong: (index: Int) -> Unit,
     startItemId: String? = null,
+    onPickSong: ((com.rendezvousil.core.network.dto.SongPackItem) -> Unit)? = null,
+    pickedItemIds: Set<String> = emptySet(),
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.detailState.collectAsStateWithLifecycle()
@@ -386,6 +390,7 @@ fun SongPackDetailScreen(
                             itemsIndexed(filtered, key = { _, item -> item.id }) { _, item ->
                                 val fullIndex = pack.items.indexOfFirst { it.id == item.id }
                                 val downloaded = viewModel.store().isDownloaded(pack.id, item)
+                                val already = item.id in pickedItemIds
                                 ListItem(
                                     headlineContent = { Text(item.title) },
                                     supportingContent = {
@@ -397,12 +402,24 @@ fun SongPackDetailScreen(
                                         }
                                     },
                                     trailingContent = {
-                                        if (downloaded) {
-                                            Icon(
-                                                Icons.Default.CheckCircle,
-                                                contentDescription = "Downloaded",
-                                                tint = BrandColors.Lake,
-                                            )
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            when {
+                                                already -> Text(
+                                                    "Added",
+                                                    color = BrandColors.Lake,
+                                                    style = MaterialTheme.typography.labelMedium,
+                                                )
+                                                onPickSong != null -> TextButton(
+                                                    onClick = { onPickSong(item) },
+                                                ) { Text("Add") }
+                                            }
+                                            if (downloaded) {
+                                                Icon(
+                                                    Icons.Default.CheckCircle,
+                                                    contentDescription = "Downloaded",
+                                                    tint = BrandColors.Lake,
+                                                )
+                                            }
                                         }
                                     },
                                     modifier = Modifier.clickable {
@@ -425,6 +442,8 @@ fun SongItemViewerScreen(
     startIndex: Int,
     viewModel: SongPacksViewModel,
     onBack: () -> Unit,
+    onPickSong: ((com.rendezvousil.core.network.dto.SongPackItem) -> Unit)? = null,
+    pickedItemIds: Set<String> = emptySet(),
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.detailState.collectAsStateWithLifecycle()
@@ -499,6 +518,22 @@ fun SongItemViewerScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    if (onPickSong != null) {
+                        if (item.id in pickedItemIds) {
+                            Text(
+                                "Added",
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                                color = BrandColors.Lake,
+                                style = MaterialTheme.typography.labelLarge,
+                            )
+                        } else {
+                            TextButton(onClick = { onPickSong(item) }) {
+                                Text("Add to set")
+                            }
+                        }
                     }
                 },
             )

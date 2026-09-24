@@ -216,6 +216,27 @@ class VolunteeringViewModel(
         )
     }
 
+    fun addPackItem(item: com.rendezvousil.core.network.dto.SongPackItem) {
+        val current = _songSetEditor.value ?: return
+        if (current.songs.any { it.song_pack_item_id == item.id }) {
+            _songSetEditor.value = current.copy(statusMessage = "Already in your set.")
+            return
+        }
+        val next = current.songs + WorshipSongPickPayload(
+            song_pack_item_id = item.id,
+            pack_id = item.pack_id,
+            title = item.title,
+            verses = WorshipSongVerseChoice(mode = "all"),
+        )
+        val counts = current.verseCounts.toMutableMap()
+        item.verse_count?.let { counts[item.id] = it }
+        _songSetEditor.value = current.copy(
+            songs = next,
+            verseCounts = counts,
+            statusMessage = "Added ${item.title}.",
+        )
+    }
+
     fun removeSongAt(index: Int) {
         val current = _songSetEditor.value ?: return
         if (index !in current.songs.indices) return

@@ -737,6 +737,7 @@ private fun StatusCard(
 fun VolunteeringScreen(
     viewModel: VolunteeringViewModel,
     onBack: () -> Unit,
+    songPacksViewModel: com.rendezvousil.app.ui.songs.SongPacksViewModel? = null,
     modifier: Modifier = Modifier,
 ) {
     val volunteering by viewModel.volunteering.collectAsState()
@@ -775,6 +776,7 @@ fun VolunteeringScreen(
             onQueryChange = viewModel::setSongSetQuery,
             onSubmitSearch = viewModel::tryAddFromSearch,
             onAddHit = viewModel::addSongHit,
+            onAddPackItem = viewModel::addPackItem,
             onRemoveAt = viewModel::removeSongAt,
             onNoteChange = viewModel::setSongNote,
             onShowNote = viewModel::showSongNote,
@@ -783,6 +785,7 @@ fun VolunteeringScreen(
             onToggleCustom = viewModel::toggleCustomVerses,
             onToggleVerse = viewModel::toggleVerse,
             onSave = viewModel::saveSongSet,
+            songPacksViewModel = songPacksViewModel,
             modifier = modifier,
         )
         return
@@ -1029,6 +1032,7 @@ private fun WorshipSongSetScreen(
     onQueryChange: (String) -> Unit,
     onSubmitSearch: () -> Unit,
     onAddHit: (SongSearchHit) -> Unit,
+    onAddPackItem: (com.rendezvousil.core.network.dto.SongPackItem) -> Unit,
     onRemoveAt: (Int) -> Unit,
     onNoteChange: (String) -> Unit,
     onShowNote: () -> Unit,
@@ -1037,8 +1041,61 @@ private fun WorshipSongSetScreen(
     onToggleCustom: (Int) -> Unit,
     onToggleVerse: (Int, Int) -> Unit,
     onSave: () -> Unit,
+    songPacksViewModel: com.rendezvousil.app.ui.songs.SongPacksViewModel? = null,
     modifier: Modifier = Modifier,
 ) {
+    var browsePackId by remember { mutableStateOf<String?>(null) }
+    var browsePackName by remember { mutableStateOf("") }
+    var browseViewerIndex by remember { mutableStateOf<Int?>(null) }
+    var browsing by remember { mutableStateOf(false) }
+    val pickedIds = state.songs.map { it.song_pack_item_id }.toSet()
+
+    if (browsing && songPacksViewModel != null) {
+        when {
+            browseViewerIndex != null && browsePackId != null -> {
+                com.rendezvousil.app.ui.songs.SongItemViewerScreen(
+                    packId = browsePackId!!,
+                    startIndex = browseViewerIndex!!,
+                    viewModel = songPacksViewModel,
+                    onBack = { browseViewerIndex = null },
+                    onPickSong = onAddPackItem,
+                    pickedItemIds = pickedIds,
+                    modifier = modifier,
+                )
+            }
+            browsePackId != null -> {
+                com.rendezvousil.app.ui.songs.SongPackDetailScreen(
+                    packId = browsePackId!!,
+                    packName = browsePackName,
+                    viewModel = songPacksViewModel,
+                    onBack = { browsePackId = null },
+                    onOpenSong = { index -> browseViewerIndex = index },
+                    onPickSong = onAddPackItem,
+                    pickedItemIds = pickedIds,
+                    modifier = modifier,
+                )
+            }
+            else -> {
+                com.rendezvousil.app.ui.songs.SongPacksScreen(
+                    viewModel = songPacksViewModel,
+                    onBack = { browsing = false },
+                    onOpenPack = { id, name ->
+                        browsePackId = id
+                        browsePackName = name
+                    },
+                    onOpenSong = { id, name, _ ->
+                        browsePackId = id
+                        browsePackName = name
+                    },
+                    onPickSong = onAddPackItem,
+                    pickedItemIds = pickedIds,
+                    modifier = modifier,
+                )
+            }
+        }
+        return
+    }
+
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -1090,6 +1147,18 @@ private fun WorshipSongSetScreen(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            if (songPacksViewModel != null) {
+                Button(
+                    onClick = {
+                        browsePackId = null
+                        browseViewerIndex = null
+                        browsing = true
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("Browse song book")
+                }
+            }
             OutlinedTextField(
                 value = state.query,
                 onValueChange = onQueryChange,
