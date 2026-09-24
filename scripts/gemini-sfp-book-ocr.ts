@@ -11,10 +11,16 @@
  *
  *   npx tsx --env-file=.env.local scripts/gemini-sfp-book-ocr.ts \
  *     [--apply] [--limit=N] [--concurrency=4] [--model=google/gemini-2.5-flash] \
- *     [--from-page=N] [--only=2,4,480]
+ *     [--from-page=N] [--only=2,4,480] [--suspect-verses] [--force]
+ *
+ * --suspect-verses: re-check songs with odd verse counts:
+ *   - high: verse_count >= 7
+ *   - low for a fat pack: verse_count <= 1 and page_count >= 9
+ *   - still missing Gemini lyrics (empty / failed earlier)
+ * Implies --force for those rows.
  *
  * Resume-safe: skips items whose ocr_url already has method=gemini_vision_v1
- * (or --force to redo). JSONL progress: /tmp/sfp-gemini-ocr.jsonl
+ * (or --force / --suspect-verses to redo). JSONL progress: /tmp/sfp-gemini-ocr.jsonl
  */
 import { createClient } from "@libsql/client"
 import { spawnSync } from "child_process"
@@ -30,6 +36,7 @@ import { basename, join } from "path"
 
 const APPLY = process.argv.includes("--apply")
 const FORCE = process.argv.includes("--force")
+const SUSPECT_VERSES = process.argv.includes("--suspect-verses")
 const limitArg = process.argv.find((a) => a.startsWith("--limit="))
 const LIMIT = limitArg ? Number(limitArg.split("=")[1]) : 0
 const concArg = process.argv.find((a) => a.startsWith("--concurrency="))
@@ -66,6 +73,10 @@ const GATEWAY = "https://ai-gateway.vercel.sh/v1"
 const METHOD = "gemini_vision_v1"
 const MAX_CDN_PAGES = 6
 const REQUEST_TIMEOUT_MS = 120_000
+/** Treat these as “odd” for --suspect-verses. */
+const SUSPECT_HIGH_VC = 7
+const SUSPECT_LOW_VC = 1
+const SUSPECT_FAT_PAGES = 9
 
 const SYSTEM = `You extract singable hymn lyrics from Songs of Faith and Praise shape-note slides.
 
@@ -74,6 +85,7 @@ Output ONLY valid JSON:
 
 Rules:
 - Join hyphenated syllables: "Hal-le - lu - jah" → "Hallelujah", "glo - ry" → "glory".
+- Prefer natural hymn verse counts (usually 2–5 sung verses). Do not split every music system into its own verse.
 - Put the shared refrain/chorus in "chorus" (once), exactly as on the slide — e.g. "Hallelujah! Thine the glory…" or "Praise the Lord, praise the Lord…".
 - Chorus/refrain must include EVERY sung line of the refrain. Never truncate mid-phrase (watch for wrap-under-music second lines like "And His glory is exalted…").
 - Verse text is verse-only: do NOT paste the chorus into each verse.
@@ -89,6 +101,7 @@ type Item = {
   file_url: string
   page: number | null
   verse_count: number | null
+  page_count: number | null
   ocr_url: string | null
   ocr_status: string | null
 }
@@ -384,7 +397,8 @@ async function callGemini(
 }
 
 async function alreadyGemini(ocrUrl: string | null): Promise<boolean> {
-  if (FORCE || !ocrUrl) return false
+  // Suspect pass always re-reads (counts look wrong).
+  if (FORCE || SUSPECT_VERSES || !ocrUrl) return false
   // Fast path: our persist key embeds the method marker.
   if (ocrUrl.includes(".v4-gemini.json")) return true
   try {
@@ -395,6 +409,19 @@ async function alreadyGemini(ocrUrl: string | null): Promise<boolean> {
   } catch {
     return false
   }
+}
+
+function isSuspectVerses(item: Item): boolean {
+  const vc = item.verse_count
+  const pc = item.page_count ?? 0
+  const missingGemini = !item.ocr_url || !item.ocr_url.includes(".v4-gemini.json")
+  // High counts were often page-heuristic lies on the title slide.
+  if (vc != null && vc >= SUSPECT_HIGH_VC) return true
+  // One “verse” on a multi-slide deck is often under-split / empty OCR.
+  if (vc != null && vc <= SUSPECT_LOW_VC && pc >= SUSPECT_FAT_PAGES) return true
+  // Never successfully Gemini'd (empty-verse fails, old OCR only).
+  if (missingGemini && pc >= 3) return true
+  return false
 }
 
 async function persistOne(
@@ -595,7 +622,7 @@ async function main() {
     authToken: env.TURSO_AUTH_TOKEN,
   })
   const r = await db.execute({
-    sql: `SELECT id, title, file_url, verse_count, ocr_url, ocr_status
+    sql: `SELECT id, title, file_url, verse_count, page_count, ocr_url, ocr_status
           FROM song_pack_items
           WHERE pack_id = ?
           ORDER BY sort_order, title`,
@@ -610,11 +637,18 @@ async function main() {
       file_url: String(row.file_url || ""),
       page: pageFromTitle(title),
       verse_count: row.verse_count != null ? Number(row.verse_count) : null,
+      page_count: row.page_count != null ? Number(row.page_count) : null,
       ocr_url: row.ocr_url ? String(row.ocr_url) : null,
       ocr_status: row.ocr_status ? String(row.ocr_status) : null,
     }
   })
 
+  if (SUSPECT_VERSES) {
+    items = items.filter(isSuspectVerses)
+    console.log(
+      `suspect-verses filter: high>=${SUSPECT_HIGH_VC} or (vc<=${SUSPECT_LOW_VC} & pages>=${SUSPECT_FAT_PAGES}) or missing gemini`,
+    )
+  }
   if (ONLY.size) {
     items = items.filter((it) => it.page != null && ONLY.has(it.page))
   }
@@ -628,7 +662,7 @@ async function main() {
   mkdirSync(tmpDir, { recursive: true })
 
   console.log(
-    `gemini OCR items=${items.length} localPdfs=${localPdfs.size} concurrency=${CONCURRENCY} model=${MODEL} apply=${APPLY}`,
+    `gemini OCR items=${items.length} localPdfs=${localPdfs.size} concurrency=${CONCURRENCY} model=${MODEL} apply=${APPLY} suspect=${SUSPECT_VERSES}`,
   )
 
   await mapPool(items, CONCURRENCY, (item) =>
