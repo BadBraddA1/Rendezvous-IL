@@ -83,6 +83,8 @@ const PY =
 const GATEWAY = "https://ai-gateway.vercel.sh/v1"
 const METHOD = "gemini_vision_v1"
 const MAX_CDN_PAGES = 6
+/** Multi-page pack PDFs (SSOC etc.): skip title opener, send more music slides. */
+const MAX_MULTI_PAGES = 14
 const REQUEST_TIMEOUT_MS = 120_000
 /** Treat these as “odd” for --suspect-verses. */
 const SUSPECT_HIGH_VC = 7
@@ -159,6 +161,22 @@ function indexLocalPdfs(dir: string): Map<number, string> {
     map.set(Number(m[1]), join(dir, name))
   }
   return map
+}
+
+/** Page count via pymupdf (cheap). */
+function pdfPageCount(pdfPath: string): number {
+  const r = spawnSync(
+    PY,
+    [
+      "-c",
+      "import sys,warnings; warnings.filterwarnings('ignore'); import pymupdf; print(len(pymupdf.open(sys.argv[1])))",
+      pdfPath,
+    ],
+    { encoding: "utf8" },
+  )
+  if (r.status !== 0) return 0
+  const n = Number((r.stdout || "").trim())
+  return Number.isFinite(n) ? n : 0
 }
 
 /** Render PDF pages → PNG base64 list (pymupdf). */
@@ -507,14 +525,31 @@ async function processItem(
   try {
     if (item.page != null && localPdfs.has(item.page)) {
       const path = localPdfs.get(item.page)!
-      images = renderPdfPages(path, { maxPages: 3, skipTitle: false })
+      // SFP local full-song PDFs are 1–3 pages (whole song on one sheet).
+      // SSOC / pack PDFs are title + many music slides — need skipTitle + more pages.
+      const pages = item.page_count && item.page_count > 0
+        ? item.page_count
+        : pdfPageCount(path)
+      if (pages <= 3) {
+        images = renderPdfPages(path, { maxPages: 3, skipTitle: false })
+      } else {
+        const musicPages = Math.max(1, pages - 1)
+        images = renderPdfPages(path, {
+          maxPages: Math.min(musicPages, MAX_MULTI_PAGES),
+          skipTitle: true,
+        })
+      }
       source = `local:${basename(path)}`
     } else if (item.file_url) {
       const dest = join(tmpDir, `${item.id}.pdf`)
       await downloadToTemp(item.file_url, dest)
+      const pages = item.page_count && item.page_count > 0
+        ? item.page_count
+        : pdfPageCount(dest)
+      const musicPages = Math.max(1, pages > 1 ? pages - 1 : pages)
       images = renderPdfPages(dest, {
-        maxPages: MAX_CDN_PAGES,
-        skipTitle: true,
+        maxPages: Math.min(musicPages, Math.max(MAX_CDN_PAGES, MAX_MULTI_PAGES)),
+        skipTitle: pages > 1,
       })
       source = "cdn"
     }
