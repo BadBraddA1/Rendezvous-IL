@@ -75,6 +75,7 @@ Output ONLY valid JSON:
 Rules:
 - Join hyphenated syllables: "Hal-le - lu - jah" → "Hallelujah", "glo - ry" → "glory".
 - Put the shared refrain/chorus in "chorus" (once), exactly as on the slide — e.g. "Hallelujah! Thine the glory…" or "Praise the Lord, praise the Lord…".
+- Chorus/refrain must include EVERY sung line of the refrain. Never truncate mid-phrase (watch for wrap-under-music second lines like "And His glory is exalted…").
 - Verse text is verse-only: do NOT paste the chorus into each verse.
 - If the song has no separate chorus/refrain, set "chorus": null.
 - Do NOT invent lyrics that are not visible. Prefer incomplete over fabricated.
