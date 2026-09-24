@@ -33,8 +33,7 @@ const FORCE = process.argv.includes("--force")
 const limitArg = process.argv.find((a) => a.startsWith("--limit="))
 const LIMIT = limitArg ? Number(limitArg.split("=")[1]) : 0
 const concArg = process.argv.find((a) => a.startsWith("--concurrency="))
-/** Default 1 — AI Gateway free tier is ~5 RPM for Gemini. */
-const CONCURRENCY = Math.max(1, Math.min(4, Number(concArg?.split("=")[1] || 1)))
+const CONCURRENCY = Math.max(1, Math.min(16, Number(concArg?.split("=")[1] || 8)))
 const modelArg = process.argv.find((a) => a.startsWith("--model="))
 const MODEL =
   modelArg?.slice("--model=".length) ||
@@ -241,18 +240,19 @@ function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms))
 }
 
-/** Free-tier Google via AI Gateway is ~5 RPM — pace + retry 429s. */
+/** Soft pacing between Gemini calls (0 = full concurrency). Paid Gateway: keep low. */
 const MIN_GAP_MS = Math.max(
-  12_000,
-  Number(process.env.GEMINI_OCR_MIN_GAP_MS || 13_000),
+  0,
+  Number(process.env.GEMINI_OCR_MIN_GAP_MS ?? "200"),
 )
 let lastGeminiAt = 0
-let geminiLock: Promise<void> = Promise.resolve()
+const rateLock = { p: Promise.resolve() }
 
 async function withRateLimit<T>(fn: () => Promise<T>): Promise<T> {
+  if (MIN_GAP_MS <= 0) return fn()
   let release!: () => void
-  const prev = geminiLock
-  geminiLock = new Promise<void>((r) => {
+  const prev = rateLock.p
+  rateLock.p = new Promise<void>((r) => {
     release = r
   })
   await prev

@@ -9,15 +9,18 @@ LOG="$LOG_DIR/gemini-book.log"
 
 log() { echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) $*" | tee -a "$LOG"; }
 
-log "gemini-book start model=${GEMINI_OCR_MODEL:-google/gemini-2.5-flash}"
+export GEMINI_OCR_MODEL="${GEMINI_OCR_MODEL:-google/gemini-2.5-flash}"
+export GEMINI_OCR_CONCURRENCY="${GEMINI_OCR_CONCURRENCY:-8}"
+export GEMINI_OCR_MIN_GAP_MS="${GEMINI_OCR_MIN_GAP_MS:-0}"
 
-# One full pass; if exit non-zero, launchd restarts after ThrottleInterval.
+log "gemini-book start model=$GEMINI_OCR_MODEL concurrency=$GEMINI_OCR_CONCURRENCY gapMs=$GEMINI_OCR_MIN_GAP_MS"
+
 npx tsx --env-file=.env.local scripts/gemini-sfp-book-ocr.ts \
   --apply \
-  --concurrency="${GEMINI_OCR_CONCURRENCY:-1}" \
-  --model="${GEMINI_OCR_MODEL:-google/gemini-2.5-flash}" \
+  --concurrency="$GEMINI_OCR_CONCURRENCY" \
+  --model="$GEMINI_OCR_MODEL" \
   >>"$LOG" 2>&1
 
 log "gemini-book pass finished exit=$?"
-# Re-scan soon for 429 leftovers; when all done, most are SKIP and this is cheap.
+# Re-scan soon for empty-verse / 429 leftovers.
 sleep 120
