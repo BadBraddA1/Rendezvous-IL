@@ -294,6 +294,7 @@ struct FamilyVolunteeringView: View {
 struct WorshipSongSetView: View {
     @Environment(AppSession.self) private var session
     @Environment(\.dismiss) private var dismiss
+    @FocusState private var searchFocused: Bool
 
     let signupId: Int
     let volunteerName: String
@@ -301,7 +302,10 @@ struct WorshipSongSetView: View {
     var onSaved: () -> Void
 
     @State private var songs: [WorshipSongPickPayload] = []
+    @State private var verseCounts: [String: Int] = [:]
     @State private var note = ""
+    @State private var showNote = false
+    @State private var customSongIds: Set<String> = []
     @State private var query = ""
     @State private var hits: [SongSearchHit] = []
     @State private var isLoading = true
@@ -310,39 +314,65 @@ struct WorshipSongSetView: View {
     @State private var statusMessage: String?
     @State private var searchTask: Task<Void, Never>?
 
-    private let verseOptions = Array(1 ... 8)
+    private var exactHit: SongSearchHit? {
+        Self.findExactNumberHit(hits: hits, query: query)
+    }
+
+    private var readyHint: String {
+        if songs.isEmpty { return "Type a song number (like 957), then Add." }
+        if songs.count < 3 {
+            return "\(songs.count) song\(songs.count == 1 ? "" : "s") — add more if you want, then Submit."
+        }
+        return "\(songs.count) songs — tap Submit when ready."
+    }
 
     var body: some View {
         List {
             Section {
-                Text("Search the song book, add songs, and tap which verses you’ll lead.")
+                Text("Usually 3 songs. Type the number, add it, pick verses if needed.")
+                    .font(.body)
+                Text(readyHint)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
 
-            Section("Search") {
+            Section("Add a song") {
                 HStack {
                     Image(systemName: "magnifyingglass")
                         .foregroundStyle(.secondary)
-                    TextField("957 or title", text: $query)
+                    TextField("Song number or title", text: $query)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
+                        .keyboardType(.default)
+                        .submitLabel(.done)
+                        .focused($searchFocused)
                         .onChange(of: query) { _, _ in
                             scheduleSearch()
                         }
+                        .onSubmit { tryAddFromSearch() }
+                }
+                if let exact = exactHit {
+                    Button {
+                        addHit(exact)
+                    } label: {
+                        Label("Add \(exact.title)", systemImage: "plus.circle.fill")
+                            .font(.body.weight(.semibold))
+                    }
                 }
                 if isSearching {
                     ProgressView()
                 }
-                ForEach(hits.prefix(12)) { hit in
-                    Button {
-                        addHit(hit)
-                    } label: {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(hit.title).font(.body)
-                            Text(hit.pack_name)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                if exactHit == nil {
+                    ForEach(hits.prefix(8)) { hit in
+                        Button {
+                            addHit(hit)
+                        } label: {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(hit.title).font(.body)
+                                Text(hit.pack_name)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
                         }
                     }
                 }
@@ -350,46 +380,49 @@ struct WorshipSongSetView: View {
 
             Section("Your songs (\(songs.count))") {
                 if songs.isEmpty {
-                    Text("No songs yet")
+                    Text("None yet — search above.")
                         .foregroundStyle(.secondary)
                 }
                 ForEach(Array(songs.enumerated()), id: \.element.id) { index, song in
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Text(song.title).font(.headline)
-                            Spacer()
-                            Button(role: .destructive) {
-                                songs.remove(at: index)
-                            } label: {
-                                Image(systemName: "trash")
-                            }
-                            .buttonStyle(.borderless)
-                        }
-                        Text(song.verses.label)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 8) {
-                                verseChip("All", selected: song.verses.mode == "all") {
-                                    songs[index].verses = .all
-                                }
-                                ForEach(verseOptions, id: \.self) { n in
-                                    let on =
-                                        song.verses.mode == "list"
-                                        && (song.verses.verses ?? []).contains(n)
-                                    verseChip("\(n)", selected: on) {
-                                        toggleVerse(at: index, verse: n)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    .padding(.vertical, 4)
+                    songRow(index: index, song: song)
                 }
             }
 
-            Section("Note (optional)") {
-                TextField("Slow on the chorus…", text: $note)
+            if showNote {
+                Section("Note for projection / AV") {
+                    TextField("Slow on the chorus…", text: $note)
+                }
+            } else {
+                Section {
+                    Button("Add a note (optional)") {
+                        showNote = true
+                    }
+                    .font(.footnote)
+                }
+            }
+
+            Section {
+                Button {
+                    Task { await save() }
+                } label: {
+                    if isSaving {
+                        ProgressView()
+                            .frame(maxWidth: .infinity)
+                    } else {
+                        Text("Submit songs")
+                            .font(.body.weight(.semibold))
+                            .frame(maxWidth: .infinity)
+                    }
+                }
+                .disabled(isSaving || songs.isEmpty)
+                .listRowBackground(
+                    (isSaving || songs.isEmpty)
+                        ? Color(.tertiarySystemFill)
+                        : BrandColors.lake
+                )
+                .foregroundStyle(
+                    (isSaving || songs.isEmpty) ? Color.secondary : Color.white
+                )
             }
 
             if let statusMessage {
@@ -413,7 +446,70 @@ struct WorshipSongSetView: View {
                 ProgressView("Loading…")
             }
         }
-        .task { await loadExisting() }
+        .task {
+            await loadExisting()
+            searchFocused = true
+        }
+    }
+
+    @ViewBuilder
+    private func songRow(index: Int, song: WorshipSongPickPayload) -> some View {
+        let preset = versePreset(song)
+        let showCustom = customSongIds.contains(song.id) || preset == .custom
+        let maxV = min(max(verseCounts[song.id] ?? 6, 1), 8)
+
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text(song.title).font(.headline)
+                Spacer()
+                Button(role: .destructive) {
+                    songs.remove(at: index)
+                    customSongIds.remove(song.id)
+                } label: {
+                    Image(systemName: "trash")
+                }
+                .buttonStyle(.borderless)
+            }
+            Text(song.verses.label)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            HStack(spacing: 8) {
+                verseChip("All", selected: preset == .all) {
+                    songs[index].verses = .all
+                    customSongIds.remove(song.id)
+                }
+                verseChip("1–2", selected: preset == .oneTwo) {
+                    songs[index].verses = .list([1, 2])
+                    customSongIds.remove(song.id)
+                }
+                verseChip("1–3", selected: preset == .oneThree) {
+                    songs[index].verses = .list([1, 2, 3])
+                    customSongIds.remove(song.id)
+                }
+                verseChip("Other…", selected: showCustom) {
+                    if customSongIds.contains(song.id) {
+                        customSongIds.remove(song.id)
+                    } else {
+                        customSongIds.insert(song.id)
+                    }
+                }
+            }
+            if showCustom {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(1 ... maxV, id: \.self) { n in
+                            let on =
+                                song.verses.mode == "list"
+                                && (song.verses.verses ?? []).contains(n)
+                            verseChip("\(n)", selected: on) {
+                                toggleVerse(at: index, verse: n)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        .padding(.vertical, 4)
     }
 
     @ViewBuilder
@@ -430,6 +526,28 @@ struct WorshipSongSetView: View {
         .buttonStyle(.plain)
     }
 
+    private enum VersePreset { case all, oneTwo, oneThree, custom }
+
+    private func versePreset(_ song: WorshipSongPickPayload) -> VersePreset {
+        if song.verses.mode == "all" { return .all }
+        let v = song.verses.verses ?? []
+        if v == [1, 2] { return .oneTwo }
+        if v == [1, 2, 3] { return .oneThree }
+        return .custom
+    }
+
+    private static func findExactNumberHit(hits: [SongSearchHit], query: String) -> SongSearchHit? {
+        let n = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard n.range(of: #"^\d{1,4}$"#, options: .regularExpression) != nil else { return nil }
+        let num = Int(n) ?? -1
+        return hits.first {
+            $0.title.hasPrefix("\(n) ·")
+                || $0.title.hasPrefix("A-\(n) ·")
+                || $0.title.hasPrefix("B-\(n) ·")
+                || $0.sort_order == num
+        }
+    }
+
     private func loadExisting() async {
         guard let client = session.apiClient else {
             statusMessage = "Sign in required."
@@ -442,6 +560,7 @@ struct WorshipSongSetView: View {
             let response = try await client.getWorshipSongSet(signupId: signupId, year: eventYear)
             songs = response.submission?.songs ?? []
             note = response.submission?.note ?? ""
+            showNote = !(response.submission?.note ?? "").isEmpty
         } catch {
             statusMessage = error.localizedDescription
         }
@@ -455,7 +574,7 @@ struct WorshipSongSetView: View {
             return
         }
         searchTask = Task {
-            try? await Task.sleep(nanoseconds: 220_000_000)
+            try? await Task.sleep(nanoseconds: 180_000_000)
             guard !Task.isCancelled else { return }
             await search(q)
         }
@@ -473,6 +592,16 @@ struct WorshipSongSetView: View {
         }
     }
 
+    private func tryAddFromSearch() {
+        if let exact = exactHit {
+            addHit(exact)
+            return
+        }
+        if hits.count == 1, let only = hits.first {
+            addHit(only)
+        }
+    }
+
     private func addHit(_ hit: SongSearchHit) {
         guard !songs.contains(where: { $0.song_pack_item_id == hit.item_id }) else {
             statusMessage = "Already in your set."
@@ -487,8 +616,12 @@ struct WorshipSongSetView: View {
                 note: nil
             )
         )
+        if let vc = hit.verse_count {
+            verseCounts[hit.item_id] = vc
+        }
         query = ""
         hits = []
+        searchFocused = true
     }
 
     private func toggleVerse(at index: Int, verse: Int) {

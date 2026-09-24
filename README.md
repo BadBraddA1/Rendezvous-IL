@@ -236,9 +236,9 @@ pnpm db:verify
 
 - **Member API** (Clerk + family registration): `POST/DELETE /api/family/lessons/[signupId]/slides` — PowerPoint (`.ppt`/`.pptx`) or PDF up to **50 MB**, stored under R2 `lesson-slides/{year}/{signupId}/…`. Signup must belong to the family’s registration and be a lesson presenter (or have a claimed topic).
 - **Family volunteering** (`GET /api/family/volunteering`): includes `lessonSlides` on each entry and a pending action `upload_lesson_slides` when a topic is awarded but no deck is uploaded yet. **Song leaders** (`Leading singing` + scheduled) get pending `submit_song_setlist` until they pick songs; submitted set is on `songSet`.
-- **Song set submit (v1):** `/account/volunteering/songs/[signupId]` · `GET/PUT /api/family/volunteers/[signupId]/songs` · table `worship_song_submissions`. Search song books, pick verses (All or 1–8 chips), submit. Admin: `/admin/worship-songs`.
+- **Song set submit (v1):** `/account/volunteering/songs/[signupId]` · `GET/PUT /api/family/volunteers/[signupId]/songs` · table `worship_song_submissions`. Easy path: type page # → Add (Enter / big Add button) → leave **All** or tap **1–2** / **1–3** → **Submit songs**. Optional note collapsed. Admin: `/admin/worship-songs`.
 - **Admin:** `/admin/lesson-slides` (Communication → Lesson slides) — inbox of submitted decks with download/remove; staff can also `POST /api/admin/lesson-slides` with `file` + `volunteerSignupId`.
-- **Apps:** More → Your volunteering — upload / replace slides in-app (iOS document picker, Android file picker). **Song leaders pick songs in-app** (search + verse chips All|1–8, Submit) — iOS `WorshipSongSetView`, Android `WorshipSongSetScreen`; no Safari handoff. Submitted songs show on the assignment card with Edit.
+- **Apps:** More → Your volunteering — upload / replace slides in-app (iOS document picker, Android file picker). **Song leaders pick songs in-app** the same easy path (number → Add → All/1–2/1–3 → Submit) — iOS `WorshipSongSetView`, Android `WorshipSongSetScreen`.
 - **Worker:** allowlist `lesson-slides/` and 50 MB max — redeploy `worker/media.ts` after pull (`npx wrangler deploy` from `worker/` per that folder’s README).
 
 ## App Home board (remote config)

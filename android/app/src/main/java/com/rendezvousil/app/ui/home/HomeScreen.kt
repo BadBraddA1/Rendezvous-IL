@@ -19,6 +19,7 @@ import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.VolunteerActivism
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -31,6 +32,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -42,6 +45,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.rendezvousil.app.theme.BrandColors
 import com.rendezvousil.core.network.AppConfig
@@ -769,10 +773,14 @@ fun VolunteeringScreen(
             state = songSetEditor!!,
             onBack = viewModel::closeSongSetEditor,
             onQueryChange = viewModel::setSongSetQuery,
+            onSubmitSearch = viewModel::tryAddFromSearch,
             onAddHit = viewModel::addSongHit,
             onRemoveAt = viewModel::removeSongAt,
             onNoteChange = viewModel::setSongNote,
+            onShowNote = viewModel::showSongNote,
             onAllVerses = viewModel::setAllVerses,
+            onPreset = viewModel::setVersePreset,
+            onToggleCustom = viewModel::toggleCustomVerses,
             onToggleVerse = viewModel::toggleVerse,
             onSave = viewModel::saveSongSet,
             modifier = modifier,
@@ -1019,10 +1027,14 @@ private fun WorshipSongSetScreen(
     state: SongSetEditorState,
     onBack: () -> Unit,
     onQueryChange: (String) -> Unit,
+    onSubmitSearch: () -> Unit,
     onAddHit: (SongSearchHit) -> Unit,
     onRemoveAt: (Int) -> Unit,
     onNoteChange: (String) -> Unit,
+    onShowNote: () -> Unit,
     onAllVerses: (Int) -> Unit,
+    onPreset: (Int, List<Int>) -> Unit,
+    onToggleCustom: (Int) -> Unit,
     onToggleVerse: (Int, Int) -> Unit,
     onSave: () -> Unit,
     modifier: Modifier = Modifier,
@@ -1069,7 +1081,12 @@ private fun WorshipSongSetScreen(
                 return@Column
             }
             Text(
-                "Search the song book, add songs, and tap which verses you’ll lead.",
+                "Usually 3 songs. Type the number, add it, pick verses if needed.",
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium,
+            )
+            Text(
+                state.readyHint,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -1078,33 +1095,58 @@ private fun WorshipSongSetScreen(
                 onValueChange = onQueryChange,
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                label = { Text("Search 957 or title") },
+                label = { Text("Song number or title") },
+                keyboardOptions = KeyboardOptions(
+                    imeAction = ImeAction.Done,
+                ),
+                keyboardActions = KeyboardActions(
+                    onDone = { onSubmitSearch() },
+                ),
             )
+            state.exactHit?.let { exact ->
+                Button(
+                    onClick = { onAddHit(exact) },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("Add ${exact.title}")
+                }
+            }
             if (state.isSearching) {
                 Text("Searching…", style = MaterialTheme.typography.bodySmall)
             }
-            state.hits.take(12).forEach { hit ->
-                Surface(
-                    onClick = { onAddHit(hit) },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(10.dp),
-                    color = BrandColors.SecondaryGroupedBackground,
-                ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        Text(hit.title, fontWeight = FontWeight.SemiBold)
-                        Text(
-                            hit.pack_name,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+            if (state.exactHit == null) {
+                state.hits.take(8).forEach { hit ->
+                    Surface(
+                        onClick = { onAddHit(hit) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp),
+                        color = BrandColors.SecondaryGroupedBackground,
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Text(hit.title, fontWeight = FontWeight.SemiBold)
+                            Text(
+                                hit.pack_name,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                 }
             }
             Text("Your songs (${state.songs.size})", fontWeight = FontWeight.Bold)
             if (state.songs.isEmpty()) {
-                Text("No songs yet", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("None yet — search above.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             state.songs.forEachIndexed { index, song ->
+                val verses = song.verses.verses.orEmpty()
+                val preset = when {
+                    song.verses.mode != "list" -> "all"
+                    verses == listOf(1, 2) -> "1-2"
+                    verses == listOf(1, 2, 3) -> "1-3"
+                    else -> "custom"
+                }
+                val showCustom = song.song_pack_item_id in state.customSongIds || preset == "custom"
+                val maxV = (state.verseCounts[song.song_pack_item_id] ?: 6).coerceIn(1, 8)
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
@@ -1121,36 +1163,68 @@ private fun WorshipSongSetScreen(
                             Text(song.title, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
                             TextButton(onClick = { onRemoveAt(index) }) { Text("Remove") }
                         }
-                        val label = if (song.verses.mode == "list" && !song.verses.verses.isNullOrEmpty()) {
-                            "verses ${song.verses.verses!!.joinToString(", ")}"
+                        val label = if (song.verses.mode == "list" && verses.isNotEmpty()) {
+                            "verses ${verses.joinToString(", ")}"
                         } else {
                             "all verses"
                         }
                         Text(label, style = MaterialTheme.typography.bodySmall, color = BrandColors.Lake)
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             FilterChip(
-                                selected = song.verses.mode != "list",
+                                selected = preset == "all",
                                 onClick = { onAllVerses(index) },
                                 label = { Text("All") },
                             )
-                            (1..8).forEach { n ->
-                                val on = song.verses.mode == "list" && song.verses.verses.orEmpty().contains(n)
-                                FilterChip(
-                                    selected = on,
-                                    onClick = { onToggleVerse(index, n) },
-                                    label = { Text("$n") },
-                                )
+                            FilterChip(
+                                selected = preset == "1-2",
+                                onClick = { onPreset(index, listOf(1, 2)) },
+                                label = { Text("1–2") },
+                            )
+                            FilterChip(
+                                selected = preset == "1-3",
+                                onClick = { onPreset(index, listOf(1, 2, 3)) },
+                                label = { Text("1–3") },
+                            )
+                            FilterChip(
+                                selected = showCustom,
+                                onClick = { onToggleCustom(index) },
+                                label = { Text("Other…") },
+                            )
+                        }
+                        if (showCustom) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                (1..maxV).forEach { n ->
+                                    val on = song.verses.mode == "list" && verses.contains(n)
+                                    FilterChip(
+                                        selected = on,
+                                        onClick = { onToggleVerse(index, n) },
+                                        label = { Text("$n") },
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
-            OutlinedTextField(
-                value = state.note,
-                onValueChange = onNoteChange,
+            if (state.showNote) {
+                OutlinedTextField(
+                    value = state.note,
+                    onValueChange = onNoteChange,
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Note for projection / AV") },
+                )
+            } else {
+                TextButton(onClick = onShowNote) {
+                    Text("Add a note (optional)")
+                }
+            }
+            Button(
+                onClick = onSave,
+                enabled = !state.isSaving && state.songs.isNotEmpty(),
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("Note (optional)") },
-            )
+            ) {
+                Text(if (state.isSaving) "Saving…" else "Submit songs")
+            }
             state.statusMessage?.let {
                 Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
