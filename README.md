@@ -270,6 +270,7 @@ pnpm db:verify
 | `npx tsx --env-file=.env.local scripts/import-ssoc-songbook.ts --apply --resume --fast` | Single-shard SSOC import; keeps local PDFs in `~/Code/ssoc-full-pdf` |
 | `npx tsx --env-file=.env.local scripts/gemini-sfp-book-ocr.ts --apply --pack-id=$SSOC_PACK_ID --local-pdf-dir=~/Code/ssoc-full-pdf` | Gemini lyrics for SSOC (same script as SFP; pass `--pack-id`) |
 | `./scripts/gemini-ssoc-book-ocr-loop.sh` | Resume-safe SSOC Gemini loop |
+| `npx tsx --env-file=.env.local scripts/rebake-ssoc-title-slides.ts --apply` | Rebake SSOC title openers at music page size (960×540) using Gemini `verse_count` |
 | launchd `com.braddcorp.ssoc-import` / `com.braddcorp.ssoc-gemini-ocr` | Keeps SSOC import + Gemini alive (logs `~/Library/Logs/ssoc-ocr/`) |
 | `npx tsx --env-file=.env.local scripts/gemini-sfp-book-ocr.ts --apply` | **Gemini vision lyrics** (AI Gateway `google/gemini-2.5-flash`) for the whole song book → R2 `*.v4-gemini.json`. Chorus extracted like pilot #2/#4, then **appended under every verse** for Text mode. Paces paid concurrency. Resume-safe. launchd: `com.braddcorp.sfp-gemini-ocr` (log: `~/Library/Logs/sfp-ocr/gemini-book.log`) |
 | `npx tsx --env-file=.env.local scripts/gemini-sfp-book-ocr.ts --apply --suspect-verses` | Re-check odd verse counts: **high** (`verse_count≥7`), **low on fat packs** (`≤1` verse but `page_count≥9`), or still missing Gemini. Forces a fresh read. |

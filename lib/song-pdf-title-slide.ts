@@ -43,8 +43,13 @@ function nearly(a: number, b: number, tol = 2): boolean {
  * Music slides from the SFP PPT export are ~720×405.07 — use that to peel
  * stacked title cards without deleting sheet music.
  */
-function isExactTitleSlideSize(width: number, height: number): boolean {
-  return nearly(width, SFP_SLIDE_WIDTH, 0.5) && height === SFP_SLIDE_HEIGHT
+function isExactTitleSlideSize(
+  width: number,
+  height: number,
+  slideW = SFP_SLIDE_WIDTH,
+  slideH = SFP_SLIDE_HEIGHT,
+): boolean {
+  return nearly(width, slideW, 0.5) && nearly(height, slideH, 0.5)
 }
 
 /**
@@ -76,17 +81,25 @@ export async function stripLegacyDarkTitleSlides(
 }
 
 /**
- * Remove leading exact-720×405 title cards (ours and/or native SFP openers)
- * so a fresh opener can be prepended without stacking.
+ * Remove leading exact title cards (ours and/or native openers) so a fresh
+ * opener can be prepended without stacking.
+ * Strips classic SFP 720×405 and any extra sizes passed in `alsoSizes`
+ * (e.g. 960×540 for Sacred Songs / LibreOffice widescreen).
  */
 export async function stripLeadingExactTitleSlides(
   pdfBytes: Uint8Array | ArrayBuffer,
+  alsoSizes: Array<{ width: number; height: number }> = [],
 ): Promise<Uint8Array> {
   const source = await PDFDocument.load(pdfBytes)
+  const sizes = [
+    { width: SFP_SLIDE_WIDTH, height: SFP_SLIDE_HEIGHT },
+    ...alsoSizes,
+  ]
   let start = 0
   while (start < source.getPageCount()) {
     const { width, height } = source.getPage(start).getSize()
-    if (!isExactTitleSlideSize(width, height)) break
+    const match = sizes.some((s) => isExactTitleSlideSize(width, height, s.width, s.height))
+    if (!match) break
     start++
   }
   // Never delete the whole document — leave at least one page.
@@ -127,46 +140,68 @@ export async function prependSongTitleSlide(
     verseCount?: number | null
     force?: boolean
     hasNativeTitle?: boolean
+    /** Override opener size (default SFP 720×405). Match music pages for SSOC. */
+    slideWidth?: number
+    slideHeight?: number
   } = {},
 ): Promise<Uint8Array> {
+  const slideW = options.slideWidth ?? SFP_SLIDE_WIDTH
+  const slideH = options.slideHeight ?? SFP_SLIDE_HEIGHT
+
   const noDark = await stripLegacyDarkTitleSlides(pdfBytes)
-  const stripped = await stripLeadingExactTitleSlides(noDark)
+  // Always peel classic SFP/mismatched openers (720×405).
+  let stripped = await stripLeadingExactTitleSlides(noDark)
+
+  // If we previously baked a matching-size opener (subject marker), peel exactly
+  // one leading page. Do NOT peel music slides that share the same size.
+  if (options.force) {
+    const doc = await PDFDocument.load(stripped)
+    const subject = doc.getSubject() || ""
+    if (
+      subject === TITLE_SLIDE_PRODUCER &&
+      doc.getPageCount() >= 2
+    ) {
+      const first = doc.getPage(0).getSize()
+      if (isExactTitleSlideSize(first.width, first.height, slideW, slideH)) {
+        const out = await PDFDocument.create()
+        const rest = await out.copyPages(doc, doc.getPageIndices().slice(1))
+        for (const p of rest) out.addPage(p)
+        stripped = await out.save()
+      }
+    }
+  }
+
   const source = await PDFDocument.load(stripped)
 
   if (options.hasNativeTitle) {
     return stripped instanceof Uint8Array ? stripped : new Uint8Array(stripped)
   }
 
-  // Without force: if music already starts at page 0 after strip, we'll add one
-  // opener. If strip left nothing unusual, still add. (Idempotent path: when
-  // caller re-uploads the same bytes and force is false, strip peels our opener
-  // then we add it back — same visual result.)
-
   const { pageNumber, name } = parseSongDisplayTitle(title)
   const out = await PDFDocument.create()
-  // Subject survives pdf-lib save; Producer does not stay as our marker.
   out.setSubject(TITLE_SLIDE_PRODUCER)
   out.setTitle(title)
 
-  const page = out.addPage([SFP_SLIDE_WIDTH, SFP_SLIDE_HEIGHT])
+  const page = out.addPage([slideW, slideH])
   page.drawRectangle({
     x: 0,
     y: 0,
-    width: SFP_SLIDE_WIDTH,
-    height: SFP_SLIDE_HEIGHT,
+    width: slideW,
+    height: slideH,
     color: rgb(1, 1, 1),
   })
 
   const font = await out.embedFont(StandardFonts.TimesRoman)
   const black = rgb(0, 0, 0)
-  const maxWidth = SFP_SLIDE_WIDTH - 80
+  const maxWidth = slideW - 80
+  const scale = Math.min(1.35, Math.max(1, slideW / SFP_SLIDE_WIDTH))
 
   if (pageNumber) {
-    const numSize = 42
+    const numSize = Math.round(42 * scale)
     const numWidth = font.widthOfTextAtSize(pageNumber, numSize)
     page.drawText(pageNumber, {
-      x: (SFP_SLIDE_WIDTH - numWidth) / 2,
-      y: SFP_SLIDE_HEIGHT / 2 + 28,
+      x: (slideW - numWidth) / 2,
+      y: slideH / 2 + 28 * scale,
       size: numSize,
       font,
       color: black,
@@ -174,14 +209,15 @@ export async function prependSongTitleSlide(
   }
 
   const quoted = `"${name}"`
-  let titleSize = 36
-  while (titleSize > 20 && font.widthOfTextAtSize(quoted, titleSize) > maxWidth) {
+  let titleSize = Math.round(36 * scale)
+  const minTitle = Math.round(20 * scale)
+  while (titleSize > minTitle && font.widthOfTextAtSize(quoted, titleSize) > maxWidth) {
     titleSize -= 2
   }
   const titleWidth = font.widthOfTextAtSize(quoted, titleSize)
   page.drawText(quoted, {
-    x: (SFP_SLIDE_WIDTH - titleWidth) / 2,
-    y: pageNumber ? SFP_SLIDE_HEIGHT / 2 - 18 : SFP_SLIDE_HEIGHT / 2 - titleSize / 3,
+    x: (slideW - titleWidth) / 2,
+    y: pageNumber ? slideH / 2 - 18 * scale : slideH / 2 - titleSize / 3,
     size: titleSize,
     font,
     color: black,
@@ -190,11 +226,11 @@ export async function prependSongTitleSlide(
   const verses = options.verseCount
   if (verses && verses > 0) {
     const label = verses === 1 ? "1 verse" : `${verses} verses`
-    const verseSize = 16
+    const verseSize = Math.round(16 * scale)
     const verseWidth = font.widthOfTextAtSize(label, verseSize)
     page.drawText(label, {
-      x: (SFP_SLIDE_WIDTH - verseWidth) / 2,
-      y: 48,
+      x: (slideW - verseWidth) / 2,
+      y: 48 * scale,
       size: verseSize,
       font,
       color: rgb(0.25, 0.25, 0.25),
