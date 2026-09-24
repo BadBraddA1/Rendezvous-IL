@@ -13,7 +13,7 @@ LOCAL_PDF="${SSOC_KEEP_PDF_DIR:-$HOME/Code/ssoc-full-pdf}"
 log() { echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) $*" | tee -a "$LOG"; }
 
 export GEMINI_OCR_MODEL="${GEMINI_OCR_MODEL:-google/gemini-2.5-flash}"
-export GEMINI_OCR_CONCURRENCY="${GEMINI_OCR_CONCURRENCY:-4}"
+export GEMINI_OCR_CONCURRENCY="${GEMINI_OCR_CONCURRENCY:-8}"
 
 log "ssoc gemini start pack=$PACK_ID model=$GEMINI_OCR_MODEL concurrency=$GEMINI_OCR_CONCURRENCY"
 
