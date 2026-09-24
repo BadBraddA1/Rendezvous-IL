@@ -77,12 +77,51 @@ Rules:
 - Output ONLY valid JSON (no markdown fences).
 - Shape: {"verses":[{"index":1,"text":"line1\\nline2"},...],"chorus":{"text":"..."}|null,"title":"...","confidence":0.0-1.0}
 - Join hyphenated syllables: "glo - ry" → "glory", "Hal-le - lu - jah" → "Hallelujah".
+- Never split a word across lines. If OCR broke a word ("Jes" / "us", "love," / "ly"), merge into one complete word on one line.
+- Soft wraps: if a line does NOT end with . ! ? : ; or a closed quote, and the next line continues the same phrase (especially starting lowercase or mid-word), join with a single space — do not keep that newline.
+- Each \\n must be a real sung / poetic line break (as in the hymnal), never a mid-phrase OCR wrap.
 - Fix obvious OCR typos using hymn context; do NOT invent whole verses that are absent from the OCR.
 - If OCR is fragmentary, reconstruct the best complete lines you can from the fragments; omit lines you cannot support.
-- Drop author, scripture refs, copyright, and publisher footers from verses (optional tiny "meta" is fine but prefer verses only).
+- Drop author, scripture refs, copyright, and publisher footers from verses.
 - Prefer verse numbers 1..N matching the song; put refrain/chorus in "chorus" when clearly a chorus (e.g. Hallelujah! Thine the glory…).
 - Keep traditional hymn capitalization and punctuation.
 - confidence: how sure you are the cleaned text matches the source OCR intent (0.5–1.0).`
+
+/** Merge mid-word / soft-wrap newlines the model still left behind. */
+function fixSoftWraps(text: string): string {
+  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean)
+  if (lines.length <= 1) return lines.join("\n")
+  const out: string[] = []
+  for (const line of lines) {
+    const prev = out[out.length - 1]
+    if (!prev) {
+      out.push(line)
+      continue
+    }
+    const prevEndsHard = /[.!?:;"”']$/.test(prev)
+    const prevEndsHyphen = /-$/.test(prev)
+    const nextContinues =
+      /^[a-z]/.test(line) ||
+      prevEndsHyphen ||
+      (/[a-zA-Z]$/.test(prev) && /^[a-z]/.test(line))
+    // Mid-word: previous ends with letters, next is short continuation fragment
+    const midWord =
+      /[A-Za-z]$/.test(prev) &&
+      !prevEndsHard &&
+      /^[A-Za-z]{1,6}([,.;:!?]|$)/.test(line) &&
+      !/^(and|the|of|to|in|a|an|for|my|our|his|her|with|from|that|this|who|whom|when|where|what|which|all|but|or|nor|so|yet|as|if|on|at|by|be|is|are|was|were|am|we|you|they|he|she|it|us|me|not|no|yes|o|oh)$/i.test(
+        line.replace(/[,.;:!?].*$/, ""),
+      )
+    if (!prevEndsHard && (prevEndsHyphen || nextContinues || midWord)) {
+      out[out.length - 1] = prevEndsHyphen
+        ? prev.slice(0, -1) + line
+        : `${prev} ${line}`
+    } else {
+      out.push(line)
+    }
+  }
+  return out.join("\n")
+}
 
 function rawBlob(row: InRow): string {
   const verses = row.verses || []
@@ -108,7 +147,7 @@ async function cleanOne(
       verses: [],
       confidence: 0,
       status: "needs_review",
-      method: "agent_cleanup_v1",
+      method: "agent_cleanup_v2",
       error: "empty OCR",
     }
   }
@@ -147,7 +186,7 @@ ${blob.slice(0, 6000)}
       })) || [],
       confidence: Number(row.confidence) || 0,
       status: "needs_review",
-      method: "agent_cleanup_v1",
+      method: "agent_cleanup_v2",
       error: `openai ${res.status}: ${err.slice(0, 200)}`,
     }
   }
@@ -167,16 +206,18 @@ ${blob.slice(0, 6000)}
       verses: [],
       confidence: 0,
       status: "needs_review",
-      method: "agent_cleanup_v1",
+      method: "agent_cleanup_v2",
       error: "bad json from model",
     }
   }
 
   const verses: { index: number; text: string; lines: string[] }[] = []
   for (const v of parsed.verses || []) {
-    const text = String(v.text || "")
-      .replace(/\\n/g, "\n")
-      .trim()
+    const text = fixSoftWraps(
+      String(v.text || "")
+        .replace(/\\n/g, "\n")
+        .trim(),
+    )
     if (!text) continue
     verses.push({
       index: Number(v.index) || verses.length + 1,
@@ -186,7 +227,7 @@ ${blob.slice(0, 6000)}
   }
   const chorus = parsed.chorus?.text?.trim()
   if (chorus) {
-    const text = chorus.replace(/\\n/g, "\n")
+    const text = fixSoftWraps(chorus.replace(/\\n/g, "\n"))
     verses.push({
       index: (verses[verses.length - 1]?.index || 0) + 1,
       text: `Chorus\n${text}`,
@@ -203,7 +244,7 @@ ${blob.slice(0, 6000)}
       ? "needs_review"
       : "auto"
 
-  return { verses, confidence, status, method: "agent_cleanup_v1" }
+  return { verses, confidence, status, method: "agent_cleanup_v2" }
 }
 
 async function mapPool<T, R>(

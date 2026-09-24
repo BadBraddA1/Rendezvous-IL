@@ -35,11 +35,50 @@ npx tsx --env-file=.env.local scripts/persist-sfp-book-ocr.ts \
   --from=/tmp/sfp-book-ocr.jsonl --apply --pilot
 ```
 
-## Docker (RunPod)
+## Serverless API (hit whenever you need OCR)
+
+Live endpoint (scale-to-zero):
+
+| | |
+|---|---|
+| Endpoint id | `h5ypc3kbpa5e7n` |
+| Async | `POST https://api.runpod.ai/v2/h5ypc3kbpa5e7n/run` |
+| Sync | `POST https://api.runpod.ai/v2/h5ypc3kbpa5e7n/runsync` |
+| Auth | `Authorization: Bearer $RUNPOD_API_KEY` |
+
+Saved in `~/.config/runpod/agent.env` as `RUNPOD_SFP_OCR_ENDPOINT_ID`.
 
 ```bash
+# One PDF (async + poll)
+npx tsx --env-file=.env.local scripts/call-sfp-ocr-endpoint.ts \
+  --file-url=https://cdn.rendezvousil.com/song-packs/sfp-book-scan/smoke/0002-we-praise.pdf \
+  --title="2 · We Praise Thee O God" --printed-page=2
+
+# Sync (waits for result; cold start can take several minutes first time)
+npx tsx --env-file=.env.local scripts/call-sfp-ocr-endpoint.ts \
+  --file-url=… --sync
+```
+
+Body:
+
+```json
+{ "input": { "file_url": "https://…/song.pdf", "title": "…", "printed_page": 2, "dpi": 200 } }
+```
+
+Worker boots from public pytorch + CDN tarball (`ocr-worker.tgz`) — no custom registry.
+First worker start installs PaddleOCR (slow); later jobs on a warm worker are fast.
+
+Redeploy worker code: re-tar + upload `ocr-worker.tgz` to R2, then new workers pick it up.
+Template id: `4bs7xksqlw`.
+
+## Docker (optional custom image)
+
+```bash
+# Prefer when RunPod registry login works:
+./scripts/runpod-sfp-book-ocr/deploy-serverless.sh
+
+# Or community pod with volume mount:
 docker build -t sfp-book-ocr:latest scripts/runpod-sfp-book-ocr
-# Run on a 4090/A40 community pod with the PDF dir + library mounted.
 ```
 
 ## Output shape

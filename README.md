@@ -263,7 +263,9 @@ pnpm db:verify
 | `python scripts/runpod-sfp-book-ocr/batch_book_ocr.py …` | RunPod PaddleOCR full-song / book scan → JSONL |
 | `python scripts/runpod-sfp-book-ocr/pilot_vision_full_ppt.py …` | Local Vision pilot (no GPU) before RunPod |
 | `npx tsx --env-file=.env.local scripts/persist-sfp-book-ocr.ts --from=… --apply` | Upload verse OCR JSON; set `ocr_url` / status |
-| Admin → Songs → Lyric OCR review | Confirm/edit low-confidence Text mode lyrics |
+| `npx tsx --env-file=.env.local scripts/clean-sfp-ocr-agent.ts --from=… --out=…` | OpenAI cleanup of raw OCR → singable verses |
+| `npx tsx --env-file=.env.local scripts/call-sfp-ocr-endpoint.ts --file-url=…` | Hit RunPod serverless OCR (`RUNPOD_SFP_OCR_ENDPOINT_ID`) |
+| Admin → Songs → Lyric OCR review | Confirm/edit low-confidence Text mode lyrics (`j`/`k`/`c`/`s`) |
 | Admin → Songs → item **vr** field | Staff sets verse count; PDF title slide rebakes immediately |
 
 **Localhost page tour:** open [`/dev/page-tour`](http://localhost:3000/dev/page-tour) during `pnpm dev` to auto-cycle routes with a countdown bar (2s default) — for fast header/layout QA. Keyboard: Space pause, ←/→ step, Esc stop.

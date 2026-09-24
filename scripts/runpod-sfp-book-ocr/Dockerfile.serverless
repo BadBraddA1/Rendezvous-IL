@@ -1,0 +1,22 @@
+# Serverless worker for SFP full-song OCR (PaddleOCR GPU)
+FROM runpod/pytorch:2.4.0-py3.11-cuda12.4.1-devel-ubuntu22.04
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgl1 \
+    libglib2.0-0 \
+    libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# CPU paddle for build-time import safety; GPU used at runtime when available
+COPY requirements-serverless.txt .
+RUN pip install --no-cache-dir \
+      paddlepaddle-gpu==2.6.2 \
+      -i https://www.paddlepaddle.org.cn/packages/stable/cu118/ \
+ && pip install --no-cache-dir -r requirements-serverless.txt
+
+COPY postprocess.py segment_match.py handler.py bootstrap.sh ./
+
+ENV PYTHONUNBUFFERED=1
+CMD ["python", "-u", "handler.py"]
