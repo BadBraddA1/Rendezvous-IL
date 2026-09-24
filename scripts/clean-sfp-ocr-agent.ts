@@ -19,6 +19,7 @@ const limitArg = process.argv.find((a) => a.startsWith("--limit="))
 const LIMIT = limitArg ? Number(limitArg.split("=")[1]) : 0
 const concArg = process.argv.find((a) => a.startsWith("--concurrency="))
 const CONCURRENCY = Math.max(1, Number(concArg?.split("=")[1] || 6))
+const modelsArg = process.argv.find((a) => a.startsWith("--models="))
 /** Prefer Vercel AI Gateway (higher aggregate limits / fallbacks). */
 const USE_GATEWAY = Boolean(
   process.env.AI_GATEWAY_API_KEY || process.env.USE_AI_GATEWAY === "1",
@@ -27,9 +28,23 @@ const GATEWAY_BASE = "https://ai-gateway.vercel.sh/v1"
 const DIRECT_BASE = "https://api.openai.com/v1"
 const API_BASE = USE_GATEWAY ? GATEWAY_BASE : DIRECT_BASE
 /** Gateway expects provider/model; direct OpenAI wants bare model id. */
-const MODEL = USE_GATEWAY
+const DEFAULT_MODEL = USE_GATEWAY
   ? process.env.OPENAI_MODEL || "openai/gpt-4o-mini"
   : (process.env.OPENAI_MODEL || "gpt-4o-mini").replace(/^openai\//, "")
+/** Comma-separated model pool — round-robin across providers for more throughput. */
+const MODEL_POOL: string[] = (
+  modelsArg?.slice("--models=".length) ||
+  process.env.CLEAN_MODEL_POOL ||
+  DEFAULT_MODEL
+)
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean)
+const MODEL = MODEL_POOL[0] || DEFAULT_MODEL
+const REQUEST_TIMEOUT_MS = Math.max(
+  15_000,
+  Number(process.env.CLEAN_REQUEST_TIMEOUT_MS || 90_000),
+)
 
 function loadEnv() {
   const env: Record<string, string> = { ...process.env } as Record<string, string>
@@ -144,6 +159,7 @@ function rawBlob(row: InRow): string {
 async function cleanOne(
   apiKey: string,
   row: InRow,
+  model: string = MODEL,
 ): Promise<{
   verses: { index: number; text: string; lines: string[] }[]
   confidence: number
@@ -173,22 +189,34 @@ ${blob.slice(0, 6000)}
   let res: Response | null = null
   let lastErr = ""
   for (let attempt = 0; attempt < 5; attempt++) {
-    res = await fetch(`${API_BASE}/chat/completions`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        temperature: 0.2,
-        response_format: { type: "json_object" },
-        messages: [
-          { role: "system", content: SYSTEM },
-          { role: "user", content: user },
-        ],
-      }),
-    })
+    const ac = new AbortController()
+    const timer = setTimeout(() => ac.abort(), REQUEST_TIMEOUT_MS)
+    try {
+      res = await fetch(`${API_BASE}/chat/completions`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        signal: ac.signal,
+        body: JSON.stringify({
+          model,
+          temperature: 0.2,
+          response_format: { type: "json_object" },
+          messages: [
+            { role: "system", content: SYSTEM },
+            { role: "user", content: user },
+          ],
+        }),
+      })
+    } catch (e) {
+      lastErr = e instanceof Error ? e.message : String(e)
+      clearTimeout(timer)
+      const waitMs = 500 * 2 ** attempt
+      await new Promise((r) => setTimeout(r, waitMs))
+      continue
+    }
+    clearTimeout(timer)
     if (res.ok) break
     lastErr = await res.text()
     if (res.status !== 429 && res.status < 500) break
@@ -330,13 +358,14 @@ async function main() {
   }
 
   console.log(
-    `clean pending=${pending.length} already=${done.size} concurrency=${CONCURRENCY} model=${MODEL} via=${USE_GATEWAY ? "vercel-ai-gateway" : "openai-direct"}`,
+    `clean pending=${pending.length} already=${done.size} concurrency=${CONCURRENCY} models=${MODEL_POOL.join("|")} via=${USE_GATEWAY ? "vercel-ai-gateway" : "openai-direct"} timeoutMs=${REQUEST_TIMEOUT_MS}`,
   )
 
   let ok = 0
   let fail = 0
   await mapPool(pending, CONCURRENCY, async (row, i) => {
-    const cleaned = await cleanOne(apiKey, row)
+    const model = MODEL_POOL[i % MODEL_POOL.length]!
+    const cleaned = await cleanOne(apiKey, row, model)
     const outRow = {
       item_id: row.item_id,
       title: row.title,
