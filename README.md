@@ -238,7 +238,7 @@ pnpm db:verify
 - **Family volunteering** (`GET /api/family/volunteering`): includes `lessonSlides` on each entry and a pending action `upload_lesson_slides` when a topic is awarded but no deck is uploaded yet. **Song leaders** (`Leading singing` + scheduled) get pending `submit_song_setlist` until they pick songs; submitted set is on `songSet`.
 - **Song set submit (v1):** `/account/volunteering/songs/[signupId]` · `GET/PUT /api/family/volunteers/[signupId]/songs` · table `worship_song_submissions`. Easy path: type page # → Add (Enter / big Add button) → leave **All** or tap **1–2** / **1–3** → **Submit songs**. Optional note collapsed. Admin: `/admin/worship-songs`.
 - **Admin:** `/admin/lesson-slides` (Communication → Lesson slides) — inbox of submitted decks with download/remove; staff can also `POST /api/admin/lesson-slides` with `file` + `volunteerSignupId`.
-- **Apps:** More → Your volunteering — upload / replace slides in-app (iOS document picker, Android file picker). **Song leaders pick songs in-app** the same easy path (number → Add → All/1–2/1–3 → Submit) — iOS `WorshipSongSetView`, Android `WorshipSongSetScreen`.
+- **Apps:** More → Your volunteering — upload / replace slides in-app (iOS document picker, Android file picker). **Song leaders pick songs in-app** the same easy path (number → Add → All/1–2/1–3 → Submit) — iOS `WorshipSongSetView`, Android `WorshipSongSetScreen`. **Browse song book** opens the full songbook (view pages) with **Add to set** without leaving the form.
 - **Worker:** allowlist `lesson-slides/` and 50 MB max — redeploy `worker/media.ts` after pull (`npx wrangler deploy` from `worker/` per that folder’s README).
 
 ## App Home board (remote config)
