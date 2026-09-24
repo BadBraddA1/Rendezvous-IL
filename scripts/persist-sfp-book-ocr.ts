@@ -163,7 +163,7 @@ async function main() {
       continue
     }
 
-    const key = `song-packs/${PACK_ID}/ocr/${id}.v3.json`
+    const key = `song-packs/${PACK_ID}/ocr/${id}.v3-clean.json`
     const body = Buffer.from(JSON.stringify(payload), "utf8")
     const put = await fetch(`${worker}/object?key=${encodeURIComponent(key)}`, {
       method: "PUT",

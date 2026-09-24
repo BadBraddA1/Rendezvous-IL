@@ -95,12 +95,25 @@ def main() -> int:
     scale = args.dpi / 72.0
     done = 0
     out = Path(args.out)
-    with out.open("w") as fh:
+    done_pages: set[int] = set()
+    if out.exists():
+        for line in out.read_text().splitlines():
+            if not line.strip():
+                continue
+            try:
+                row = json.loads(line)
+                if row.get("printed_page") is not None:
+                    done_pages.add(int(row["printed_page"]))
+            except json.JSONDecodeError:
+                pass
+    with out.open("a") as fh:
         for p in pages:
+            printed = p.get("page")
+            if printed is not None and int(printed) in done_pages:
+                continue
             if args.limit and done >= args.limit:
                 break
             pdf = p.get("pdf")
-            printed = p.get("page")
             if not pdf or not Path(pdf).exists():
                 print(f"skip missing {printed}", flush=True)
                 continue
@@ -153,12 +166,14 @@ def main() -> int:
             fh.write(json.dumps(row, ensure_ascii=False) + "\n")
             fh.flush()
             done += 1
-            sample = (verses[0]["text"][:80] if verses else "") 
+            if printed is not None:
+                done_pages.add(int(printed))
+            sample = (verses[0]["text"][:80] if verses else "")
             print(
                 f"[{done}] #{printed} conf={confidence} status={status} verses={len(verses)} matched={bool(match)} | {sample}",
                 flush=True,
             )
-    print(f"done wrote={done} → {out}")
+    print(f"done wrote={done} → {out} total_unique={len(done_pages)}")
     return 0
 
 
