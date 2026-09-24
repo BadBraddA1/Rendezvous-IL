@@ -265,6 +265,7 @@ pnpm db:verify
 | `python scripts/runpod-sfp-book-ocr/pilot_vision_full_ppt.py …` | Local Vision pilot (no GPU) before RunPod |
 | `npx tsx --env-file=.env.local scripts/persist-sfp-book-ocr.ts --from=… --apply` | Upload verse OCR JSON; set `ocr_url` / status |
 | `npx tsx --env-file=.env.local scripts/clean-sfp-ocr-agent.ts --from=… --out=…` | OpenAI cleanup of raw OCR → singable verses |
+| `npx tsx --env-file=.env.local scripts/gemini-sfp-book-ocr.ts --apply` | **Gemini vision lyrics** (AI Gateway `google/gemini-2.5-flash`) for the whole song book → R2 `*.v4-gemini.json`. Chorus extracted like pilot #2/#4, then **appended under every verse** for Text mode. Paces ~5 RPM (free-tier). Resume-safe. launchd: `com.braddcorp.sfp-gemini-ocr` (log: `~/Library/Logs/sfp-ocr/gemini-book.log`) |
 | `npx tsx --env-file=.env.local scripts/call-sfp-ocr-endpoint.ts --file-url=…` | Hit RunPod serverless OCR (`RUNPOD_SFP_OCR_ENDPOINT_ID`) |
 | Admin → Songs → Lyric OCR review | Confirm/edit low-confidence Text mode lyrics (`j`/`k`/`c`/`s`) |
 | Admin → Songs → item **vr** field | Staff sets verse count; PDF title slide rebakes immediately |
