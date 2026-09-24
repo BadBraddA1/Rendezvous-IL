@@ -1,7 +1,7 @@
 #!/bin/bash
 # Watch SSOC Gemini OCR — phone-ping if things get funny.
-set -euo pipefail
-cd /Users/braddford/Code/Rendezvous-IL
+set -uo pipefail
+cd /Users/braddford/Code/Rendezvous-IL || exit 0
 export PATH="/Users/braddford/.local/bin:/opt/homebrew/bin:/usr/local/bin:/bin:/usr/bin:$PATH"
 
 PACK_ID="${SSOC_PACK_ID:-de98d363-5295-4788-b766-5febaa4e202d}"
@@ -12,7 +12,7 @@ STALL_MINUTES=25
 MIN_FOR_QUALITY=25
 
 mkdir -p "$(dirname "$STATE")"
-touch "$STATE"
+touch "$STATE" "$LOG"
 # shellcheck disable=SC1090
 source "$STATE" 2>/dev/null || true
 LAST_COUNT="${LAST_COUNT:-0}"
@@ -22,13 +22,14 @@ ALERTED_STALL="${ALERTED_STALL:-0}"
 ALERTED_QUALITY="${ALERTED_QUALITY:-0}"
 ALERTED_DONE="${ALERTED_DONE:-0}"
 
-ping() {
+ping_phone() {
   local msg="$1"
   echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) PING $msg" | tee -a "$LOG"
-  agent-phone-push "SSOC Gemini: $msg" || true
+  agent-phone-push "SSOC Gemini: $msg" >/dev/null 2>&1 || true
 }
 
-stats=$(SSOC_PACK_ID="$PACK_ID" npx tsx --env-file=.env.local <<'TS' 2>/dev/null | tail -1
+stats_file=$(mktemp)
+SSOC_PACK_ID="$PACK_ID" npx tsx --env-file=.env.local >"$stats_file" 2>>"$LOG" <<'TS' || true
 import { createClient } from "@libsql/client"
 const db = createClient({
   url: process.env.TURSO_DATABASE_URL as string,
@@ -52,7 +53,14 @@ const fails = await db.execute({
 })
 console.log(`${gem.rows[0].n} ${low.rows[0].n} ${fails.rows[0].n}`)
 TS
-)
+
+stats=$(grep -E '^[0-9]+ [0-9]+ [0-9]+$' "$stats_file" | tail -1 || true)
+rm -f "$stats_file"
+
+if [[ -z "${stats}" ]]; then
+  echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) WARN stats query failed" >>"$LOG"
+  exit 0
+fi
 
 count=$(echo "$stats" | awk '{print $1}')
 low=$(echo "$stats" | awk '{print $2}')
@@ -63,15 +71,10 @@ fails=${fails:-0}
 now=$(date +%s)
 
 alive=0
-if launchctl list 2>/dev/null | grep -q com.braddcorp.ssoc-gemini-ocr; then
-  if pgrep -f "gemini-ssoc-book-ocr-loop|gemini-sfp-book-ocr.ts --pack-id=$PACK_ID|pack-id=$PACK_ID" >/dev/null 2>&1 \
-    || pgrep -f "gemini-ssoc-book-ocr-loop" >/dev/null 2>&1; then
-    alive=1
-  fi
-  # launchd KeepAlive may be between passes
-  if pgrep -f "gemini-ssoc-book-ocr-loop.sh" >/dev/null 2>&1; then alive=1; fi
-  if pgrep -f "scripts/gemini-sfp-book-ocr.ts" >/dev/null 2>&1 \
-    && pgrep -af "gemini-sfp-book-ocr" | grep -q "$PACK_ID"; then alive=1; fi
+if pgrep -f "gemini-ssoc-book-ocr-loop" >/dev/null 2>&1; then
+  alive=1
+elif pgrep -af "gemini-sfp-book-ocr.ts" 2>/dev/null | grep -q "$PACK_ID"; then
+  alive=1
 fi
 
 if [[ "$count" -gt "$LAST_COUNT" ]]; then
@@ -83,38 +86,30 @@ fi
 
 echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) count=$count/$EXPECTED low=$low fails=$fails alive=$alive" >>"$LOG"
 
-# Done
 if [[ "$count" -ge "$EXPECTED" && "$ALERTED_DONE" != "1" ]]; then
-  ping "done $count/$EXPECTED — ready to rebake when you are"
+  ping_phone "done $count/$EXPECTED — ready to rebake when you are"
   ALERTED_DONE=1
 fi
 
-# Dead before complete
 if [[ "$count" -lt "$EXPECTED" && "$alive" -eq 0 && "$ALERTED_DEAD" != "1" ]]; then
-  # allow brief gap between KeepAlive restarts
-  sleep 20
+  sleep 15
   if ! pgrep -f "gemini-ssoc-book-ocr-loop" >/dev/null 2>&1 \
-    && ! pgrep -af "gemini-sfp-book-ocr" | grep -q "$PACK_ID"; then
-    ping "STOPPED at $count/$EXPECTED — launchd/process not running"
+    && ! pgrep -af "gemini-sfp-book-ocr.ts" 2>/dev/null | grep -q "$PACK_ID"; then
+    ping_phone "STOPPED at $count/$EXPECTED — process not running"
     ALERTED_DEAD=1
-  else
-    alive=1
   fi
 fi
 
-# Stall
 stall_sec=$((now - LAST_CHANGE_EPOCH))
 if [[ "$count" -lt "$EXPECTED" && "$stall_sec" -ge $((STALL_MINUTES * 60)) && "$ALERTED_STALL" != "1" ]]; then
-  ping "STALLED ${STALL_MINUTES}m+ at $count/$EXPECTED (no new OCR)"
+  ping_phone "STALLED ${STALL_MINUTES}m+ at $count/$EXPECTED (no new OCR)"
   ALERTED_STALL=1
 fi
 
-# Quality regress (fat PDFs collapsing to 1 verse again)
 if [[ "$count" -ge "$MIN_FOR_QUALITY" && "$ALERTED_QUALITY" != "1" ]]; then
-  # integer percent
   pct=$(( low * 100 / count ))
   if [[ "$pct" -ge 25 ]]; then
-    ping "QUALITY BAD — ${low}/${count} (${pct}%) fat PDFs stuck at 1 verse"
+    ping_phone "QUALITY BAD — ${low}/${count} (${pct}%) fat PDFs stuck at 1 verse"
     ALERTED_QUALITY=1
   fi
 fi
