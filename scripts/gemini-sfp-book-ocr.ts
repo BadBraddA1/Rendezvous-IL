@@ -506,7 +506,7 @@ async function persistOne(
           SET ocr_url = ?,
               ocr_status = ?,
               ocr_confidence = ?,
-              verse_count = COALESCE(?, verse_count),
+              verse_count = ?,
               updated_at = datetime('now')
           WHERE id = ?`,
     args: [
