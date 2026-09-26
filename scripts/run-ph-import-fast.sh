@@ -25,8 +25,10 @@ if [[ ! -d "/Volumes/PRO-G40-Bradd/Song Books/Praise and Harmony" ]]; then
   exit 1
 fi
 
-mkdir -p "$LOG_DIR" "$WORK_ROOT" "$KEEP_PDF" "$DRIVE_WORK/lo-profiles"
-echo "$PACK_ID" > "$WORK_ROOT/pack-id.txt"
+mkdir -p "$LOG_DIR" "$WORK_ROOT" "$KEEP_PDF" "$DRIVE_WORK/lo-profiles" "$WORK_ROOT/tmp"
+# Keep LibreOffice temp off the Mac SSD (16GB free kills converts).
+export TMPDIR="${TMPDIR:-$WORK_ROOT/tmp}"
+echo "$PACK_ID" > "$WORK_ROOT/pack-id.txt" || true
 
 # Resume continuity from earlier Mac-disk run
 if [[ -f "$HOME/Code/Rendezvous-IL/.tmp-ph-import/done-titles.json" && ! -f "$WORK_ROOT/done-titles.json" ]]; then
@@ -65,9 +67,11 @@ const r = await db.execute({
 console.log(r.rows[0].n)
 TS
   ) || true
+  # Strip non-digits — empty/garbage under `set -e` used to kill the master instantly.
+  count="$(printf '%s' "${count:-0}" | tr -cd '0-9')"
   count="${count:-0}"
   echo "$(date +%H:%M:%S) pack=$count/$EXPECTED shards_alive=$alive" | tee -a "$LOG_DIR/import-master.log"
-  if [[ "$count" -ge "$EXPECTED" || "$alive" -eq 0 ]]; then
+  if (( count >= EXPECTED || alive == 0 )); then
     echo "stop count=$count alive=$alive" | tee -a "$LOG_DIR/import-master.log"
     break
   fi
