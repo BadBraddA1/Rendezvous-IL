@@ -18,7 +18,7 @@ type LibraryItem = {
   pack_id: string
   pack_name?: string
   pack_slug?: string
-  book_code?: "A" | "B" | "C" | null
+  book_code?: "A" | "B" | "C" | "D" | null
   book_label?: string
   page_number?: number | null
   title: string
@@ -45,7 +45,7 @@ type OcrDoc = {
 }
 
 type Filter = "all" | "missing" | "high" | "low" | "gemini"
-type BookFilter = "all" | "A" | "B" | "C"
+type BookFilter = "all" | "A" | "B" | "C" | "D"
 
 const FILTERS: { id: Filter; label: string }[] = [
   { id: "all", label: "All" },
@@ -60,6 +60,7 @@ const BOOKS: { id: BookFilter; label: string }[] = [
   { id: "A", label: "A · SFP" },
   { id: "B", label: "B · SSOC" },
   { id: "C", label: "C · TPH" },
+  { id: "D", label: "D · P&H" },
 ]
 
 export function SongLibraryInspector() {
@@ -87,9 +88,9 @@ export function SongLibraryInspector() {
     const params = new URLSearchParams(window.location.search)
     const song = params.get("song")
     if (!song) return
-    const m = song.trim().match(/^([A-Ca-c])\s*[-–—]?\s*(\d{1,4})$/)
+    const m = song.trim().match(/^([A-Da-d])\s*[-–—]?\s*(\d{1,4})$/)
     if (m) {
-      setBook(m[1]!.toUpperCase() as "A" | "B" | "C")
+      setBook(m[1]!.toUpperCase() as "A" | "B" | "C" | "D")
       setQ(m[2]!)
       setDebouncedQ(m[2]!)
     } else if (/^\d{1,4}$/.test(song.trim())) {

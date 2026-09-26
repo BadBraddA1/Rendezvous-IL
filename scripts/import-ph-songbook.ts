@@ -1,0 +1,470 @@
+/**
+ * Import Praise & Harmony (title-only PPT/PPTX) as library song book **D**:
+ *   clean title → A–Z sort → assign stable library #s → LibreOffice PDF →
+ *   title opener → R2 + Turso. Local PDFs kept for Gemini.
+ *
+ *   npx tsx --env-file=.env.local scripts/import-ph-songbook.ts \
+ *     [--apply] [--limit=N] [--resume] [--fast] [--shard=i/n]
+ *
+ * Env: PH_PPT_SRC, PH_PACK_ID, PH_KEEP_PDF_DIR, SOFFICE
+ *
+ * Number map (stable across re-imports): docs/ops/ph-number-map.tsv
+ * New titles append at max+1; existing title→# never reshuffles.
+ */
+import { createHash, randomUUID } from "crypto"
+import { createClient } from "@libsql/client"
+import { spawnSync } from "child_process"
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+  unlinkSync,
+  copyFileSync,
+} from "fs"
+import { basename, dirname, join } from "path"
+import { tmpdir } from "os"
+import {
+  countPdfPages,
+  extractVerseCountHint,
+  prependSongTitleSlide,
+  stripLegacyDarkTitleSlides,
+} from "../lib/song-pdf-title-slide"
+
+function loadEnv() {
+  const env: Record<string, string> = { ...process.env } as Record<string, string>
+  try {
+    for (const line of readFileSync(".env.local", "utf8").split("\n")) {
+      if (!line || line.startsWith("#") || !line.includes("=")) continue
+      const i = line.indexOf("=")
+      const k = line.slice(0, i).trim()
+      let v = line.slice(i + 1).trim()
+      if (
+        (v.startsWith('"') && v.endsWith('"')) ||
+        (v.startsWith("'") && v.endsWith("'"))
+      ) {
+        v = v.slice(1, -1)
+      }
+      env[k] = v
+    }
+  } catch {
+    /* ignore */
+  }
+  return env
+}
+
+const APPLY = process.argv.includes("--apply")
+const RESUME = process.argv.includes("--resume")
+const FAST = process.argv.includes("--fast")
+const limitArg = process.argv.find((a) => a.startsWith("--limit="))
+const LIMIT = limitArg ? Number(limitArg.split("=")[1]) : 0
+const shardArg = process.argv.find((a) => a.startsWith("--shard="))
+const SHARD = (() => {
+  if (!shardArg) return { i: 0, n: 1 }
+  const [i, n] = shardArg
+    .slice("--shard=".length)
+    .split("/")
+    .map((x) => Number(x))
+  if (!Number.isFinite(i) || !Number.isFinite(n) || n < 1) return { i: 0, n: 1 }
+  return { i: Math.max(0, i), n }
+})()
+
+const SOFFICE =
+  process.env.SOFFICE ||
+  "/Applications/LibreOffice.app/Contents/MacOS/soffice"
+const SRC =
+  process.env.PH_PPT_SRC ||
+  "/Volumes/PRO-G40-Bradd/Song Books/Praise and Harmony"
+const PACK_ID =
+  process.env.PH_PACK_ID ||
+  readPackIdFallback() ||
+  "6cc2a022-d1fd-4e00-8fe5-4649018b5818"
+const PACK_NAME = "Praise and Harmony"
+const PACK_SLUG = "praise-and-harmony"
+const KEEP_PDF_DIR =
+  process.env.PH_KEEP_PDF_DIR ||
+  join(process.env.HOME || "", "Code/ph-full-pdf")
+const WORK_ROOT = join(
+  process.env.HOME || tmpdir(),
+  "Code/Rendezvous-IL/.tmp-ph-import",
+)
+const MAP_PATH = join(
+  process.env.HOME || "",
+  "Code/Rendezvous-IL/docs/ops/ph-number-map.tsv",
+)
+const LO_PROFILE =
+  process.env.LO_USER_INSTALLATION ||
+  `file://${join(tmpdir(), `lo-ph-${process.pid}-s${SHARD.i}`)}`
+
+function readPackIdFallback(): string | null {
+  try {
+    return readFileSync(join(WORK_ROOT, "pack-id.txt"), "utf8").trim()
+  } catch {
+    return null
+  }
+}
+
+/** Filename → display name (no number yet). */
+export function cleanPhTitle(raw: string): string {
+  let s = raw.trim()
+  if (!s) return s
+  s = s.replace(/^.*[/\\]/, "").replace(/\.[^.]+$/i, "")
+  s = s
+    .replace(/\s*\(wide\)\s*$/i, "")
+    .replace(/\s*\(Wide\)\s*$/i, "")
+    .replace(/\s+WS\s*$/i, "")
+    .replace(/\s+Wide\s*$/i, "")
+    .replace(/\s+Official Lead\s*$/i, "")
+    .replace(/\s+Recording\s*$/i, "")
+    .replace(/\s+Traditional\s*$/i, "")
+    .replace(/[_]+/g, " ")
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/([A-Za-z])(\d)/g, "$1 $2")
+    .replace(/(\d)([A-Za-z])/g, "$1 $2")
+    .replace(/\s{2,}/g, " ")
+    .replace(/[\s-]+$/g, "")
+    .trim()
+  // Common glued titles
+  if (/^10000\s*Reasons$/i.test(s)) s = "10,000 Reasons"
+  return s || raw.trim()
+}
+
+function isSongFile(name: string): boolean {
+  if (!/\.pptx?$/i.test(name)) return false
+  if (/^\._|^\~\$|\.DS_Store/i.test(name)) return false
+  return true
+}
+
+function loadNumberMap(path: string): Map<string, number> {
+  const map = new Map<string, number>()
+  if (!existsSync(path)) return map
+  for (const line of readFileSync(path, "utf8").split("\n")) {
+    if (!line || line.startsWith("#")) continue
+    const tab = line.indexOf("\t")
+    if (tab < 0) continue
+    const num = Number(line.slice(0, tab).trim())
+    const title = line.slice(tab + 1).trim()
+    if (Number.isFinite(num) && num > 0 && title) {
+      map.set(title.toLowerCase(), num)
+    }
+  }
+  return map
+}
+
+function saveNumberMap(path: string, entries: Array<{ num: number; title: string }>) {
+  mkdirSync(dirname(path), { recursive: true })
+  const lines = [
+    "# Praise & Harmony library sort numbers (stable). num\\ttitle",
+    ...entries
+      .slice()
+      .sort((a, b) => a.num - b.num || a.title.localeCompare(b.title))
+      .map((e) => `${e.num}\t${e.title}`),
+    "",
+  ]
+  writeFileSync(path, lines.join("\n"))
+}
+
+function convertPptToPdf(srcPath: string, outDir: string): string | null {
+  mkdirSync(outDir, { recursive: true })
+  const ext = /\.pptx$/i.test(srcPath) ? ".pptx" : ".ppt"
+  const simple = join(outDir, `in-${process.pid}-${Date.now()}${ext}`)
+  copyFileSync(srcPath, simple)
+  const result = spawnSync(
+    SOFFICE,
+    [
+      "--headless",
+      "--norestore",
+      "--nologo",
+      "--nodefault",
+      `-env:UserInstallation=${LO_PROFILE}`,
+      "--convert-to",
+      "pdf",
+      "--outdir",
+      outDir,
+      simple,
+    ],
+    { encoding: "utf8", timeout: 240_000 },
+  )
+  try {
+    unlinkSync(simple)
+  } catch {
+    /* ignore */
+  }
+  if (result.status !== 0) {
+    console.error("  soffice fail", basename(srcPath), result.stderr?.slice(0, 200))
+    return null
+  }
+  const pdfName = basename(simple).replace(/\.pptx?$/i, ".pdf")
+  const dest = join(outDir, pdfName)
+  return existsSync(dest) ? dest : null
+}
+
+async function main() {
+  if (!existsSync(SRC)) {
+    console.error("source missing", SRC)
+    process.exit(1)
+  }
+  if (!existsSync(SOFFICE)) {
+    console.error("LibreOffice missing", SOFFICE)
+    process.exit(1)
+  }
+
+  const env = loadEnv()
+  if (!env.TURSO_DATABASE_URL || !env.TURSO_AUTH_TOKEN) {
+    console.error("Turso env missing")
+    process.exit(1)
+  }
+  if (!env.R2_UPLOAD_WORKER_URL || !env.R2_UPLOAD_SECRET) {
+    console.error("R2 upload env missing")
+    process.exit(1)
+  }
+
+  const db = createClient({
+    url: env.TURSO_DATABASE_URL,
+    authToken: env.TURSO_AUTH_TOKEN,
+  })
+  const worker = env.R2_UPLOAD_WORKER_URL.replace(/\/$/, "")
+  const secret = env.R2_UPLOAD_SECRET
+  const publicBase = (env.R2_PUBLIC_BASE_URL || "https://cdn.rendezvousil.com").replace(
+    /\/$/,
+    "",
+  )
+
+  mkdirSync(WORK_ROOT, { recursive: true })
+  mkdirSync(KEEP_PDF_DIR, { recursive: true })
+  writeFileSync(join(WORK_ROOT, "pack-id.txt"), PACK_ID)
+
+  const files = readdirSync(SRC)
+    .filter(isSongFile)
+    .map((name) => ({ name, title: cleanPhTitle(name) }))
+    .filter((f) => f.title.length > 0)
+    .sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: "base" }))
+
+  // Stable numbers
+  const existingMap = loadNumberMap(MAP_PATH)
+  let nextNum =
+    existingMap.size > 0 ? Math.max(...existingMap.values()) + 1 : 1
+  const assigned: Array<{ num: number; title: string; name: string }> = []
+  for (const f of files) {
+    const key = f.title.toLowerCase()
+    let num = existingMap.get(key)
+    if (num == null) {
+      num = nextNum++
+      existingMap.set(key, num)
+    }
+    assigned.push({ num, title: f.title, name: f.name })
+  }
+  assigned.sort((a, b) => a.num - b.num)
+
+  if (APPLY || !existsSync(MAP_PATH)) {
+    saveNumberMap(
+      MAP_PATH,
+      assigned.map((a) => ({ num: a.num, title: a.title })),
+    )
+    console.log(`number map → ${MAP_PATH} (${assigned.length} songs)`)
+  }
+
+  console.log(
+    `src=${SRC}\npack=${PACK_SLUG} id=${PACK_ID}\nfiles=${assigned.length} apply=${APPLY} resume=${RESUME} limit=${LIMIT || "all"} fast=${FAST} shard=${SHARD.i}/${SHARD.n}`,
+  )
+
+  const pdfDir = join(WORK_ROOT, "pdf")
+  const donePath = join(WORK_ROOT, "done-titles.json")
+  mkdirSync(pdfDir, { recursive: true })
+
+  let doneTitles = new Set<string>()
+  if (RESUME && existsSync(donePath)) {
+    try {
+      doneTitles = new Set(JSON.parse(readFileSync(donePath, "utf8")) as string[])
+      console.log(`resume: skipping ${doneTitles.size} titles from done-titles.json`)
+    } catch {
+      /* ignore */
+    }
+  }
+
+  if (APPLY && !RESUME) {
+    const existing = await db.execute({
+      sql: "SELECT id FROM song_packs WHERE id = ?",
+      args: [PACK_ID],
+    })
+    if (!existing.rows[0]) {
+      await db.execute({
+        sql: `INSERT INTO song_packs (
+          id, name, slug, description, event_year, sort_order, is_published, is_library
+        ) VALUES (?, ?, ?, ?, 2027, 52, 1, 1)`,
+        args: [
+          PACK_ID,
+          PACK_NAME,
+          PACK_SLUG,
+          "Praise and Harmony — library sort numbers (A–Z), not printed hymnal pages",
+        ],
+      })
+      console.log("created pack", PACK_ID)
+    } else {
+      await db.execute({
+        sql: `UPDATE song_packs
+              SET name = ?, slug = ?, description = ?, is_library = 1, is_published = 1,
+                  updated_at = datetime('now')
+              WHERE id = ?`,
+        args: [
+          PACK_NAME,
+          PACK_SLUG,
+          "Praise and Harmony — library sort numbers (A–Z), not printed hymnal pages",
+          PACK_ID,
+        ],
+      })
+      await db.execute({
+        sql: "DELETE FROM song_pack_items WHERE pack_id = ?",
+        args: [PACK_ID],
+      })
+      console.log("cleared existing pack items")
+    }
+    doneTitles = new Set()
+    writeFileSync(donePath, "[]")
+  }
+
+  if (APPLY && RESUME) {
+    const existingPack = await db.execute({
+      sql: "SELECT id FROM song_packs WHERE id = ?",
+      args: [PACK_ID],
+    })
+    if (!existingPack.rows[0]) {
+      await db.execute({
+        sql: `INSERT INTO song_packs (
+          id, name, slug, description, event_year, sort_order, is_published, is_library
+        ) VALUES (?, ?, ?, ?, 2027, 52, 1, 1)`,
+        args: [
+          PACK_ID,
+          PACK_NAME,
+          PACK_SLUG,
+          "Praise and Harmony — library sort numbers (A–Z), not printed hymnal pages",
+        ],
+      })
+      console.log("created pack (resume path)", PACK_ID)
+    }
+    const existing = await db.execute({
+      sql: "SELECT title FROM song_pack_items WHERE pack_id = ?",
+      args: [PACK_ID],
+    })
+    for (const row of existing.rows) {
+      doneTitles.add(String(row.title))
+    }
+    writeFileSync(donePath, JSON.stringify([...doneTitles]))
+    console.log(`resume: ${doneTitles.size} songs already in pack`)
+  }
+
+  let ok = 0
+  let fail = 0
+  let attempted = 0
+
+  for (const item of assigned) {
+    if (SHARD.n > 1 && item.num % SHARD.n !== SHARD.i) continue
+
+    const displayTitle = `${item.num} · ${item.title}`
+    if (doneTitles.has(displayTitle)) continue
+    if (LIMIT > 0 && attempted >= LIMIT) {
+      console.log(`chunk cap reached (--limit=${LIMIT})`)
+      break
+    }
+    attempted++
+
+    console.log(`IMPORT ${item.name} → ${displayTitle}`)
+
+    const pptPath = join(SRC, item.name)
+    const pdfPath = convertPptToPdf(pptPath, pdfDir)
+    if (!pdfPath) {
+      fail++
+      continue
+    }
+
+    let pdfBytes = new Uint8Array(readFileSync(pdfPath))
+    pdfBytes = await stripLegacyDarkTitleSlides(pdfBytes)
+    writeFileSync(pdfPath, Buffer.from(pdfBytes))
+
+    const hint = extractVerseCountHint(item.name)
+    let verseCount = hint && hint > 0 ? hint : 0
+    if (verseCount <= 0) {
+      const pages = await countPdfPages(pdfBytes)
+      verseCount = Math.max(1, Math.min(12, Math.round(pages / 2) || 1))
+      console.log(
+        `  verses estimated=${verseCount} (pages=${pages}${FAST ? " fast" : ""})`,
+      )
+    }
+
+    const withTitle = await prependSongTitleSlide(pdfBytes, displayTitle, {
+      verseCount,
+      force: true,
+      hasNativeTitle: false,
+    })
+    const pageCount = await countPdfPages(withTitle)
+    const contentHash = createHash("sha256").update(Buffer.from(withTitle)).digest("hex")
+
+    const keepName = `${String(item.num).padStart(3, "0")} ${item.title}.pdf`
+    writeFileSync(join(KEEP_PDF_DIR, keepName), Buffer.from(withTitle))
+
+    if (!APPLY) {
+      console.log(`  dry pages=${pageCount} bytes=${withTitle.byteLength}`)
+      ok++
+      continue
+    }
+
+    const key = `song-packs/${PACK_ID}/${String(item.num).padStart(4, "0")}-${contentHash.slice(0, 12)}.pdf`
+    const put = await fetch(`${worker}/object?key=${encodeURIComponent(key)}`, {
+      method: "PUT",
+      headers: { "x-upload-secret": secret, "content-type": "application/pdf" },
+      body: Buffer.from(withTitle),
+    })
+    if (!put.ok) {
+      console.error("  upload fail", await put.text())
+      fail++
+      continue
+    }
+    const fileUrl = `${publicBase}/${key}`
+    const id = randomUUID()
+    await db.execute({
+      sql: `INSERT INTO song_pack_items (
+        id, pack_id, title, sort_order, file_url, file_type, byte_size, content_hash,
+        page_count, verse_count
+      ) VALUES (?, ?, ?, ?, ?, 'pdf', ?, ?, ?, ?)`,
+      args: [
+        id,
+        PACK_ID,
+        displayTitle,
+        item.num,
+        fileUrl,
+        withTitle.byteLength,
+        contentHash,
+        pageCount,
+        verseCount,
+      ],
+    })
+
+    doneTitles.add(displayTitle)
+    writeFileSync(donePath, JSON.stringify([...doneTitles]))
+    ok++
+    console.log(`  ok ${fileUrl}`)
+
+    try {
+      unlinkSync(pdfPath)
+    } catch {
+      /* ignore */
+    }
+  }
+
+  if (APPLY) {
+    await db.execute({
+      sql: "UPDATE song_packs SET updated_at = datetime('now') WHERE id = ?",
+      args: [PACK_ID],
+    })
+  }
+
+  console.log(
+    `done ok=${ok} fail=${fail}${APPLY ? "" : " (dry run — pass --apply)"}`,
+  )
+}
+
+main().catch((e) => {
+  console.error(e)
+  process.exit(1)
+})

@@ -267,6 +267,8 @@ pnpm db:verify
 | `npx tsx --env-file=.env.local scripts/persist-sfp-book-ocr.ts --from=… --apply` | Upload verse OCR JSON; set `ocr_url` / status |
 | `npx tsx --env-file=.env.local scripts/clean-sfp-ocr-agent.ts --from=… --out=…` | OpenAI cleanup of raw OCR → singable verses |
 | `./scripts/run-ssoc-import-fast.sh` | **Sacred Songs of the Church** fast import (PPTX→PDF→R2). Pack `sacred-songs-of-the-church` (`SSOC_PACK_ID`). Logs: `~/Library/Logs/ssoc-ocr/` |
+| `npx tsx --env-file=.env.local scripts/import-ph-songbook.ts --apply --resume --fast` | **Praise and Harmony** (book **D**) — A–Z library #s via `docs/ops/ph-number-map.tsv` → R2 + Turso. Local PDFs: `~/Code/ph-full-pdf`. Logs: `~/Library/Logs/ph-ocr/` |
+| launchd `com.braddcorp.ph-import` / `com.braddcorp.ph-gemini-ocr` | Keeps P&H import + Gemini alive overnight |
 | `npx tsx --env-file=.env.local scripts/import-ssoc-songbook.ts --apply --resume --fast` | Single-shard SSOC import; keeps local PDFs in `~/Code/ssoc-full-pdf` |
 | `./scripts/run-tph-import-fast.sh` | **The Paperless Hymnal** fast import (PPT→PDF→R2). Pack `the-paperless-hymnal` (`TPH_PACK_ID` = `d7b0b452-…`). **All PDF/LO scratch on PRO-G40** `/Volumes/PRO-G40-Bradd/_cloud-work/` (logs `~/Library/Logs/tph-ocr/`). Mac `~/Code/tph-full-pdf` → symlink. Admin code **C**. launchd: `com.braddcorp.tph-import` |
 | `npx tsx --env-file=.env.local scripts/import-tph-songbook.ts --apply --resume --fast` | Single-shard TPH import from PRO-G40 `Song Books/TPH by NumberLocal Copy/IN PRO` |

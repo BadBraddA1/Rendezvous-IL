@@ -7,10 +7,11 @@ import { toPublicMediaUrl } from "@/lib/media-keys"
 export const dynamic = "force-dynamic"
 
 /** Admin-only book codes — do not change stored titles (apps stay as-is). */
-const BOOK_BY_SLUG: Record<string, { code: "A" | "B" | "C"; label: string }> = {
+const BOOK_BY_SLUG: Record<string, { code: "A" | "B" | "C" | "D"; label: string }> = {
   "songs-of-faith-and-praise": { code: "A", label: "Songs of Faith and Praise" },
   "sacred-songs-of-the-church": { code: "B", label: "Sacred Songs of the Church" },
   "the-paperless-hymnal": { code: "C", label: "The Paperless Hymnal" },
+  "praise-and-harmony": { code: "D", label: "Praise and Harmony" },
 }
 
 function pageFromTitle(title: string): number | null {
@@ -18,7 +19,7 @@ function pageFromTitle(title: string): number | null {
   return m ? Number(m[1]) : null
 }
 
-function adminLabel(code: "A" | "B" | "C" | null, title: string): string {
+function adminLabel(code: "A" | "B" | "C" | "D" | null, title: string): string {
   const page = pageFromTitle(title)
   if (code && page != null) {
     const rest = title.replace(/^\d{1,4}\s*[·.•\-–—]\s*/, "").trim()
@@ -35,7 +36,7 @@ function adminLabel(code: "A" | "B" | "C" | null, title: string): string {
  *   &filter=all|missing|high|low|gemini
  *   &limit=200
  *
- * Browse library packs for OCR QA. Admin display uses A/B/C-### (SFP/SSOC/TPH).
+ * Browse library packs for OCR QA. Admin display uses A–D-### (SFP/SSOC/TPH/P&H).
  */
 export async function GET(request: Request) {
   const admin = await getCurrentAdmin(request)
@@ -53,17 +54,19 @@ export async function GET(request: Request) {
   const where: string[] = ["COALESCE(p.is_library, 0) = 1"]
   const args: unknown[] = []
 
-  // Parse A-123 / B-45 / C-89 from query
-  let bookFromQ: "A" | "B" | "C" | null = null
-  const bookMatch = q.match(/^([A-Ca-c])\s*[-–—]?\s*(\d{1,4})$/)
+  // Parse A-123 / B-45 / C-89 / D-12 from query
+  let bookFromQ: "A" | "B" | "C" | "D" | null = null
+  const bookMatch = q.match(/^([A-Da-d])\s*[-–—]?\s*(\d{1,4})$/)
   if (bookMatch) {
-    bookFromQ = bookMatch[1]!.toUpperCase() as "A" | "B" | "C"
+    bookFromQ = bookMatch[1]!.toUpperCase() as "A" | "B" | "C" | "D"
     q = bookMatch[2]!
   }
 
   const book =
     bookFromQ ||
-    (bookParam === "A" || bookParam === "B" || bookParam === "C" ? bookParam : null)
+    (bookParam === "A" || bookParam === "B" || bookParam === "C" || bookParam === "D"
+      ? bookParam
+      : null)
   if (book === "A") {
     where.push(`p.slug = ?`)
     args.push("songs-of-faith-and-praise")
@@ -73,6 +76,9 @@ export async function GET(request: Request) {
   } else if (book === "C") {
     where.push(`p.slug = ?`)
     args.push("the-paperless-hymnal")
+  } else if (book === "D") {
+    where.push(`p.slug = ?`)
+    args.push("praise-and-harmony")
   }
 
   if (q) {
@@ -113,7 +119,8 @@ export async function GET(request: Request) {
          WHEN 'songs-of-faith-and-praise' THEN 0
          WHEN 'sacred-songs-of-the-church' THEN 1
          WHEN 'the-paperless-hymnal' THEN 2
-         ELSE 3
+         WHEN 'praise-and-harmony' THEN 3
+         ELSE 4
        END ASC,
        CAST(
          CASE
