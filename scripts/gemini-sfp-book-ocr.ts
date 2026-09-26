@@ -11,8 +11,11 @@
  *
  *   npx tsx --env-file=.env.local scripts/gemini-sfp-book-ocr.ts \
  *     [--apply] [--limit=N] [--concurrency=4] [--model=google/gemini-2.5-flash] \
- *     [--from-page=N] [--only=2,4,480] [--suspect-verses] [--force] \
+ *     [--from-page=N] [--only=2,4,480] [--min-pages=N] [--suspect-verses] [--force] \
  *     [--pack-id=UUID] [--local-pdf-dir=PATH] [--out=PATH]
+ *
+ * --min-pages=N: skip pack items with page_count < N (use 3 to ignore
+ *   title+1 truncated PPTX conversions until rebake).
  *
  * --suspect-verses: re-check songs with odd verse counts:
  *   - high: verse_count >= 7
@@ -59,6 +62,8 @@ const ONLY = new Set(
     .map(Number)
     .filter((n) => n > 0),
 )
+const minPagesArg = process.argv.find((a) => a.startsWith("--min-pages="))
+const MIN_PAGES = minPagesArg ? Number(minPagesArg.split("=")[1]) : 0
 const outArg = process.argv.find((a) => a.startsWith("--out="))
 const packIdArg = process.argv.find((a) => a.startsWith("--pack-id="))
 const localPdfArg = process.argv.find((a) => a.startsWith("--local-pdf-dir="))
@@ -707,6 +712,13 @@ async function main() {
   if (FROM_PAGE > 0) {
     items = items.filter((it) => (it.page ?? 0) >= FROM_PAGE)
   }
+  if (MIN_PAGES > 0) {
+    const before = items.length
+    items = items.filter((it) => (it.page_count ?? 0) >= MIN_PAGES)
+    console.log(
+      `min-pages=${MIN_PAGES}: kept ${items.length}/${before} (skipped truncated/short PDFs)`,
+    )
+  }
   if (LIMIT > 0) items = items.slice(0, LIMIT)
 
   const localPdfs = indexLocalPdfs(LOCAL_PDF_DIR)
@@ -714,7 +726,7 @@ async function main() {
   mkdirSync(tmpDir, { recursive: true })
 
   console.log(
-    `gemini OCR items=${items.length} localPdfs=${localPdfs.size} concurrency=${CONCURRENCY} model=${MODEL} apply=${APPLY} suspect=${SUSPECT_VERSES}`,
+    `gemini OCR items=${items.length} localPdfs=${localPdfs.size} concurrency=${CONCURRENCY} model=${MODEL} apply=${APPLY} suspect=${SUSPECT_VERSES} minPages=${MIN_PAGES || "off"}`,
   )
 
   await mapPool(items, CONCURRENCY, (item) =>

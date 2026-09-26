@@ -1,6 +1,13 @@
 # CDN truncated songs — rerun list
 Generated 2026-09-26 11:27 UTC
 
+## Status (2026-09-26)
+
+- **Parked until PRO-G40 is back.** Brad + Jim will decide rebake approach.
+- Intact P&H PDFs (`page_count > 2`, **172 songs**) are Gemini-ing now with `--min-pages=3`.
+- Truncated rows are marked `ocr_status = pending_rebake` in Turso (do not burn Gemini on them).
+- When the drive is mounted again: re-convert these PPTX → full PDF → R2 upsert → Gemini `--force` on `docs/ops/ph-rerun-truncated-nums.txt`.
+
 ## Cause
 
 Praise & Harmony **`.pptx`** files were converted with LibreOffice, which often kept **only the first music slide**. After the title opener bake that landed as **`page_count = 2`** on CDN (title + 1 music page), while the source PPTX still has many slides.

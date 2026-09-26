@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Durable Gemini OCR loop for Praise and Harmony (book D).
-# PDFs are already on R2/CDN — no PRO-G40 / local PDF dir required.
+# CDN-only. Skips truncated PPTX stubs (page_count < 3) until drive rebake.
 set -euo pipefail
 cd /Users/braddford/Code/Rendezvous-IL
 export PATH="/usr/local/bin:/opt/homebrew/bin:$PATH"
@@ -14,11 +14,10 @@ log() { echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) $*" | tee -a "$LOG"; }
 export GEMINI_OCR_MODEL="${GEMINI_OCR_MODEL:-google/gemini-2.5-flash}"
 export GEMINI_OCR_CONCURRENCY="${GEMINI_OCR_CONCURRENCY:-8}"
 
-# Empty local dir → script downloads each song from CDN file_url
 EMPTY_LOCAL="${TMPDIR:-/tmp}/ph-gemini-cdn-only"
 mkdir -p "$EMPTY_LOCAL"
 
-log "ph gemini start pack=$PACK_ID model=$GEMINI_OCR_MODEL concurrency=$GEMINI_OCR_CONCURRENCY source=cdn"
+log "ph gemini start pack=$PACK_ID model=$GEMINI_OCR_MODEL concurrency=$GEMINI_OCR_CONCURRENCY source=cdn min-pages=3"
 
 npx tsx --env-file=.env.local scripts/gemini-sfp-book-ocr.ts \
   --apply \
@@ -26,6 +25,7 @@ npx tsx --env-file=.env.local scripts/gemini-sfp-book-ocr.ts \
   --model="$GEMINI_OCR_MODEL" \
   --pack-id="$PACK_ID" \
   --local-pdf-dir="$EMPTY_LOCAL" \
+  --min-pages=3 \
   --out=/tmp/ph-gemini-ocr.jsonl \
   >>"$LOG" 2>&1
 
