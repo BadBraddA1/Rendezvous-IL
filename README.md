@@ -268,7 +268,10 @@ pnpm db:verify
 | `npx tsx --env-file=.env.local scripts/clean-sfp-ocr-agent.ts --from=… --out=…` | OpenAI cleanup of raw OCR → singable verses |
 | `./scripts/run-ssoc-import-fast.sh` | **Sacred Songs of the Church** fast import (PPTX→PDF→R2). Pack `sacred-songs-of-the-church` (`SSOC_PACK_ID`). Logs: `~/Library/Logs/ssoc-ocr/` |
 | `npx tsx --env-file=.env.local scripts/import-ssoc-songbook.ts --apply --resume --fast` | Single-shard SSOC import; keeps local PDFs in `~/Code/ssoc-full-pdf` |
+| `./scripts/run-tph-import-fast.sh` | **The Paperless Hymnal** fast import (PPT→PDF→R2). Pack `the-paperless-hymnal` (`TPH_PACK_ID` = `d7b0b452-…`). **All PDF/LO scratch on PRO-G40** `/Volumes/PRO-G40-Bradd/_cloud-work/` (logs `~/Library/Logs/tph-ocr/`). Mac `~/Code/tph-full-pdf` → symlink. Admin code **C**. launchd: `com.braddcorp.tph-import` |
+| `npx tsx --env-file=.env.local scripts/import-tph-songbook.ts --apply --resume --fast` | Single-shard TPH import from PRO-G40 `Song Books/TPH by NumberLocal Copy/IN PRO` |
 | `npx tsx --env-file=.env.local scripts/gemini-sfp-book-ocr.ts --apply --pack-id=$SSOC_PACK_ID --local-pdf-dir=~/Code/ssoc-full-pdf` | Gemini lyrics for SSOC (same script as SFP; pass `--pack-id`) |
+| `npx tsx --env-file=.env.local scripts/gemini-sfp-book-ocr.ts --apply --pack-id=$TPH_PACK_ID --local-pdf-dir=~/Code/tph-full-pdf` | Gemini lyrics for TPH |
 | `./scripts/gemini-ssoc-book-ocr-loop.sh` | Resume-safe SSOC Gemini loop |
 | `npx tsx --env-file=.env.local scripts/rebake-ssoc-title-slides.ts --apply` | Rebake SSOC title openers at music page size (960×540) using Gemini `verse_count` |
 | launchd `com.braddcorp.ssoc-import` / `com.braddcorp.ssoc-gemini-ocr` | Keeps SSOC import + Gemini alive (logs `~/Library/Logs/ssoc-ocr/`) |
@@ -276,6 +279,7 @@ pnpm db:verify
 | `npx tsx --env-file=.env.local scripts/gemini-sfp-book-ocr.ts --apply --suspect-verses` | Re-check odd verse counts: **high** (`verse_count≥7`), **low on fat packs** (`≤1` verse but `page_count≥9`), or still missing Gemini. Forces a fresh read. |
 | `npx tsx --env-file=.env.local scripts/call-sfp-ocr-endpoint.ts --file-url=…` | Hit RunPod serverless OCR (`RUNPOD_SFP_OCR_ENDPOINT_ID`) |
 | `npx tsx --env-file=.env.local scripts/fix-sfp-wrong-page-numbers.ts --apply` | Fix nine SFP items imported under wrong page #s: rename PRO-G40 Shape-note 16×9 (+ titled) files, re-key R2 PDFs, update Turso titles (see `docs/ops/SFP-NUMBER-CORRECTIONS.md`) |
+| `npx tsx --env-file=.env.local scripts/fix-double-title-slides.ts [--apply]` | Auto-find stacked title openers (exact 720×405 stack **or** our opener + native near-blank music-sized title via ink scan) and rebuild a single opener → R2 + Turso. No hand-listed page #s. |
 | Admin → Songs → Lyric OCR review | Confirm/edit low-confidence Text mode lyrics (`j`/`k`/`c`/`s`) |
 | Admin → Songs → item **vr** field | Staff sets verse count; PDF title slide rebakes immediately |
 

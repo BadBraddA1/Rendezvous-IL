@@ -7,9 +7,10 @@ import { toPublicMediaUrl } from "@/lib/media-keys"
 export const dynamic = "force-dynamic"
 
 /** Admin-only book codes — do not change stored titles (apps stay as-is). */
-const BOOK_BY_SLUG: Record<string, { code: "A" | "B"; label: string }> = {
+const BOOK_BY_SLUG: Record<string, { code: "A" | "B" | "C"; label: string }> = {
   "songs-of-faith-and-praise": { code: "A", label: "Songs of Faith and Praise" },
   "sacred-songs-of-the-church": { code: "B", label: "Sacred Songs of the Church" },
+  "the-paperless-hymnal": { code: "C", label: "The Paperless Hymnal" },
 }
 
 function pageFromTitle(title: string): number | null {
@@ -17,7 +18,7 @@ function pageFromTitle(title: string): number | null {
   return m ? Number(m[1]) : null
 }
 
-function adminLabel(code: "A" | "B" | null, title: string): string {
+function adminLabel(code: "A" | "B" | "C" | null, title: string): string {
   const page = pageFromTitle(title)
   if (code && page != null) {
     const rest = title.replace(/^\d{1,4}\s*[·.•\-–—]\s*/, "").trim()
@@ -34,7 +35,7 @@ function adminLabel(code: "A" | "B" | null, title: string): string {
  *   &filter=all|missing|high|low|gemini
  *   &limit=200
  *
- * Browse library packs for OCR QA. Admin display uses A-### (SFP) / B-### (SSOC).
+ * Browse library packs for OCR QA. Admin display uses A/B/C-### (SFP/SSOC/TPH).
  */
 export async function GET(request: Request) {
   const admin = await getCurrentAdmin(request)
@@ -52,21 +53,26 @@ export async function GET(request: Request) {
   const where: string[] = ["COALESCE(p.is_library, 0) = 1"]
   const args: unknown[] = []
 
-  // Parse A-123 / B-45 from query
-  let bookFromQ: "A" | "B" | null = null
-  const bookMatch = q.match(/^([ABab])\s*[-–—]?\s*(\d{1,4})$/)
+  // Parse A-123 / B-45 / C-89 from query
+  let bookFromQ: "A" | "B" | "C" | null = null
+  const bookMatch = q.match(/^([A-Ca-c])\s*[-–—]?\s*(\d{1,4})$/)
   if (bookMatch) {
-    bookFromQ = bookMatch[1]!.toUpperCase() as "A" | "B"
+    bookFromQ = bookMatch[1]!.toUpperCase() as "A" | "B" | "C"
     q = bookMatch[2]!
   }
 
-  const book = bookFromQ || (bookParam === "A" || bookParam === "B" ? bookParam : null)
+  const book =
+    bookFromQ ||
+    (bookParam === "A" || bookParam === "B" || bookParam === "C" ? bookParam : null)
   if (book === "A") {
     where.push(`p.slug = ?`)
     args.push("songs-of-faith-and-praise")
   } else if (book === "B") {
     where.push(`p.slug = ?`)
     args.push("sacred-songs-of-the-church")
+  } else if (book === "C") {
+    where.push(`p.slug = ?`)
+    args.push("the-paperless-hymnal")
   }
 
   if (q) {
@@ -106,7 +112,8 @@ export async function GET(request: Request) {
        CASE p.slug
          WHEN 'songs-of-faith-and-praise' THEN 0
          WHEN 'sacred-songs-of-the-church' THEN 1
-         ELSE 2
+         WHEN 'the-paperless-hymnal' THEN 2
+         ELSE 3
        END ASC,
        CAST(
          CASE

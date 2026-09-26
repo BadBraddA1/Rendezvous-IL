@@ -1,8 +1,7 @@
-# SFP vs SSOC page-number overlaps
+# Library song book codes (A / B / C)
 
-Printed page numbers collide between the two library books. That is expected —
-they are different hymnals — but bare `446` in admin used to match both and made
-OCR QA confusing.
+Printed page numbers collide across hymnals. That is expected — bare `446` in
+admin used to match multiple books and made OCR QA confusing.
 
 ## Admin convention (display only)
 
@@ -10,18 +9,27 @@ OCR QA confusing.
 |------|------|---------|
 | **A** | Songs of Faith and Praise | `A-446 · Hear O Israel` |
 | **B** | Sacred Songs of the Church | `B-446 · While We Pray and While We Plead` |
+| **C** | The Paperless Hymnal | `C-446 · …` |
 
 Stored `title` values in Turso are unchanged (`446 · …`) so member apps / search
 stay the same. Only the Library inspector and `GET /api/admin/songs/library`
 add the prefix (`admin_title`, `book_code`).
 
-Search: `A-446`, `B-12`, or bare `446` (both). Filter: Both / A · SFP / B · SSOC.
-Deep link: `?song=A-957`.
+Search: `A-446`, `B-12`, `C-89`, or bare `446` (all matching books). Filter:
+All books / A · SFP / B · SSOC / C · TPH. Deep link: `?song=C-89`.
 
-## Counts (2026-09-24)
+## Pack IDs
 
-- SFP items: **895** · SSOC items: **835**
-- Shared page numbers (different songs): **712** — full TSV: [`sfp-ssoc-page-overlaps.tsv`](./sfp-ssoc-page-overlaps.tsv)
+| Code | Slug | Pack ID |
+|------|------|---------|
+| A | `songs-of-faith-and-praise` | (existing SFP pack) |
+| B | `sacred-songs-of-the-church` | `de98d363-5295-4788-b766-5febaa4e202d` |
+| C | `the-paperless-hymnal` | `d7b0b452-5467-4099-917d-f10a9d052c0b` |
+
+## Counts
+
+- SFP (A): **895** · SSOC (B): **835** · TPH (C): **~965** (import in progress)
+- Shared page numbers A↔B (different songs): **712** — full TSV: [`sfp-ssoc-page-overlaps.tsv`](./sfp-ssoc-page-overlaps.tsv)
 - SFP same-number duplicates inside one book: **23** (alt arrangements / descants / chorus-only variants — list below)
 - SSOC same-number duplicates: **0**
 
