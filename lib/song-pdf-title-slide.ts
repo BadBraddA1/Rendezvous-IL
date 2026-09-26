@@ -40,8 +40,9 @@ function nearly(a: number, b: number, tol = 2): boolean {
 
 /**
  * Our white openers (and many LibreOffice title cards) are exactly 720×405.
- * Music slides from the SFP PPT export are ~720×405.07 — use that to peel
- * stacked title cards without deleting sheet music.
+ * Music slides from the SFP PPT export are ~720×405.071 — keep tolerance
+ * tight so we peel stacked openers without deleting sheet music.
+ * (tol 0.5 was wrong: it matched music pages and would strip a whole song.)
  */
 function isExactTitleSlideSize(
   width: number,
@@ -49,7 +50,7 @@ function isExactTitleSlideSize(
   slideW = SFP_SLIDE_WIDTH,
   slideH = SFP_SLIDE_HEIGHT,
 ): boolean {
-  return nearly(width, slideW, 0.5) && nearly(height, slideH, 0.5)
+  return nearly(width, slideW, 0.02) && nearly(height, slideH, 0.02)
 }
 
 /**
