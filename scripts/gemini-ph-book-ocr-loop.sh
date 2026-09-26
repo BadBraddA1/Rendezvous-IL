@@ -6,9 +6,13 @@ export PATH="/usr/local/bin:/opt/homebrew/bin:$PATH"
 LOG_DIR="$HOME/Library/Logs/ph-ocr"
 mkdir -p "$LOG_DIR"
 LOG="$LOG_DIR/gemini-book.log"
-PACK_ID="${PH_PACK_ID:-$(cat .tmp-ph-import/pack-id.txt 2>/dev/null || true)}"
+PACK_ID="${PH_PACK_ID:-$(cat /Volumes/PRO-G40-Bradd/_cloud-work/.tmp-ph-import/pack-id.txt 2>/dev/null || true)}"
 PACK_ID="${PACK_ID:-6cc2a022-d1fd-4e00-8fe5-4649018b5818}"
-LOCAL_PDF="${PH_KEEP_PDF_DIR:-$HOME/Code/ph-full-pdf}"
+LOCAL_PDF="${PH_KEEP_PDF_DIR:-/Volumes/PRO-G40-Bradd/_cloud-work/ph-full-pdf}"
+# Fall back to Mac copy if drive path empty
+if [[ ! -d "$LOCAL_PDF" ]] || [[ "$(find "$LOCAL_PDF" -maxdepth 1 -name '*.pdf' 2>/dev/null | wc -l | tr -d ' ')" -lt 1 ]]; then
+  LOCAL_PDF="${HOME}/Code/ph-full-pdf"
+fi
 
 log() { echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) $*" | tee -a "$LOG"; }
 

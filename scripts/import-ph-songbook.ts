@@ -24,7 +24,6 @@ import {
   copyFileSync,
 } from "fs"
 import { basename, dirname, join } from "path"
-import { tmpdir } from "os"
 import {
   countPdfPages,
   extractVerseCountHint,
@@ -76,32 +75,40 @@ const SOFFICE =
 const SRC =
   process.env.PH_PPT_SRC ||
   "/Volumes/PRO-G40-Bradd/Song Books/Praise and Harmony"
+/** Prefer PRO-G40 — Mac disk is tight; drive stays mounted overnight. */
+const DRIVE_WORK =
+  process.env.PH_DRIVE_WORK ||
+  "/Volumes/PRO-G40-Bradd/_cloud-work"
+const KEEP_PDF_DIR =
+  process.env.PH_KEEP_PDF_DIR || join(DRIVE_WORK, "ph-full-pdf")
+const WORK_ROOT =
+  process.env.PH_WORK_ROOT || join(DRIVE_WORK, ".tmp-ph-import")
 const PACK_ID =
   process.env.PH_PACK_ID ||
   readPackIdFallback() ||
   "6cc2a022-d1fd-4e00-8fe5-4649018b5818"
 const PACK_NAME = "Praise and Harmony"
 const PACK_SLUG = "praise-and-harmony"
-const KEEP_PDF_DIR =
-  process.env.PH_KEEP_PDF_DIR ||
-  join(process.env.HOME || "", "Code/ph-full-pdf")
-const WORK_ROOT = join(
-  process.env.HOME || tmpdir(),
-  "Code/Rendezvous-IL/.tmp-ph-import",
-)
 const MAP_PATH = join(
   process.env.HOME || "",
   "Code/Rendezvous-IL/docs/ops/ph-number-map.tsv",
 )
 const LO_PROFILE =
   process.env.LO_USER_INSTALLATION ||
-  `file://${join(tmpdir(), `lo-ph-${process.pid}-s${SHARD.i}`)}`
+  `file://${join(DRIVE_WORK, "lo-profiles", `lo-ph-${process.pid}-s${SHARD.i}`)}`
 
 function readPackIdFallback(): string | null {
   try {
     return readFileSync(join(WORK_ROOT, "pack-id.txt"), "utf8").trim()
   } catch {
-    return null
+    try {
+      return readFileSync(
+        join(process.env.HOME || "", "Code/Rendezvous-IL/.tmp-ph-import/pack-id.txt"),
+        "utf8",
+      ).trim()
+    } catch {
+      return null
+    }
   }
 }
 
@@ -205,6 +212,10 @@ async function main() {
     console.error("source missing", SRC)
     process.exit(1)
   }
+  if (!existsSync(DRIVE_WORK) && !existsSync("/Volumes/PRO-G40-Bradd/Song Books")) {
+    console.error("PRO-G40 not mounted — refuse to write P&H PDFs to Mac disk")
+    process.exit(1)
+  }
   if (!existsSync(SOFFICE)) {
     console.error("LibreOffice missing", SOFFICE)
     process.exit(1)
@@ -233,6 +244,7 @@ async function main() {
 
   mkdirSync(WORK_ROOT, { recursive: true })
   mkdirSync(KEEP_PDF_DIR, { recursive: true })
+  mkdirSync(join(DRIVE_WORK, "lo-profiles"), { recursive: true })
   writeFileSync(join(WORK_ROOT, "pack-id.txt"), PACK_ID)
 
   const files = readdirSync(SRC)
