@@ -4,7 +4,11 @@
  *   title opener → R2 + Turso. Local PDFs kept for Gemini.
  *
  *   npx tsx --env-file=.env.local scripts/import-ph-songbook.ts \
- *     [--apply] [--limit=N] [--resume] [--fast] [--shard=i/n]
+ *     [--apply] [--limit=N] [--resume] [--fast] [--shard=i/n] \
+ *     [--rerun-nums=2,3,8] [--rerun-nums-file=PATH]
+ *
+ * --rerun-nums / --rerun-nums-file: force re-import those library #s (delete
+ *   existing Turso rows + re-convert). Use for truncated PPTX recovery.
  *
  * Env: PH_PPT_SRC, PH_PACK_ID, PH_KEEP_PDF_DIR, SOFFICE
  *
@@ -68,6 +72,24 @@ const SHARD = (() => {
   if (!Number.isFinite(i) || !Number.isFinite(n) || n < 1) return { i: 0, n: 1 }
   return { i: Math.max(0, i), n }
 })()
+const rerunNumsArg = process.argv.find((a) => a.startsWith("--rerun-nums="))
+const rerunFileArg = process.argv.find((a) => a.startsWith("--rerun-nums-file="))
+function loadRerunNums(): Set<number> {
+  const nums = new Set<number>()
+  const add = (raw: string) => {
+    for (const part of raw.split(/[\s,]+/)) {
+      const n = Number(part.trim())
+      if (Number.isFinite(n) && n > 0) nums.add(n)
+    }
+  }
+  if (rerunNumsArg) add(rerunNumsArg.slice("--rerun-nums=".length))
+  if (rerunFileArg) {
+    const path = rerunFileArg.slice("--rerun-nums-file=".length)
+    if (existsSync(path)) add(readFileSync(path, "utf8"))
+  }
+  return nums
+}
+const RERUN_NUMS = loadRerunNums()
 
 const SOFFICE =
   process.env.SOFFICE ||
@@ -278,7 +300,7 @@ async function main() {
   }
 
   console.log(
-    `src=${SRC}\npack=${PACK_SLUG} id=${PACK_ID}\nfiles=${assigned.length} apply=${APPLY} resume=${RESUME} limit=${LIMIT || "all"} fast=${FAST} shard=${SHARD.i}/${SHARD.n}`,
+    `src=${SRC}\npack=${PACK_SLUG} id=${PACK_ID}\nfiles=${assigned.length} apply=${APPLY} resume=${RESUME} limit=${LIMIT || "all"} fast=${FAST} shard=${SHARD.i}/${SHARD.n} rerun=${RERUN_NUMS.size || "off"}`,
   )
 
   const pdfDir = join(WORK_ROOT, "pdf")
@@ -286,7 +308,7 @@ async function main() {
   mkdirSync(pdfDir, { recursive: true })
 
   let doneTitles = new Set<string>()
-  if (RESUME && existsSync(donePath)) {
+  if (RESUME && existsSync(donePath) && RERUN_NUMS.size === 0) {
     try {
       doneTitles = new Set(JSON.parse(readFileSync(donePath, "utf8")) as string[])
       console.log(`resume: skipping ${doneTitles.size} titles from done-titles.json`)
@@ -295,7 +317,39 @@ async function main() {
     }
   }
 
-  if (APPLY && !RESUME) {
+  if (APPLY && RERUN_NUMS.size > 0) {
+    // Only shard 0 deletes — parallel shards would race on done-titles.json
+    if (SHARD.i === 0) {
+      const nums = [...RERUN_NUMS]
+      console.log(`rerun: deleting ${nums.length} existing pack items by sort_order`)
+      for (let i = 0; i < nums.length; i += 80) {
+        const chunk = nums.slice(i, i + 80)
+        const placeholders = chunk.map(() => "?").join(",")
+        await db.execute({
+          sql: `DELETE FROM song_pack_items WHERE pack_id = ? AND sort_order IN (${placeholders})`,
+          args: [PACK_ID, ...chunk],
+        })
+      }
+      if (existsSync(donePath)) {
+        try {
+          const prev = new Set(
+            JSON.parse(readFileSync(donePath, "utf8")) as string[],
+          )
+          for (const t of [...prev]) {
+            const m = t.match(/^(\d+)\s*·/)
+            if (m && RERUN_NUMS.has(Number(m[1]))) prev.delete(t)
+          }
+          doneTitles = prev
+          writeFileSync(donePath, JSON.stringify([...doneTitles]))
+        } catch {
+          /* ignore */
+        }
+      }
+    } else {
+      console.log(`rerun shard ${SHARD.i}: waiting for shard 0 delete…`)
+      spawnSync("sleep", ["8"], { stdio: "ignore" })
+    }
+  } else if (APPLY && !RESUME) {
     const existing = await db.execute({
       sql: "SELECT id FROM song_packs WHERE id = ?",
       args: [PACK_ID],
@@ -336,7 +390,7 @@ async function main() {
     writeFileSync(donePath, "[]")
   }
 
-  if (APPLY && RESUME) {
+  if (APPLY && RESUME && RERUN_NUMS.size === 0) {
     const existingPack = await db.execute({
       sql: "SELECT id FROM song_packs WHERE id = ?",
       args: [PACK_ID],
@@ -372,6 +426,7 @@ async function main() {
 
   for (const item of assigned) {
     if (SHARD.n > 1 && item.num % SHARD.n !== SHARD.i) continue
+    if (RERUN_NUMS.size > 0 && !RERUN_NUMS.has(item.num)) continue
 
     const displayTitle = `${item.num} · ${item.title}`
     if (doneTitles.has(displayTitle)) continue
@@ -410,6 +465,14 @@ async function main() {
       hasNativeTitle: false,
     })
     const pageCount = await countPdfPages(withTitle)
+    // Guard: truncated convert / strip bug — refuse to publish title+1 stubs
+    if (pageCount <= 2 && RERUN_NUMS.size > 0) {
+      console.error(
+        `  REFUSE short PDF pages=${pageCount} for ${displayTitle} (expected full song)`,
+      )
+      fail++
+      continue
+    }
     const contentHash = createHash("sha256").update(Buffer.from(withTitle)).digest("hex")
 
     const keepName = `${String(item.num).padStart(3, "0")} ${item.title}.pdf`

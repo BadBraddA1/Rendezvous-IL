@@ -39,10 +39,10 @@ function nearly(a: number, b: number, tol = 2): boolean {
 }
 
 /**
- * Our white openers (and many LibreOffice title cards) are exactly 720×405.
- * Music slides from the SFP PPT export are ~720×405.071 — keep tolerance
- * tight so we peel stacked openers without deleting sheet music.
- * (tol 0.5 was wrong: it matched music pages and would strip a whole song.)
+ * Our white openers are exactly 720×405 (integer pts from pdf-lib).
+ * LibreOffice music slides are often 720×405.014 — must NOT match, or we
+ * delete the whole song (Praise & Harmony bug, Sep 2026).
+ * SFP music is ~720×405.071 — also safely outside this tolerance.
  */
 function isExactTitleSlideSize(
   width: number,
@@ -50,7 +50,7 @@ function isExactTitleSlideSize(
   slideW = SFP_SLIDE_WIDTH,
   slideH = SFP_SLIDE_HEIGHT,
 ): boolean {
-  return nearly(width, slideW, 0.02) && nearly(height, slideH, 0.02)
+  return nearly(width, slideW, 0.005) && nearly(height, slideH, 0.005)
 }
 
 /**
@@ -86,10 +86,15 @@ export async function stripLegacyDarkTitleSlides(
  * opener can be prepended without stacking.
  * Strips classic SFP 720×405 and any extra sizes passed in `alsoSizes`
  * (e.g. 960×540 for Sacred Songs / LibreOffice widescreen).
+ *
+ * Cap peels at `maxStrip` — LibreOffice often exports music slides at exactly
+ * (or within 0.02 of) 720×405, which used to delete an entire Praise & Harmony
+ * song down to one leftover page.
  */
 export async function stripLeadingExactTitleSlides(
   pdfBytes: Uint8Array | ArrayBuffer,
   alsoSizes: Array<{ width: number; height: number }> = [],
+  maxStrip = 3,
 ): Promise<Uint8Array> {
   const source = await PDFDocument.load(pdfBytes)
   const sizes = [
@@ -97,7 +102,8 @@ export async function stripLeadingExactTitleSlides(
     ...alsoSizes,
   ]
   let start = 0
-  while (start < source.getPageCount()) {
+  const stripLimit = Math.max(0, Math.min(maxStrip, source.getPageCount() - 1))
+  while (start < source.getPageCount() && start < stripLimit) {
     const { width, height } = source.getPage(start).getSize()
     const match = sizes.some((s) => isExactTitleSlideSize(width, height, s.width, s.height))
     if (!match) break
