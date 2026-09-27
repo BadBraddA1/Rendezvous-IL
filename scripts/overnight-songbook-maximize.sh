@@ -9,7 +9,7 @@ export PATH="/Users/braddford/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/b
 unset TURSO_DATABASE_URL TURSO_AUTH_TOKEN 2>/dev/null || true
 
 LOG="$HOME/Library/Logs/ph-ocr/overnight-maximize.log"
-NUMS="$PWD/docs/ops/ph-rerun-truncated-nums.txt"
+NUMS="/Users/braddford/Code/Rendezvous-IL/docs/ops/ph-rerun-truncated-nums.txt"
 PH_ID=6cc2a022-d1fd-4e00-8fe5-4649018b5818
 TPH_DONE="$HOME/Code/Rendezvous-IL/.tmp-tph-import/rebake-titles-done.json"
 DRIVE="/Volumes/PRO-G40-Bradd/_cloud-work"
@@ -112,11 +112,26 @@ while true; do
 
   log "status ph_rerun=${rerun}/${EXPECTED} tph_rebake=${tphd}/963 ph_gemini=${good_g}/${good_n} title_started=${PH_TITLE_STARTED}"
 
-  # Ensure import still alive if incomplete
-  if (( rerun < EXPECTED )) && ! pgrep -f 'import-ph-songbook.ts' >/dev/null 2>&1; then
-    log "WARN P&H import dead early — relaunching"
-    launchctl kickstart -k "gui/$(id -u)/com.braddcorp.ph-rerun-truncated" 2>/dev/null \
-      || nohup ./scripts/run-ph-rerun-truncated.sh >>"$LOG" 2>&1 &
+  # Ensure import still alive if incomplete — never relaunch a full wipe if
+  # the master script is still up or shards were active recently.
+  if (( rerun < EXPECTED )); then
+    if pgrep -f 'run-ph-rerun-truncated|import-ph-songbook' >/dev/null 2>&1; then
+      :
+    else
+      # Only relaunch if master log is stale (>15 min) — avoid false gaps mid-LO
+      stale=1
+      if [[ -f "$HOME/Library/Logs/ph-ocr/rerun-truncated-master.log" ]]; then
+        age=$(( $(date +%s) - $(stat -f %m "$HOME/Library/Logs/ph-ocr/rerun-truncated-master.log") ))
+        if (( age < 900 )); then stale=0; fi
+      fi
+      if (( stale == 1 )); then
+        log "WARN P&H import dead (>15m) — relaunching (safe: skips already-full PDFs)"
+        launchctl kickstart -k "gui/$(id -u)/com.braddcorp.ph-rerun-truncated" 2>/dev/null \
+          || nohup ./scripts/run-ph-rerun-truncated.sh >>"$LOG" 2>&1 &
+      else
+        log "P&H import procs quiet but master log fresh (${age}s) — waiting"
+      fi
+    fi
   fi
 
   # Ensure TPH rebake alive if incomplete

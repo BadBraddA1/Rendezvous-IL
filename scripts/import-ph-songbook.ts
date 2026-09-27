@@ -318,17 +318,42 @@ async function main() {
   }
 
   if (APPLY && RERUN_NUMS.size > 0) {
-    // Only shard 0 deletes — parallel shards would race on done-titles.json
+    // Only shard 0 deletes — and ONLY rows that are still missing/short.
+    // Never wipe already-restored full PDFs on a watchdog relaunch.
     if (SHARD.i === 0) {
       const nums = [...RERUN_NUMS]
-      console.log(`rerun: deleting ${nums.length} existing pack items by sort_order`)
+      const toDelete: number[] = []
       for (let i = 0; i < nums.length; i += 80) {
         const chunk = nums.slice(i, i + 80)
+        const placeholders = chunk.map(() => "?").join(",")
+        const existing = await db.execute({
+          sql: `SELECT sort_order, page_count FROM song_pack_items
+                WHERE pack_id = ? AND sort_order IN (${placeholders})`,
+          args: [PACK_ID, ...chunk],
+        })
+        const byNum = new Map(
+          existing.rows.map((r) => [Number(r.sort_order), Number(r.page_count)]),
+        )
+        for (const n of chunk) {
+          const pc = byNum.get(n)
+          if (pc == null || pc <= 2) toDelete.push(n)
+        }
+      }
+      console.log(
+        `rerun: will re-import ${toDelete.length}/${nums.length} (skipping ${nums.length - toDelete.length} already full)`,
+      )
+      for (let i = 0; i < toDelete.length; i += 80) {
+        const chunk = toDelete.slice(i, i + 80)
+        if (!chunk.length) continue
         const placeholders = chunk.map(() => "?").join(",")
         await db.execute({
           sql: `DELETE FROM song_pack_items WHERE pack_id = ? AND sort_order IN (${placeholders})`,
           args: [PACK_ID, ...chunk],
         })
+      }
+      // Only process nums that still need work
+      for (const n of nums) {
+        if (!toDelete.includes(n)) RERUN_NUMS.delete(n)
       }
       if (existsSync(donePath)) {
         try {
@@ -337,7 +362,7 @@ async function main() {
           )
           for (const t of [...prev]) {
             const m = t.match(/^(\d+)\s*·/)
-            if (m && RERUN_NUMS.has(Number(m[1]))) prev.delete(t)
+            if (m && toDelete.includes(Number(m[1]))) prev.delete(t)
           }
           doneTitles = prev
           writeFileSync(donePath, JSON.stringify([...doneTitles]))
@@ -345,9 +370,24 @@ async function main() {
           /* ignore */
         }
       }
+      // Write skip list for other shards
+      writeFileSync(
+        join(WORK_ROOT, "rerun-active-nums.json"),
+        JSON.stringify([...RERUN_NUMS]),
+      )
     } else {
       console.log(`rerun shard ${SHARD.i}: waiting for shard 0 delete…`)
       spawnSync("sleep", ["8"], { stdio: "ignore" })
+      try {
+        const active = JSON.parse(
+          readFileSync(join(WORK_ROOT, "rerun-active-nums.json"), "utf8"),
+        ) as number[]
+        RERUN_NUMS.clear()
+        for (const n of active) RERUN_NUMS.add(n)
+        console.log(`rerun shard ${SHARD.i}: active nums=${RERUN_NUMS.size}`)
+      } catch {
+        /* keep original set */
+      }
     }
   } else if (APPLY && !RESUME) {
     const existing = await db.execute({
