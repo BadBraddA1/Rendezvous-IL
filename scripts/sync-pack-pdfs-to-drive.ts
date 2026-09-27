@@ -16,7 +16,9 @@ import { Readable } from "stream"
 
 const APPLY = process.argv.includes("--apply")
 const packArg = process.argv.find((a) => a.startsWith("--pack="))?.slice(7) || "tph"
-const staleArg = process.argv.find((a) => a.startsWith("--stale-before="))?.slice(14)
+const staleArg = process.argv
+  .find((a) => a.startsWith("--stale-before="))
+  ?.slice("--stale-before=".length)
 const concArg = process.argv.find((a) => a.startsWith("--concurrency="))
 const CONCURRENCY = Math.max(1, Math.min(12, Number(concArg?.split("=")[1] || 6)))
 const STALE_BEFORE = staleArg ? Date.parse(staleArg) : 0
