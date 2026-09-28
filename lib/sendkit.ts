@@ -1,10 +1,17 @@
-// SendKit transactional email client.
+// Outbound mail for Rendezvous IL.
 //
-// Exposes the same `sendkit.emails.send({ ... })` call shape the codebase used
-// with Resend, so call sites only change their import and sender address.
-// SendKit differs from Resend in two ways this module normalises:
-//   - `reply_to` is an array, not a string
-//   - attachment content must be base64, not a Buffer
+// Primary: Cloudflare Email Sending (rendezvousil.com onboarded via cf-bounce).
+// Fallback: SendKit when CF is not enabled.
+//
+// Call shape stays `sendkit.emails.send({ from, to, subject, html, ... })`
+// and returns `{ data, error }` — never throws on an API error.
+
+import {
+  cloudflareEmail,
+  cloudflareEmailConfigured,
+  CLOUDFLARE_EMAIL_MAX_RECIPIENTS,
+  type CloudflareSendParams,
+} from "@/lib/cloudflare-email"
 
 const SENDKIT_API = "https://api.sendkit.dev"
 
@@ -15,7 +22,7 @@ export type SendkitAttachment = {
 }
 
 export type SendEmailParams = {
-  /** Defaults to EMAIL_FROM when omitted. Must be on a SendKit-verified domain. */
+  /** Defaults to EMAIL_FROM when omitted. Must be on an onboarded domain. */
   from?: string
   to: string | string[]
   subject: string
@@ -33,8 +40,15 @@ export type SendEmailResult = {
   error: { name: string; message: string; statusCode?: number } | null
 }
 
-/** SendKit rejects more than 50 recipients in a single request. */
-export const SENDKIT_MAX_RECIPIENTS = 50
+/** Max recipients per request (CF + SendKit). */
+export const SENDKIT_MAX_RECIPIENTS = CLOUDFLARE_EMAIL_MAX_RECIPIENTS
+
+export type MailProvider = "cloudflare" | "sendkit"
+
+function envFlag(name: string): boolean {
+  const v = process.env[name]?.trim().toLowerCase()
+  return v === "1" || v === "true" || v === "yes"
+}
 
 export function emailFrom(): string {
   return (
@@ -51,8 +65,32 @@ export function registrationEmailFrom(): string {
   )
 }
 
-export function emailConfigured(): boolean {
+function sendkitConfigured(): boolean {
   return Boolean(process.env.SENDKIT_API_KEY?.trim())
+}
+
+export function resolveMailProvider(): MailProvider | null {
+  const raw = (process.env.EMAIL_PROVIDER || "auto").trim().toLowerCase()
+  if (raw === "cloudflare") {
+    return cloudflareEmailConfigured() ? "cloudflare" : null
+  }
+  if (raw === "sendkit") {
+    return sendkitConfigured() ? "sendkit" : null
+  }
+  // auto — prefer Cloudflare when flagged
+  if (envFlag("EMAIL_USE_CLOUDFLARE") && cloudflareEmailConfigured()) {
+    return "cloudflare"
+  }
+  if (sendkitConfigured()) return "sendkit"
+  return null
+}
+
+export function emailConfigured(): boolean {
+  return resolveMailProvider() != null
+}
+
+export function activeMailProvider(): MailProvider | "none" {
+  return resolveMailProvider() ?? "none"
 }
 
 function toBase64(content: Buffer | Uint8Array | string): string {
@@ -68,7 +106,7 @@ function toArray(value: string | string[] | undefined): string[] | undefined {
   return list.length > 0 ? list : undefined
 }
 
-async function send(params: SendEmailParams): Promise<SendEmailResult> {
+async function sendViaSendkit(params: SendEmailParams): Promise<SendEmailResult> {
   const apiKey = process.env.SENDKIT_API_KEY?.trim()
   if (!apiKey) {
     const error = {
@@ -91,7 +129,7 @@ async function send(params: SendEmailParams): Promise<SendEmailResult> {
       data: null,
       error: {
         name: "validation_error",
-        message: `Too many recipients (${recipients.length}); SendKit allows ${SENDKIT_MAX_RECIPIENTS} per request`,
+        message: `Too many recipients (${recipients.length}); max ${SENDKIT_MAX_RECIPIENTS} per request`,
       },
     }
   }
@@ -127,8 +165,6 @@ async function send(params: SendEmailParams): Promise<SendEmailResult> {
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
-        // Without this SendKit answers validation errors with a 302 to an HTML
-        // page, which fetch follows — the failure would look like a success.
         Accept: "application/json",
       },
       body: JSON.stringify(body),
@@ -149,7 +185,7 @@ async function send(params: SendEmailParams): Promise<SendEmailResult> {
   try {
     parsed = raw ? JSON.parse(raw) : {}
   } catch {
-    // non-JSON body — fall through to status-based error below
+    // non-JSON body
   }
 
   if (!res.ok) {
@@ -165,6 +201,29 @@ async function send(params: SendEmailParams): Promise<SendEmailResult> {
 
   const id = parsed.id || parsed.data?.[0]?.id
   return { data: id ? { id } : null, error: null }
+}
+
+async function send(params: SendEmailParams): Promise<SendEmailResult> {
+  const provider = resolveMailProvider()
+  if (!provider) {
+    const error = {
+      name: "not_configured",
+      message:
+        "No email provider — set CLOUDFLARE_EMAIL_API_TOKEN (+ EMAIL_USE_CLOUDFLARE=1) or SENDKIT_API_KEY",
+    }
+    console.error("[mail] not configured — skipped:", params.subject)
+    return { data: null, error }
+  }
+
+  const from = params.from?.trim() || emailFrom()
+  if (provider === "cloudflare") {
+    return cloudflareEmail.emails.send({
+      ...params,
+      from,
+    } as CloudflareSendParams)
+  }
+
+  return sendViaSendkit({ ...params, from })
 }
 
 export const sendkit = { emails: { send } }

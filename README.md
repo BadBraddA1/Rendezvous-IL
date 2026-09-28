@@ -15,7 +15,7 @@ Handles public event pages, family registration (2027), admin dashboard (registr
 - **Next.js 16** (App Router) + React 19 + TypeScript
 - **Turso** (libSQL / SQLite) — all app data via `lib/db.ts` and `@libsql/client`
 - **Clerk** — authentication (families + admin roles). Auth UI is **fully custom** via the [BraddCorp auth kit](https://github.com/BadBraddA1/braddcorp-auth) (Clerk Core 3 hooks — no Clerk widgets): `/sign-in`, `/sign-up`, `/forgot-password`, `/sso-callback`, components in `components/auth/` (includes kit `AccountMenu` + `useClerkReady`), per-site settings in `lib/auth-config.ts`, lake-teal tokens in `app/auth.css`. **Powered by BraddCorp** sits under the form. Synced to braddcorp-auth `main` (`cc68e77`); kit fixes go to the template repo first, then get re-copied here. Route protection stays in `proxy.js`. Root layout wraps the app in `ClerkProvider`. **Site header** uses Ren’s richer `UserMenuButton` (family photo + admin link — not Clerk `<UserButton>`); client-mounted `useAuth()` so Server Action re-renders do not throw “Show can only be used within ClerkProvider” (RENDEZVOUS-IL-2).
-- **SendKit** — transactional email via `lib/sendkit.ts` (see [Email](#email))
+- **Cloudflare Email Sending** — transactional email via `lib/sendkit.ts` + `lib/cloudflare-email.ts` (see [Email](#email)); SendKit kept as fallback
 - **Vercel** — hosting on team **Adin's projects** (`adins-projects-d2644952`), **Pro** plan. Production project: `v0-ren` → `rendezvousil.com`. Sibling project `rendezvous-il` is also on the same Pro team (preview/alt URL). Git pushes auto-deploy the **website**; iOS TestFlight ships are **manual** (see `ios/ci_scripts/xcode-cloud.env`).
 - **Cloudflare R2** — media (`cdn.rendezvousil.com`, see [Media storage](#media-storage-cloudflare-r2))
 
@@ -32,7 +32,11 @@ Required on Vercel (`v0-ren`):
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk (client) |
 | `CLERK_SECRET_KEY` | Clerk (server) |
 | `JWT_SECRET`, `ADMIN_SECRET`, `ADMIN_SETUP_KEY` | Admin auth |
-| `SENDKIT_API_KEY` | Email (SendKit) |
+| `SENDKIT_API_KEY` | Email fallback (SendKit) |
+| `CLOUDFLARE_EMAIL_API_TOKEN` | Cloudflare Email Sending (primary) |
+| `CLOUDFLARE_ACCOUNT_ID` | CF account (`3b39955f…`) |
+| `EMAIL_USE_CLOUDFLARE` | `1` to prefer Cloudflare |
+| `EMAIL_PROVIDER` | `auto` \| `cloudflare` \| `sendkit` |
 | `EMAIL_FROM` | Default sender — `Rendezvous IL <noreply@rendezvousil.com>` |
 | `EMAIL_FROM_REGISTRATION` | Registration/signature sender — `Rendezvous Registration <Registration@rendezvousil.com>` |
 | `ABLY_API_KEY` | Year chat realtime (Ably) |
@@ -45,16 +49,20 @@ Full list and legacy cleanup notes: [docs/TURSO_SETUP.md](docs/TURSO_SETUP.md)
 
 ## Email
 
-All outbound mail goes through **SendKit** (`api.sendkit.dev`) via `lib/sendkit.ts`.
-Migrated off Resend in Aug 2026.
+Outbound mail goes through **Cloudflare Email Sending** (`rendezvousil.com`,
+onboarded with bounce host `cf-bounce.rendezvousil.com` so apex MX / IONOS mail
+stays untouched). Router: `lib/sendkit.ts` + `lib/cloudflare-email.ts`.
 
-`lib/sendkit.ts` is a small `fetch` wrapper — there is no SDK dependency. It keeps
-the old `sendkit.emails.send({ from, to, subject, html, ... })` call shape and
-returns `{ data, error }`; it **never throws** on an API error, so always check
-`error` at the call site. It normalises the two places SendKit differs from
-Resend: `reply_to` must be an array, and attachment content must be base64.
+Set `EMAIL_USE_CLOUDFLARE=1` + `CLOUDFLARE_EMAIL_API_TOKEN` (scoped **Email
+Sending → Write**, not the DNS god key) + `CLOUDFLARE_ACCOUNT_ID`. Optional
+`EMAIL_PROVIDER=cloudflare|sendkit|auto` (default `auto`). SendKit remains a
+fallback when CF is unset.
 
-Two senders, both on the SendKit-verified `rendezvousil.com` domain:
+Call shape stays `sendkit.emails.send({ from, to, subject, html, ... })` and
+returns `{ data, error }` — it **never throws** on an API error, so always check
+`error` at the call site.
+
+Two senders on `rendezvousil.com`:
 
 | Helper | Address | Used by |
 |--------|---------|---------|
@@ -63,11 +71,8 @@ Two senders, both on the SendKit-verified `rendezvousil.com` domain:
 
 Gotchas:
 
-- `from` **must** be on a domain verified in SendKit. `braddcorp.com` is *not*
-  verified on this project's key — several call sites used to hardcode
-  `noreply@braddcorp.com` and would now be rejected, so they were repointed.
-- SendKit accepts at most **50 recipients** per request (`SENDKIT_MAX_RECIPIENTS`).
-  The admin broadcast route batches on that limit.
+- `from` **must** be on the Cloudflare-onboarded domain (`rendezvousil.com`).
+- Max **50 recipients** per request (`SENDKIT_MAX_RECIPIENTS`). Admin broadcast batches on that limit.
 
 ## Media storage (Cloudflare R2)
 
