@@ -51,18 +51,32 @@ function envFlag(name: string): boolean {
 }
 
 export function emailFrom(): string {
-  return (
-    process.env.EMAIL_FROM?.trim() ||
-    "Rendezvous IL <noreply@rendezvousil.com>"
-  )
+  const fallback = "Rendezvous IL <noreply@rendezvousil.com>"
+  const raw = process.env.EMAIL_FROM?.trim()
+  if (!raw) return fallback
+  if (!/@rendezvousil\.com>?$/i.test(raw) && !/<[^>\s]*@rendezvousil\.com>/i.test(raw)) {
+    console.warn(
+      "[email] Refusing EMAIL_FROM outside @rendezvousil.com — using REN default. Got:",
+      raw,
+    )
+    return fallback
+  }
+  return raw
 }
 
 /** Registration/signature mail sends from the Registration@ sender. */
 export function registrationEmailFrom(): string {
-  return (
-    process.env.EMAIL_FROM_REGISTRATION?.trim() ||
-    "Rendezvous Registration <Registration@rendezvousil.com>"
-  )
+  const fallback = "Rendezvous Registration <Registration@rendezvousil.com>"
+  const raw = process.env.EMAIL_FROM_REGISTRATION?.trim()
+  if (!raw) return fallback
+  if (!/@rendezvousil\.com>?$/i.test(raw) && !/<[^>\s]*@rendezvousil\.com>/i.test(raw)) {
+    console.warn(
+      "[email] Refusing EMAIL_FROM_REGISTRATION outside @rendezvousil.com — using REN default. Got:",
+      raw,
+    )
+    return fallback
+  }
+  return raw
 }
 
 function sendkitConfigured(): boolean {
@@ -216,6 +230,15 @@ async function send(params: SendEmailParams): Promise<SendEmailResult> {
   }
 
   const from = params.from?.trim() || emailFrom()
+  if (!/@rendezvousil\.com>?$/i.test(from) && !/<[^>\s]*@rendezvousil\.com>/i.test(from)) {
+    const error = {
+      name: "validation_error",
+      message: `Refusing send: From must be @rendezvousil.com (got ${from})`,
+    }
+    console.error("[mail]", error.message, "—", params.subject)
+    return { data: null, error }
+  }
+
   if (provider === "cloudflare") {
     return cloudflareEmail.emails.send({
       ...params,
