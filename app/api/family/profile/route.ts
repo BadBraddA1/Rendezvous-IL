@@ -123,7 +123,13 @@ export async function GET(request: Request) {
     `
 
     const pendingChanges = pendingRows.map((change) => ({
-      ...change,
+      id: Number(change.id),
+      change_type: change.change_type != null ? String(change.change_type) : null,
+      field_name: change.field_name != null ? String(change.field_name) : null,
+      old_value: change.old_value != null ? String(change.old_value) : null,
+      new_value: change.new_value != null ? String(change.new_value) : null,
+      status: change.status != null ? String(change.status) : null,
+      submitted_at: change.submitted_at != null ? String(change.submitted_at) : null,
       member_data: parseMemberData(change.member_data),
     }))
 
@@ -132,8 +138,38 @@ export async function GET(request: Request) {
     const accountMembers = await listFamilyAccountMembers(family.id)
     const loginInvites = await listFamilyLoginInvites(family.id)
 
+    // Normalize SQLite quirks (0/1 ints, null strings) so iOS Codable doesn't fail.
+    const normalizedMembers = members.map((member) => ({
+      id: member.id != null ? Number(member.id) : null,
+      first_name: String(member.first_name ?? ""),
+      last_name: String(member.last_name ?? ""),
+      member_type: String(member.member_type ?? "adult"),
+      age_group: member.age_group != null ? String(member.age_group) : null,
+      date_of_birth: member.date_of_birth != null ? String(member.date_of_birth) : null,
+      grade: member.grade != null ? String(member.grade) : null,
+      gender: member.gender != null ? String(member.gender) : null,
+      phone: member.phone != null ? String(member.phone) : null,
+      email: member.email != null ? String(member.email) : null,
+      special_needs: Boolean(member.special_needs),
+      notes: member.notes != null ? String(member.notes) : null,
+    }))
+
     return NextResponse.json({
-      family: { ...family, members, ...directory },
+      family: {
+        id: Number(family.id),
+        family_last_name: family.family_last_name != null ? String(family.family_last_name) : null,
+        email: family.email != null ? String(family.email) : null,
+        husband_phone: family.husband_phone != null ? String(family.husband_phone) : null,
+        wife_phone: family.wife_phone != null ? String(family.wife_phone) : null,
+        address: family.address != null ? String(family.address) : null,
+        city: family.city != null ? String(family.city) : null,
+        state: family.state != null ? String(family.state) : null,
+        zip: family.zip != null ? String(family.zip) : null,
+        home_congregation:
+          family.home_congregation != null ? String(family.home_congregation) : null,
+        members: normalizedMembers,
+        ...directory,
+      },
       pendingChanges,
       registrationBirthdays,
       accountRole,
