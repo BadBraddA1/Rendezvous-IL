@@ -166,7 +166,7 @@ final class AppSession {
         try await withThrowingTaskGroup(of: Void.self) { group in
             group.addTask { try await Clerk.shared.load() }
             group.addTask {
-                try await Task.sleep(for: .seconds(20))
+                try await Task.sleep(for: .seconds(10))
                 throw ClerkLoadTimeout()
             }
             _ = try await group.next()
@@ -186,6 +186,8 @@ final class AppSession {
         }
 
         // Prove we can mint a token before flipping signed-in UI (avoids crash/loop on bad session).
+        // Force-refresh once here; thereafter reuse Clerk's cached JWT (skipCache: false) so
+        // parallel Home/Chat/Directory calls don't each hit Clerk again.
         let token: String
         do {
             token = try await Self.sessionToken(forceRefresh: true)
@@ -195,22 +197,24 @@ final class AppSession {
             return
         }
 
-        apiClient = APIClient(tokenProvider: { try await Self.sessionToken(forceRefresh: true) })
+        apiClient = APIClient(tokenProvider: { try await Self.sessionToken(forceRefresh: false) })
         isSignedIn = true
         authError = nil
         clerkSessionId = Clerk.shared.session?.id
-        // Warm the client with a known-good token path (discarded; provider mints fresh ones).
         _ = token
+        AppLog.bootstrap("refreshAuth signed-in (background admin/push deferred)")
 
         PushRegistrationService.shared.authTokenProvider = {
             try? await Self.sessionToken(forceRefresh: false)
         }
-        // Re-register APNs token now that we can attach clerk_user_id (chat push targeting).
-        await PushRegistrationService.shared.retryPendingRegistration()
 
-        await refreshAdminStatus()
-        await recordActivityIfSignedIn()
-        startActivityPingLoop()
+        // Don't block first paint on admin probe / activity / push re-register.
+        Task { @MainActor in
+            await PushRegistrationService.shared.retryPendingRegistration()
+            await self.refreshAdminStatus()
+            await self.recordActivityIfSignedIn()
+            self.startActivityPingLoop()
+        }
     }
 
     func recordActivityIfSignedIn() async {

@@ -269,6 +269,43 @@ actor APIClient {
         try await get("/api/family/year-hub?year=\(year)")
     }
 
+    func getFamilyProfile() async throws -> FamilyProfileResponse {
+        try await get("/api/family/profile")
+    }
+
+    func updateFamilyProfile(_ body: FamilyProfileUpdateBody) async throws -> FamilyProfileUpdateResponse {
+        try await put("/api/family/profile", body: body)
+    }
+
+    func saveFamilyMember(_ member: FamilyProfileMember) async throws -> FamilyMemberMutationResponse {
+        try await post("/api/family/members", body: member)
+    }
+
+    func removeFamilyMember(memberId: Int) async throws -> FamilyMemberMutationResponse {
+        try await delete("/api/family/members", body: FamilyMemberDeleteBody(memberId: memberId))
+    }
+
+    func submitAppFeedback(_ body: AppFeedbackBody) async throws -> AppFeedbackResponse {
+        try await post("/api/app-feedback", body: body)
+    }
+
+    func postCalculatorEstimate(_ body: CalculatorEstimateRequest) async throws -> CalculatorEstimateResponse {
+        try await post("/api/calculator/estimate", body: body)
+    }
+
+    func getMapAttendees(year: Int = AppConfig.eventYear) async throws -> MapAttendeesResponse {
+        try await get("/api/map2026/attendees?year=\(year)")
+    }
+
+    func delete<T: Decodable, Body: Encodable>(
+        _ path: String,
+        body: Body,
+        as type: T.Type = T.self
+    ) async throws -> T {
+        let data = try JSONEncoder().encode(body)
+        return try await request(path, method: "DELETE", body: data, as: type)
+    }
+
     func getChatChannels() async throws -> ChatChannelsResponse {
         try await get("/api/chat/channels")
     }

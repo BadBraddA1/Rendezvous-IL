@@ -17,11 +17,18 @@ final class RendezvousRepository {
     var scheduleError: String?
     var scheduleSource: ScheduleDataSource?
     var lastScheduleRefresh: Date?
+    /// When `bootstrap()` last finished — used to skip duplicate launch fetches.
+    private(set) var lastBootstrapAt: Date?
 
     /// True when showing bundled or cached schedule instead of a fresh network copy.
     var isUsingOfflineSchedule: Bool {
         guard schedule != nil else { return false }
         return scheduleSource != .network
+    }
+
+    func didBootstrapRecently(within seconds: TimeInterval) -> Bool {
+        guard let lastBootstrapAt else { return false }
+        return Date().timeIntervalSince(lastBootstrapAt) < seconds
     }
 
     private let weekFrom = "2027-05-03"
@@ -36,12 +43,14 @@ final class RendezvousRepository {
         applyOfflineScheduleIfNeeded()
         if AppStoreScreenshotMode.isEnabled {
             // Demo mode: bundled schedule only — no network (faster, deterministic frames).
+            lastBootstrapAt = Date()
             return
         }
         async let scheduleTask: Void = loadScheduleBundle()
         async let extrasTask: Void = loadScheduleExtras()
         async let updatesTask: Void = loadUpdates()
         _ = await (scheduleTask, extrasTask, updatesTask)
+        lastBootstrapAt = Date()
     }
 
     func loadScheduleBundle() async {

@@ -1,27 +1,24 @@
 import SwiftUI
 
 struct CalculatorView: View {
+    @Environment(AppSession.self) private var session
     @Environment(RendezvousRepository.self) private var repository
 
     @State private var adults = 2
     @State private var youth = 0
     @State private var children = 0
     @State private var lodging: LodgingType = .motel
-
-    private let nights = 4
+    @State private var packagePreset: CalcPackagePreset = .full
+    @State private var estimate: CalculatorEstimatePayload?
+    @State private var estimating = false
+    @State private var estimateError: String?
 
     var body: some View {
         Form {
-            if repository.rates == nil {
-                Section {
-                    ProgressView("Loading rates…")
-                }
-            }
-
             Section("Family") {
                 Stepper("Adults: \(adults)", value: $adults, in: 1 ... 12)
                 Stepper("Youth (12–17): \(youth)", value: $youth, in: 0 ... 12)
-                Stepper("Children (3–11): \(children)", value: $children, in: 0 ... 12)
+                Stepper("Children (6–11): \(children)", value: $children, in: 0 ... 12)
             }
 
             Section("Lodging") {
@@ -33,46 +30,60 @@ struct CalculatorView: View {
                 .pickerStyle(.segmented)
             }
 
+            Section("Package") {
+                Picker("Stay", selection: $packagePreset) {
+                    ForEach(CalcPackagePreset.allCases) { preset in
+                        Text(preset.label).tag(preset)
+                    }
+                }
+                Text(packagePreset.detail)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
             Section("Estimated total") {
-                if let breakdown = calculation {
-                    if adults > 0 {
-                        LabeledContent(
-                            unitLine(count: adults, unit: breakdown.adultUnit),
-                            value: formatMoney(breakdown.adults)
-                        )
+                if estimating {
+                    ProgressView("Calculating…")
+                } else if let estimate, let total = estimate.total {
+                    if let lodging = estimate.lodging {
+                        LabeledContent("Lodging", value: formatMoney(lodging))
                     }
-                    if youth > 0 {
-                        LabeledContent(
-                            unitLine(count: youth, unit: breakdown.youthUnit),
-                            value: formatMoney(breakdown.youth)
-                        )
+                    if let site = estimate.siteFee, site > 0 {
+                        LabeledContent("Site fee", value: formatMoney(site))
                     }
-                    if children > 0 {
-                        LabeledContent(
-                            unitLine(count: children, unit: breakdown.childUnit),
-                            value: formatMoney(breakdown.children)
-                        )
-                    }
-                    if breakdown.siteFee > 0 {
-                        LabeledContent(
-                            siteFeeLine(nights: nights, nightlyRate: breakdown.siteNightRate),
-                            value: formatMoney(breakdown.siteFee)
-                        )
+                    if let deductions = estimate.deductions, deductions > 0 {
+                        LabeledContent("Meal deductions", value: "−\(formatMoney(deductions))")
                     }
                     if let fee = repository.rates?.registrationFee, fee > 0 {
                         LabeledContent("Registration", value: formatMoney(fee))
                     }
-                    LabeledContent("Total", value: formatMoney(breakdown.total + (repository.rates?.registrationFee ?? 0)))
-                        .font(.headline)
-                        .foregroundStyle(BrandColors.lake)
+                    LabeledContent(
+                        "Total",
+                        value: formatMoney(total + (repository.rates?.registrationFee ?? 0))
+                    )
+                    .font(.headline)
+                    .foregroundStyle(BrandColors.lake)
+
+                    if let lines = estimate.members, !lines.isEmpty {
+                        ForEach(lines) { line in
+                            LabeledContent(
+                                line.member.name,
+                                value: formatMoney(line.total ?? 0)
+                            )
+                            .font(.caption)
+                        }
+                    }
+                } else if let estimateError {
+                    Text(estimateError)
+                        .foregroundStyle(.secondary)
                 } else {
-                    Text("Rates unavailable — check connection and try again.")
+                    Text("Pull to refresh for an estimate.")
                         .foregroundStyle(.secondary)
                 }
             }
 
             Section {
-                Text("Estimate only. Final pricing may vary. Registration opens January 1, 2027.")
+                Text("Estimate only. Final pricing may vary. Registration stays on the website.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -80,32 +91,133 @@ struct CalculatorView: View {
         .navigationTitle("Cost calculator")
         .task {
             await repository.loadRates()
+            await refreshEstimate()
+        }
+        .onChange(of: adults) { _, _ in Task { await refreshEstimate() } }
+        .onChange(of: youth) { _, _ in Task { await refreshEstimate() } }
+        .onChange(of: children) { _, _ in Task { await refreshEstimate() } }
+        .onChange(of: lodging) { _, _ in Task { await refreshEstimate() } }
+        .onChange(of: packagePreset) { _, _ in Task { await refreshEstimate() } }
+        .refreshable {
+            await repository.loadRates()
+            await refreshEstimate()
         }
     }
 
-    private var calculation: CostBreakdown? {
-        guard let rates = repository.rates?.rates else { return nil }
-        return CostCalculator.compute(
-            adults: adults,
-            youth: youth,
-            children: children,
-            lodging: lodging,
-            nights: nights,
-            rates: rates
+    private func refreshEstimate() async {
+        estimating = true
+        estimateError = nil
+        defer { estimating = false }
+
+        var members: [CalculatorEstimateMember] = []
+        var attendance: [String: CalculatorAttendance] = [:]
+        let nights = packagePreset.nights
+        let meals = packagePreset.meals
+
+        for i in 0 ..< adults {
+            let id = "adult-\(i)"
+            members.append(.init(id: id, name: "Adult \(i + 1)", age: 35))
+            attendance[id] = .init(attending: true, nights: nights, meals: meals)
+        }
+        for i in 0 ..< youth {
+            let id = "youth-\(i)"
+            members.append(.init(id: id, name: "Youth \(i + 1)", age: 14))
+            attendance[id] = .init(attending: true, nights: nights, meals: meals)
+        }
+        for i in 0 ..< children {
+            let id = "child-\(i)"
+            members.append(.init(id: id, name: "Child \(i + 1)", age: 8))
+            attendance[id] = .init(attending: true, nights: nights, meals: meals)
+        }
+
+        let body = CalculatorEstimateRequest(
+            year: AppConfig.eventYear,
+            members: members,
+            attendance: attendance,
+            lodgingType: lodging.rawValue,
+            numNights: nights.count
         )
+
+        // Prefer signed-in client; estimate API is public so shared works too.
+        let client = session.apiClient ?? APIClient.shared
+        do {
+            let response = try await client.postCalculatorEstimate(body)
+            estimate = response.estimate
+            if response.estimate == nil {
+                estimateError = "Could not calculate estimate"
+            }
+        } catch {
+            estimate = nil
+            estimateError = error.localizedDescription
+        }
     }
 
     private func formatMoney(_ value: Double) -> String {
         String(format: "$%.2f", value)
     }
+}
 
-    private func unitLine(count: Int, unit: Double) -> String {
-        "\(count) × \(formatMoney(unit)) per person"
+enum CalcPackagePreset: String, CaseIterable, Identifiable {
+    case full, special_3_9, special_2_6, special_1_3
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .full: return "Full week"
+        case .special_3_9: return "3 / 9"
+        case .special_2_6: return "2 / 6"
+        case .special_1_3: return "1 / 3"
+        }
     }
 
-    private func siteFeeLine(nights: Int, nightlyRate: Double) -> String {
-        let nightLabel = nights == 1 ? "night" : "nights"
-        return "\(formatMoney(nightlyRate))/night × \(nights) \(nightLabel) (per site)"
+    var detail: String {
+        switch self {
+        case .full: return "4 nights · 12 meals"
+        case .special_3_9: return "3 nights · 9 meals"
+        case .special_2_6: return "2 nights · 6 meals"
+        case .special_1_3: return "1 night · 3 meals"
+        }
+    }
+
+    var nights: [String] {
+        switch self {
+        case .full: return ["mon", "tue", "wed", "thu"]
+        case .special_3_9: return ["mon", "tue", "wed"]
+        case .special_2_6: return ["mon", "tue"]
+        case .special_1_3: return ["mon"]
+        }
+    }
+
+    var meals: [String: [String]] {
+        switch self {
+        case .full:
+            return [
+                "mon": ["dinner"],
+                "tue": ["breakfast", "lunch", "dinner"],
+                "wed": ["breakfast", "lunch", "dinner"],
+                "thu": ["breakfast", "lunch", "dinner"],
+                "fri": ["breakfast", "lunch"],
+            ]
+        case .special_3_9:
+            return [
+                "mon": ["dinner"],
+                "tue": ["breakfast", "lunch", "dinner"],
+                "wed": ["breakfast", "lunch", "dinner"],
+                "thu": ["breakfast", "lunch", "dinner"],
+            ]
+        case .special_2_6:
+            return [
+                "mon": ["dinner"],
+                "tue": ["breakfast", "lunch", "dinner"],
+                "wed": ["breakfast", "lunch"],
+            ]
+        case .special_1_3:
+            return [
+                "mon": ["dinner"],
+                "tue": ["breakfast", "lunch"],
+            ]
+        }
     }
 }
 
@@ -122,120 +234,4 @@ enum LodgingType: String, CaseIterable, Identifiable {
         case .drivein: return "Drive-in"
         }
     }
-}
-
-struct CostBreakdown {
-    let adults: Double
-    let youth: Double
-    let children: Double
-    let adultUnit: Double
-    let youthUnit: Double
-    let childUnit: Double
-    let siteFee: Double
-    let siteNightRate: Double
-    let total: Double
-}
-
-enum CostCalculator {
-    static func compute(
-        adults: Int,
-        youth: Int,
-        children: Int,
-        lodging: LodgingType,
-        nights: Int,
-        rates: [String: [Rate]]
-    ) -> CostBreakdown {
-        func amount(category: String, nameContains: String) -> Double {
-            guard let list = rates[category] else { return 0 }
-            guard let rate = list.first(where: { $0.name.contains(nameContains) }) else { return 0 }
-            return Double(rate.amount) ?? 0
-        }
-
-        let occupancy: String = {
-            let paying = adults + youth + children
-            switch paying {
-            case 0...1: return "single"
-            case 2: return "double"
-            case 3: return "triple"
-            default: return "quad"
-            }
-        }()
-
-        var adultCost = 0.0
-        var youthCost = 0.0
-        var childCost = 0.0
-        var adultUnit = 0.0
-        var youthUnit = 0.0
-        var childUnit = 0.0
-        var siteFee = 0.0
-        var siteNightRate = 0.0
-
-        switch lodging {
-        case .motel:
-            adultUnit = amount(category: "motel", nameContains: "motel_\(occupancy)_adult")
-            youthUnit = amount(category: "motel", nameContains: "motel_youth")
-            childUnit = amount(category: "motel", nameContains: "motel_child")
-            adultCost = Double(adults) * adultUnit
-            youthCost = Double(youth) * youthUnit
-            childCost = Double(children) * childUnit
-        case .rv:
-            adultUnit = amount(category: "rv", nameContains: "rv_adult")
-            youthUnit = amount(category: "rv", nameContains: "rv_youth")
-            childUnit = amount(category: "rv", nameContains: "rv_child")
-            adultCost = Double(adults) * adultUnit
-            youthCost = Double(youth) * youthUnit
-            childCost = Double(children) * childUnit
-        case .tent:
-            adultUnit = amount(category: "tent", nameContains: "tent_adult")
-            youthUnit = amount(category: "tent", nameContains: "tent_youth")
-            childUnit = amount(category: "tent", nameContains: "tent_child")
-            adultCost = Double(adults) * adultUnit
-            youthCost = Double(youth) * youthUnit
-            childCost = Double(children) * childUnit
-        case .drivein:
-            let days = 5.0
-            let adultEntry = amount(category: "drivein", nameContains: "drivein_adult") * days
-            let youthEntry = amount(category: "drivein", nameContains: "drivein_youth") * days
-            let childEntry = amount(category: "drivein", nameContains: "drivein_child") * days
-            adultUnit = adultEntry + driveInMeals(age: "adult", rates: rates)
-            youthUnit = youthEntry + driveInMeals(age: "youth", rates: rates)
-            childUnit = childEntry + driveInMeals(age: "child", rates: rates)
-            adultCost = Double(adults) * adultUnit
-            youthCost = Double(youth) * youthUnit
-            childCost = Double(children) * childUnit
-        }
-
-        if lodging == .rv {
-            siteNightRate = amount(category: "rv", nameContains: "rv_site_night")
-            siteFee = siteNightRate * Double(nights)
-        } else if lodging == .tent {
-            siteNightRate = amount(category: "tent", nameContains: "tent_site_night")
-            siteFee = siteNightRate * Double(nights)
-        }
-
-        return CostBreakdown(
-            adults: adultCost,
-            youth: youthCost,
-            children: childCost,
-            adultUnit: adultUnit,
-            youthUnit: youthUnit,
-            childUnit: childUnit,
-            siteFee: siteFee,
-            siteNightRate: siteNightRate,
-            total: adultCost + youthCost + childCost + siteFee
-        )
-    }
-
-    private static func driveInMeals(age: String, rates: [String: [Rate]]) -> Double {
-        guard let list = rates["meal_addition"] else { return 0 }
-        func a(_ name: String) -> Double {
-            Double(list.first(where: { $0.name.contains(name) })?.amount ?? "0") ?? 0
-        }
-        return a("breakfast_\(age)") * 4 + a("lunch_\(age)") * 5 + a("dinner_\(age)") * 4
-    }
-}
-
-#Preview {
-    NavigationStack { CalculatorView() }
-        .environment(RendezvousRepository())
 }

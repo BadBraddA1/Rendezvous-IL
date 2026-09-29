@@ -35,7 +35,10 @@ struct ScheduleView: View {
                 await repository.loadUpdates()
             }
             .task {
-                await repository.loadUpdates()
+                // MainTabView bootstrap already loads updates; skip duplicate on cold launch.
+                if !repository.didBootstrapRecently(within: 30) {
+                    await repository.loadUpdates()
+                }
             }
             .onChange(of: repository.schedule?.year) { _, _ in
                 didAutoPosition = false

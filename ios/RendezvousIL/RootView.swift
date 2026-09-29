@@ -92,9 +92,11 @@ struct RootView: View {
                 }
                 await session.recordActivityIfSignedIn()
                 await NotificationService.shared.registerForRemoteIfAuthorized()
-                // Pull a fresh schedule when returning to the app so admin edits land quickly.
-                await repository.loadScheduleBundle()
-                await repository.loadScheduleExtras()
+                // Avoid a full schedule re-fetch if bootstrap just ran (duplicate launch storm).
+                if !repository.didBootstrapRecently(within: 45) {
+                    await repository.loadScheduleBundle()
+                    await repository.loadScheduleExtras()
+                }
             }
         }
         .sheet(isPresented: $showAuthSheet) {
@@ -153,13 +155,17 @@ struct RootView: View {
             AppLog.bootstrap("screenshot mode tab=\(AppStoreScreenshotMode.tabName)")
             return
         }
+        let splashStarted = Date()
         async let bootstrap: Void = session.bootstrapAuthIfNeeded()
         async let minimumSplash: Void = {
-            try? await Task.sleep(for: .milliseconds(900))
+            try? await Task.sleep(for: .milliseconds(600))
         }()
         _ = await (bootstrap, minimumSplash)
         splashFinished = true
-        AppLog.bootstrap("splash done signedIn=\(session.isSignedIn) clerkReady=\(session.isClerkReady)")
+        let splashMs = Int(Date().timeIntervalSince(splashStarted) * 1000)
+        AppLog.bootstrap(
+            "splash done ms=\(splashMs) signedIn=\(session.isSignedIn) clerkReady=\(session.isClerkReady)"
+        )
     }
 
     private var launchSplash: some View {

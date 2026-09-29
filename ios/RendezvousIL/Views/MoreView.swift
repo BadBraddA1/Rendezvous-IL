@@ -13,14 +13,20 @@ struct MoreView: View {
                 }
 
                 Section("Community") {
+                    NavigationLink { FamilyProfileView() } label: {
+                        Label("Family account", systemImage: "person.crop.circle")
+                    }
                     NavigationLink { FamilyDirectoryManageView() } label: {
                         Label("Your directory photo", systemImage: "camera.fill")
                     }
                     NavigationLink { FamilyVolunteeringView() } label: {
                         Label("Your volunteering", systemImage: "hands.sparkles")
                     }
-                    NavigationLink { AccountView() } label: {
-                        Label("Family account", systemImage: "person.crop.circle")
+                    NavigationLink { AttendeeMapView() } label: {
+                        Label("Attendee map", systemImage: "map")
+                    }
+                    NavigationLink { AppFeedbackView() } label: {
+                        Label("App feedback", systemImage: "bubble.left.and.exclamationmark")
                     }
                 }
 
@@ -42,6 +48,9 @@ struct MoreView: View {
                     }
                     NavigationLink { AboutView() } label: {
                         Label("About Rendezvous", systemImage: "info.circle")
+                    }
+                    NavigationLink { AccountView() } label: {
+                        Label("Account & registration", systemImage: "gearshape")
                     }
                     NavigationLink { NotificationSettingsView() } label: {
                         Label("Notifications & widgets", systemImage: "bell.badge")

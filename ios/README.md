@@ -6,13 +6,16 @@ Native SwiftUI **attendee community hub** for [rendezvousil.com](https://rendezv
 
 | Area | Details |
 |------|---------|
-| **Sign-in gate** | Welcome screen → Clerk sheet → full app (Pew Packers pattern) |
-| **Account** | Profile card, web dashboard / registration / password links, directory + notification shortcuts |
-| **Home** | Greeting, now/next during retreat week, shortcuts to schedule / map / chat / directory |
-| **Map** | Hybrid: MapKit directions to Lake Williamson + on-campus image map (same pins as the website). Uses When-In-Use location to auto-switch when you arrive. Schedule locations open the matching pin. Blue-dot overlay is reserved for a later update. |
+| **Sign-in gate** | Welcome screen → Clerk sheet → full app (Pew Packers pattern). Splash ends after Clerk is ready; admin/push/activity run in the background (2.0.9+). |
+| **Family account** | Native manage members / emails / phones / app-access roster (`FamilyProfileView`). Registration + password change stay web handoff. |
+| **Account** | Payment status + total, directory photo, attendee map, app feedback, registration web links |
+| **Home** | Season year hub (or live board in retreat week); family manage link; cost + payment status |
+| **Map** | Campus map + **attendee map** (directory pins). Uses When-In-Use location for campus switch. |
 | **Chat** | Year cohort channels (Ably realtime when available; messages still load if Ably fails), retry + pull-to-refresh. **Disk cache** paints list/thread immediately; network + Ably refresh in the background. Tap a reaction chip to see who reacted. |
 | **Schedule** (center tab) | Day schedule + live updates (now/next, weather, announcements), meals, worship leaders, event reminders |
 | **Directory** | Family cards (tap for full details); disk cache then background refresh; search, year picker; **Your photo** toolbar |
+| **Calculator** | Package presets (full / 3-9 / 2-6 / 1-3) via `POST /api/calculator/estimate` |
+| **App feedback** | More → App feedback — product bugs/ideas (not EEF) |
 | **Songs** | More → Songs — published Campfire / Racket Ball packs; opportunistic download to Documents by `content_hash`; offline PDFKit / Quick Look viewer with next/previous |
 | **Notifications** | Local event reminders + **APNs** for organizer broadcasts, chat, and song-pack updates; photo messages show a lock-screen preview via **Notification Service Extension**; deep links from push open the right tab |
 | **Live Activity** | Lock Screen / Dynamic Island now & next during retreat week |

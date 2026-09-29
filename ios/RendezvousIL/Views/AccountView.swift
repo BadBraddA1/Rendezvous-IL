@@ -2,11 +2,16 @@ import SwiftUI
 
 struct AccountView: View {
     @Environment(AppSession.self) private var session
+    @State private var yearHub: YearHubResponse?
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 profileCard
+
+                if let hub = yearHub, let reg = hub.registration {
+                    registrationSummary(reg)
+                }
 
                 VStack(alignment: .leading, spacing: 12) {
                     infoRow(icon: "calendar", title: "Event dates", value: AppConfig.eventDates)
@@ -17,43 +22,50 @@ struct AccountView: View {
                 .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
 
                 VStack(spacing: 12) {
-                    Button {
-                        Task { await WebHandoff.open(path: "/account", session: session) }
+                    NavigationLink {
+                        FamilyProfileView()
                     } label: {
-                        Label("Family dashboard on web", systemImage: "safari")
+                        Label("Manage family members", systemImage: "person.3.fill")
                             .frame(maxWidth: .infinity)
                             .padding()
                             .background(BrandColors.lake, in: RoundedRectangle(cornerRadius: 12))
                             .foregroundStyle(.white)
                     }
+
+                    NavigationLink {
+                        FamilyDirectoryManageView()
+                    } label: {
+                        inAppLinkLabel(title: "Directory photo & listing", icon: "camera.fill")
+                    }
+
+                    NavigationLink {
+                        AttendeeMapView()
+                    } label: {
+                        inAppLinkLabel(title: "Attendee map", icon: "map")
+                    }
+
+                    NavigationLink {
+                        AppFeedbackView()
+                    } label: {
+                        inAppLinkLabel(title: "App feedback", icon: "bubble.left.and.exclamationmark")
+                    }
+
                     Button {
                         Task { await WebHandoff.open(path: "/register", session: session) }
                     } label: {
-                        inAppLinkLabel(title: "Manage registration", icon: "doc.text")
+                        inAppLinkLabel(title: "Register / manage registration", icon: "doc.text")
                     }
-                    Button {
-                        Task { await WebHandoff.open(path: "/account/settings", session: session) }
-                    } label: {
-                        inAppLinkLabel(title: "Change password on web", icon: "key")
-                    }
+
                     Button {
                         Task { await WebHandoff.open(path: "/account/express-registration", session: session) }
                     } label: {
                         inAppLinkLabel(title: "Express registration on web", icon: "bolt.fill")
                     }
-                }
 
-                VStack(spacing: 12) {
-                    NavigationLink {
-                        FamilyDirectoryManageView()
+                    Button {
+                        Task { await WebHandoff.open(path: "/account/settings", session: session) }
                     } label: {
-                        inAppLinkLabel(title: "Upload directory photo", icon: "camera.fill")
-                    }
-
-                    NavigationLink {
-                        DirectoryView()
-                    } label: {
-                        inAppLinkLabel(title: "Browse family directory", icon: "person.3.fill")
+                        inAppLinkLabel(title: "Change password on web", icon: "key")
                     }
 
                     NavigationLink {
@@ -68,8 +80,46 @@ struct AccountView: View {
             .padding()
         }
         .navigationTitle("Account")
+        .task { await loadHub() }
         .refreshable {
             await session.refreshAdminStatus()
+            await loadHub()
+        }
+    }
+
+    private func registrationSummary(_ reg: YearHubRegistration) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("\(AppConfig.eventYearLabel) registration")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+            Text("\(reg.familyLastName) family")
+                .font(.headline)
+            if let count = reg.attendeeCount {
+                Text("\(count) attendees\(reg.lodgingType.map { " · \($0)" } ?? "")")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            if let status = reg.paymentStatus {
+                Text(paymentLabel(status))
+                    .font(.subheadline)
+            }
+            if let cost = reg.totalCost {
+                Text(String(format: "Total: $%.2f", cost))
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(BrandColors.lake)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
+    }
+
+    private func paymentLabel(_ status: String) -> String {
+        switch status.lowercased() {
+        case "paid", "complete", "completed": return "Payment: Paid"
+        case "partial": return "Payment: Partial"
+        case "unpaid", "pending": return "Payment: Unpaid"
+        default: return "Payment: \(status.capitalized)"
         }
     }
 
@@ -112,24 +162,6 @@ struct AccountView: View {
         }
     }
 
-    private func accountLink(title: String, icon: String, path: String, prominent: Bool = false) -> some View {
-        Button {
-            Task { await WebHandoff.open(path: path, session: session) }
-        } label: {
-            Group {
-                if prominent {
-                    Label(title, systemImage: icon)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(BrandColors.lake, in: RoundedRectangle(cornerRadius: 12))
-                        .foregroundStyle(.white)
-                } else {
-                    inAppLinkLabel(title: title, icon: icon)
-                }
-            }
-        }
-    }
-
     private func inAppLinkLabel(title: String, icon: String) -> some View {
         Label(title, systemImage: icon)
             .frame(maxWidth: .infinity)
@@ -146,6 +178,14 @@ struct AccountView: View {
             Link(BundledContent.contactPhone, destination: URL(string: "tel:+12179355058")!)
         }
         .font(.subheadline)
+    }
+
+    private func loadHub() async {
+        guard let client = session.apiClient else {
+            yearHub = nil
+            return
+        }
+        yearHub = try? await client.getYearHub()
     }
 }
 

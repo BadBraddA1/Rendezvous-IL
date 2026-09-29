@@ -84,9 +84,11 @@ struct HomeView: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         } else {
+            Text("Loading your family hub…")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
             ProgressView()
-                .frame(maxWidth: .infinity)
-                .padding()
+                .controlSize(.small)
         }
 
         Button { selectedTab = .schedule } label: {
@@ -142,6 +144,11 @@ struct HomeView: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
+                    if let cost = reg.totalCost {
+                        Text(String(format: "Total: $%.2f", cost))
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(BrandColors.lake)
+                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding()
@@ -161,8 +168,10 @@ struct HomeView: View {
                         Text("\(member.firstName) \(member.lastName)")
                             .font(.subheadline)
                     }
-                    if let url = URL(string: hub.links.profile) {
-                        Link("Edit on website", destination: url)
+                    NavigationLink {
+                        FamilyProfileView()
+                    } label: {
+                        Text("Manage family account")
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(BrandColors.lake)
                     }
@@ -542,8 +551,14 @@ struct HomeView: View {
     }
 
     private func refreshBoard() async {
-        async let updates: Void = repository.loadUpdates()
-        async let scheduleLoad: Void = loadScheduleForBoard()
+        // Schedule/updates already owned by MainTabView.bootstrap on cold launch.
+        let skipSchedule = repository.didBootstrapRecently(within: 30)
+        async let updates: Void = {
+            if !skipSchedule { await repository.loadUpdates() }
+        }()
+        async let scheduleLoad: Void = {
+            if !skipSchedule { await loadScheduleForBoard() }
+        }()
         async let yearHubTask: Void = loadYearHub()
         async let boardTask: Void = loadHomeBoard()
         async let checkInTask: Void = loadCheckIn()

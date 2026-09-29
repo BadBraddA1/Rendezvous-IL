@@ -170,6 +170,9 @@ pnpm db:verify
 - Resolve/link logic: `resolveFamilyForUser` in `lib/family-auth.ts` — membership table → primary clerk/email → **create `families` from registration history if missing** → reclaim primary when login email matches (fixes stale Clerk ids / webhook misses) → member email match. Admins can reassign via `GET/POST/DELETE /api/admin/families/[id]/account-members`.
 - **Shared access for all linked accounts:** directory profile (edits still queue in `pending_family_changes`), family directory browse, and year chat channels (`userHasRegistrationForYear` checks family membership). **Primary-only:** express / new registration and payment.
 - Profile page shows **Your family** plus an **Family app access** roster (which emails are linked vs not signed up yet). Registration Family Info step explains that member emails grant app access.
+- **iOS (2.0.9+):** More → Family account (`FamilyProfileView`) manages the same roster/contact/app-access UI natively via `GET/PUT /api/family/profile` and `POST/DELETE /api/family/members` — registration itself stays on the website.
+- **Password reset:** custom `/forgot-password` page; legacy Clerk paths (`/reset-password`, `/sign-in/forgot-password`, etc.) redirect there (see `next.config.mjs`).
+- **App feedback:** `POST /api/app-feedback` stores in-app product feedback (not EEF).
 - Admin Family Directory cards list **Linked app accounts** and can remove non-primary members.
 - The site header account avatar (`UserMenuButton`) prefers the **family directory photo** when one is uploaded (`GET /api/family/directory`); otherwise it falls back to the Clerk profile image. Uploading or removing a photo on this page refreshes the header avatar immediately.
 - Profile edits: **email + phone numbers save immediately** (family-level and per-member). Name, address, congregation, and member add/remove still queue in `pending_family_changes` for admin approval at `/admin/pending-changes`.
