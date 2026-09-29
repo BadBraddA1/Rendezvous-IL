@@ -18,6 +18,7 @@ import {
   WifiView,
   UpcomingView,
   PhotoshowView,
+  OndutyView,
   prefetchLiveUpdateViews,
 } from "@/components/live-updates/lazy-views"
 import { fetchJsonCached } from "@/lib/fetch-json-cache"
@@ -48,6 +49,7 @@ import type {
   ScheduleItem,
 } from "@/lib/live-updates/types"
 import type { PhotoshowPhoto } from "@/lib/live-updates/photoshow-shared"
+import type { OnDutyAssignment } from "@/lib/live-updates/on-duty"
 
 const VALID_VIEWS: ViewType[] = [
   "all",
@@ -58,6 +60,7 @@ const VALID_VIEWS: ViewType[] = [
   "wifi",
   "upcoming",
   "volunteers",
+  "onduty",
   "announcements",
   "photoshow",
 ]
@@ -177,6 +180,7 @@ export function LiveUpdatesShell() {
   const [volunteerTimeSlot, setVolunteerTimeSlot] = useState<string>("")
   const [mealData, setMealData] = useState<MealData | null>(null)
   const [photoshowPhotos, setPhotoshowPhotos] = useState<PhotoshowPhoto[]>([])
+  const [onDutyAssignments, setOnDutyAssignments] = useState<OnDutyAssignment[]>([])
 
   const [displayStateFailCount, setDisplayStateFailCount] = useState(0)
   const [weatherFetchOk, setWeatherFetchOk] = useState<boolean | null>(null)
@@ -197,10 +201,11 @@ export function LiveUpdatesShell() {
     return () => clearInterval(id)
   }, [])
 
-  const { nowItem, nextItem, prevItem, nextMeal, upcomingToday, upcomingAll } = useMemo(
-    () => computeScheduleSnapshot(getCentralTime(), luItems),
-    [scheduleMinuteBucket, luItems],
-  )
+  const { nowItem, nextItem, prevItem, nextMeal, followingMeal, upcomingToday, upcomingAll } =
+    useMemo(
+      () => computeScheduleSnapshot(getCentralTime(), luItems),
+      [scheduleMinuteBucket, luItems],
+    )
 
   // Check if volunteer schedule has data
   const hasVolunteerData = useMemo(() => {
@@ -225,6 +230,9 @@ export function LiveUpdatesShell() {
     if (hasVolunteerData) {
       views.push("volunteers")
     }
+    if (onDutyAssignments.length > 0) {
+      views.push("onduty")
+    }
     if (announcements.length > 0) {
       views.push("announcements")
     }
@@ -232,7 +240,7 @@ export function LiveUpdatesShell() {
       views.push("photoshow")
     }
     return views
-  }, [hasVolunteerData, announcements.length, photoshowPhotos.length])
+  }, [hasVolunteerData, onDutyAssignments.length, announcements.length, photoshowPhotos.length])
 
   /** Dedicated room slideshow — full-bleed photos, no program chrome. */
   const photoshowOnly = fixedView === "photoshow"
@@ -513,6 +521,25 @@ export function LiveUpdatesShell() {
     return () => clearInterval(interval)
   }, [kioskMode, photoshowChannelId])
 
+  // Special assignments — who’s on duty today (lifeguards, activities, check-in, …).
+  useEffect(() => {
+    const fetchOnDuty = async () => {
+      try {
+        const res = await fetch("/api/live-updates/on-duty", { cache: "no-store" })
+        if (!res.ok) throw new Error(`on-duty ${res.status}`)
+        const data = await res.json()
+        if (Array.isArray(data.assignments)) {
+          setOnDutyAssignments(data.assignments)
+        }
+      } catch {
+        // keep last good list
+      }
+    }
+    fetchOnDuty()
+    const interval = setInterval(fetchOnDuty, 60 * 1000)
+    return () => clearInterval(interval)
+  }, [])
+
   // Keep offline snapshot currentView in sync when rotating locally.
   useEffect(() => {
     if (announcements.length === 0 && !weather) return
@@ -741,6 +768,13 @@ export function LiveUpdatesShell() {
             setIsAutoRotating(false)
           }
           break
+        case "d":
+        case "D":
+          if (onDutyAssignments.length > 0) {
+            setCurrentView("onduty")
+            setIsAutoRotating(false)
+          }
+          break
         case "7":
           if (announcements.length > 0) {
             setCurrentView("announcements")
@@ -813,6 +847,7 @@ export function LiveUpdatesShell() {
     hasVolunteerData,
     fixedView,
     photoshowPhotos.length,
+    onDutyAssignments.length,
     blackout,
     photoshowOnly,
   ])
@@ -896,9 +931,9 @@ export function LiveUpdatesShell() {
           maximum vertical space and aren't competing with header noise.
           Dedicated photoshow mode hides chrome for a true room slideshow. */}
       {!photoshowOnly && !blackout && (
-      <header className="site-chrome-top shrink-0 flex items-center justify-between gap-3 border-b border-primary/20 px-4 py-3 sm:gap-6 sm:px-8 sm:py-4">
+      <header className="site-chrome-top shrink-0 flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3 sm:gap-6 sm:px-8 sm:py-4">
         <div className="flex items-center gap-3 min-w-0 shrink">
-          <div className="relative h-11 w-11 shrink-0 rounded-lg bg-white/5 border border-primary/20 p-1.5 flex items-center justify-center">
+          <div className="relative h-11 w-11 shrink-0 rounded-md bg-white/5 border border-white/12 p-1.5 flex items-center justify-center">
             <Image
               src="/rendezvous-logo.png"
               alt="Rendezvous Homeschool Family Retreat"
@@ -908,9 +943,12 @@ export function LiveUpdatesShell() {
               priority
             />
           </div>
-          <h1 className="text-base sm:text-xl font-bold tracking-wide truncate sm:whitespace-nowrap">
-            Live updates · Rendezvous 2027
-          </h1>
+          <div className="min-w-0">
+            <p className="lu-kicker truncate">Rendezvous 2027</p>
+            <h1 className="truncate text-base font-bold tracking-wide sm:text-xl sm:whitespace-nowrap">
+              Live updates
+            </h1>
+          </div>
         </div>
 
         <LiveUpdatesClock />
@@ -940,6 +978,7 @@ export function LiveUpdatesShell() {
               nowItem={nowItem} 
               nextItem={nextItem} 
               nextMeal={nextMeal}
+              mealData={mealData}
               upcomingToday={upcomingToday}
               upcomingAll={upcomingAll}
               volunteerSchedule={volunteerSchedule}
@@ -950,16 +989,27 @@ export function LiveUpdatesShell() {
             <WeatherView weather={weather} />
           )}
           {currentView === "schedule" && (
-            <ScheduleView nowItem={nowItem} nextItem={nextItem} />
+            <ScheduleView
+              nowItem={nowItem}
+              nextItem={nextItem}
+              upcomingToday={upcomingToday}
+            />
           )}
           {currentView === "meal" && (
-            <MealView nextMeal={nextMeal} mealData={mealData} />
+            <MealView
+              nextMeal={nextMeal}
+              mealData={mealData}
+              followingMeal={followingMeal}
+            />
           )}
           {currentView === "map" && (
             <MapView nowItem={nowItem} nextItem={nextItem} prevItem={prevItem} />
           )}
           {currentView === "volunteers" && (
             <VolunteersView volunteerSchedule={volunteerSchedule} volunteerTimeSlot={volunteerTimeSlot} />
+          )}
+          {currentView === "onduty" && (
+            <OndutyView assignments={onDutyAssignments} />
           )}
           {currentView === "announcements" && (
             <AnnouncementsView announcements={announcements} />
@@ -983,7 +1033,7 @@ export function LiveUpdatesShell() {
 
       {/* Keyboard Controls Footer - hidden in fullscreen or when controls are hidden (press H to toggle) */}
       {!isFullscreen && showControls && !photoshowOnly && (
-      <footer className="site-chrome-bottom shrink-0 border-t border-primary/20 px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-8 sm:py-6 lg:px-12">
+      <footer className="site-chrome-bottom shrink-0 border-t border-white/10 px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-8 sm:py-6 lg:px-12">
         <div className="scroll-touch-x flex flex-nowrap items-center justify-start gap-4 sm:flex-wrap sm:justify-center">
           <KeyButton shortcut="1" name="All" active={currentView === "all"} onClick={() => selectView("all")} />
           <KeyButton shortcut="2" name="Weather" active={currentView === "weather"} onClick={() => selectView("weather")} />
@@ -992,6 +1042,14 @@ export function LiveUpdatesShell() {
           <KeyButton shortcut="5" name="Map" active={currentView === "map"} onClick={() => selectView("map")} />
           {hasVolunteerData && (
             <KeyButton shortcut="6" name="Volunteers" active={currentView === "volunteers"} onClick={() => selectView("volunteers")} />
+          )}
+          {onDutyAssignments.length > 0 && (
+            <KeyButton
+              shortcut="D"
+              name="On duty"
+              active={currentView === "onduty"}
+              onClick={() => selectView("onduty")}
+            />
           )}
           {announcements.length > 0 && (
             <KeyButton

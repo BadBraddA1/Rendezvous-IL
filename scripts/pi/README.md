@@ -96,13 +96,14 @@ https://rendezvousil.com/live-updates?sync=1&kiosk=1
 
 Use `view=` when a screen should stay on one panel (cafeteria = meal, lobby = schedule, etc.). Works with `sync=1` and `kiosk=1`; the Pi ignores fleet rotation and server display-state polling.
 
-**Valid values:** `schedule`, `weather`, `meal`, `map`, `wifi`, `upcoming`, `volunteers`, `announcements`, `photoshow`, `all`
+**Valid values:** `schedule`, `weather`, `meal`, `map`, `wifi`, `upcoming`, `volunteers`, `onduty`, `announcements`, `photoshow`, `all`
 
 **Production examples:**
 
 ```
 https://rendezvousil.com/live-updates?sync=1&kiosk=1&view=meal
 https://rendezvousil.com/live-updates?sync=1&kiosk=1&view=schedule
+https://rendezvousil.com/live-updates?sync=1&kiosk=1&view=onduty
 https://rendezvousil.com/live-updates?kiosk=1&view=photoshow
 ```
 

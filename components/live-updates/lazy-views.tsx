@@ -43,6 +43,10 @@ export const PhotoshowView = dynamic(
   () => import("@/components/live-updates/views/photoshow-view").then((m) => ({ default: m.PhotoshowView })),
   { loading: () => <ViewLoading />, ssr: false },
 )
+export const OndutyView = dynamic(
+  () => import("@/components/live-updates/views/onduty-view").then((m) => ({ default: m.OndutyView })),
+  { loading: () => <ViewLoading />, ssr: false },
+)
 
 /** Warm view chunks after first paint so auto-rotate stays smooth on TVs. */
 export function prefetchLiveUpdateViews() {
@@ -56,4 +60,5 @@ export function prefetchLiveUpdateViews() {
   void import("@/components/live-updates/views/wifi-view")
   void import("@/components/live-updates/views/upcoming-view")
   void import("@/components/live-updates/views/photoshow-view")
+  void import("@/components/live-updates/views/onduty-view")
 }

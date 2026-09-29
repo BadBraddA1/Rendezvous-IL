@@ -40,10 +40,10 @@ export function SiteFooter() {
             </p>
             <p>
               <Link
-                href="/install"
+                href="/gettheapp"
                 className="focus-ring rounded-sm text-sm text-muted-foreground hover:text-primary hover:underline"
               >
-                App details
+                Get the app
               </Link>
             </p>
           </div>

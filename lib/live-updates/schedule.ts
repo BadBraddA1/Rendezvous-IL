@@ -50,6 +50,7 @@ export function computeScheduleSnapshot(
     }
   }
 
+  const upcomingMeals: ScheduleItem[] = []
   for (const item of SCHEDULE_ITEMS) {
     if (!item.isMeal) continue
     if (item.date < centralDateStr) continue
@@ -57,16 +58,24 @@ export function computeScheduleSnapshot(
     const itemStartMinutes = item.startHour * 60 + item.startMinute
 
     if (item.date === centralDateStr && itemStartMinutes > currentMinutes) {
-      meal = item
-      break
+      upcomingMeals.push(item)
     } else if (item.date > centralDateStr) {
-      meal = item
-      break
+      upcomingMeals.push(item)
     }
   }
 
+  meal = upcomingMeals[0] ?? null
   if (current?.isMeal && !meal) {
     meal = current
+  }
+
+  let followingMeal: ScheduleItem | null = null
+  if (meal && upcomingMeals.length > 0) {
+    const mealKey = `${meal.date}|${meal.time}|${meal.title}`
+    followingMeal =
+      upcomingMeals.find(
+        (item) => `${item.date}|${item.time}|${item.title}` !== mealKey,
+      ) ?? null
   }
 
   const todayUpcoming: ScheduleItem[] = []
@@ -96,6 +105,7 @@ export function computeScheduleSnapshot(
     nextItem: next,
     prevItem: prev,
     nextMeal: meal,
+    followingMeal,
     upcomingToday: todayUpcoming,
     upcomingAll: allUpcoming,
   }

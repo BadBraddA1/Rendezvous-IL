@@ -8,13 +8,24 @@ import { getEventIcon } from "@/components/live-updates/event-icon"
 import { getWeatherIcon } from "@/components/live-updates/weather-icon"
 import { ScheduleCard } from "@/components/live-updates/schedule-card"
 import { formatTime } from "@/lib/live-updates/time"
-import type { ScheduleItem, VolunteerSchedule, WeatherData } from "@/lib/live-updates/types"
+import type { MealData, ScheduleItem, VolunteerSchedule, WeatherData } from "@/lib/live-updates/types"
+
+function stripDietaryTags(s: string) {
+  return s
+    .replace(
+      /\s*\(\s*(?:GF|DF|V|VG|VEGAN|VEGETARIAN|N|NF|SF|EF)(?:\s*[,/&]\s*(?:GF|DF|V|VG|VEGAN|VEGETARIAN|N|NF|SF|EF))*\s*\)/gi,
+      "",
+    )
+    .replace(/\s+/g, " ")
+    .trim()
+}
 
 export function AllView({ 
   weather, 
   nowItem, 
   nextItem, 
   nextMeal,
+  mealData,
   upcomingToday,
   upcomingAll,
   volunteerSchedule,
@@ -24,6 +35,7 @@ export function AllView({
   nowItem: ScheduleItem | null
   nextItem: ScheduleItem | null
   nextMeal: ScheduleItem | null
+  mealData?: MealData | null
   upcomingToday: ScheduleItem[]
   upcomingAll: ScheduleItem[]
   volunteerSchedule: VolunteerSchedule | null
@@ -154,10 +166,15 @@ export function AllView({
             </div>
             {nextMeal ? (
               <div className="flex flex-col items-center justify-center text-center pt-2">
-                <div className="mb-4 rounded-2xl bg-white/5 border border-primary/20 p-4">
+                <div className="mb-4 rounded-2xl bg-white/5 border border-white/10 p-4">
                   {getEventIcon(nextMeal.title, true, "lg")}
                 </div>
-                <h3 className="lu-type-board-sm mb-3">{nextMeal.title}</h3>
+                <h3 className="lu-type-board-sm mb-2">{nextMeal.title}</h3>
+                {mealData?.main_dish && (
+                  <p className="lu-text-body mb-3 text-base font-semibold text-balance">
+                    {stripDietaryTags(mealData.main_dish)}
+                  </p>
+                )}
                 <p className="lu-text-secondary text-lg flex items-center justify-center gap-2 mb-2">
                   <Clock className="h-4 w-4 lu-text-meal" />
                   {nextMeal.time}

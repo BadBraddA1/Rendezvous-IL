@@ -55,10 +55,14 @@ export function buildAvailableViews(options: {
   hasVolunteerData: boolean
   announcementCount: number
   photoshowCount?: number
+  onDutyCount?: number
 }): ViewType[] {
   const views: ViewType[] = [...LIVE_UPDATES_BASE_VIEWS]
   if (options.hasVolunteerData) {
     views.push("volunteers")
+  }
+  if ((options.onDutyCount ?? 0) > 0) {
+    views.push("onduty")
   }
   if (options.announcementCount > 0) {
     views.push("announcements")

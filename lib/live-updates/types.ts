@@ -89,12 +89,15 @@ export type ViewType =
   | "wifi"
   | "upcoming"
   | "photoshow"
+  | "onduty"
 
 export interface ScheduleSnapshot {
   nowItem: ScheduleItem | null
   nextItem: ScheduleItem | null
   prevItem: ScheduleItem | null
   nextMeal: ScheduleItem | null
+  /** Meal after `nextMeal` (for “Then …” on the meal board). */
+  followingMeal: ScheduleItem | null
   upcomingToday: ScheduleItem[]
   upcomingAll: ScheduleItem[]
 }
