@@ -3,7 +3,8 @@ package com.rendezvousil.app.ui.directory
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -76,6 +77,7 @@ import com.rendezvousil.core.network.YearFormatting
 import com.rendezvousil.core.network.dto.DirectoryContactPhone
 import com.rendezvousil.core.network.dto.DirectoryFamily
 import com.rendezvousil.core.network.dto.DirectoryPhotoFace
+import androidx.compose.foundation.background
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -508,6 +510,7 @@ private fun DirectoryPhotoWithFaceLabels(
     val labeled = faces.filter { it.label.isNotBlank() }
     val density = LocalDensity.current
     var laidOut by remember(photoUrl) { mutableStateOf(IntSize.Zero) }
+    var showNames by remember(photoUrl) { mutableStateOf(true) }
 
     Box(
         modifier = modifier
@@ -518,11 +521,29 @@ private fun DirectoryPhotoWithFaceLabels(
                 } else {
                     Modifier.wrapContentHeight()
                 },
+            )
+            .then(
+                if (labeled.isNotEmpty()) {
+                    Modifier.clickable(
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() },
+                    ) { showNames = !showNames }
+                } else {
+                    Modifier
+                },
             ),
     ) {
         AsyncImage(
             model = photoUrl,
-            contentDescription = contentDescription,
+            contentDescription = if (labeled.isNotEmpty()) {
+                if (showNames) {
+                    "$contentDescription. Tap to hide names."
+                } else {
+                    "$contentDescription. Tap to show names."
+                }
+            } else {
+                contentDescription
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .then(
@@ -540,7 +561,7 @@ private fun DirectoryPhotoWithFaceLabels(
             },
         )
 
-        if (labeled.isNotEmpty() && laidOut.width > 0 && laidOut.height > 0) {
+        if (showNames && labeled.isNotEmpty() && laidOut.width > 0 && laidOut.height > 0) {
             labeled.forEach { face ->
                 val labelMaxWidth = with(density) {
                     maxOf(face.w * laidOut.width, laidOut.width * 0.12f).toDp()
@@ -565,6 +586,20 @@ private fun DirectoryPhotoWithFaceLabels(
                         .padding(horizontal = 4.dp, vertical = 2.dp),
                 )
             }
+        }
+
+        if (labeled.isNotEmpty()) {
+            Text(
+                text = if (showNames) "Tap to hide names" else "Tap to show names",
+                color = Color.White,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(8.dp)
+                    .background(Color.Black.copy(alpha = 0.55f), RoundedCornerShape(50))
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+            )
         }
     }
 }

@@ -370,6 +370,7 @@ private struct DirectoryFamilyCard: View {
 struct DirectoryFamilyDetailView: View {
     let family: DirectoryFamily
     @State private var showNameChips = true
+    @State private var showFaceLabels = true
 
     private var directoryPhotoPlaceholder: some View {
         Color(.secondarySystemGroupedBackground)
@@ -508,28 +509,41 @@ struct DirectoryFamilyDetailView: View {
                             .resizable()
                             .scaledToFit()
                             .overlay {
-                                GeometryReader { geo in
-                                    ForEach(family.labeledPhotoFaces) { face in
-                                        let rect = CGRect(
-                                            x: face.x * geo.size.width,
-                                            y: face.y * geo.size.height,
-                                            width: face.w * geo.size.width,
-                                            height: face.h * geo.size.height
-                                        )
-                                        Text(face.label)
-                                            .font(.caption2.weight(.semibold))
-                                            .foregroundStyle(.white)
-                                            .padding(.horizontal, 6)
-                                            .padding(.vertical, 2)
-                                            .background(Color.black.opacity(0.72), in: Capsule())
-                                            .position(
-                                                DirectoryFaceLabelLayout.labelCenter(
-                                                    faceRect: rect,
-                                                    in: geo.size
-                                                )
+                                if showFaceLabels {
+                                    GeometryReader { geo in
+                                        ForEach(family.labeledPhotoFaces) { face in
+                                            let rect = CGRect(
+                                                x: face.x * geo.size.width,
+                                                y: face.y * geo.size.height,
+                                                width: face.w * geo.size.width,
+                                                height: face.h * geo.size.height
                                             )
+                                            Text(face.label)
+                                                .font(.caption2.weight(.semibold))
+                                                .foregroundStyle(.white)
+                                                .padding(.horizontal, 6)
+                                                .padding(.vertical, 2)
+                                                .background(Color.black.opacity(0.72), in: Capsule())
+                                                .position(
+                                                    DirectoryFaceLabelLayout.labelCenter(
+                                                        faceRect: rect,
+                                                        in: geo.size
+                                                    )
+                                                )
+                                        }
                                     }
+                                    .transition(.opacity)
                                 }
+                            }
+                            .overlay(alignment: .bottomTrailing) {
+                                Text(showFaceLabels ? "Tap to hide names" : "Tap to show names")
+                                    .font(.caption2.weight(.medium))
+                                    .foregroundStyle(.white)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(Color.black.opacity(0.55), in: Capsule())
+                                    .padding(10)
+                                    .allowsHitTesting(false)
                             }
                     case .failure, .empty:
                         directoryPhotoPlaceholder
@@ -544,7 +558,14 @@ struct DirectoryFamilyDetailView: View {
                 .frame(maxWidth: .infinity)
                 .frame(maxHeight: 320)
                 .clipShape(RoundedRectangle(cornerRadius: 16))
-                .accessibilityHint("Shows names under each person in the photo")
+                .contentShape(RoundedRectangle(cornerRadius: 16))
+                .onTapGesture {
+                    withAnimation(.easeOut(duration: 0.2)) {
+                        showFaceLabels.toggle()
+                    }
+                }
+                .accessibilityHint("Double tap to show or hide names on the photo")
+                .accessibilityAddTraits(.isButton)
             } else {
                 Color.clear
                     .aspectRatio(4 / 3, contentMode: .fit)
