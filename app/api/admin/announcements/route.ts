@@ -1,56 +1,98 @@
 import { NextResponse } from "next/server"
-import { sql } from "@/lib/db"
+import { checkAdminAuth, getAdminPermissions, logAuditAction } from "@/lib/admin-auth"
+import { getRequestAuditMeta } from "@/lib/audit-log"
+import { createAnnouncement, listAdminAnnouncements } from "@/lib/announcements"
 
-// GET - Fetch all announcements
-export async function GET() {
+export const dynamic = "force-dynamic"
+
+async function requireCommunicator(request: Request) {
+  const admin = await checkAdminAuth(request)
+  if (!admin) return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) }
+  if (!getAdminPermissions(admin.role).canEdit) {
+    return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) }
+  }
+  return { admin }
+}
+
+export async function GET(request: Request) {
+  const admin = await checkAdminAuth(request)
+  if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+
   try {
-    const announcements = await sql`
-      SELECT 
-        id, title, message, priority, is_active, 
-        show_on_live_updates, show_on_schedule, 
-        created_at, expires_at, created_by
-      FROM announcements
-      ORDER BY created_at DESC
-      LIMIT 50
-    `
-
+    const announcements = await listAdminAnnouncements(50)
     return NextResponse.json({ announcements })
   } catch (error) {
-    console.error("[v0] Error fetching announcements:", error)
+    console.error("[admin/announcements] GET error:", error)
     return NextResponse.json({ error: "Failed to fetch announcements" }, { status: 500 })
   }
 }
 
-// POST - Create new announcement (app / Live Updates / schedule — no GroupMe)
 export async function POST(request: Request) {
+  const { admin, error } = await requireCommunicator(request)
+  if (error) return error
+
   try {
     const body = await request.json()
-    const { title, message, priority, showOnLiveUpdates, showOnSchedule } = body
+    const {
+      title,
+      message,
+      priority,
+      showOnLiveUpdates,
+      showOnSchedule,
+      sendPush,
+      publishAt,
+      scheduleEventId,
+      expiresAt,
+    } = body
 
     if (!title || !message) {
       return NextResponse.json({ error: "Title and message are required" }, { status: 400 })
     }
 
-    const [announcement] = await sql`
-      INSERT INTO announcements (
-        title, message, priority, is_active,
-        show_on_live_updates, show_on_schedule,
-        sent_to_groupme, created_by
-      ) VALUES (
-        ${title}, ${message}, ${priority || "normal"}, true,
-        ${showOnLiveUpdates || false}, ${showOnSchedule || false},
-        false, 'admin'
-      )
-      RETURNING *
-    `
+    const result = await createAnnouncement({
+      title,
+      message,
+      priority,
+      showOnLiveUpdates,
+      showOnSchedule,
+      sendPush,
+      publishAt: publishAt || null,
+      scheduleEventId: scheduleEventId ? Number(scheduleEventId) : null,
+      expiresAt: expiresAt || null,
+      createdBy: admin.email,
+    })
 
+    const { ipAddress, userAgent } = getRequestAuditMeta(request)
+    await logAuditAction(
+      admin.email,
+      "create_announcement",
+      "announcement",
+      result.announcement.id,
+      {
+        send_push: Boolean(sendPush),
+        publish_at: publishAt || null,
+        schedule_event_id: scheduleEventId || null,
+      },
+      ipAddress,
+      userAgent,
+    )
+
+    const scheduled = Boolean(publishAt) && new Date(publishAt).getTime() > Date.now()
     return NextResponse.json({
       success: true,
-      announcement,
-      message: "Announcement created successfully",
+      announcement: result.announcement,
+      push: result.push ?? null,
+      message: scheduled
+        ? "Announcement scheduled"
+        : result.push?.success
+          ? `Announcement posted · push sent to ${result.push.recipients ?? 0}`
+          : "Announcement created successfully",
     })
-  } catch (error) {
-    console.error("[v0] Error creating announcement:", error)
-    return NextResponse.json({ error: "Failed to create announcement" }, { status: 500 })
+  } catch (err) {
+    console.error("[admin/announcements] POST error:", err)
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Failed to create announcement" },
+      { status: 500 },
+    )
   }
 }

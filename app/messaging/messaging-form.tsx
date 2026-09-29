@@ -59,35 +59,18 @@ export function MessagingForm({ initialAnnouncements }: MessagingFormProps) {
           priority,
           showOnLiveUpdates,
           showOnSchedule,
+          sendPush: sendPushNotification,
         }),
       })
 
       const data = await res.json()
 
       if (res.ok) {
-        let successMsg = "Announcement created successfully!"
-        
-        // Send push notification if enabled
-        if (sendPushNotification) {
-          try {
-            const pushRes = await fetch("/api/push-notification", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                title,
-                message: content,
-                url: "https://rendezvousil.com/schedule",
-              }),
-            })
-            const pushData = await pushRes.json()
-            if (pushRes.ok) {
-              successMsg += ` Push sent to ${pushData.recipients || 0} users.`
-            } else {
-              successMsg += ` Push failed: ${pushData.error}`
-            }
-          } catch {
-            successMsg += " Push notification failed to send."
-          }
+        let successMsg = data.message || "Announcement created successfully!"
+        if (sendPushNotification && data.push?.recipients != null) {
+          successMsg = `Announcement created. Push sent to ${data.push.recipients} users.`
+        } else if (sendPushNotification && data.push && !data.push.success) {
+          successMsg += ` Push failed: ${data.push.error || "unknown"}`
         }
         
         setMessage(successMsg)

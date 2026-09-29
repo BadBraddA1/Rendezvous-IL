@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { checkCheckInAuth } from "@/lib/admin-auth"
+import { resolveDirectoryFamilyIdForRegistration } from "@/lib/checkin-directory-family"
 import { sql } from "@/lib/db"
 import { normalizeRegistrationRow } from "@/lib/normalize-string-array"
 
@@ -33,10 +34,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ code
       ORDER BY id ASC
     `
 
+    const directoryFamilyId = await resolveDirectoryFamilyIdForRegistration({
+      registrationId: Number(registration.id),
+      email: registration.email != null ? String(registration.email) : null,
+    })
+
     return NextResponse.json({
       registration: normalizeRegistrationRow(registration),
       family_members: familyMembers,
       tshirt_orders: tshirtOrders,
+      directory_family_id: directoryFamilyId,
     })
   } catch (error) {
     console.error("[v0] Failed to lookup by QR code:", error)

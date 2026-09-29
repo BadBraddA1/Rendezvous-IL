@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast"
 import {
   ArrowDown,
   ArrowUp,
+  Bell,
   CalendarDays,
   CloudSun,
   Download,
@@ -356,6 +357,55 @@ export function ScheduleManager({ canManage, eventYear }: Props) {
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Could not delete.",
+        variant: "destructive",
+      })
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  /** Custom organizer push tied to this schedule row. */
+  const pingEvent = async (
+    event: ScheduleEvent,
+    mode: "now" | "at_start" | "minutes_before",
+    minutesBefore?: number,
+  ) => {
+    const label =
+      mode === "now"
+        ? "Send a push now for this event?"
+        : mode === "at_start"
+          ? "Schedule a push at this event’s start time (Central)?"
+          : `Schedule a push ${minutesBefore ?? 10} minutes before start?`
+    if (!window.confirm(`${label}\n\n${event.time} — ${event.title}`)) return
+
+    setBusyId(`ping-${event.id}`)
+    try {
+      const res = await fetch(`/api/admin/schedule/${event.id}/ping`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mode,
+          minutesBefore: mode === "minutes_before" ? minutesBefore ?? 10 : undefined,
+          showOnLiveUpdates: true,
+          showOnSchedule: false,
+        }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || "Ping failed")
+      const recipients = data.push?.recipients
+      toast({
+        title: mode === "now" ? "Event ping sent" : "Event ping scheduled",
+        description:
+          mode === "now"
+            ? recipients != null
+              ? `Push reached ${recipients} devices`
+              : "Push dispatched"
+            : `Will publish ${mode === "at_start" ? "at start" : `${minutesBefore ?? 10} min before`} · see Announcements`,
+      })
+    } catch (error) {
+      toast({
+        title: "Ping failed",
+        description: error instanceof Error ? error.message : "Could not send ping.",
         variant: "destructive",
       })
     } finally {
@@ -811,6 +861,21 @@ export function ScheduleManager({ canManage, eventYear }: Props) {
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8"
+                              aria-label={`Ping now: ${event.title}`}
+                              title="Push now"
+                              disabled={busyId === `ping-${event.id}`}
+                              onClick={() => void pingEvent(event, "now")}
+                            >
+                              {busyId === `ping-${event.id}` ? (
+                                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                              ) : (
+                                <Bell className="h-4 w-4" aria-hidden="true" />
+                              )}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
                               aria-label="Move up"
                               disabled={index === 0 || busyId === `row-${event.id}`}
                               onClick={() => void move(event, -1)}
@@ -854,7 +919,39 @@ export function ScheduleManager({ canManage, eventYear }: Props) {
                         )}
                       </li>
                       {canManage && editingId === event.id && (
-                        <li className="p-3">{editForm}</li>
+                        <li className="space-y-3 p-3">
+                          <div className="flex flex-wrap gap-2">
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="secondary"
+                              disabled={busyId === `ping-${event.id}`}
+                              onClick={() => void pingEvent(event, "now")}
+                            >
+                              <Bell className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
+                              Ping now
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              disabled={busyId === `ping-${event.id}`}
+                              onClick={() => void pingEvent(event, "at_start")}
+                            >
+                              Ping at start
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              disabled={busyId === `ping-${event.id}`}
+                              onClick={() => void pingEvent(event, "minutes_before", 10)}
+                            >
+                              Ping 10 min before
+                            </Button>
+                          </div>
+                          {editForm}
+                        </li>
                       )}
                       </Fragment>
                     ))}
@@ -943,6 +1040,21 @@ export function ScheduleManager({ canManage, eventYear }: Props) {
                                         variant="ghost"
                                         size="icon"
                                         className="h-8 w-8"
+                                        aria-label={`Ping now: ${event.title}`}
+                                        title="Push now"
+                                        disabled={busyId === `ping-${event.id}`}
+                                        onClick={() => void pingEvent(event, "now")}
+                                      >
+                                        {busyId === `ping-${event.id}` ? (
+                                          <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                                        ) : (
+                                          <Bell className="h-4 w-4" aria-hidden="true" />
+                                        )}
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8"
                                         aria-label="Move up"
                                         disabled={index === 0 || busyId === `row-${event.id}`}
                                         onClick={() => void move(event, -1)}
@@ -992,7 +1104,39 @@ export function ScheduleManager({ canManage, eventYear }: Props) {
                                   )}
                                 </li>
                                 {canManage && editingId === event.id && (
-                                  <li className="p-3">{editForm}</li>
+                                  <li className="space-y-3 p-3">
+                                    <div className="flex flex-wrap gap-2">
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="secondary"
+                                        disabled={busyId === `ping-${event.id}`}
+                                        onClick={() => void pingEvent(event, "now")}
+                                      >
+                                        <Bell className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
+                                        Ping now
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        disabled={busyId === `ping-${event.id}`}
+                                        onClick={() => void pingEvent(event, "at_start")}
+                                      >
+                                        Ping at start
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        disabled={busyId === `ping-${event.id}`}
+                                        onClick={() => void pingEvent(event, "minutes_before", 10)}
+                                      >
+                                        Ping 10 min before
+                                      </Button>
+                                    </div>
+                                    {editForm}
+                                  </li>
                                 )}
                               </Fragment>
                             ))}

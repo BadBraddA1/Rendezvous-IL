@@ -53,6 +53,7 @@ type LookupResult = {
   registration: Registration
   family_members: FamilyMember[]
   tshirt_orders: TshirtOrder[]
+  directory_family_id?: number | null
 }
 
 function playBoop(kind: "good" | "bad") {
@@ -118,6 +119,8 @@ export function CheckinStation() {
   const [scannerActive, setScannerActive] = useState(true)
   const [roomKeys, setRoomKeys] = useState("")
   const [tshirtsDist, setTshirtsDist] = useState(false)
+  const [uploadingPhoto, setUploadingPhoto] = useState(false)
+  const photoInputRef = useRef<HTMLInputElement>(null)
   const [undoConfirmOpen, setUndoConfirmOpen] = useState(false)
   const [pendingSignatures, setPendingSignatures] = useState<string[]>([])
   const [scanError, setScanError] = useState<string | null>(null)
@@ -145,6 +148,45 @@ export function CheckinStation() {
     setCelebrationFamily(null)
     reset()
   }, [reset])
+
+  const uploadDirectoryPhoto = useCallback(
+    async (file: File) => {
+      const familyId = result?.directory_family_id
+      if (!familyId) {
+        toast({
+          title: "No directory listing",
+          description: "This registration is not linked to a family directory profile yet.",
+          variant: "destructive",
+        })
+        return
+      }
+      setUploadingPhoto(true)
+      try {
+        const form = new FormData()
+        form.append("photo", file)
+        const res = await fetch(`/api/admin/directory/families/${familyId}/photo`, {
+          method: "POST",
+          body: form,
+        })
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok) throw new Error(data.error || "Upload failed")
+        toast({
+          title: "Directory photo saved",
+          description: `${result.registration.family_last_name} family photo updated.`,
+        })
+      } catch (error) {
+        toast({
+          title: "Photo upload failed",
+          description: error instanceof Error ? error.message : "Could not upload",
+          variant: "destructive",
+        })
+      } finally {
+        setUploadingPhoto(false)
+        if (photoInputRef.current) photoInputRef.current.value = ""
+      }
+    },
+    [result, toast],
+  )
 
   const showCelebration = useCallback(
     (familyLastName: string) => {
@@ -573,6 +615,39 @@ export function CheckinStation() {
                       </Button>
                     ) : null}
                   </div>
+                  {result.directory_family_id ? (
+                    <>
+                      <input
+                        ref={photoInputRef}
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0]
+                          if (file) void uploadDirectoryPhoto(file)
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full gap-2"
+                        disabled={uploadingPhoto || loading}
+                        onClick={() => photoInputRef.current?.click()}
+                      >
+                        {uploadingPhoto ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Camera className="h-4 w-4" />
+                        )}
+                        Directory photo
+                      </Button>
+                    </>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      No family directory profile linked — photo upload unavailable.
+                    </p>
+                  )}
                 </div>
               </div>
           </CardContent>

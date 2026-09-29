@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { checkAdminAuth } from "@/lib/admin-auth"
 import { getAdminPermissions } from "@/lib/clerk-auth"
+import { resolveDirectoryFamilyIdForRegistration } from "@/lib/checkin-directory-family"
 import { sql } from "@/lib/db"
 import { normalizeRegistrationRow } from "@/lib/normalize-string-array"
 
@@ -63,6 +64,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     const scholarshipDonation = Number(registration.scholarship_donation ?? 0)
     const totalCost = lodgingTotal + tshirtTotal + climbingTotal + regFee + scholarshipDonation
 
+    const directoryFamilyId = await resolveDirectoryFamilyIdForRegistration({
+      registrationId: Number(id),
+      email: registration.email != null ? String(registration.email) : null,
+    })
+
     return NextResponse.json({
       registration: normalizeRegistrationRow({
         ...registration,
@@ -73,6 +79,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       tshirt_orders: tshirtOrders,
       health_info: healthInfo,
       volunteers,
+      directory_family_id: directoryFamilyId,
     })
   } catch (error) {
     console.error("[v0] Failed to fetch full registration:", error)

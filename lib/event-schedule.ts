@@ -408,6 +408,14 @@ export async function listScheduleEvents(year: number): Promise<ScheduleEventRow
   return sortRows(rows.map(mapScheduleRow), year)
 }
 
+export async function getScheduleEventById(id: number): Promise<ScheduleEventRow | null> {
+  await ensureScheduleEventsTable()
+  const [row] = await sql`
+    SELECT * FROM schedule_events WHERE id = ${id} LIMIT 1
+  `
+  return row ? mapScheduleRow(row) : null
+}
+
 function normalizeInput(input: ScheduleEventInput): ScheduleEventInput {
   const eventDate =
     input.eventDate && isIsoDate(input.eventDate) ? input.eventDate : null

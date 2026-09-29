@@ -169,7 +169,8 @@ actor APIClient {
         return CheckInLookupResponse(
             registration: payload.registration,
             family_members: payload.family_members,
-            tshirt_orders: payload.tshirt_orders
+            tshirt_orders: payload.tshirt_orders,
+            directory_family_id: payload.directory_family_id
         )
     }
 
@@ -213,6 +214,22 @@ actor APIClient {
     func uploadFamilyDirectoryPhoto(imageData: Data, filename: String, mimeType: String) async throws -> FamilyDirectorySettingsResponse {
         try await uploadMultipart(
             "/api/family/directory",
+            fieldName: "photo",
+            fileData: imageData,
+            filename: filename,
+            mimeType: mimeType
+        )
+    }
+
+    /// Staff check-in desk: upload a photo into a family's directory listing.
+    func uploadAdminDirectoryFamilyPhoto(
+        familyId: Int,
+        imageData: Data,
+        filename: String,
+        mimeType: String
+    ) async throws -> AdminDirectoryPhotoUploadResponse {
+        try await uploadMultipart(
+            "/api/admin/directory/families/\(familyId)/photo",
             fieldName: "photo",
             fileData: imageData,
             filename: filename,
@@ -624,12 +641,14 @@ struct CheckInLookupResponse: Decodable {
     let registration: CheckInRegistration
     let family_members: [CheckInFamilyMember]?
     let tshirt_orders: [CheckInTshirtOrder]?
+    let directory_family_id: Int?
 }
 
 struct CheckInFullResponse: Decodable {
     let registration: CheckInRegistration
     let family_members: [CheckInFamilyMember]?
     let tshirt_orders: [CheckInTshirtOrder]?
+    let directory_family_id: Int?
 }
 
 struct CheckInSubmitBody: Encodable {
@@ -769,6 +788,14 @@ struct FamilyDirectorySettingsEnvelope: Decodable {
 struct FamilyDirectorySettingsResponse: Decodable {
     let success: Bool?
     let settings: FamilyDirectorySettings
+    let faces: [FamilyPhotoFace]?
+    let name_suggestions: [String]?
+    let detect_error: String?
+}
+
+struct AdminDirectoryPhotoUploadResponse: Decodable {
+    let success: Bool?
+    let photo_url: String?
     let faces: [FamilyPhotoFace]?
     let name_suggestions: [String]?
     let detect_error: String?

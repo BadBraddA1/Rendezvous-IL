@@ -1,4 +1,5 @@
 import SwiftUI
+import PhotosUI
 import UIKit
 
 /// Staff check-in station: persistent QR scanner only (no code entry / name search).
@@ -19,6 +20,9 @@ struct CheckInView: View {
     @State private var celebrationDismissTask: Task<Void, Never>?
     /// Obnoxious clear-to-dismiss banner when volume is too low to hear boops.
     @State private var muteAlertKind: CheckInBoopPlayer.Kind?
+    @State private var directoryPickerItem: PhotosPickerItem?
+    @State private var showDirectoryCamera = false
+    @State private var uploadingDirectoryPhoto = false
 
     var body: some View {
         Group {
@@ -236,6 +240,34 @@ struct CheckInView: View {
                 }
             }
 
+            if let familyId = lookup.directory_family_id, familyId > 0, !isDemoPreview {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Directory photo")
+                        .font(.headline)
+                    HStack(spacing: 10) {
+                        PhotosPicker(selection: $directoryPickerItem, matching: .images) {
+                            Label(
+                                uploadingDirectoryPhoto ? "Uploading…" : "Choose photo",
+                                systemImage: "photo.on.rectangle"
+                            )
+                        }
+                        .disabled(uploadingDirectoryPhoto || isLoading)
+
+                        Button {
+                            showDirectoryCamera = true
+                        } label: {
+                            Label("Take photo", systemImage: "camera.fill")
+                        }
+                        .disabled(uploadingDirectoryPhoto || isLoading || !UIImagePickerController.isSourceTypeAvailable(.camera))
+                    }
+                    .font(.subheadline.weight(.semibold))
+                }
+            } else if !isDemoPreview {
+                Text("No family directory profile linked — photo upload unavailable.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
             if registration.checked_in == true {
                 Button("Scan next family") {
                     resetStation()
@@ -248,6 +280,16 @@ struct CheckInView: View {
         }
         .padding()
         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
+        .onChange(of: directoryPickerItem) { _, item in
+            guard let item else { return }
+            Task { await uploadDirectoryPhoto(from: item) }
+        }
+        .sheet(isPresented: $showDirectoryCamera) {
+            CheckInCameraPicker { data in
+                Task { await uploadDirectoryPhotoData(data) }
+            }
+            .ignoresSafeArea()
+        }
     }
 
     private func memberLine(_ member: CheckInFamilyMember) -> String {
@@ -265,6 +307,50 @@ struct CheckInView: View {
         celebrationDismissTask?.cancel()
         celebrationFamily = nil
         muteAlertKind = nil
+        directoryPickerItem = nil
+        uploadingDirectoryPhoto = false
+    }
+
+    private func uploadDirectoryPhoto(from item: PhotosPickerItem) async {
+        do {
+            guard let data = try await item.loadTransferable(type: Data.self) else {
+                errorMessage = "Could not read that photo."
+                return
+            }
+            await uploadDirectoryPhotoData(data)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        directoryPickerItem = nil
+    }
+
+    private func uploadDirectoryPhotoData(_ data: Data) async {
+        guard let familyId = lookup?.directory_family_id, familyId > 0 else {
+            errorMessage = "No family directory profile linked for this registration."
+            return
+        }
+        guard let client = session.apiClient else { return }
+        uploadingDirectoryPhoto = true
+        errorMessage = nil
+        successMessage = nil
+        defer { uploadingDirectoryPhoto = false }
+
+        do {
+            let prepared = DirectoryImageProcessor.prepareForUpload(data)
+            _ = try await RepositoryFetch.withTimeout(seconds: 90) {
+                try await client.uploadAdminDirectoryFamilyPhoto(
+                    familyId: familyId,
+                    imageData: prepared,
+                    filename: "family-photo.jpg",
+                    mimeType: "image/jpeg"
+                )
+            }
+            successMessage = "Directory photo uploaded."
+            boop(.good)
+        } catch {
+            errorMessage = error.localizedDescription
+            boop(.bad)
+        }
     }
 
     /// Play boop; if volume is too low, show the clear-to-dismiss mute banner
@@ -374,7 +460,8 @@ struct CheckInView: View {
                 lookup = CheckInLookupResponse(
                     registration: updated,
                     family_members: lookup?.family_members,
-                    tshirt_orders: lookup?.tshirt_orders
+                    tshirt_orders: lookup?.tshirt_orders,
+                    directory_family_id: lookup?.directory_family_id
                 )
             }
             successMessage = nil
@@ -491,6 +578,46 @@ struct CheckInView: View {
         }
         """
         return try! JSONDecoder().decode(CheckInLookupResponse.self, from: Data(json.utf8))
+    }
+}
+
+/// One-shot camera capture for check-in directory photos.
+private struct CheckInCameraPicker: UIViewControllerRepresentable {
+    var onCapture: (Data) -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    func makeUIViewController(context: Context) -> UIImagePickerController {
+        let picker = UIImagePickerController()
+        picker.sourceType = .camera
+        picker.cameraCaptureMode = .photo
+        picker.delegate = context.coordinator
+        return picker
+    }
+
+    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(parent: self)
+    }
+
+    final class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+        let parent: CheckInCameraPicker
+        init(parent: CheckInCameraPicker) { self.parent = parent }
+
+        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+            parent.dismiss()
+        }
+
+        func imagePickerController(
+            _ picker: UIImagePickerController,
+            didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]
+        ) {
+            defer { parent.dismiss() }
+            guard let image = info[.originalImage] as? UIImage,
+                  let data = image.jpegData(compressionQuality: 0.92)
+            else { return }
+            parent.onCapture(data)
+        }
     }
 }
 

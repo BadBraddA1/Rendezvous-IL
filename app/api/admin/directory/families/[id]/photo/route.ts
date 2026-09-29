@@ -14,10 +14,12 @@ import {
 
 export const dynamic = "force-dynamic"
 
-async function requireEditor() {
-  const admin = await checkAdminAuth()
+/** Admins/editors always; check-in staff may upload from the desk station. */
+async function requirePhotoUploader(request?: Request) {
+  const admin = await checkAdminAuth(request)
   if (!admin) return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) }
-  if (!getAdminPermissions(admin.role).canEdit) {
+  const perms = getAdminPermissions(admin.role)
+  if (!perms.canEdit && !perms.canCheckIn) {
     return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) }
   }
   return { admin }
@@ -29,7 +31,7 @@ function parseFamilyId(id: string) {
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { admin, error } = await requireEditor()
+  const { admin, error } = await requirePhotoUploader(req)
   if (error) return error
 
   const { id } = await params
@@ -81,7 +83,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { admin, error } = await requireEditor()
+  const { admin, error } = await requirePhotoUploader(req)
   if (error) return error
 
   const { id } = await params
