@@ -31,7 +31,9 @@ import androidx.navigation.navArgument
 import com.rendezvousil.app.di.RendezvousViewModelFactory
 import com.rendezvousil.app.navigation.Routes
 import com.rendezvousil.app.auth.AppSession
+import com.rendezvousil.app.ui.admin.AdminAnnouncementsScreen
 import com.rendezvousil.app.ui.admin.AdminDashboardScreen
+import com.rendezvousil.app.ui.admin.AdminEventPingsScreen
 import com.rendezvousil.app.ui.admin.AdminUsersScreen
 import com.rendezvousil.app.ui.admin.AdminUsersViewModel
 import com.rendezvousil.app.ui.about.AboutScreen
@@ -392,12 +394,29 @@ fun RendezvousApp(
                     viewModelFactory = viewModelFactory,
                     onBack = { navController.popBackStack() },
                     onNavigateToUsers = { navController.navigate(Routes.MORE_ADMIN_USERS) },
+                    onNavigateToAnnouncements = { navController.navigate(Routes.MORE_ADMIN_ANNOUNCEMENTS) },
+                    onNavigateToEventPings = { navController.navigate(Routes.MORE_ADMIN_EVENT_PINGS) },
+                    onNavigateToCheckIn = { navController.navigate(Routes.MORE_CHECK_IN) },
                 )
             }
             composable(Routes.MORE_ADMIN_USERS) {
                 val viewModel: AdminUsersViewModel = viewModel(factory = viewModelFactory)
                 AdminUsersScreen(
                     viewModel = viewModel,
+                    onBack = { navController.popBackStack() },
+                )
+            }
+            composable(Routes.MORE_ADMIN_ANNOUNCEMENTS) {
+                AdminAnnouncementsScreen(
+                    appSession = appSession,
+                    viewModelFactory = viewModelFactory,
+                    onBack = { navController.popBackStack() },
+                )
+            }
+            composable(Routes.MORE_ADMIN_EVENT_PINGS) {
+                AdminEventPingsScreen(
+                    appSession = appSession,
+                    viewModelFactory = viewModelFactory,
                     onBack = { navController.popBackStack() },
                 )
             }

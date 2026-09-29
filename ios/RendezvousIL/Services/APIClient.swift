@@ -154,6 +154,56 @@ actor APIClient {
         try await get("/api/admin/mobile/dashboard")
     }
 
+    func getAdminAnnouncements() async throws -> AdminAnnouncementsListResponse {
+        try await get("/api/admin/announcements")
+    }
+
+    func createAdminAnnouncement(_ body: AdminCreateAnnouncementBody) async throws -> AdminCreateAnnouncementResponse {
+        try await post("/api/admin/announcements", body: body)
+    }
+
+    func setAdminAnnouncementActive(id: Int, isActive: Bool) async throws -> SimpleSuccessResponse {
+        try await patch(
+            "/api/admin/announcements/\(id)",
+            body: AdminAnnouncementActiveBody(is_active: isActive)
+        )
+    }
+
+    func deleteAdminAnnouncement(id: Int) async throws -> SimpleSuccessResponse {
+        try await delete("/api/admin/announcements/\(id)")
+    }
+
+    func sendAdminPush(title: String, message: String) async throws -> AdminPushResponse {
+        try await post(
+            "/api/admin/push",
+            body: AdminPushBody(title: title, message: message, url: nil)
+        )
+    }
+
+    func getAdminScheduleEvents(year: Int = AppConfig.eventYear) async throws -> AdminScheduleEventsResponse {
+        try await get("/api/admin/schedule?year=\(year)")
+    }
+
+    func pingScheduleEvent(
+        id: Int,
+        mode: String,
+        minutesBefore: Int? = nil,
+        title: String? = nil,
+        message: String? = nil
+    ) async throws -> AdminEventPingResponse {
+        try await post(
+            "/api/admin/schedule/\(id)/ping",
+            body: AdminEventPingBody(
+                mode: mode,
+                minutesBefore: minutesBefore,
+                title: title,
+                message: message,
+                showOnLiveUpdates: true,
+                showOnSchedule: false
+            )
+        )
+    }
+
     func lookupCheckIn(code: String) async throws -> CheckInLookupResponse {
         let encoded = code.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? code
         return try await get("/api/admin/registrations/qr/\(encoded)")
@@ -597,6 +647,87 @@ struct AdminDashboardResponse: Decodable {
     let summary: AdminDashboardSummaryPayload
     let registrationProgress: Double
     let updatedAt: String
+}
+
+struct AdminAnnouncementItem: Decodable, Identifiable, Sendable {
+    let id: Int
+    let title: String
+    let message: String
+    let priority: String
+    let is_active: Bool
+    let show_on_live_updates: Bool?
+    let show_on_schedule: Bool?
+    let send_push: Bool?
+    let publish_at: String?
+    let push_sent_at: String?
+    let schedule_event_id: Int?
+    let created_at: String?
+}
+
+struct AdminAnnouncementsListResponse: Decodable {
+    let announcements: [AdminAnnouncementItem]?
+}
+
+struct AdminCreateAnnouncementBody: Encodable {
+    let title: String
+    let message: String
+    let priority: String
+    let showOnLiveUpdates: Bool
+    let showOnSchedule: Bool
+    let sendPush: Bool
+    let publishAt: String?
+}
+
+struct AdminAnnouncementActiveBody: Encodable {
+    let is_active: Bool
+}
+
+struct AdminCreateAnnouncementResponse: Decodable {
+    let success: Bool?
+    let announcement: AdminAnnouncementItem?
+    let message: String?
+    let push: AdminPushResponse?
+}
+
+struct AdminPushBody: Encodable {
+    let title: String
+    let message: String
+    let url: String?
+}
+
+struct AdminPushResponse: Decodable {
+    let success: Bool?
+    let recipients: Int?
+    let channel: String?
+    let error: String?
+}
+
+struct AdminScheduleEventRow: Decodable, Identifiable, Sendable {
+    let id: Int
+    let day: String
+    let event_date: String?
+    let time: String
+    let title: String
+    let location: String?
+}
+
+struct AdminScheduleEventsResponse: Decodable {
+    let events: [AdminScheduleEventRow]?
+}
+
+struct AdminEventPingBody: Encodable {
+    let mode: String
+    let minutesBefore: Int?
+    let title: String?
+    let message: String?
+    let showOnLiveUpdates: Bool
+    let showOnSchedule: Bool
+}
+
+struct AdminEventPingResponse: Decodable {
+    let success: Bool?
+    let announcement: AdminAnnouncementItem?
+    let push: AdminPushResponse?
 }
 
 struct CheckInRegistrationSummary: Decodable, Identifiable {

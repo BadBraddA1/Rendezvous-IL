@@ -100,6 +100,9 @@ fun AdminDashboardScreen(
     viewModelFactory: RendezvousViewModelFactory,
     onBack: () -> Unit,
     onNavigateToUsers: (() -> Unit)? = null,
+    onNavigateToAnnouncements: (() -> Unit)? = null,
+    onNavigateToEventPings: (() -> Unit)? = null,
+    onNavigateToCheckIn: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val viewModel: AdminDashboardViewModel = viewModel(factory = viewModelFactory)
@@ -165,6 +168,9 @@ fun AdminDashboardScreen(
                         canCheckIn = appSession.canCheckIn,
                         canManageUsers = appSession.canManageUsers,
                         onNavigateToUsers = onNavigateToUsers,
+                        onNavigateToAnnouncements = onNavigateToAnnouncements,
+                        onNavigateToEventPings = onNavigateToEventPings,
+                        onNavigateToCheckIn = onNavigateToCheckIn,
                         modifier = Modifier
                             .fillMaxSize()
                             .verticalScroll(rememberScrollState())
@@ -336,6 +342,9 @@ private fun DashboardContent(
     canCheckIn: Boolean,
     canManageUsers: Boolean,
     onNavigateToUsers: (() -> Unit)?,
+    onNavigateToAnnouncements: (() -> Unit)?,
+    onNavigateToEventPings: (() -> Unit)?,
+    onNavigateToCheckIn: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -358,9 +367,18 @@ private fun DashboardContent(
         HeroSection(payload)
         RegistrationProgressCard(payload)
         StatsGrid(payload.summary)
-        ActionItemsCard(payload.summary, openWeb)
+        ActionItemsCard(payload.summary, openWeb, onNavigateToAnnouncements)
         LodgingCard(payload.summary.lodgingBreakdown)
-        QuickLinksCard(canCheckIn, canManageUsers, canEdit = appSession.canEdit, onNavigateToUsers, openWeb)
+        QuickLinksCard(
+            canCheckIn = canCheckIn,
+            canManageUsers = canManageUsers,
+            canEdit = appSession.canEdit,
+            onNavigateToUsers = onNavigateToUsers,
+            onNavigateToAnnouncements = onNavigateToAnnouncements,
+            onNavigateToEventPings = onNavigateToEventPings,
+            onNavigateToCheckIn = onNavigateToCheckIn,
+            openWeb = openWeb,
+        )
         FooterCard(payload)
     }
 }
@@ -550,6 +568,7 @@ private fun StatTileCard(tile: StatTile) {
 private fun ActionItemsCard(
     summary: AdminDashboardSummary,
     openWeb: (String) -> Unit,
+    onNavigateToAnnouncements: (() -> Unit)?,
 ) {
     AdminCard {
         Text(
@@ -570,7 +589,9 @@ private fun ActionItemsCard(
             title = "Active announcements",
             value = summary.activeAnnouncements,
             icon = Icons.Default.Campaign,
-            onClick = { openWeb("/admin/announcements") },
+            onClick = {
+                onNavigateToAnnouncements?.invoke() ?: openWeb("/admin/announcements")
+            },
         )
         ActionRow(
             title = "Feedback responses",
@@ -695,23 +716,26 @@ private fun QuickLinksCard(
     canManageUsers: Boolean,
     canEdit: Boolean,
     onNavigateToUsers: (() -> Unit)?,
+    onNavigateToAnnouncements: (() -> Unit)?,
+    onNavigateToEventPings: (() -> Unit)?,
+    onNavigateToCheckIn: (() -> Unit)?,
     openWeb: (String) -> Unit,
 ) {
     AdminCard {
         Text(
-            text = "Open on web",
+            text = "In the app",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
             color = BrandColors.Lake,
         )
         Spacer(modifier = Modifier.height(8.dp))
-        WebLinkRow("Full admin dashboard", Icons.Default.OpenInBrowser) {
-            openWeb("/admin")
-        }
-        WebLinkRow("Registrations", Icons.Default.EditNote) {
-            openWeb("/admin/registrations")
-        }
         if (canEdit) {
+            WebLinkRow("Announcements & scheduled pushes", Icons.Default.Campaign) {
+                onNavigateToAnnouncements?.invoke() ?: openWeb("/admin/announcements")
+            }
+            WebLinkRow("Event pings", Icons.Default.Flag) {
+                onNavigateToEventPings?.invoke() ?: openWeb("/admin/schedule")
+            }
             WebLinkRow("Song packs", Icons.Default.MusicNote) {
                 openWeb("/admin/songs")
             }
@@ -722,8 +746,21 @@ private fun QuickLinksCard(
         }
         if (canCheckIn) {
             WebLinkRow("Check-in station", Icons.Default.Key) {
-                openWeb("/admin/checkin")
+                onNavigateToCheckIn?.invoke() ?: openWeb("/admin/checkin")
             }
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "Open on web",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        WebLinkRow("Full admin dashboard", Icons.Default.OpenInBrowser) {
+            openWeb("/admin")
+        }
+        WebLinkRow("Registrations", Icons.Default.EditNote) {
+            openWeb("/admin/registrations")
         }
     }
 }

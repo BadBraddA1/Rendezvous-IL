@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1479E30BA9905A70B0934701 /* AdminAnnouncementsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C210D41AA55EC8AE557ECD0A /* AdminAnnouncementsView.swift */; };
+		FB27AED4C1EB13FC8E0385B2 /* AdminEventPingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B99CECB3F14B4ED38E8F4BE5 /* AdminEventPingsView.swift */; };
 		001F6BE14BDAF1A0A6F00A2C /* MoreView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37B9B084751C0C1099D59FE7 /* MoreView.swift */; };
 		0096B6D5331F9F0E8FF3CB84 /* ChatDemoMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1172BDB29FF145E10C031C28 /* ChatDemoMode.swift */; };
 		0355F432B0E93344589A9241 /* VenueMapModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = F96773E3A3A26024702E5D84 /* VenueMapModels.swift */; };
@@ -140,6 +142,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		C210D41AA55EC8AE557ECD0A /* AdminAnnouncementsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminAnnouncementsView.swift; sourceTree = "<group>"; };
+		B99CECB3F14B4ED38E8F4BE5 /* AdminEventPingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminEventPingsView.swift; sourceTree = "<group>"; };
 		008D20E8BE6CD25A13CBA988 /* CampusLocationMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CampusLocationMonitor.swift; sourceTree = "<group>"; };
 		01276C297A8D6CF5D30B918D /* chat.caf */ = {isa = PBXFileReference; path = chat.caf; sourceTree = "<group>"; };
 		0224F790B72595846190F6C8 /* ChatPhotoViewer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatPhotoViewer.swift; sourceTree = "<group>"; };
@@ -262,6 +266,8 @@
 				17E9348A90094B82009B4CBD /* AboutView.swift */,
 				470F82732BB7CA2F2667959E /* AccountView.swift */,
 				C481A10CBFA7092E0BDAC5AA /* AdminDashboardView.swift */,
+				C210D41AA55EC8AE557ECD0A /* AdminAnnouncementsView.swift */,
+				B99CECB3F14B4ED38E8F4BE5 /* AdminEventPingsView.swift */,
 				486A5C5C5D546121467012C4 /* AdminSongPacksView.swift */,
 				D039A64635C0EF6FF3B6D3E3 /* AdminUsersView.swift */,
 				8BDD57A0882FD6627F0B7396 /* AppFeedbackView.swift */,
@@ -617,6 +623,8 @@
 				FA4F95660BD093B3CD651F30 /* AccountView.swift in Sources */,
 				56D096FAE066C36B12EDC251 /* AdminDashboardView.swift in Sources */,
 				49EB42FCD9C1CF92BBF86E6B /* AdminSongPacksView.swift in Sources */,
+				1479E30BA9905A70B0934701 /* AdminAnnouncementsView.swift in Sources */,
+				FB27AED4C1EB13FC8E0385B2 /* AdminEventPingsView.swift in Sources */,
 				7DA728921F342EA02A46E62B /* AdminUserModels.swift in Sources */,
 				EB813C8733397959B05BC1E9 /* AdminUsersView.swift in Sources */,
 				A500969739655BF5628136F0 /* AppConfig.swift in Sources */,
@@ -794,7 +802,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = RendezvousILNotificationService/RendezvousILNotificationService.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 233;
+				CURRENT_PROJECT_VERSION = 234;
 				DEVELOPMENT_TEAM = F5HPRRCC5H;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = RendezvousILNotificationService/Info.plist;
@@ -814,7 +822,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = RendezvousILWidgets/RendezvousILWidgets.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 233;
+				CURRENT_PROJECT_VERSION = 234;
 				DEVELOPMENT_TEAM = F5HPRRCC5H;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = RendezvousILWidgets/Info.plist;
@@ -843,7 +851,7 @@
 				CODE_SIGN_ENTITLEMENTS = RendezvousIL/RendezvousIL.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 233;
+				CURRENT_PROJECT_VERSION = 234;
 				DEVELOPMENT_TEAM = F5HPRRCC5H;
 				INFOPLIST_FILE = RendezvousIL/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -920,7 +928,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = RendezvousILWidgets/RendezvousILWidgets.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 233;
+				CURRENT_PROJECT_VERSION = 234;
 				DEVELOPMENT_TEAM = F5HPRRCC5H;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = RendezvousILWidgets/Info.plist;
@@ -945,7 +953,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = RendezvousILNotificationService/RendezvousILNotificationService.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 233;
+				CURRENT_PROJECT_VERSION = 234;
 				DEVELOPMENT_TEAM = F5HPRRCC5H;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = RendezvousILNotificationService/Info.plist;
@@ -969,7 +977,7 @@
 				CODE_SIGN_ENTITLEMENTS = RendezvousIL/RendezvousIL.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 233;
+				CURRENT_PROJECT_VERSION = 234;
 				DEVELOPMENT_TEAM = F5HPRRCC5H;
 				INFOPLIST_FILE = RendezvousIL/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (

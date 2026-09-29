@@ -62,6 +62,14 @@ struct MoreView: View {
                         NavigationLink { AdminDashboardView() } label: {
                             Label("Admin dashboard", systemImage: "chart.bar.doc.horizontal.fill")
                         }
+                        if session.canEdit {
+                            NavigationLink { AdminAnnouncementsView() } label: {
+                                Label("Announcements", systemImage: "megaphone.fill")
+                            }
+                            NavigationLink { AdminEventPingsView() } label: {
+                                Label("Event pings", systemImage: "bell.badge.fill")
+                            }
+                        }
                         if session.canManageUsers {
                             NavigationLink { AdminUsersView() } label: {
                                 Label("User management", systemImage: "person.2.badge.gearshape")

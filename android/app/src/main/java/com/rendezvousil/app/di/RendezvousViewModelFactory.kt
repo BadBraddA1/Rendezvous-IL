@@ -5,6 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.rendezvousil.app.auth.AppSession
 import com.rendezvousil.app.notifications.ReminderService
+import com.rendezvousil.app.ui.admin.AdminAnnouncementsViewModel
+import com.rendezvousil.app.ui.admin.AdminEventPingsViewModel
 import com.rendezvousil.app.ui.admin.AdminUsersViewModel
 import com.rendezvousil.app.ui.admin.AdminDashboardViewModel
 import com.rendezvousil.app.ui.calculator.CalculatorViewModel
@@ -60,6 +62,10 @@ class RendezvousViewModelFactory(
                 CheckInViewModel(appSession) as T
             modelClass.isAssignableFrom(AdminUsersViewModel::class.java) ->
                 AdminUsersViewModel(appSession) as T
+            modelClass.isAssignableFrom(AdminAnnouncementsViewModel::class.java) ->
+                AdminAnnouncementsViewModel(appSession) as T
+            modelClass.isAssignableFrom(AdminEventPingsViewModel::class.java) ->
+                AdminEventPingsViewModel(appSession) as T
             modelClass.isAssignableFrom(SongPacksViewModel::class.java) ->
                 SongPacksViewModel(appSession, application) as T
             else -> throw IllegalArgumentException("Unknown ViewModel: ${modelClass.name}")

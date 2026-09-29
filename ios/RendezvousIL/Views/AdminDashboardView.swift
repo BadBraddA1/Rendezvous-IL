@@ -216,12 +216,24 @@ struct AdminDashboardView: View {
                 link: "/admin/pending-changes",
                 highlight: summary.pendingChanges > 0
             )
-            actionRow(
-                title: "Active announcements",
-                value: summary.activeAnnouncements,
-                icon: "megaphone.fill",
-                link: "/admin/announcements"
-            )
+            if session.canEdit {
+                NavigationLink {
+                    AdminAnnouncementsView()
+                } label: {
+                    actionRowLabel(
+                        title: "Active announcements",
+                        value: summary.activeAnnouncements,
+                        icon: "megaphone.fill"
+                    )
+                }
+            } else {
+                actionRow(
+                    title: "Active announcements",
+                    value: summary.activeAnnouncements,
+                    icon: "megaphone.fill",
+                    link: "/admin/announcements"
+                )
+            }
             actionRow(
                 title: "Feedback responses",
                 value: summary.feedbackCount,
@@ -249,21 +261,21 @@ struct AdminDashboardView: View {
 
     private var quickLinks: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Open on web")
+            Text("In the app")
                 .font(.headline)
                 .foregroundStyle(BrandColors.lake)
 
-            Button {
-                Task { await WebHandoff.open(path: "/admin", session: session) }
-            } label: {
-                linkRow(title: "Full admin dashboard", icon: "chart.bar.doc.horizontal")
-            }
-            Button {
-                Task { await WebHandoff.open(path: "/admin/registrations", session: session) }
-            } label: {
-                linkRow(title: "Registrations", icon: "list.bullet.rectangle")
-            }
             if session.canEdit {
+                NavigationLink {
+                    AdminAnnouncementsView()
+                } label: {
+                    linkRow(title: "Announcements & scheduled pushes", icon: "megaphone.fill")
+                }
+                NavigationLink {
+                    AdminEventPingsView()
+                } label: {
+                    linkRow(title: "Event pings", icon: "bell.badge.fill")
+                }
                 NavigationLink {
                     AdminSongPacksView()
                 } label: {
@@ -281,13 +293,24 @@ struct AdminDashboardView: View {
                 NavigationLink {
                     CheckInView()
                 } label: {
-                    linkRow(title: "Check-in station (app)", icon: "person.badge.key")
+                    linkRow(title: "Check-in station", icon: "person.badge.key")
                 }
-                Button {
-                    Task { await WebHandoff.open(path: "/admin/checkin", session: session) }
-                } label: {
-                    linkRow(title: "Check-in on web", icon: "safari")
-                }
+            }
+
+            Text("Open on web")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .padding(.top, 4)
+
+            Button {
+                Task { await WebHandoff.open(path: "/admin", session: session) }
+            } label: {
+                linkRow(title: "Full admin dashboard", icon: "chart.bar.doc.horizontal")
+            }
+            Button {
+                Task { await WebHandoff.open(path: "/admin/registrations", session: session) }
+            } label: {
+                linkRow(title: "Registrations", icon: "list.bullet.rectangle")
             }
         }
         .adminCardStyle()
@@ -383,30 +406,40 @@ struct AdminDashboardView: View {
         Button {
             Task { await WebHandoff.open(path: link, session: session) }
         } label: {
-            HStack(spacing: 12) {
-                Image(systemName: icon)
-                    .foregroundStyle(highlight ? BrandColors.coral : BrandColors.lake)
-                    .frame(width: 24)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
-                        .font(.subheadline.weight(.medium))
-                        .foregroundStyle(.primary)
-                    if let detail {
-                        Text(detail)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                Spacer()
-                Text("\(value)")
-                    .font(.headline)
-                    .foregroundStyle(highlight ? BrandColors.coral : .primary)
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.tertiary)
-            }
+            actionRowLabel(title: title, value: value, icon: icon, highlight: highlight, detail: detail)
         }
         .buttonStyle(.plain)
+    }
+
+    private func actionRowLabel(
+        title: String,
+        value: Int,
+        icon: String,
+        highlight: Bool = false,
+        detail: String? = nil
+    ) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .foregroundStyle(highlight ? BrandColors.coral : BrandColors.lake)
+                .frame(width: 24)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(.primary)
+                if let detail {
+                    Text(detail)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            Spacer()
+            Text("\(value)")
+                .font(.headline)
+                .foregroundStyle(highlight ? BrandColors.coral : .primary)
+            Image(systemName: "chevron.right")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.tertiary)
+        }
     }
 
     private func lodgingRow(label: String, count: Int, icon: String) -> some View {

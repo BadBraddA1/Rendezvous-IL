@@ -25,6 +25,8 @@ object Routes {
     const val MORE_ADMIN_DASHBOARD = "more/admin_dashboard"
     const val MORE_CHECKIN = "more/checkin"
     const val MORE_ADMIN_USERS = "more/admin_users"
+    const val MORE_ADMIN_ANNOUNCEMENTS = "more/admin_announcements"
+    const val MORE_ADMIN_EVENT_PINGS = "more/admin_event_pings"
     /** Alias for [MORE_CHECKIN] (MoreScreen navigation). */
     const val MORE_CHECK_IN = MORE_CHECKIN
 

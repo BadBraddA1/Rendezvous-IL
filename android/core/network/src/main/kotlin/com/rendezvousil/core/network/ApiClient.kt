@@ -10,6 +10,14 @@ import com.rendezvousil.core.network.dto.AdminUserCreateBody
 import com.rendezvousil.core.network.dto.AdminUserMutationResponse
 import com.rendezvousil.core.network.dto.AdminUserRolePatchBody
 import com.rendezvousil.core.network.dto.AdminUsersListResponse
+import com.rendezvousil.core.network.dto.AdminAnnouncementActiveBody
+import com.rendezvousil.core.network.dto.AdminAnnouncementsListResponse
+import com.rendezvousil.core.network.dto.AdminCreateAnnouncementBody
+import com.rendezvousil.core.network.dto.AdminCreateAnnouncementResponse
+import com.rendezvousil.core.network.dto.AdminDirectoryPhotoUploadResponse
+import com.rendezvousil.core.network.dto.AdminEventPingBody
+import com.rendezvousil.core.network.dto.AdminEventPingResponse
+import com.rendezvousil.core.network.dto.AdminScheduleEventsResponse
 import com.rendezvousil.core.network.dto.SimpleSuccessResponse
 import com.rendezvousil.core.network.dto.AnnouncementsResponse
 import com.rendezvousil.core.network.dto.ChatChannelsResponse
@@ -438,8 +446,52 @@ class ApiClient private constructor(
             registration = payload.registration,
             family_members = payload.family_members,
             tshirt_orders = payload.tshirt_orders,
+            directory_family_id = payload.directory_family_id,
         )
     }
+
+    suspend fun uploadAdminDirectoryFamilyPhoto(
+        familyId: Int,
+        bytes: ByteArray,
+        filename: String,
+        mimeType: String,
+    ): AdminDirectoryPhotoUploadResponse {
+        val multipartBody = MultipartBody.Builder()
+            .setType(MultipartBody.FORM)
+            .addFormDataPart(
+                "photo",
+                filename,
+                bytes.toRequestBody(mimeType.toMediaType()),
+            )
+            .build()
+
+        val request = Request.Builder()
+            .url(urlFor("api/admin/directory/families/$familyId/photo"))
+            .post(multipartBody)
+            .build()
+        return executeJsonRequest(request)
+    }
+
+    suspend fun getAdminAnnouncements(): AdminAnnouncementsListResponse =
+        getJson("api/admin/announcements")
+
+    suspend fun createAdminAnnouncement(body: AdminCreateAnnouncementBody): AdminCreateAnnouncementResponse =
+        postJson("api/admin/announcements", body)
+
+    suspend fun setAdminAnnouncementActive(id: Int, isActive: Boolean): SimpleSuccessResponse =
+        patchJson("api/admin/announcements/$id", AdminAnnouncementActiveBody(is_active = isActive))
+
+    suspend fun deleteAdminAnnouncement(id: Int): SimpleSuccessResponse =
+        deleteJson("api/admin/announcements/$id")
+
+    suspend fun getAdminScheduleEvents(year: Int = AppConfig.EVENT_YEAR): AdminScheduleEventsResponse =
+        getJson(
+            path = "api/admin/schedule",
+            queryParameters = mapOf("year" to year.toString()),
+        )
+
+    suspend fun pingScheduleEvent(id: Int, body: AdminEventPingBody): AdminEventPingResponse =
+        postJson("api/admin/schedule/$id/ping", body)
 
     suspend fun submitCheckIn(
         id: Int,

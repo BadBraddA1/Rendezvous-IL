@@ -19,6 +19,7 @@ data class CheckInUiState(
     val roomKeys: String = "",
     val tshirtsDistributed: Boolean = false,
     val isLoading: Boolean = false,
+    val uploadingPhoto: Boolean = false,
     val errorMessage: String? = null,
     val successMessage: String? = null,
     /** Full-screen celebration after successful check-in. */
@@ -85,6 +86,41 @@ class CheckInViewModel(
 
     fun dismissMuteAlert() {
         _uiState.update { it.copy(muteAlertIsGood = null) }
+    }
+
+    fun uploadDirectoryPhoto(bytes: ByteArray) {
+        val client = appSession.authenticatedApiClient ?: return
+        val familyId = _uiState.value.lookup?.directory_family_id ?: run {
+            _uiState.update {
+                it.copy(errorMessage = "No family directory profile linked for this registration.")
+            }
+            return
+        }
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(uploadingPhoto = true, errorMessage = null, successMessage = null)
+            }
+            try {
+                client.uploadAdminDirectoryFamilyPhoto(
+                    familyId = familyId,
+                    bytes = bytes,
+                    filename = "family-photo.jpg",
+                    mimeType = "image/jpeg",
+                )
+                _uiState.update {
+                    it.copy(uploadingPhoto = false, successMessage = "Directory photo uploaded.")
+                }
+                _boops.emit(CheckInBoopEvent.Good)
+            } catch (error: Exception) {
+                _uiState.update {
+                    it.copy(
+                        uploadingPhoto = false,
+                        errorMessage = error.message ?: "Photo upload failed",
+                    )
+                }
+                _boops.emit(CheckInBoopEvent.Bad)
+            }
+        }
     }
 
     fun showMuteAlert(isGood: Boolean) {
