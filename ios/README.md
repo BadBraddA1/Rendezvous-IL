@@ -13,7 +13,7 @@ Native SwiftUI **attendee community hub** for [rendezvousil.com](https://rendezv
 | **Map** | Campus map + **attendee map** (directory pins). Uses When-In-Use location for campus switch. |
 | **Chat** | Year cohort channels (Ably realtime when available; messages still load if Ably fails), retry + pull-to-refresh. **Disk cache** paints list/thread immediately; network + Ably refresh in the background. Prefetch keeps the **latest 20 channels** (20 messages each) warm; chat pushes also write that channel onto disk. Lazy-mounted until opened. |
 | **Schedule** (center tab) | Always mounted (center). Day grid from **disk/bundled cache first**; meals / weather / worship show `***` placeholders until Wi‑Fi catches up. |
-| **Directory** | Family cards (tap for full details); disk cache then background refresh; search, year picker; **Your photo** toolbar. Lazy-mounted until opened. |
+| **Directory** | Family cards (tap for full details); disk cache then background refresh; search, year picker; **Your photo** toolbar. Cards/detail show **home congregation**. Detail photo overlays **name chips** (tap photo to toggle). Lazy-mounted until opened. |
 | **Calculator** | Package presets (full / 3-9 / 2-6 / 1-3) via `POST /api/calculator/estimate` |
 | **App feedback** | More → App feedback — product bugs/ideas (not EEF) |
 | **Songs** | More → Songs — published Campfire / Racket Ball packs; opportunistic download to Documents by `content_hash`; offline PDFKit / Quick Look viewer with next/previous |

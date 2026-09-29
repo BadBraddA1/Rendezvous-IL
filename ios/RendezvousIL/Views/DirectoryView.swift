@@ -20,6 +20,7 @@ struct DirectoryView: View {
         return base.filter { family in
             let haystack = [
                 family.family_last_name,
+                family.home_congregation,
                 family.city_state,
                 family.city,
                 family.state,
@@ -348,6 +349,14 @@ private struct DirectoryFamilyCard: View {
                     .lineLimit(2)
             }
 
+            if let church = family.home_congregation?.trimmingCharacters(in: .whitespacesAndNewlines),
+               !church.isEmpty {
+                Label(church, systemImage: "building.columns")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
+
             Text("\(family.member_count) attendee\(family.member_count == 1 ? "" : "s")")
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -368,6 +377,7 @@ private struct DirectoryFamilyCard: View {
 
 struct DirectoryFamilyDetailView: View {
     let family: DirectoryFamily
+    @State private var showNameChips = true
 
     private var directoryPhotoPlaceholder: some View {
         Color(.secondarySystemGroupedBackground)
@@ -378,16 +388,29 @@ struct DirectoryFamilyDetailView: View {
             }
     }
 
+    private var chipNames: [String] {
+        if !family.structuredMembers.isEmpty {
+            return family.structuredMembers.map(\.name).filter { !$0.isEmpty }
+        }
+        return family.member_names.filter { !$0.isEmpty }
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                photo
+                photoWithNameChips
 
                 VStack(alignment: .leading, spacing: 6) {
                     Text("\(family.family_last_name) Family")
                         .font(.title2.weight(.semibold))
                     if family.structuredMembers.isEmpty {
                         parentsLine
+                    }
+                    if let church = family.home_congregation?.trimmingCharacters(in: .whitespacesAndNewlines),
+                       !church.isEmpty {
+                        Label(church, systemImage: "building.columns")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
                     }
                     Text("\(family.member_count) attendee\(family.member_count == 1 ? "" : "s")")
                         .font(.subheadline)
@@ -452,6 +475,11 @@ struct DirectoryFamilyDetailView: View {
                     if let location = family.displayLocation {
                         mapsLink(label: location, query: family.formatted_address ?? location)
                     }
+                    if let church = family.home_congregation?.trimmingCharacters(in: .whitespacesAndNewlines),
+                       !church.isEmpty {
+                        Label(church, systemImage: "building.columns")
+                            .font(.subheadline)
+                    }
                     if let email = family.email, !email.isEmpty, let url = URL(string: "mailto:\(email)") {
                         Link(destination: url) {
                             Label(email, systemImage: "envelope")
@@ -478,10 +506,10 @@ struct DirectoryFamilyDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
 
-    private var photo: some View {
+    private var photoWithNameChips: some View {
         Color.clear
             .aspectRatio(4 / 3, contentMode: .fit)
-            .frame(maxHeight: 240)
+            .frame(maxHeight: 280)
             .overlay {
                 if let photoUrl = family.photo_url, !photoUrl.isEmpty, let url = URL(string: photoUrl) {
                     AsyncImage(url: url) { phase in
@@ -500,8 +528,22 @@ struct DirectoryFamilyDetailView: View {
                     directoryPhotoPlaceholder
                 }
             }
+            .overlay(alignment: .bottom) {
+                if showNameChips, !chipNames.isEmpty {
+                    DirectoryNameChips(names: chipNames)
+                        .padding(12)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+            }
             .clipShape(RoundedRectangle(cornerRadius: 16))
             .contentShape(RoundedRectangle(cornerRadius: 16))
+            .onTapGesture {
+                guard !chipNames.isEmpty else { return }
+                withAnimation(.easeOut(duration: 0.2)) {
+                    showNameChips.toggle()
+                }
+            }
+            .accessibilityHint(chipNames.isEmpty ? "" : "Shows family member names on the photo")
     }
 
     private func phones(forMemberName name: String) -> [DirectoryContactPhone] {
@@ -557,6 +599,39 @@ struct DirectoryFamilyDetailView: View {
             .padding(14)
             .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14))
         }
+    }
+}
+
+/// Soft name chips overlaid on the family photo.
+private struct DirectoryNameChips: View {
+    let names: [String]
+
+    var body: some View {
+        LazyVGrid(
+            columns: [GridItem(.adaptive(minimum: 64), spacing: 6, alignment: .leading)],
+            alignment: .leading,
+            spacing: 6
+        ) {
+            ForEach(Array(names.enumerated()), id: \.offset) { _, name in
+                Text(name)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(.ultraThinMaterial.opacity(0.9), in: Capsule())
+                    .overlay(Capsule().strokeBorder(.white.opacity(0.35), lineWidth: 0.5))
+                    .lineLimit(1)
+            }
+        }
+        .padding(10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            LinearGradient(
+                colors: [.black.opacity(0.6), .black.opacity(0.28), .clear],
+                startPoint: .bottom,
+                endPoint: .top
+            )
+        )
     }
 }
 
