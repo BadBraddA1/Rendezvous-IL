@@ -205,11 +205,7 @@ export function FamilyPhotoFaceNamer({
           alt="Family photo for naming faces"
           className="block h-auto w-full"
         />
-        <FamilyPhotoFaceLabels
-          faces={faces}
-          showUnlabeledPlaceholders
-          layout={photoLayout}
-        />
+        <FamilyPhotoFaceLabels faces={faces} layout={photoLayout} />
         {faces.map((face) => (
           <button
             key={face.id}

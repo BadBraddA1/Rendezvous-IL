@@ -15,8 +15,6 @@ type FaceBox = {
 
 type Props = {
   faces: FaceBox[]
-  /** When true, show a “Name” placeholder under unlabeled faces (manage UI). */
-  showUnlabeledPlaceholders?: boolean
   className?: string
   layout?: FamilyPhotoLayout
 }
@@ -24,12 +22,11 @@ type Props = {
 /**
  * Absolute-positioned name labels under each face box (percent of the photo).
  * Parent should be `relative` around the image.
- * Labels sit below the box (top edge of the chip = bottom of face + gap);
- * if that would clip off the photo, they flip above the face instead.
+ * Only faces with a real name get a chip — unlabeled faces stay unmarked.
+ * Labels sit below the box (or above near the bottom edge).
  */
 export function FamilyPhotoFaceLabels({
   faces,
-  showUnlabeledPlaceholders = false,
   className = "",
   layout,
 }: Props) {
@@ -42,7 +39,7 @@ export function FamilyPhotoFaceLabels({
     <div className={`pointer-events-none absolute inset-0 ${className}`} aria-hidden>
       {faces.map((face, index) => {
         const label = face.label?.trim() || ""
-        if (!label && !showUnlabeledPlaceholders) return null
+        if (!label) return null
 
         // Keep chips off faces: prefer below the box; flip above near the bottom edge.
         const placeAbove = face.y + face.h > 0.88
@@ -66,7 +63,7 @@ export function FamilyPhotoFaceLabels({
             }}
           >
             <span className="max-w-full truncate rounded-md bg-black/70 px-1.5 py-0.5 text-center text-[10px] font-medium leading-tight text-white shadow-sm sm:text-xs">
-              {label || "Name"}
+              {label}
             </span>
           </div>
         )

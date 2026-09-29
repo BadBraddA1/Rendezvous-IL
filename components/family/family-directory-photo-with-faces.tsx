@@ -16,7 +16,8 @@ export function FamilyDirectoryPhotoWithFaces({ photoUrl, alt, faces }: Props) {
   const imgRef = useRef<HTMLImageElement>(null)
   const layout = useFamilyPhotoLayout(imgRef, photoUrl)
   const [showNames, setShowNames] = useState(true)
-  const hasLabels = faces.some((face) => face.label?.trim())
+  const namedFaces = faces.filter((face) => face.label?.trim())
+  const hasLabels = namedFaces.length > 0
 
   return (
     <button
@@ -41,7 +42,9 @@ export function FamilyDirectoryPhotoWithFaces({ photoUrl, alt, faces }: Props) {
         alt={alt}
         className="pointer-events-none block h-auto w-full"
       />
-      {showNames && <FamilyPhotoFaceLabels faces={faces} layout={layout} />}
+      {showNames && hasLabels && (
+        <FamilyPhotoFaceLabels faces={namedFaces} layout={layout} />
+      )}
       {hasLabels && (
         <span className="pointer-events-none absolute bottom-2 right-2 rounded-full bg-black/55 px-2 py-1 text-[10px] font-medium text-white sm:text-xs">
           {showNames ? "Tap to hide names" : "Tap to show names"}
