@@ -11,20 +11,36 @@ struct AppFeedbackView: View {
     @State private var status: String?
     @State private var error: String?
 
-    private let categories = [
-        ("idea", "Idea"),
-        ("bug", "Bug"),
-        ("confusing", "Confusing"),
-        ("love", "Something I love"),
-        ("other", "Other"),
+    private let categories: [(id: String, title: String, icon: String)] = [
+        ("idea", "Idea", "lightbulb.fill"),
+        ("bug", "Bug", "ant.fill"),
+        ("confusing", "Confusing", "questionmark.circle.fill"),
+        ("love", "Something I love", "heart.fill"),
+        ("other", "Other", "ellipsis.circle.fill"),
     ]
 
     var body: some View {
         Form {
             Section {
-                Text("Tell us how the Rendezvous app is working for you. This goes to the BraddCorp team — not the end-of-event retreat survey.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                HStack(spacing: 14) {
+                    Image(systemName: "text.bubble.fill")
+                        .font(.system(size: 28, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(width: 52, height: 52)
+                        .background(BrandColors.lake, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .accessibilityHidden(true)
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("App feedback")
+                            .font(.headline)
+                        Text("Tell us how the Rendezvous app is working for you. This goes to the BraddCorp team — not the end-of-event retreat survey.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .padding(.vertical, 4)
+                .accessibilityElement(children: .combine)
             }
 
             Section("Overall") {
@@ -38,8 +54,8 @@ struct AppFeedbackView: View {
 
             Section("Category") {
                 Picker("Category", selection: $category) {
-                    ForEach(categories, id: \.0) { item in
-                        Text(item.1).tag(item.0)
+                    ForEach(categories, id: \.id) { item in
+                        Label(item.title, systemImage: item.icon).tag(item.id)
                     }
                 }
             }
@@ -69,7 +85,7 @@ struct AppFeedbackView: View {
                     if sending {
                         ProgressView()
                     } else {
-                        Text("Send feedback")
+                        Label("Send feedback", systemImage: "paperplane.fill")
                     }
                 }
                 .disabled(sending || message.trimmingCharacters(in: .whitespacesAndNewlines).count < 3)

@@ -47,7 +47,7 @@ struct AccountView: View {
                     NavigationLink {
                         AppFeedbackView()
                     } label: {
-                        inAppLinkLabel(title: "App feedback", icon: "bubble.left.and.exclamationmark")
+                        inAppLinkLabel(title: "App feedback", icon: "text.bubble.fill")
                     }
 
                     Button {

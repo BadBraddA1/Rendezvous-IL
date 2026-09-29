@@ -26,7 +26,7 @@ struct MoreView: View {
                         Label("Attendee map", systemImage: "map")
                     }
                     NavigationLink { AppFeedbackView() } label: {
-                        Label("App feedback", systemImage: "bubble.left.and.exclamationmark")
+                        Label("App feedback", systemImage: "text.bubble.fill")
                     }
                 }
 
