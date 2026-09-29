@@ -10,81 +10,78 @@ function clamp01(value: number): number {
   return Math.min(1, Math.max(0, value))
 }
 
-const WASM_CDN = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18/wasm"
-const FULL_RANGE_MODEL =
-  "https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_full_range/float16/1/blaze_face_full_range.tflite"
-const SHORT_RANGE_MODEL =
-  "https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite"
+type FaceApiBox = { x: number; y: number; width: number; height: number }
 
-type MediaPipeDetection = {
-  boundingBox?: {
-    originX: number
-    originY: number
-    width: number
-    height: number
+type FaceApiGlobal = {
+  nets: {
+    ssdMobilenetv1: { loadFromUri: (uri: string) => Promise<void>; isLoaded: boolean }
+    tinyFaceDetector: { loadFromUri: (uri: string) => Promise<void>; isLoaded: boolean }
+  }
+  detectAllFaces: (
+    input: HTMLImageElement | HTMLCanvasElement,
+    options?: unknown,
+  ) => {
+    withFaceLandmarks?: () => unknown
+  } & Promise<Array<{ box: FaceApiBox; detection?: { score: number } }>>
+  SsdMobilenetv1Options: new (opts?: { minConfidence?: number; maxResults?: number }) => unknown
+  TinyFaceDetectorOptions: new (opts?: { inputSize?: number; scoreThreshold?: number }) => unknown
+}
+
+declare global {
+  interface Window {
+    faceapi?: FaceApiGlobal
   }
 }
 
-type MediaPipeFaceDetector = {
-  detect: (image: HTMLImageElement | HTMLCanvasElement | ImageBitmap) => {
-    detections: MediaPipeDetection[]
-  }
-  close?: () => void
+const MODEL_URI = "/face-api-models"
+const FACE_API_SCRIPT = "/vendor/face-api.min.js"
+
+let modelsReady: Promise<FaceApiGlobal> | null = null
+
+function loadScript(src: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const existing = document.querySelector<HTMLScriptElement>(`script[data-face-api="1"]`)
+    if (existing && window.faceapi) {
+      resolve()
+      return
+    }
+    if (existing) {
+      existing.addEventListener("load", () => resolve())
+      existing.addEventListener("error", () => reject(new Error("Could not load face detection library")))
+      return
+    }
+    const script = document.createElement("script")
+    script.src = src
+    script.async = true
+    script.dataset.faceApi = "1"
+    script.onload = () => resolve()
+    script.onerror = () => reject(new Error("Could not load face detection library from /vendor/face-api.min.js"))
+    document.head.appendChild(script)
+  })
 }
 
-let detectorPromise: Promise<MediaPipeFaceDetector | null> | null = null
-
-async function loadMediaPipeFaceDetector(): Promise<MediaPipeFaceDetector | null> {
-  if (typeof window === "undefined") return null
-  if (!detectorPromise) {
-    detectorPromise = (async () => {
-      try {
-        // Load from CDN so Firefox/Safari work without a native FaceDetector API,
-        // and so we don't fight the repo's pnpm store for a WASM-heavy package.
-        const vision = (await import(
-          /* webpackIgnore: true */
-          "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18/+esm"
-        )) as {
-          FilesetResolver: {
-            forVisionTasks: (path: string) => Promise<unknown>
-          }
-          FaceDetector: {
-            createFromOptions: (
-              fileset: unknown,
-              options: Record<string, unknown>,
-            ) => Promise<MediaPipeFaceDetector>
-          }
-        }
-        const fileset = await vision.FilesetResolver.forVisionTasks(WASM_CDN)
-        // Full-range first — family group photos are usually shot from further away.
-        try {
-          return await vision.FaceDetector.createFromOptions(fileset, {
-            baseOptions: {
-              modelAssetPath: FULL_RANGE_MODEL,
-              delegate: "CPU",
-            },
-            runningMode: "IMAGE",
-            minDetectionConfidence: 0.45,
-            minSuppressionThreshold: 0.3,
-          })
-        } catch {
-          return await vision.FaceDetector.createFromOptions(fileset, {
-            baseOptions: {
-              modelAssetPath: SHORT_RANGE_MODEL,
-              delegate: "CPU",
-            },
-            runningMode: "IMAGE",
-            minDetectionConfidence: 0.5,
-            minSuppressionThreshold: 0.3,
-          })
-        }
-      } catch (error) {
-        console.warn("[face-detect] MediaPipe load failed:", error)
-        return null
+async function getFaceApi(): Promise<FaceApiGlobal> {
+  if (typeof window === "undefined") {
+    throw new Error("Face detection only runs in the browser")
+  }
+  if (!modelsReady) {
+    modelsReady = (async () => {
+      await loadScript(FACE_API_SCRIPT)
+      const faceapi = window.faceapi
+      if (!faceapi) {
+        throw new Error("Face detection library loaded but faceapi global is missing")
       }
+      // SSD MobileNet is better for group / outdoor family photos than tiny detector.
+      if (!faceapi.nets.ssdMobilenetv1.isLoaded) {
+        await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URI)
+      }
+      if (!faceapi.nets.tinyFaceDetector.isLoaded) {
+        await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URI)
+      }
+      return faceapi
     })()
   }
-  return detectorPromise
+  return modelsReady
 }
 
 /** Decode the directory JPEG via same-origin proxy (CDN has no CORS). */
@@ -92,24 +89,24 @@ export async function loadImageElementFromUrl(photoUrl: string): Promise<HTMLIma
   const fetchUrl = sameOriginMediaUrl(photoUrl)
   const response = await fetch(fetchUrl, { credentials: "same-origin" })
   if (!response.ok) {
-    throw new Error("Could not download photo for face detection")
+    throw new Error(
+      `Could not download photo for face detection (${response.status}). Try again after deploy finishes.`,
+    )
   }
   const blob = await response.blob()
   const objectUrl = URL.createObjectURL(blob)
   try {
-    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    return await new Promise<HTMLImageElement>((resolve, reject) => {
       const el = new Image()
       el.onload = () => resolve(el)
       el.onerror = () => reject(new Error("Could not decode photo for face detection"))
       el.src = objectUrl
     })
-    return img
   } finally {
     URL.revokeObjectURL(objectUrl)
   }
 }
 
-/** Route CDN URLs through our API — R2 custom domain blocks browser CORS fetch. */
 function sameOriginMediaUrl(photoUrl: string): string {
   try {
     const host = new URL(photoUrl, window.location.href).hostname
@@ -126,98 +123,94 @@ function sameOriginMediaUrl(photoUrl: string): string {
   return photoUrl
 }
 
-function boxesFromMediaPipe(
-  detections: MediaPipeDetection[],
+function boxesFromFaceApi(
+  detections: Array<{ box: FaceApiBox }>,
   naturalW: number,
   naturalH: number,
 ): NormalizedFaceBox[] {
   return detections
     .map((det) => {
-      const box = det.boundingBox
-      if (!box) return null
-      // MediaPipe returns pixel coords relative to the image passed in.
-      const x = clamp01(box.originX / naturalW)
-      const y = clamp01(box.originY / naturalH)
-      const w = clamp01(box.width / naturalW)
-      const h = clamp01(box.height / naturalH)
-      // Expand a bit — BlazeFace boxes are tight on the face; labels sit under chin better with padding.
-      const padX = w * 0.08
-      const padY = h * 0.12
+      const { x, y, width, height } = det.box
+      const padX = (width / naturalW) * 0.06
+      const padY = (height / naturalH) * 0.1
       return {
-        x: clamp01(x - padX),
-        y: clamp01(y - padY),
-        w: clamp01(w + padX * 2),
-        h: clamp01(h + padY * 2),
+        x: clamp01(x / naturalW - padX),
+        y: clamp01(y / naturalH - padY),
+        w: clamp01(width / naturalW + padX * 2),
+        h: clamp01(height / naturalH + padY * 2),
       }
     })
-    .filter((box): box is NormalizedFaceBox => Boolean(box) && box.w >= 0.015 && box.h >= 0.015)
+    .filter((box) => box.w >= 0.012 && box.h >= 0.012)
     .sort((a, b) => a.x - b.x)
     .slice(0, 12)
 }
 
-type FaceDetectorLike = {
-  detect: (source: HTMLImageElement) => Promise<
-    Array<{ boundingBox: { x: number; y: number; width: number; height: number } }>
-  >
-}
-
-async function detectWithChromeFaceDetector(
-  img: HTMLImageElement,
-): Promise<NormalizedFaceBox[]> {
-  const FaceDetectorCtor = (
-    window as unknown as { FaceDetector?: new (opts?: object) => FaceDetectorLike }
-  ).FaceDetector
-  if (!FaceDetectorCtor) return []
-
-  try {
-    const detector = new FaceDetectorCtor({ maxDetectedFaces: 12, fastMode: false })
-    const results = await detector.detect(img)
-    return results
-      .map((face) => ({
-        x: clamp01(face.boundingBox.x / img.naturalWidth),
-        y: clamp01(face.boundingBox.y / img.naturalHeight),
-        w: clamp01(face.boundingBox.width / img.naturalWidth),
-        h: clamp01(face.boundingBox.height / img.naturalHeight),
-      }))
-      .filter((box) => box.w >= 0.015 && box.h >= 0.015)
-      .sort((a, b) => a.x - b.x)
-      .slice(0, 12)
-  } catch {
-    return []
+function mergeBoxes(a: NormalizedFaceBox[], b: NormalizedFaceBox[]): NormalizedFaceBox[] {
+  const all = [...a, ...b]
+  const kept: NormalizedFaceBox[] = []
+  for (const box of all.sort((x, y) => y.w * y.h - x.w * x.h)) {
+    const overlaps = kept.some((other) => {
+      const ix = Math.max(box.x, other.x)
+      const iy = Math.max(box.y, other.y)
+      const ax = Math.min(box.x + box.w, other.x + other.w)
+      const ay = Math.min(box.y + box.h, other.y + other.h)
+      const inter = Math.max(0, ax - ix) * Math.max(0, ay - iy)
+      const union = box.w * box.h + other.w * other.h - inter
+      return union > 0 && inter / union > 0.35
+    })
+    if (!overlaps) kept.push(box)
   }
+  return kept.sort((x, y) => x.x - y.x).slice(0, 12)
 }
 
 /**
- * Real face detection in the browser (Firefox / Safari / Chrome).
- * Prefer MediaPipe BlazeFace full-range — LLMs are unreliable for pixel boxes.
+ * Face detection in the browser (Firefox / Safari / Chrome).
+ * Uses face-api SSD MobileNet hosted on this site — no Cloudflare Worker, no Gemini boxes.
  */
 export async function detectFacesInBrowserImage(
   source: HTMLImageElement | string,
 ): Promise<NormalizedFaceBox[]> {
-  if (typeof window === "undefined") return []
+  if (typeof window === "undefined") {
+    throw new Error("Face detection only runs in the browser")
+  }
 
   const img =
     typeof source === "string" ? await loadImageElementFromUrl(source) : source
 
   const naturalW = img.naturalWidth
   const naturalH = img.naturalHeight
-  if (naturalW < 16 || naturalH < 16) return []
-
-  const mediaPipe = await loadMediaPipeFaceDetector()
-  if (mediaPipe) {
-    try {
-      const result = mediaPipe.detect(img)
-      const boxes = boxesFromMediaPipe(result.detections || [], naturalW, naturalH)
-      if (boxes.length > 0) return boxes
-    } catch (error) {
-      console.warn("[face-detect] MediaPipe detect failed:", error)
-    }
+  if (naturalW < 16 || naturalH < 16) {
+    throw new Error("Photo is too small to detect faces")
   }
 
-  return detectWithChromeFaceDetector(img)
+  const faceapi = await getFaceApi()
+
+  const ssd = await faceapi.detectAllFaces(
+    img,
+    new faceapi.SsdMobilenetv1Options({ minConfidence: 0.25, maxResults: 12 }),
+  )
+  let boxes = boxesFromFaceApi(ssd, naturalW, naturalH)
+
+  if (boxes.length < 2) {
+    // Tiny detector as a second pass for smaller / distant faces in group shots.
+    const tiny = await faceapi.detectAllFaces(
+      img,
+      new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.3 }),
+    )
+    boxes = mergeBoxes(boxes, boxesFromFaceApi(tiny, naturalW, naturalH))
+  }
+
+  if (boxes.length === 0) {
+    const tinyLarge = await faceapi.detectAllFaces(
+      img,
+      new faceapi.TinyFaceDetectorOptions({ inputSize: 608, scoreThreshold: 0.2 }),
+    )
+    boxes = boxesFromFaceApi(tinyLarge, naturalW, naturalH)
+  }
+
+  return boxes
 }
 
-/** Always true in browser — MediaPipe loads from CDN (works in Firefox). */
 export function browserFaceDetectionSupported(): boolean {
   return typeof window !== "undefined"
 }

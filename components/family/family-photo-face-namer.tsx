@@ -141,11 +141,11 @@ export function FamilyPhotoFaceNamer({
     setError("")
     setSaved(false)
     try {
-      // MediaPipe BlazeFace in the browser — works in Firefox; Gemini boxes were unreliable.
+      // face-api (SSD MobileNet) in the browser — no Worker; models served from this site.
       const boxes = await detectFacesInBrowserImage(photoUrl)
       if (boxes.length === 0) {
         setError(
-          "No faces found. Try a clearer group photo, or wait a moment and click Find faces again (model loads from the CDN).",
+          "No faces found in this photo. Try a clearer front-facing group shot, then Re-find faces.",
         )
         if (force) setFaces([])
         return
@@ -192,8 +192,7 @@ export function FamilyPhotoFaceNamer({
         </h3>
         <p className="text-sm text-muted-foreground">
           Tap each person in the photo, then pick or type their name. Names show under their face
-          in the directory. Face boxes use MediaPipe (works in Firefox) — click Re-find faces if
-          they look off.
+          in the directory. First find may take a few seconds while the face model loads.
         </p>
       </div>
 
