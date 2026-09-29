@@ -30,6 +30,10 @@ import {
 } from "lucide-react"
 import type { RegistrationEventYear } from "@/lib/registration-event-years"
 import type { AdminDirectoryFamily, AdminDirectoryMember } from "@/lib/admin-directory"
+import {
+  FamilyPhotoFaceNamer,
+  type ManageableFace,
+} from "@/components/family/family-photo-face-namer"
 
 type Props = {
   canManage: boolean
@@ -138,6 +142,9 @@ export function DirectoryManager({ canManage, eventYear }: Props) {
   const [accountBusyId, setAccountBusyId] = useState<string | null>(null)
   const photoInputRef = useRef<HTMLInputElement>(null)
   const [photoBusy, setPhotoBusy] = useState(false)
+  const [faceNamerSeed, setFaceNamerSeed] = useState(0)
+  const [uploadedFaces, setUploadedFaces] = useState<ManageableFace[]>([])
+  const [uploadedFaceSuggestions, setUploadedFaceSuggestions] = useState<string[]>([])
 
   // Bulk edit state: drafts for every family/member, saved in one request.
   const [bulkMode, setBulkMode] = useState(false)
@@ -374,6 +381,9 @@ export function DirectoryManager({ canManage, eventYear }: Props) {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || "Failed to upload photo")
+      setUploadedFaces((data.faces || []) as ManageableFace[])
+      setUploadedFaceSuggestions((data.name_suggestions || []) as string[])
+      setFaceNamerSeed((seed) => seed + 1)
       await load()
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to upload photo")
@@ -681,6 +691,27 @@ export function DirectoryManager({ canManage, eventYear }: Props) {
                               Remove photo
                             </Button>
                           )}
+                        </div>
+                      )}
+                      {!bulkMode && family.photo_url && editingId === family.id && (
+                        <div className="mt-4 space-y-2">
+                          <p className="text-sm text-muted-foreground">
+                            Test face labels on any family: upload a clear group photo here, then name
+                            faces. AI runs automatically on upload; use Find faces if boxes are missing.
+                          </p>
+                          <FamilyPhotoFaceNamer
+                            key={`${family.id}-${family.photo_url}-${faceNamerSeed}`}
+                            photoUrl={family.photo_url}
+                            facesApiPath={`/api/admin/directory/families/${family.id}/faces`}
+                            initialFaces={
+                              faceNamerSeed > 0 && uploadedFaces.length > 0 ? uploadedFaces : []
+                            }
+                            initialSuggestions={
+                              faceNamerSeed > 0 && uploadedFaceSuggestions.length > 0
+                                ? uploadedFaceSuggestions
+                                : []
+                            }
+                          />
                         </div>
                       )}
                     </div>

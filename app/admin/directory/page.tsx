@@ -10,7 +10,7 @@ export default function AdminDirectoryPage() {
       currentPage="directory"
       path="/admin/directory"
       title="Family Directory"
-      description="Edit each family's directory card — names, congregation, address, blurb, photo, listing visibility, and member contact sharing."
+      description="Edit each family's directory card — names, congregation, address, blurb, photo (with face labeling for testing), listing visibility, and member contact sharing."
     >
       {({ canManage }) => (
         <Suspense fallback={null}>

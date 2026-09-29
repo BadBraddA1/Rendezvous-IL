@@ -21,12 +21,15 @@ type Props = {
   photoUrl: string
   initialFaces?: ManageableFace[]
   initialSuggestions?: string[]
+  /** Defaults to family self-service API. Admins pass `/api/admin/directory/families/{id}/faces`. */
+  facesApiPath?: string
 }
 
 export function FamilyPhotoFaceNamer({
   photoUrl,
   initialFaces = [],
   initialSuggestions = [],
+  facesApiPath = "/api/family/directory/faces",
 }: Props) {
   const [faces, setFaces] = useState<ManageableFace[]>(initialFaces)
   const [suggestions, setSuggestions] = useState<string[]>(initialSuggestions)
@@ -55,7 +58,7 @@ export function FamilyPhotoFaceNamer({
       setLoading(true)
       setError("")
       try {
-        const response = await fetch("/api/family/directory/faces")
+        const response = await fetch(facesApiPath)
         const data = await response.json()
         if (!response.ok) throw new Error(data.error || "Could not load faces")
         if (cancelled) return
@@ -75,7 +78,7 @@ export function FamilyPhotoFaceNamer({
     return () => {
       cancelled = true
     }
-  }, [photoUrl, initialFaces.length])
+  }, [photoUrl, initialFaces.length, facesApiPath])
 
   const selected = faces.find((face) => face.id === selectedId) || null
 
@@ -91,7 +94,7 @@ export function FamilyPhotoFaceNamer({
     setError("")
     setSaved(false)
     try {
-      const response = await fetch("/api/family/directory/faces", {
+      const response = await fetch(facesApiPath, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -114,7 +117,7 @@ export function FamilyPhotoFaceNamer({
     setError("")
     setSaved(false)
     try {
-      const response = await fetch("/api/family/directory/faces", { method: "POST" })
+      const response = await fetch(facesApiPath, { method: "POST" })
       const data = await response.json()
       if (!response.ok) throw new Error(data.error || "Could not find faces")
       const next = (data.faces || []) as ManageableFace[]
