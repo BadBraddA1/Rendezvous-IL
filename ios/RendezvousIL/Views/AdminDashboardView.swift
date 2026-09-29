@@ -445,50 +445,59 @@ struct AdminDashboardView: View {
     }
 
     private func loadDashboard(force: Bool) async {
-        guard session.canViewDashboard, let client = session.apiClient else { return }
+        // Ensure role flags are current before the first paint path.
+        if !session.canViewDashboard || force {
+            await session.refreshAdminStatus()
+        }
+        guard session.canViewDashboard, session.apiClient != nil else { return }
+
         if force || dashboard == nil {
             isLoading = dashboard == nil
         }
         errorMessage = nil
         defer { isLoading = false }
 
-        do {
-            dashboard = try await fetchDashboard(using: client)
-        } catch is CancellationError {
-            return
-        } catch APIError.unauthorized {
-            // One retry after a fresh admin probe — first open often races Clerk Bearer auth.
-            await session.refreshAdminStatus()
-            guard session.canViewDashboard, let retryClient = session.apiClient else {
-                if dashboard == nil {
+        // First open often hits a cold Vercel function + stale JWT cache; keep
+        // the spinner up and retry with short backoff instead of flashing failure.
+        await session.primeAuthToken()
+
+        var lastError: Error?
+        for attempt in 1 ... 3 {
+            guard !Task.isCancelled else { return }
+            if attempt > 1 {
+                try? await Task.sleep(for: .milliseconds(700 * attempt))
+                await session.primeAuthToken()
+                await session.refreshAdminStatus()
+                guard session.canViewDashboard else {
                     errorMessage = "Session expired. Sign out and sign in again."
-                }
-                return
-            }
-            do {
-                dashboard = try await fetchDashboard(using: retryClient)
-            } catch {
-                if APIError.isCancellation(error) { return }
-                if dashboard == nil {
-                    errorMessage = error.localizedDescription
+                    return
                 }
             }
-        } catch {
-            if APIError.isCancellation(error) { return }
-            // Retry once on timeout / cold start — pull-to-refresh was working around this.
+
+            guard let client = session.apiClient else { return }
             do {
                 dashboard = try await fetchDashboard(using: client)
+                errorMessage = nil
+                return
+            } catch is CancellationError {
+                return
             } catch {
                 if APIError.isCancellation(error) { return }
-                if dashboard == nil {
-                    errorMessage = error.localizedDescription
-                }
+                lastError = error
+                #if DEBUG
+                AppLog.bootstrap("admin dashboard attempt \(attempt) failed: \(error.localizedDescription)")
+                #endif
             }
+        }
+
+        if dashboard == nil {
+            errorMessage = lastError?.localizedDescription ?? "Couldn’t load dashboard."
         }
     }
 
     private func fetchDashboard(using client: APIClient) async throws -> AdminDashboardResponse {
-        try await RepositoryFetch.withTimeout(seconds: 25) {
+        // Cold starts on /api/admin/mobile/dashboard can exceed the default 15s.
+        try await RepositoryFetch.withTimeout(seconds: 45) {
             try await client.getAdminDashboard()
         }
     }

@@ -222,6 +222,12 @@ final class AppSession {
         try? await client.recordUserActivity()
     }
 
+    /// Mint a fresh Clerk JWT (call before first heavy admin request after idle).
+    func primeAuthToken() async {
+        guard isClerkReady, isSignedIn else { return }
+        _ = try? await Self.sessionToken(forceRefresh: true)
+    }
+
     func refreshAdminStatus() async {
         guard isSignedIn, let client = apiClient else {
             isAdmin = false
