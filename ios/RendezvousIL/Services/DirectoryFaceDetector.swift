@@ -2,35 +2,51 @@ import Vision
 import UIKit
 
 enum DirectoryFaceDetector {
+    struct Box {
+        let x: Double
+        let y: Double
+        let w: Double
+        let h: Double
+    }
+
     /// Normalized face boxes (0–1, top-left origin) for the given JPEG/PNG data.
-    static func detectFaces(in imageData: Data) -> [(x: Double, y: Double, w: Double, h: Double)] {
+    static func detectFaces(in imageData: Data) -> [Box] {
         guard let image = UIImage(data: imageData),
               let cgImage = image.cgImage
         else { return [] }
 
         let request = VNDetectFaceRectanglesRequest()
-        let handler = VNImageRequestHandler(cgImage: cgImage, orientation: cgImageOrientation(from: image), options: [:])
+        let handler = VNImageRequestHandler(
+            cgImage: cgImage,
+            orientation: cgImageOrientation(from: image),
+            options: [:]
+        )
         do {
             try handler.perform([request])
         } catch {
             return []
         }
 
-        let observations = (request.results as? [VNFaceObservation]) ?? []
-        return observations
-            .map { observation in
-                // Vision boundingBox origin is bottom-left; convert to top-left.
-                let box = observation.boundingBox
-                let x = Double(box.origin.x)
-                let y = Double(1 - box.origin.y - box.size.height)
-                let w = Double(box.size.width)
-                let h = Double(box.size.height)
-                return (x: clamp01(x), y: clamp01(y), w: clamp01(w), h: clamp01(h))
-            }
-            .filter { $0.w >= 0.02 && $0.h >= 0.02 }
-            .sorted { $0.x < $1.x }
-            .prefix(12)
-            .map { $0 }
+        let observations = request.results ?? []
+        var boxes: [Box] = []
+        boxes.reserveCapacity(observations.count)
+
+        for observation in observations {
+            // Vision boundingBox origin is bottom-left; convert to top-left.
+            let visionBox = observation.boundingBox
+            let x = clamp01(Double(visionBox.origin.x))
+            let y = clamp01(Double(1 - visionBox.origin.y - visionBox.size.height))
+            let w = clamp01(Double(visionBox.size.width))
+            let h = clamp01(Double(visionBox.size.height))
+            guard w >= 0.02, h >= 0.02 else { continue }
+            boxes.append(Box(x: x, y: y, w: w, h: h))
+        }
+
+        boxes.sort { $0.x < $1.x }
+        if boxes.count > 12 {
+            return Array(boxes.prefix(12))
+        }
+        return boxes
     }
 
     private static func clamp01(_ value: Double) -> Double {
