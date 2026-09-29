@@ -100,14 +100,15 @@ export async function POST(request: Request) {
     await setFamilyPhotoUrl(family.id, uploaded.url)
     await deleteFamilyPhotoIfStored(current?.photo_url)
 
-    const faces = await detectAndStoreFamilyPhotoFaces(family.id, uploaded.url, uploaded.buffer)
+    const detected = await detectAndStoreFamilyPhotoFaces(family.id, uploaded.url, uploaded.buffer)
     const nameSuggestions = await suggestFaceNames(family.id)
     const settings = await getFamilyDirectorySettings(family.id)
     return NextResponse.json({
       success: true,
       settings,
-      faces,
+      faces: detected.faces,
       name_suggestions: nameSuggestions,
+      detect_error: detected.error ?? null,
     })
   } catch (error) {
     console.error("[family-directory] POST photo error:", error)

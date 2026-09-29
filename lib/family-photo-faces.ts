@@ -191,22 +191,69 @@ export async function suggestFaceNames(familyId: number): Promise<string[]> {
 
 type DetectedBox = { x: number; y: number; w: number; h: number }
 
+export type FaceDetectResult = {
+  faces: DetectedBox[]
+  /** Human-readable failure when no usable boxes were returned. */
+  error?: string
+}
+
+function parseFaceJson(text: string): DetectedBox[] {
+  const cleaned = text
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .trim()
+  const parsed = JSON.parse(cleaned) as { faces?: unknown }
+  if (!Array.isArray(parsed.faces)) return []
+
+  return parsed.faces
+    .map((item) => {
+      if (!item || typeof item !== "object") return null
+      const box = item as Record<string, unknown>
+      return {
+        x: clamp01(Number(box.x)),
+        y: clamp01(Number(box.y)),
+        w: clamp01(Number(box.w)),
+        h: clamp01(Number(box.h)),
+      }
+    })
+    .filter((box): box is DetectedBox => {
+      if (!box) return false
+      return box.w >= 0.015 && box.h >= 0.015
+    })
+    .slice(0, 12)
+}
+
 /**
- * Ask Gemini (via Vercel AI Gateway) for face boxes in the final stored JPEG.
- * Returns [] when the key is missing or the model finds no faces.
+ * Ask a vision model (via Vercel AI Gateway) for face boxes in the final stored JPEG.
  */
-export async function detectFacesInPhotoBuffer(buffer: Buffer): Promise<DetectedBox[]> {
+export async function detectFacesInPhotoBuffer(buffer: Buffer): Promise<FaceDetectResult> {
   const apiKey = process.env.AI_GATEWAY_API_KEY
   if (!apiKey) {
     console.warn("[family-photo-faces] AI_GATEWAY_API_KEY missing; skipping face detect")
-    return []
+    return {
+      faces: [],
+      error: "Face detection is not configured on the server (missing AI_GATEWAY_API_KEY).",
+    }
+  }
+
+  // Keep the vision payload small/reliable.
+  let jpeg = buffer
+  try {
+    const sharp = (await import("sharp")).default
+    jpeg = await sharp(buffer, { failOn: "none" })
+      .rotate()
+      .resize({ width: 1024, height: 1024, fit: "inside", withoutEnlargement: true })
+      .jpeg({ quality: 80 })
+      .toBuffer()
+  } catch {
+    // use original buffer
   }
 
   const model =
     process.env.FAMILY_PHOTO_FACE_MODEL ||
     process.env.GEMINI_OCR_MODEL ||
     "google/gemini-2.5-flash"
-  const b64 = buffer.toString("base64")
+  const b64 = jpeg.toString("base64")
   const gateway = "https://ai-gateway.vercel.sh/v1"
 
   const body = JSON.stringify({
@@ -217,18 +264,18 @@ export async function detectFacesInPhotoBuffer(buffer: Buffer): Promise<Detected
       {
         role: "system",
         content:
-          "You detect human faces in family photos. Reply with JSON only: " +
-          '{"faces":[{"x":0.1,"y":0.2,"w":0.15,"h":0.2}]}. ' +
+          "You locate people in a family photo so parents can label names. " +
+          'Reply with JSON only: {"faces":[{"x":0.1,"y":0.2,"w":0.15,"h":0.2}]}. ' +
           "Each box is normalized 0–1 relative to image width/height " +
-          "(x,y = top-left of the face, w/h = face size). " +
-          "Only include clearly visible human faces. Empty array if none.",
+          "(x,y = top-left of the head/face, w/h = size). " +
+          "Include every clearly visible person. Empty array only if nobody is visible.",
       },
       {
         role: "user",
         content: [
           {
             type: "text",
-            text: "Detect every distinct human face in this family photo.",
+            text: "Return a bounding box for every person's head/face in this photo.",
           },
           {
             type: "image_url",
@@ -240,7 +287,7 @@ export async function detectFacesInPhotoBuffer(buffer: Buffer): Promise<Detected
   })
 
   const ac = new AbortController()
-  const timer = setTimeout(() => ac.abort(), 25_000)
+  const timer = setTimeout(() => ac.abort(), 45_000)
   try {
     const res = await fetch(`${gateway}/chat/completions`, {
       method: "POST",
@@ -254,37 +301,35 @@ export async function detectFacesInPhotoBuffer(buffer: Buffer): Promise<Detected
     const raw = await res.text()
     if (!res.ok) {
       console.error("[family-photo-faces] detect failed:", res.status, raw.slice(0, 300))
-      return []
+      return {
+        faces: [],
+        error: `Face detection failed (${res.status}). Try again in a moment.`,
+      }
     }
     const data = JSON.parse(raw) as {
       choices?: { message?: { content?: string } }[]
     }
     const text = data.choices?.[0]?.message?.content || "{}"
-    const parsed = JSON.parse(text) as { faces?: unknown }
-    if (!Array.isArray(parsed.faces)) return []
-
-    return parsed.faces
-      .map((item) => {
-        if (!item || typeof item !== "object") return null
-        const box = item as Record<string, unknown>
-        return {
-          x: clamp01(Number(box.x)),
-          y: clamp01(Number(box.y)),
-          w: clamp01(Number(box.w)),
-          h: clamp01(Number(box.h)),
-        }
-      })
-      .filter((box): box is DetectedBox => {
-        if (!box) return false
-        return box.w >= 0.02 && box.h >= 0.02
-      })
-      .slice(0, 12)
+    const faces = parseFaceJson(text)
+    if (faces.length === 0) {
+      return {
+        faces: [],
+        error: "No faces found in this photo. Try a clearer group shot, or retake outdoors with faces visible.",
+      }
+    }
+    return { faces }
   } catch (error) {
     console.error(
       "[family-photo-faces] detect error:",
       error instanceof Error ? error.message : error,
     )
-    return []
+    return {
+      faces: [],
+      error:
+        error instanceof Error && error.name === "AbortError"
+          ? "Face detection timed out. Try again."
+          : "Face detection failed. Try again.",
+    }
   } finally {
     clearTimeout(timer)
   }
@@ -295,7 +340,8 @@ export async function detectAndStoreFamilyPhotoFaces(
   familyId: number,
   photoUrl: string,
   jpegBuffer: Buffer,
-): Promise<FamilyPhotoFace[]> {
-  const boxes = await detectFacesInPhotoBuffer(jpegBuffer)
-  return replaceFamilyPhotoFaces(familyId, photoUrl, boxes)
+): Promise<{ faces: FamilyPhotoFace[]; error?: string }> {
+  const result = await detectFacesInPhotoBuffer(jpegBuffer)
+  const faces = await replaceFamilyPhotoFaces(familyId, photoUrl, result.faces)
+  return { faces, error: result.error }
 }

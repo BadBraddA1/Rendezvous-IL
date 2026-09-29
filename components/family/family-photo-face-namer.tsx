@@ -121,6 +121,9 @@ export function FamilyPhotoFaceNamer({
       setFaces(next)
       setSuggestions((data.name_suggestions || []) as string[])
       setSelectedId(next.find((f) => !f.label)?.id ?? next[0]?.id ?? null)
+      if (data.detect_error && next.length === 0) {
+        setError(String(data.detect_error))
+      }
     } catch (detectError) {
       setError(detectError instanceof Error ? detectError.message : "Could not find faces")
     } finally {

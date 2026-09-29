@@ -81,6 +81,9 @@ export function FamilyDirectoryPhotoCard({ settings, onChange, eventYear = 2027 
       setBlurb(data.settings.directory_blurb || "")
       setFaces((data.faces || []) as ManageableFace[])
       setNameSuggestions((data.name_suggestions || []) as string[])
+      if (data.detect_error && !(data.faces || []).length) {
+        setError(String(data.detect_error))
+      }
       window.dispatchEvent(
         new CustomEvent(FAMILY_PHOTO_UPDATED_EVENT, {
           detail: { photoUrl: data.settings.photo_url ?? null },

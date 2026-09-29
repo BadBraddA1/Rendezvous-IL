@@ -309,7 +309,7 @@ struct FamilyDirectoryManageView: View {
                 throw APIError.badStatus(400)
             }
             let prepared = DirectoryImageProcessor.prepareForUpload(data)
-            let response = try await RepositoryFetch.withTimeout(seconds: 60) {
+            let response = try await RepositoryFetch.withTimeout(seconds: 90) {
                 try await client.uploadFamilyDirectoryPhoto(
                     imageData: prepared,
                     filename: "family-photo.jpg",
@@ -317,16 +317,34 @@ struct FamilyDirectoryManageView: View {
                 )
             }
             applySettings(response.settings)
-            if let uploadedFaces = response.faces {
+
+            // Prefer on-device Vision so faces appear immediately even if server AI is slow.
+            let localBoxes = DirectoryFaceDetector.detectFaces(in: prepared)
+            if !localBoxes.isEmpty {
+                let payload = localBoxes.map {
+                    FamilyPhotoFaceBoxPayload(x: $0.x, y: $0.y, w: $0.w, h: $0.h)
+                }
+                let faceResponse = try await RepositoryFetch.withTimeout(seconds: 30) {
+                    try await client.submitFamilyPhotoFaceBoxes(payload)
+                }
+                applyFaces(faceResponse)
+                successMessage = "Photo uploaded — tap each face to add a name"
+            } else if let uploadedFaces = response.faces, !uploadedFaces.isEmpty {
                 faces = uploadedFaces
                 nameSuggestions = response.name_suggestions ?? []
-                selectedFaceId = uploadedFaces.first(where: { ($0.label ?? "").isEmpty })?.id ?? uploadedFaces.first?.id
+                selectedFaceId = uploadedFaces.first(where: { ($0.label ?? "").isEmpty })?.id
+                    ?? uploadedFaces.first?.id
+                successMessage = "Photo uploaded — tap each face to add a name"
             } else {
                 await loadFaces()
+                if faces.isEmpty {
+                    errorMessage = response.detect_error
+                        ?? "No faces found yet. Tap Find faces, or try a clearer photo."
+                    successMessage = "Photo uploaded"
+                } else {
+                    successMessage = "Photo uploaded — tap each face to add a name"
+                }
             }
-            successMessage = faces.isEmpty
-                ? "Photo uploaded — tap Find faces to label people"
-                : "Photo uploaded — name each face below"
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -394,11 +412,33 @@ struct FamilyDirectoryManageView: View {
         errorMessage = nil
         defer { isDetectingFaces = false }
         do {
-            let response = try await RepositoryFetch.withTimeout(seconds: 45) {
+            // Prefer Vision on the downloaded directory photo when possible.
+            if let urlString = settings.photo_url, let url = URL(string: urlString) {
+                let (data, _) = try await URLSession.shared.data(from: url)
+                let localBoxes = DirectoryFaceDetector.detectFaces(in: data)
+                if !localBoxes.isEmpty {
+                    let payload = localBoxes.map {
+                        FamilyPhotoFaceBoxPayload(x: $0.x, y: $0.y, w: $0.w, h: $0.h)
+                    }
+                    let response = try await RepositoryFetch.withTimeout(seconds: 30) {
+                        try await client.submitFamilyPhotoFaceBoxes(payload)
+                    }
+                    applyFaces(response)
+                    successMessage = "Faces found — add names"
+                    return
+                }
+            }
+
+            let response = try await RepositoryFetch.withTimeout(seconds: 60) {
                 try await client.redetectFamilyPhotoFaces()
             }
             applyFaces(response)
-            successMessage = faces.isEmpty ? "No faces found" : "Faces found — add names"
+            if faces.isEmpty {
+                errorMessage = response.detect_error ?? "No faces found"
+                successMessage = nil
+            } else {
+                successMessage = "Faces found — add names"
+            }
         } catch {
             errorMessage = error.localizedDescription
         }

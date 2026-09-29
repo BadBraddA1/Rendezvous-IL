@@ -237,6 +237,10 @@ actor APIClient {
         return try await post("/api/family/directory/faces", body: EmptyBody())
     }
 
+    func submitFamilyPhotoFaceBoxes(_ boxes: [FamilyPhotoFaceBoxPayload]) async throws -> FamilyPhotoFacesResponse {
+        try await post("/api/family/directory/faces", body: FamilyPhotoFaceBoxesBody(faces: boxes))
+    }
+
     func getFamilyVolunteering(year: Int = AppConfig.eventYear) async throws -> FamilyVolunteeringResponse {
         try await get("/api/family/volunteering?year=\(year)")
     }
@@ -767,6 +771,7 @@ struct FamilyDirectorySettingsResponse: Decodable {
     let settings: FamilyDirectorySettings
     let faces: [FamilyPhotoFace]?
     let name_suggestions: [String]?
+    let detect_error: String?
 }
 
 struct FamilyDirectorySettingsBody: Encodable {
@@ -790,6 +795,8 @@ struct FamilyPhotoFacesResponse: Decodable {
     let name_suggestions: [String]?
     let photo_url: String?
     let success: Bool?
+    let detect_error: String?
+    let source: String?
 }
 
 struct FamilyPhotoFaceLabelUpdate: Encodable {
@@ -799,6 +806,17 @@ struct FamilyPhotoFaceLabelUpdate: Encodable {
 
 struct FamilyPhotoFaceLabelsBody: Encodable {
     let faces: [FamilyPhotoFaceLabelUpdate]
+}
+
+struct FamilyPhotoFaceBoxPayload: Encodable {
+    let x: Double
+    let y: Double
+    let w: Double
+    let h: Double
+}
+
+struct FamilyPhotoFaceBoxesBody: Encodable {
+    let faces: [FamilyPhotoFaceBoxPayload]
 }
 
 struct FamilyVolunteeringPendingAction: Codable, Hashable, Identifiable, Sendable {
