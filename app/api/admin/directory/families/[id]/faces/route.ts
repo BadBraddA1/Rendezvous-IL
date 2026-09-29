@@ -3,6 +3,7 @@ import { checkAdminAuth, getAdminPermissions } from "@/lib/admin-auth"
 import {
   detectAndStoreFamilyPhotoFaces,
   listFamilyPhotoFaces,
+  replaceFamilyPhotoFaces,
   suggestFaceNames,
   updateFamilyPhotoFaceLabels,
 } from "@/lib/family-photo-faces"
@@ -96,6 +97,44 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const settings = await getFamilyDirectorySettings(familyId)
     if (!settings?.photo_url) {
       return NextResponse.json({ error: "Upload a family photo first" }, { status: 400 })
+    }
+
+    let body: { faces?: unknown } | null = null
+    try {
+      body = await req.json()
+    } catch {
+      body = null
+    }
+
+    if (body && Array.isArray(body.faces) && body.faces.length > 0) {
+      const boxes = body.faces
+        .map((item) => {
+          if (!item || typeof item !== "object") return null
+          const box = item as Record<string, unknown>
+          return {
+            x: Number(box.x),
+            y: Number(box.y),
+            w: Number(box.w),
+            h: Number(box.h),
+          }
+        })
+        .filter(
+          (box): box is { x: number; y: number; w: number; h: number } =>
+            Boolean(box) &&
+            Number.isFinite(box!.x) &&
+            Number.isFinite(box!.y) &&
+            Number.isFinite(box!.w) &&
+            Number.isFinite(box!.h),
+        )
+      const faces = await replaceFamilyPhotoFaces(familyId, settings.photo_url, boxes)
+      const nameSuggestions = await suggestFaceNames(familyId)
+      return NextResponse.json({
+        success: true,
+        faces,
+        name_suggestions: nameSuggestions,
+        photo_url: settings.photo_url,
+        source: "client",
+      })
     }
 
     const imageRes = await fetch(settings.photo_url)

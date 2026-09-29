@@ -1,6 +1,14 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
+import {
+  browserFaceDetectionSupported,
+  detectFacesInBrowserImage,
+} from "@/lib/detect-faces-browser"
+import {
+  faceBoxStyle,
+  useFamilyPhotoLayout,
+} from "@/components/family/use-family-photo-layout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -41,6 +49,8 @@ export function FamilyPhotoFaceNamer({
   const [loading, setLoading] = useState(initialFaces.length === 0)
   const [error, setError] = useState("")
   const [saved, setSaved] = useState(false)
+  const imgRef = useRef<HTMLImageElement>(null)
+  const photoLayout = useFamilyPhotoLayout(imgRef, photoUrl)
 
   useEffect(() => {
     setFaces(initialFaces)
@@ -112,11 +122,40 @@ export function FamilyPhotoFaceNamer({
     }
   }
 
+  async function persistDetectedBoxes(
+    boxes: Array<{ x: number; y: number; w: number; h: number }>,
+  ): Promise<ManageableFace[]> {
+    const response = await fetch(facesApiPath, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ faces: boxes }),
+    })
+    const data = await response.json()
+    if (!response.ok) throw new Error(data.error || "Could not save face boxes")
+    return (data.faces || []) as ManageableFace[]
+  }
+
   async function handleDetect() {
     setDetecting(true)
     setError("")
     setSaved(false)
     try {
+      const img = imgRef.current
+      if (img?.complete && browserFaceDetectionSupported()) {
+        const boxes = await detectFacesInBrowserImage(img)
+        if (boxes.length > 0) {
+          const next = await persistDetectedBoxes(boxes)
+          setFaces(next)
+          setSelectedId(next.find((f) => !f.label)?.id ?? next[0]?.id ?? null)
+          const suggestionsRes = await fetch(facesApiPath)
+          const suggestionsData = await suggestionsRes.json()
+          if (suggestionsRes.ok) {
+            setSuggestions((suggestionsData.name_suggestions || []) as string[])
+          }
+          return
+        }
+      }
+
       const response = await fetch(facesApiPath, { method: "POST" })
       const data = await response.json()
       if (!response.ok) throw new Error(data.error || "Could not find faces")
@@ -160,11 +199,16 @@ export function FamilyPhotoFaceNamer({
         {/* Intrinsic size so face % boxes match the pixels (no object-cover crop). */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
+          ref={imgRef}
           src={photoUrl}
           alt="Family photo for naming faces"
           className="block h-auto w-full"
         />
-        <FamilyPhotoFaceLabels faces={faces} showUnlabeledPlaceholders />
+        <FamilyPhotoFaceLabels
+          faces={faces}
+          showUnlabeledPlaceholders
+          layout={photoLayout}
+        />
         {faces.map((face) => (
           <button
             key={face.id}
@@ -176,12 +220,7 @@ export function FamilyPhotoFaceNamer({
                   ? "border-white/70 bg-transparent"
                   : "border-dashed border-white/80 bg-black/10"
             }`}
-            style={{
-              left: `${face.x * 100}%`,
-              top: `${face.y * 100}%`,
-              width: `${face.w * 100}%`,
-              height: `${face.h * 100}%`,
-            }}
+            style={faceBoxStyle(face, photoLayout)}
             onClick={() => setSelectedId(face.id)}
             aria-label={face.label ? `Edit name for ${face.label}` : "Name this face"}
           />

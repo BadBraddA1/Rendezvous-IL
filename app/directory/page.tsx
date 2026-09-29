@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/select"
 import { Camera, Loader2, Mail, MapPin, MapPinned, Search, Users } from "lucide-react"
 import { DirectoryContactPhones } from "@/components/directory/directory-contact-phones"
-import { FamilyPhotoFaceLabels } from "@/components/family/family-photo-face-labels"
+import { FamilyDirectoryPhotoWithFaces } from "@/components/family/family-directory-photo-with-faces"
 import {
   contactMatchesMemberName,
   contactPhoneSearchHaystack,
@@ -358,15 +358,11 @@ export default function DirectoryPage() {
                       <div className="relative overflow-hidden bg-muted">
                         {family.photo_url ? (
                           (family.photo_faces?.length ?? 0) > 0 ? (
-                            <div className="relative w-full">
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
-                                src={family.photo_url}
-                                alt={`${family.family_last_name} family`}
-                                className="block h-auto w-full"
-                              />
-                              <FamilyPhotoFaceLabels faces={family.photo_faces || []} />
-                            </div>
+                            <FamilyDirectoryPhotoWithFaces
+                              photoUrl={family.photo_url}
+                              alt={`${family.family_last_name} family`}
+                              faces={family.photo_faces || []}
+                            />
                           ) : (
                             <div className="relative aspect-[4/3]">
                               <Image

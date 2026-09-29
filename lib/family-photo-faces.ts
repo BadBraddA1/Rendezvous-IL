@@ -197,6 +197,59 @@ export type FaceDetectResult = {
   error?: string
 }
 
+function scaleIfMill(box: DetectedBox): DetectedBox {
+  const max = Math.max(box.x, box.y, box.w, box.h)
+  if (max <= 1.5) return box
+  const div = max <= 100 ? 100 : 1000
+  return {
+    x: clamp01(box.x / div),
+    y: clamp01(box.y / div),
+    w: clamp01(box.w / div),
+    h: clamp01(box.h / div),
+  }
+}
+
+function parseFaceItem(item: unknown): DetectedBox | null {
+  if (!item || typeof item !== "object") return null
+  const box = item as Record<string, unknown>
+
+  const box2d = box.box_2d ?? box.box
+  if (Array.isArray(box2d) && box2d.length >= 4) {
+    const [p0, p1, p2, p3] = box2d.map(Number)
+    if (![p0, p1, p2, p3].every(Number.isFinite)) return null
+    // Gemini often returns [y_min, x_min, y_max, x_max] on a 0–1000 scale.
+    const gemini = scaleIfMill({
+      x: Math.min(p1, p3),
+      y: Math.min(p0, p2),
+      w: Math.abs(p3 - p1),
+      h: Math.abs(p2 - p0),
+    })
+    if (gemini.w >= 0.015 && gemini.h >= 0.015) return gemini
+    const xyxy = scaleIfMill({
+      x: Math.min(p0, p2),
+      y: Math.min(p1, p3),
+      w: Math.abs(p2 - p0),
+      h: Math.abs(p3 - p1),
+    })
+    if (xyxy.w >= 0.015 && xyxy.h >= 0.015) return xyxy
+    return null
+  }
+
+  const x = Number(box.x)
+  const y = Number(box.y)
+  let w = Number(box.w ?? box.width)
+  let h = Number(box.h ?? box.height)
+  const x2 = Number(box.x2 ?? box.xmax)
+  const y2 = Number(box.y2 ?? box.ymax)
+  if (Number.isFinite(x2) && Number.isFinite(y2) && (!Number.isFinite(w) || w === 0)) {
+    w = x2 - x
+    h = y2 - y
+  }
+  if (![x, y, w, h].every(Number.isFinite)) return null
+  const scaled = scaleIfMill({ x: clamp01(x), y: clamp01(y), w: clamp01(w), h: clamp01(h) })
+  return scaled.w >= 0.015 && scaled.h >= 0.015 ? scaled : null
+}
+
 function parseFaceJson(text: string): DetectedBox[] {
   const cleaned = text
     .replace(/^```(?:json)?\s*/i, "")
@@ -206,20 +259,8 @@ function parseFaceJson(text: string): DetectedBox[] {
   if (!Array.isArray(parsed.faces)) return []
 
   return parsed.faces
-    .map((item) => {
-      if (!item || typeof item !== "object") return null
-      const box = item as Record<string, unknown>
-      return {
-        x: clamp01(Number(box.x)),
-        y: clamp01(Number(box.y)),
-        w: clamp01(Number(box.w)),
-        h: clamp01(Number(box.h)),
-      }
-    })
-    .filter((box): box is DetectedBox => {
-      if (!box) return false
-      return box.w >= 0.015 && box.h >= 0.015
-    })
+    .map(parseFaceItem)
+    .filter((box): box is DetectedBox => Boolean(box))
     .slice(0, 12)
 }
 
@@ -238,13 +279,21 @@ export async function detectFacesInPhotoBuffer(buffer: Buffer): Promise<FaceDete
 
   // Keep the vision payload small/reliable.
   let jpeg = buffer
+  let imageWidth = 0
+  let imageHeight = 0
   try {
     const sharp = (await import("sharp")).default
-    jpeg = await sharp(buffer, { failOn: "none" })
-      .rotate()
+    const rotated = sharp(buffer, { failOn: "none" }).rotate()
+    const meta = await rotated.metadata()
+    imageWidth = meta.width ?? 0
+    imageHeight = meta.height ?? 0
+    jpeg = await rotated
       .resize({ width: 1024, height: 1024, fit: "inside", withoutEnlargement: true })
       .jpeg({ quality: 80 })
       .toBuffer()
+    const resizedMeta = await sharp(jpeg).metadata()
+    imageWidth = resizedMeta.width ?? imageWidth
+    imageHeight = resizedMeta.height ?? imageHeight
   } catch {
     // use original buffer
   }
@@ -275,7 +324,12 @@ export async function detectFacesInPhotoBuffer(buffer: Buffer): Promise<FaceDete
         content: [
           {
             type: "text",
-            text: "Return a bounding box for every person's head/face in this photo.",
+            text:
+              (imageWidth > 0 && imageHeight > 0
+                ? `The image is ${imageWidth}×${imageHeight} pixels. `
+                : "") +
+              "Return a bounding box for every person's head/face in this photo. " +
+              "Use top-left (x,y) and size (w,h) as fractions of full image width and height.",
           },
           {
             type: "image_url",

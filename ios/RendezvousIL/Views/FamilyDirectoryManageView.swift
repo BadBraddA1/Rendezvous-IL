@@ -129,67 +129,65 @@ struct FamilyDirectoryManageView: View {
 
     @ViewBuilder
     private var photoPreview: some View {
-        GeometryReader { geo in
-            ZStack {
-                Group {
-                    if let urlString = settings.photo_url, let url = URL(string: urlString) {
-                        AsyncImage(url: url) { phase in
-                            switch phase {
-                            case .success(let image):
-                                image
-                                    .resizable()
-                                    .scaledToFit()
-                            default:
-                                ProgressView()
+        Group {
+            if let urlString = settings.photo_url, let url = URL(string: urlString) {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .scaledToFit()
+                            .frame(maxWidth: .infinity)
+                            .overlay {
+                                GeometryReader { geo in
+                                    ForEach(faces) { face in
+                                        let rect = CGRect(
+                                            x: face.x * geo.size.width,
+                                            y: face.y * geo.size.height,
+                                            width: face.w * geo.size.width,
+                                            height: face.h * geo.size.height
+                                        )
+                                        Button {
+                                            selectedFaceId = face.id
+                                        } label: {
+                                            RoundedRectangle(cornerRadius: 6)
+                                                .stroke(selectedFaceId == face.id ? BrandColors.lake : Color.white.opacity(0.85), lineWidth: selectedFaceId == face.id ? 3 : 2)
+                                                .background(
+                                                    RoundedRectangle(cornerRadius: 6)
+                                                        .fill(selectedFaceId == face.id ? BrandColors.lake.opacity(0.18) : Color.clear)
+                                                )
+                                        }
+                                        .frame(width: rect.width, height: rect.height)
+                                        .position(x: rect.midX, y: rect.midY)
+
+                                        if let label = face.label, !label.isEmpty {
+                                            Text(label)
+                                                .font(.caption2.weight(.semibold))
+                                                .foregroundStyle(.white)
+                                                .padding(.horizontal, 6)
+                                                .padding(.vertical, 2)
+                                                .background(Color.black.opacity(0.7), in: Capsule())
+                                                .position(x: rect.midX, y: min(geo.size.height - 10, rect.maxY + 12))
+                                        }
+                                    }
+                                }
                             }
-                        }
-                    } else {
-                        VStack(spacing: 8) {
-                            Image(systemName: "person.3.fill")
-                                .font(.largeTitle)
-                                .foregroundStyle(.secondary)
-                            Text("No photo yet")
-                                .foregroundStyle(.secondary)
-                        }
+                    default:
+                        ProgressView()
+                            .frame(maxWidth: .infinity, minHeight: 160)
                     }
                 }
-                .frame(width: geo.size.width, height: geo.size.height)
-                .clipped()
-
-                ForEach(faces) { face in
-                    let rect = CGRect(
-                        x: face.x * geo.size.width,
-                        y: face.y * geo.size.height,
-                        width: face.w * geo.size.width,
-                        height: face.h * geo.size.height
-                    )
-                    Button {
-                        selectedFaceId = face.id
-                    } label: {
-                        RoundedRectangle(cornerRadius: 6)
-                            .stroke(selectedFaceId == face.id ? BrandColors.lake : Color.white.opacity(0.85), lineWidth: selectedFaceId == face.id ? 3 : 2)
-                            .background(
-                                RoundedRectangle(cornerRadius: 6)
-                                    .fill(selectedFaceId == face.id ? BrandColors.lake.opacity(0.18) : Color.clear)
-                            )
-                    }
-                    .frame(width: rect.width, height: rect.height)
-                    .position(x: rect.midX, y: rect.midY)
-
-                    if let label = face.label, !label.isEmpty {
-                        Text(label)
-                            .font(.caption2.weight(.semibold))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color.black.opacity(0.7), in: Capsule())
-                            .position(x: rect.midX, y: min(geo.size.height - 10, rect.maxY + 12))
-                    }
+            } else {
+                VStack(spacing: 8) {
+                    Image(systemName: "person.3.fill")
+                        .font(.largeTitle)
+                        .foregroundStyle(.secondary)
+                    Text("No photo yet")
+                        .foregroundStyle(.secondary)
                 }
+                .frame(maxWidth: .infinity, minHeight: 160)
             }
         }
-        .frame(maxWidth: .infinity)
-        .frame(height: 240)
         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
