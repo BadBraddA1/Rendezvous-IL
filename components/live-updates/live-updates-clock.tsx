@@ -52,8 +52,10 @@ export const LiveUpdatesClock = memo(function LiveUpdatesClock() {
 
   return (
     <div className="text-right shrink-0">
-      <div className="text-2xl sm:text-4xl font-light tracking-wider tabular-nums leading-none">{time}</div>
-      <div className="lu-text-muted text-sm sm:text-base mt-1 whitespace-nowrap">{date}</div>
+      <div className="text-2xl sm:text-4xl font-light tracking-wider tabular-nums leading-none text-white">
+        {time}
+      </div>
+      <div className="lu-text-secondary text-sm sm:text-base mt-1 whitespace-nowrap">{date}</div>
     </div>
   )
 })

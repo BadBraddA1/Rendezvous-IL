@@ -854,7 +854,7 @@ export function LiveUpdatesShell() {
 
   return (
     <div
-      className={`live-updates-shell relative flex flex-col overflow-hidden text-[oklch(0.96_0.01_178)] ${
+      className={`live-updates-shell relative flex flex-col overflow-hidden text-white ${
         photoshowOnly || kioskMode
           ? "fixed inset-0 z-[60] h-[100dvh] max-h-[100dvh] w-screen max-w-[100vw]"
           : "h-[100dvh] max-h-[100dvh]"
@@ -931,9 +931,9 @@ export function LiveUpdatesShell() {
           maximum vertical space and aren't competing with header noise.
           Dedicated photoshow mode hides chrome for a true room slideshow. */}
       {!photoshowOnly && !blackout && (
-      <header className="site-chrome-top shrink-0 flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3 sm:gap-6 sm:px-8 sm:py-4">
+      <header className="site-chrome-top shrink-0 flex items-center justify-between gap-3 border-b border-white/25 px-4 py-3 sm:gap-6 sm:px-8 sm:py-4">
         <div className="flex items-center gap-3 min-w-0 shrink">
-          <div className="relative h-11 w-11 shrink-0 rounded-md bg-white/5 border border-white/12 p-1.5 flex items-center justify-center">
+          <div className="relative h-11 w-11 shrink-0 rounded-md bg-white/10 border border-white/25 p-1.5 flex items-center justify-center">
             <Image
               src="/rendezvous-logo.png"
               alt="Rendezvous Homeschool Family Retreat"
@@ -945,7 +945,7 @@ export function LiveUpdatesShell() {
           </div>
           <div className="min-w-0">
             <p className="lu-kicker truncate">Rendezvous 2027</p>
-            <h1 className="truncate text-base font-bold tracking-wide sm:text-xl sm:whitespace-nowrap">
+            <h1 className="truncate text-base font-bold tracking-wide text-white sm:text-xl sm:whitespace-nowrap">
               Live updates
             </h1>
           </div>
@@ -1033,7 +1033,7 @@ export function LiveUpdatesShell() {
 
       {/* Keyboard Controls Footer - hidden in fullscreen or when controls are hidden (press H to toggle) */}
       {!isFullscreen && showControls && !photoshowOnly && (
-      <footer className="site-chrome-bottom shrink-0 border-t border-white/10 px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-8 sm:py-6 lg:px-12">
+      <footer className="site-chrome-bottom shrink-0 border-t border-white/25 px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-8 sm:py-6 lg:px-12">
         <div className="scroll-touch-x flex flex-nowrap items-center justify-start gap-4 sm:flex-wrap sm:justify-center">
           <KeyButton shortcut="1" name="All" active={currentView === "all"} onClick={() => selectView("all")} />
           <KeyButton shortcut="2" name="Weather" active={currentView === "weather"} onClick={() => selectView("weather")} />
@@ -1091,13 +1091,13 @@ export function LiveUpdatesShell() {
               intentionally larger / brighter than the keyboard hints so it's
               easy to find on a projection screen. The label includes the
               current view name so it's obvious that resizing is per-page. */}
-          <div className="ml-2 flex items-center gap-2 rounded-xl border border-primary/20 bg-white/[0.04] px-4 py-2">
+          <div className="ml-2 flex items-center gap-2 rounded-xl border border-white/25 bg-white/10 px-4 py-2">
             <span className="mr-1 text-base font-semibold text-primary">Size</span>
             <button
               type="button"
               onClick={zoomOut}
               disabled={currentZoom <= ZOOM_MIN + 0.001}
-              className="flex items-center justify-center h-12 w-12 rounded-lg border border-white/15 bg-white/[0.04] hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-lg"
+              className="flex items-center justify-center h-12 w-12 rounded-lg border border-white/25 bg-white/10 hover:bg-white/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-lg"
               aria-label="Decrease size"
               title="Decrease size"
             >
@@ -1110,7 +1110,7 @@ export function LiveUpdatesShell() {
               type="button"
               onClick={zoomIn}
               disabled={currentZoom >= ZOOM_MAX - 0.001}
-              className="flex items-center justify-center h-12 w-12 rounded-lg border border-white/15 bg-white/[0.04] hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-lg"
+              className="flex items-center justify-center h-12 w-12 rounded-lg border border-white/25 bg-white/10 hover:bg-white/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-lg"
               aria-label="Increase size"
               title="Increase size"
             >
@@ -1120,7 +1120,7 @@ export function LiveUpdatesShell() {
               type="button"
               onClick={resetZoom}
               disabled={Math.abs(currentZoom - ZOOM_DEFAULT) < 0.001}
-              className="flex items-center justify-center h-12 w-12 rounded-lg border border-white/15 bg-white/[0.04] hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="flex items-center justify-center h-12 w-12 rounded-lg border border-white/25 bg-white/10 hover:bg-white/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               aria-label="Reset size"
               title="Reset size"
             >

@@ -68,7 +68,7 @@ export function UpcomingView({
                   className={`flex items-center gap-5 rounded-xl border px-5 py-4 transition-colors ${
                     isNow
                       ? "lu-surface-now lu-border-now border"
-                      : "border-white/10 bg-white/[0.03]"
+                      : "border-white/20 bg-white/[0.06]"
                   }`}
                 >
                   <div className="shrink-0">
