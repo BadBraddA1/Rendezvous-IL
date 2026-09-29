@@ -169,6 +169,7 @@ export async function resolveFamilyForUser(
 
   const byClerk = await getFamilyByClerkId(clerkUserId)
   if (byClerk) {
+    // Membership was missing (legacy families.clerk_user_id only) — sync once, not every request.
     if (autoLink) {
       await syncPrimaryFamilyMembership(byClerk.id, clerkUserId, byClerk.email ?? email)
     }

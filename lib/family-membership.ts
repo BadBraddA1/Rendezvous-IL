@@ -67,30 +67,27 @@ async function runFamilyMembershipMigrations() {
   await backfillPrimaryMemberships()
 }
 
+/** One-shot backfill: primaries from families.clerk_user_id that lack a membership row. */
 async function backfillPrimaryMemberships() {
-  const rows = await sql`
-    SELECT id, clerk_user_id, email
-    FROM families
-    WHERE clerk_user_id IS NOT NULL AND TRIM(clerk_user_id) != ''
-  `
-
-  for (const row of rows) {
-    const familyId = Number(row.id)
-    const clerkUserId = String(row.clerk_user_id)
-    const email = normalizeEmail(row.email)
-    await sql`
-      INSERT INTO family_account_members (family_id, clerk_user_id, email, role, source)
-      VALUES (${familyId}, ${clerkUserId}, ${email}, 'primary', 'primary_email')
-      ON CONFLICT (clerk_user_id) DO UPDATE SET
-        family_id = excluded.family_id,
-        email = COALESCE(excluded.email, family_account_members.email),
-        role = 'primary',
-        source = CASE
-          WHEN family_account_members.source = 'admin' THEN family_account_members.source
-          ELSE 'primary_email'
-        END
-    `
-  }
+  // Avoid N+1 (one INSERT per family) — Sentry RENDEZVOUS-IL-5 / -4 on cold starts.
+  await sql.query(`
+    INSERT INTO family_account_members (family_id, clerk_user_id, email, role, source)
+    SELECT
+      f.id,
+      f.clerk_user_id,
+      NULLIF(LOWER(TRIM(COALESCE(f.email, ''))), ''),
+      'primary',
+      'primary_email'
+    FROM families f
+    WHERE f.clerk_user_id IS NOT NULL
+      AND TRIM(f.clerk_user_id) != ''
+      AND NOT EXISTS (
+        SELECT 1
+        FROM family_account_members m
+        WHERE m.clerk_user_id = f.clerk_user_id
+      )
+    ON CONFLICT (clerk_user_id) DO NOTHING
+  `)
 }
 
 export function normalizeEmail(value: unknown): string | null {

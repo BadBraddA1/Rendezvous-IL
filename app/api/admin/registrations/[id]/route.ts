@@ -106,7 +106,6 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
       sql`DELETE FROM health_information WHERE registration_id = ${id}`,
       sql`DELETE FROM tshirt_orders WHERE registration_id = ${id}`,
       sql`DELETE FROM volunteer_signups WHERE registration_id = ${id}`,
-      sql`DELETE FROM registration_attendance WHERE registration_id = ${id}`,
     ] as const
     for (const q of related) {
       try {
