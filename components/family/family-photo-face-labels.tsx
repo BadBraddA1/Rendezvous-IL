@@ -24,6 +24,8 @@ type Props = {
 /**
  * Absolute-positioned name labels under each face box (percent of the photo).
  * Parent should be `relative` around the image.
+ * Labels sit below the box (top edge of the chip = bottom of face + gap);
+ * if that would clip off the photo, they flip above the face instead.
  */
 export function FamilyPhotoFaceLabels({
   faces,
@@ -34,6 +36,7 @@ export function FamilyPhotoFaceLabels({
   if (!faces.length) return null
 
   const emptyLayout: FamilyPhotoLayout = { left: 0, top: 0, width: 0, height: 0 }
+  const resolved = layout ?? emptyLayout
 
   return (
     <div className={`pointer-events-none absolute inset-0 ${className}`} aria-hidden>
@@ -41,11 +44,14 @@ export function FamilyPhotoFaceLabels({
         const label = face.label?.trim() || ""
         if (!label && !showUnlabeledPlaceholders) return null
 
-        const labelFace = { ...face, y: face.y + face.h, h: 0.001, w: face.w }
-        const labelBox = faceBoxStyle(labelFace, layout ?? emptyLayout)
+        // Keep chips off faces: prefer below the box; flip above near the bottom edge.
+        const placeAbove = face.y + face.h > 0.88
+        const anchorY = placeAbove ? face.y : face.y + face.h
+        const labelFace = { ...face, y: anchorY, h: 0.001, w: face.w }
+        const labelBox = faceBoxStyle(labelFace, resolved)
         const labelWidth =
-          layout && layout.width > 0
-            ? Math.max(face.w * layout.width, layout.width * 0.1)
+          resolved.width > 0
+            ? Math.max(face.w * resolved.width, resolved.width * 0.1)
             : `${Math.max(face.w * 100, 10)}%`
 
         return (
@@ -56,9 +62,10 @@ export function FamilyPhotoFaceLabels({
               left: labelBox.left,
               top: labelBox.top,
               width: labelWidth,
+              transform: placeAbove ? "translateY(calc(-100% - 4px))" : "translateY(4px)",
             }}
           >
-            <span className="mt-0.5 max-w-full truncate rounded-md bg-black/70 px-1.5 py-0.5 text-center text-[10px] font-medium leading-tight text-white shadow-sm sm:text-xs">
+            <span className="max-w-full truncate rounded-md bg-black/70 px-1.5 py-0.5 text-center text-[10px] font-medium leading-tight text-white shadow-sm sm:text-xs">
               {label || "Name"}
             </span>
           </div>

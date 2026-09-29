@@ -167,7 +167,12 @@ struct FamilyDirectoryManageView: View {
                                                 .padding(.horizontal, 6)
                                                 .padding(.vertical, 2)
                                                 .background(Color.black.opacity(0.7), in: Capsule())
-                                                .position(x: rect.midX, y: min(geo.size.height - 10, rect.maxY + 12))
+                                                .position(
+                                                    DirectoryFaceLabelLayout.labelCenter(
+                                                        faceRect: rect,
+                                                        in: geo.size
+                                                    )
+                                                )
                                         }
                                     }
                                 }

@@ -542,11 +542,15 @@ private fun DirectoryPhotoWithFaceLabels(
 
         if (labeled.isNotEmpty() && laidOut.width > 0 && laidOut.height > 0) {
             labeled.forEach { face ->
-                val labelX = (face.x * laidOut.width).toInt()
-                val labelY = ((face.y + face.h) * laidOut.height).toInt()
                 val labelMaxWidth = with(density) {
                     maxOf(face.w * laidOut.width, laidOut.width * 0.12f).toDp()
                 }
+                val gapPx = with(density) { 6.dp.roundToPx() }
+                val approxLabelHeight = with(density) { 18.dp.roundToPx() }
+                val belowY = ((face.y + face.h) * laidOut.height).toInt() + gapPx
+                val aboveY = (face.y * laidOut.height).toInt() - gapPx - approxLabelHeight
+                val labelY = if (belowY + approxLabelHeight < laidOut.height - 4) belowY else maxOf(4, aboveY)
+                val labelX = (face.x * laidOut.width).toInt().coerceIn(0, laidOut.width - 8)
                 Text(
                     text = face.label,
                     color = Color.White,
@@ -555,7 +559,7 @@ private fun DirectoryPhotoWithFaceLabels(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier
-                        .offset { IntOffset(labelX, labelY + with(density) { 2.dp.roundToPx() }) }
+                        .offset { IntOffset(labelX, labelY) }
                         .widthIn(max = labelMaxWidth)
                         .background(Color.Black.copy(alpha = 0.72f), RoundedCornerShape(4.dp))
                         .padding(horizontal = 4.dp, vertical = 2.dp),

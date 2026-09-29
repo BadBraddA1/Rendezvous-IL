@@ -523,8 +523,10 @@ struct DirectoryFamilyDetailView: View {
                                             .padding(.vertical, 2)
                                             .background(Color.black.opacity(0.72), in: Capsule())
                                             .position(
-                                                x: rect.midX,
-                                                y: min(geo.size.height - 12, rect.maxY + 12)
+                                                DirectoryFaceLabelLayout.labelCenter(
+                                                    faceRect: rect,
+                                                    in: geo.size
+                                                )
                                             )
                                     }
                                 }
