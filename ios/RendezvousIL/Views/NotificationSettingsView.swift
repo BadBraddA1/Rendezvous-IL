@@ -2,11 +2,14 @@ import ActivityKit
 import SwiftUI
 
 struct NotificationSettingsView: View {
+    @Environment(AppSession.self) private var session
     @Environment(RendezvousRepository.self) private var repository
 
     @State private var isRescheduling = false
     @State private var rescheduleMessage: String?
     @State private var isRefreshingLiveActivity = false
+    @State private var isSendingTestPush = false
+    @State private var testPushMessage: String?
 
     private var notifications: NotificationService { NotificationService.shared }
     private var reminders = ReminderService.shared
@@ -35,6 +38,32 @@ struct NotificationSettingsView: View {
                 }
             } footer: {
                 Text("Event reminders are scheduled on your device. Retreat-wide alerts use Apple Push Notification service (APNs).")
+            }
+
+            Section {
+                Button {
+                    Task { await sendTestPush(sound: "chat") }
+                } label: {
+                    testPushLabel("Send test chat sound")
+                }
+                .disabled(isSendingTestPush || session.apiClient == nil)
+
+                Button {
+                    Task { await sendTestPush(sound: "announce") }
+                } label: {
+                    testPushLabel("Send test announcement sound")
+                }
+                .disabled(isSendingTestPush || session.apiClient == nil)
+
+                if let testPushMessage {
+                    Text(testPushMessage)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+            } header: {
+                Text("Sound test")
+            } footer: {
+                Text("Lock the phone or switch apps, then tap a button. You should hear chat.caf or announce.caf within a second or two.")
             }
 
             Section("Retreat alerts") {
@@ -111,6 +140,18 @@ struct NotificationSettingsView: View {
         }
     }
 
+    @ViewBuilder
+    private func testPushLabel(_ title: String) -> some View {
+        if isSendingTestPush {
+            HStack {
+                ProgressView()
+                Text("Sending…")
+            }
+        } else {
+            Text(title)
+        }
+    }
+
     private var broadcastBinding: Binding<Bool> {
         Binding(
             get: { notifications.broadcastAlertsEnabled },
@@ -151,6 +192,31 @@ struct NotificationSettingsView: View {
         await repository.syncSharedSnapshot()
     }
 
+    private func sendTestPush(sound: String) async {
+        guard let client = session.apiClient else {
+            testPushMessage = "Sign in required."
+            return
+        }
+        isSendingTestPush = true
+        testPushMessage = nil
+        defer { isSendingTestPush = false }
+
+        // Make sure this debug install's token is registered before we fire.
+        await pushService.retryPendingRegistration()
+
+        do {
+            let response = try await client.sendTestPush(sound: sound)
+            if let error = response.error, response.success != true {
+                testPushMessage = error
+            } else {
+                let sent = response.sent ?? 0
+                testPushMessage = "Sent \(sent) — lock the phone or leave the app to hear it."
+            }
+        } catch {
+            testPushMessage = error.localizedDescription
+        }
+    }
+
     private func requestAndRegister() async {
         await notifications.refreshAuthorizationStatus()
         if notifications.authorizationStatus == .notDetermined {
@@ -183,6 +249,7 @@ struct NotificationSettingsView: View {
 #Preview {
     NavigationStack {
         NotificationSettingsView()
+            .environment(AppSession())
             .environment(RendezvousRepository())
     }
 }

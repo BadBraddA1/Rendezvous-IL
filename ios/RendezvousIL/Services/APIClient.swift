@@ -96,6 +96,14 @@ actor APIClient {
         return try await post("/api/auth/activity", body: body, as: UserActivityResponse.self)
     }
 
+    /// Fire a test APNs alert to this account's devices (`sound`: chat | announce | default).
+    func sendTestPush(sound: String = "chat") async throws -> TestPushResponse {
+        struct Body: Encodable {
+            let sound: String
+        }
+        return try await post("/api/push/test", body: Body(sound: sound), as: TestPushResponse.self)
+    }
+
     func getAdminUsers() async throws -> AdminUsersListResponse {
         try await get("/api/admin/users")
     }
@@ -496,6 +504,14 @@ struct MobileStatusResponse: Decodable {
 struct UserActivityResponse: Decodable {
     let success: Bool
     let platform: String?
+}
+
+struct TestPushResponse: Decodable {
+    let success: Bool?
+    let sound: String?
+    let sent: Int?
+    let failed: Int?
+    let error: String?
 }
 
 struct AdminUserPayload: Decodable {
