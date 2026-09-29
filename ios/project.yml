@@ -26,6 +26,8 @@ targets:
       - path: RendezvousIL/Resources/Assets.xcassets
       - path: RendezvousIL/Resources/schedule-fallback.json
       - path: RendezvousIL/Resources/venue-map.json
+      - path: RendezvousIL/Resources/Sounds/chat.caf
+      - path: RendezvousIL/Resources/Sounds/announce.caf
     entitlements:
       path: RendezvousIL/RendezvousIL.entitlements
       properties:
@@ -56,7 +58,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.rendezvousil.braddcorp.app
         PRODUCT_NAME: Rendezvous IL
         MARKETING_VERSION: "2.0.9"
-        CURRENT_PROJECT_VERSION: "225"
+        CURRENT_PROJECT_VERSION: "226"
         DEVELOPMENT_TEAM: F5HPRRCC5H
         CODE_SIGN_STYLE: Automatic
         INFOPLIST_FILE: RendezvousIL/Info.plist
@@ -80,7 +82,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.rendezvousil.braddcorp.app.widgets
         PRODUCT_NAME: RendezvousILWidgets
         MARKETING_VERSION: "2.0.9"
-        CURRENT_PROJECT_VERSION: "225"
+        CURRENT_PROJECT_VERSION: "226"
         DEVELOPMENT_TEAM: F5HPRRCC5H
         CODE_SIGN_STYLE: Automatic
         INFOPLIST_KEY_CFBundleDisplayName: Rendezvous Widgets
@@ -102,7 +104,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.rendezvousil.braddcorp.app.notification-service
         PRODUCT_NAME: RendezvousILNotificationService
         MARKETING_VERSION: "2.0.9"
-        CURRENT_PROJECT_VERSION: "225"
+        CURRENT_PROJECT_VERSION: "226"
         DEVELOPMENT_TEAM: F5HPRRCC5H
         CODE_SIGN_STYLE: Automatic
         INFOPLIST_KEY_CFBundleDisplayName: Rendezvous Notifications

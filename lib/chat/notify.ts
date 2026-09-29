@@ -139,6 +139,7 @@ export async function notifyChatMessagePush(input: {
           threadId: `chat-${input.channelId}`,
           channelId: input.channelId,
           contentAvailable: true,
+          sound: input.message.is_announcement ? "announce.caf" : "chat.caf",
           imageUrl,
         })
         for (const f of results.filter((r) => !r.success)) {
@@ -211,6 +212,7 @@ export async function notifyChatReactionPush(input: {
           threadId: `chat-${input.channelId}`,
           channelId: input.channelId,
           contentAvailable: true,
+          sound: "chat.caf",
         })
         for (const f of results.filter((r) => !r.success)) {
           if (f.reason?.includes("BadDeviceToken") || f.reason?.includes("Unregistered")) {

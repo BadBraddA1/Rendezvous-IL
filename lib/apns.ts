@@ -14,6 +14,11 @@ export interface ApnsAlertPayload {
   channelId?: string
   /** Wake the app briefly to refresh chat cache (combined with alert). */
   contentAvailable?: boolean
+  /**
+   * Sound file in the iOS app bundle (e.g. `chat.caf`). Use `default` for the system sound.
+   * Custom sounds must be committed under the main app target (≤30s, linear PCM/MA4/µLaw/aLaw).
+   */
+  sound?: string
   /** Public HTTPS image URL — iOS Notification Service Extension attaches a preview. */
   imageUrl?: string
 }
@@ -103,7 +108,7 @@ function sendOne(
     const body = JSON.stringify({
       aps: {
         alert: { title: payload.title, body: payload.body },
-        sound: "default",
+        sound: payload.sound ?? "default",
         ...(payload.badge !== undefined ? { badge: payload.badge } : {}),
         ...(payload.threadId ? { "thread-id": payload.threadId } : {}),
         ...(payload.contentAvailable ? { "content-available": 1 } : {}),

@@ -17,7 +17,7 @@ Native SwiftUI **attendee community hub** for [rendezvousil.com](https://rendezv
 | **Calculator** | Package presets (full / 3-9 / 2-6 / 1-3) via `POST /api/calculator/estimate` |
 | **App feedback** | More → App feedback — product bugs/ideas (not EEF) |
 | **Songs** | More → Songs — published Campfire / Racket Ball packs; opportunistic download to Documents by `content_hash`; offline PDFKit / Quick Look viewer with next/previous |
-| **Notifications** | Local event reminders + **APNs** for organizer broadcasts, chat, and song-pack updates; photo messages show a lock-screen preview via **Notification Service Extension**; deep links from push open the right tab |
+| **Notifications** | Local event reminders + **APNs** for organizer broadcasts, chat, and song-pack updates; photo messages show a lock-screen preview via **Notification Service Extension**; deep links from push open the right tab. **Custom sounds (2.0.9 / 226+):** chat → `chat.caf`, chat announcements → `announce.caf` (bundled in the app; APNs `sound` field). |
 | **Live Activity** | Lock Screen / Dynamic Island now & next during retreat week |
 | **Widgets** | Home/Lock Screen now/next; tap opens Schedule via `rendezvousil://schedule` |
 | **CarPlay** | Driving-task list: today’s retreat schedule + **Directions to Lake Williamson** (Apple entitlement **approved** — enable on App ID + refresh profiles; see [docs/carplay/SETUP.md](docs/carplay/SETUP.md)) |
