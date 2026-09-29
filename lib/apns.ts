@@ -10,6 +10,10 @@ export interface ApnsAlertPayload {
   url?: string
   badge?: number
   threadId?: string
+  /** Chat channel id — iOS prefetches this thread into disk cache on push. */
+  channelId?: string
+  /** Wake the app briefly to refresh chat cache (combined with alert). */
+  contentAvailable?: boolean
   /** Public HTTPS image URL — iOS Notification Service Extension attaches a preview. */
   imageUrl?: string
 }
@@ -102,9 +106,11 @@ function sendOne(
         sound: "default",
         ...(payload.badge !== undefined ? { badge: payload.badge } : {}),
         ...(payload.threadId ? { "thread-id": payload.threadId } : {}),
+        ...(payload.contentAvailable ? { "content-available": 1 } : {}),
         ...(payload.imageUrl ? { "mutable-content": 1 } : {}),
       },
       ...(payload.url ? { url: payload.url } : {}),
+      ...(payload.channelId ? { channelId: payload.channelId } : {}),
       ...(payload.imageUrl ? { image: payload.imageUrl } : {}),
     })
 

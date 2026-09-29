@@ -22,13 +22,16 @@ struct RootView: View {
                     mainContent
                 } else {
                     launchSplash
+                        .background(Color(.systemGroupedBackground))
                 }
             } else {
+                // Once signed in, paint Schedule under the logo (splash still overlays briefly).
                 mainContent
-                    .opacity(splashFinished ? 1 : 0)
+                    .opacity(splashFinished || session.isSignedIn ? 1 : 0)
 
                 if !splashFinished {
                     launchSplash
+                        .background(session.isSignedIn ? Color(.systemGroupedBackground).opacity(0.88) : Color(.systemGroupedBackground))
                         .transition(.opacity)
                         .zIndex(1)
                 }
@@ -57,6 +60,12 @@ struct RootView: View {
                     try? await Task.sleep(for: .milliseconds(600))
                     await NotificationService.shared.preparePostSignInPromptIfNeeded()
                 }
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .rendezvousChatPushPrefetch)) { note in
+            let channelId = note.userInfo?["channelId"] as? String
+            Task {
+                await session.prefetchChatCache(channelId: channelId, force: true)
             }
         }
         .alert(
@@ -156,15 +165,19 @@ struct RootView: View {
             return
         }
         let splashStarted = Date()
-        async let bootstrap: Void = session.bootstrapAuthIfNeeded()
-        async let minimumSplash: Void = {
-            try? await Task.sleep(for: .milliseconds(600))
-        }()
-        _ = await (bootstrap, minimumSplash)
+        // Warm path: schedule already on disk → dismiss as soon as auth finishes (tiny floor).
+        // Cold path keeps a short brand beat so first install doesn't flash.
+        let hasWarmSchedule = ScheduleDataStore.loadCached() != nil
+        let minimumSplashMs: Double = hasWarmSchedule ? 80 : 450
+        await session.bootstrapAuthIfNeeded()
+        let elapsedMs = Date().timeIntervalSince(splashStarted) * 1000
+        if elapsedMs < minimumSplashMs {
+            try? await Task.sleep(for: .milliseconds(UInt64(minimumSplashMs - elapsedMs)))
+        }
         splashFinished = true
         let splashMs = Int(Date().timeIntervalSince(splashStarted) * 1000)
         AppLog.bootstrap(
-            "splash done ms=\(splashMs) signedIn=\(session.isSignedIn) clerkReady=\(session.isClerkReady)"
+            "splash done ms=\(splashMs) warm=\(hasWarmSchedule) signedIn=\(session.isSignedIn) clerkReady=\(session.isClerkReady)"
         )
     }
 
@@ -193,7 +206,8 @@ struct RootView: View {
                 .padding(.bottom, 28)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.systemGroupedBackground))
+        // Background applied by caller when warm-reveal overlays Schedule.
+        .background(Color.clear)
     }
 
     private var connectingView: some View {

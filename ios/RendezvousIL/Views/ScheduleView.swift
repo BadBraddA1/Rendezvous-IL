@@ -92,6 +92,9 @@ struct ScheduleView: View {
                                     allLuItems: schedule.luItems,
                                     meal: mealFor(event: event, isoDate: isoDate),
                                     volunteers: volunteersFor(event: event, isoDate: isoDate),
+                                    expectsMeal: MealMatcher.mealType(for: event.title) != nil,
+                                    expectsVolunteers: AssemblyMatcher.timeSlot(for: event.title, time: event.time) != nil,
+                                    extrasLoading: repository.isLoadingScheduleExtras,
                                     isHappeningNow: happeningNow.map {
                                         $0.date == isoDate && $0.title == event.title
                                     } ?? false
@@ -155,6 +158,11 @@ struct ScheduleView: View {
                 .padding()
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(BrandColors.lakeLight.opacity(0.5), in: RoundedRectangle(cornerRadius: 12))
+            } else if repository.isLoadingUpdates {
+                ScheduleNetworkPlaceholder(lines: ["***°", "********", "**** · ***"])
+                    .padding()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
             } else {
                 Text("Weather loads during retreat week when you're online.")
                     .font(.subheadline)
@@ -292,6 +300,9 @@ private struct EventCard: View {
     let allLuItems: [LUScheduleItem]
     let meal: Meal?
     let volunteers: VolunteerScheduleSlot?
+    var expectsMeal: Bool = false
+    var expectsVolunteers: Bool = false
+    var extrasLoading: Bool = false
     var isHappeningNow: Bool = false
 
     @State private var showReminderSheet = false
@@ -378,10 +389,18 @@ private struct EventCard: View {
 
         if let meal {
             MealDetailView(meal: meal)
+        } else if expectsMeal && extrasLoading {
+            ScheduleNetworkPlaceholder(title: "Menu", lines: ["********", "****, ****"])
+                .padding(10)
+                .background(BrandColors.lakeLight.opacity(0.6), in: RoundedRectangle(cornerRadius: 8))
         }
 
         if let volunteers {
             VolunteerDetailView(slot: volunteers)
+        } else if expectsVolunteers && extrasLoading {
+            ScheduleNetworkPlaceholder(title: "Worship leaders", lines: ["********", "********"])
+                .padding(10)
+                .background(BrandColors.warmSurface, in: RoundedRectangle(cornerRadius: 8))
         }
     }
 
@@ -392,6 +411,29 @@ private struct EventCard: View {
 
     private var reminderIcon: String {
         hasReminder ? "bell.fill" : "bell"
+    }
+}
+
+/// Offline-first placeholder while meals / weather / worship names load over weak Wi‑Fi.
+private struct ScheduleNetworkPlaceholder: View {
+    var title: String?
+    var lines: [String]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            if let title {
+                Text(title)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+            ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
+                Text(line)
+                    .font(.subheadline.monospaced())
+                    .foregroundStyle(.tertiary)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityLabel("Loading")
     }
 }
 

@@ -117,7 +117,7 @@ export async function notifyChatMessagePush(input: {
     const body = input.message.is_announcement
       ? preview.slice(0, 160)
       : `${input.message.sender_display_name}: ${preview}`.slice(0, 160)
-    const deepLink = `rendezvousil://chat`
+    const deepLink = `rendezvousil://chat?channel=${encodeURIComponent(input.channelId)}`
     const webUrl = "https://rendezvousil.com/chat"
 
     const placeholders = recipients.map(() => "?").join(", ")
@@ -137,6 +137,8 @@ export async function notifyChatMessagePush(input: {
           body,
           url: deepLink,
           threadId: `chat-${input.channelId}`,
+          channelId: input.channelId,
+          contentAvailable: true,
           imageUrl,
         })
         for (const f of results.filter((r) => !r.success)) {
@@ -190,7 +192,7 @@ export async function notifyChatReactionPush(input: {
 
     const title = "New reaction"
     const body = `${input.actorDisplayName} reacted ${input.emoji} to your message`.slice(0, 160)
-    const deepLink = `rendezvousil://chat`
+    const deepLink = `rendezvousil://chat?channel=${encodeURIComponent(input.channelId)}`
     const webUrl = "https://rendezvousil.com/chat"
 
     if (isApnsConfigured()) {
@@ -207,6 +209,8 @@ export async function notifyChatReactionPush(input: {
           body,
           url: deepLink,
           threadId: `chat-${input.channelId}`,
+          channelId: input.channelId,
+          contentAvailable: true,
         })
         for (const f of results.filter((r) => !r.success)) {
           if (f.reason?.includes("BadDeviceToken") || f.reason?.includes("Unregistered")) {

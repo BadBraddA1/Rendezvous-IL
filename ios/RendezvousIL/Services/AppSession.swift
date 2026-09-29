@@ -185,16 +185,19 @@ final class AppSession {
             return
         }
 
-        // Prove we can mint a token before flipping signed-in UI (avoids crash/loop on bad session).
-        // Force-refresh once here; thereafter reuse Clerk's cached JWT (skipCache: false) so
-        // parallel Home/Chat/Directory calls don't each hit Clerk again.
+        // Warm path: use Clerk's cached JWT so splash is not blocked on a network token mint.
+        // Force-refresh in the background; only clear the session if that proves the session is dead.
         let token: String
         do {
-            token = try await Self.sessionToken(forceRefresh: true)
+            token = try await Self.sessionToken(forceRefresh: false)
         } catch {
-            AppLog.bootstrap("refreshAuth token failed: \(error.localizedDescription)")
-            clearSession()
-            return
+            do {
+                token = try await Self.sessionToken(forceRefresh: true)
+            } catch {
+                AppLog.bootstrap("refreshAuth token failed: \(error.localizedDescription)")
+                clearSession()
+                return
+            }
         }
 
         apiClient = APIClient(tokenProvider: { try await Self.sessionToken(forceRefresh: false) })
@@ -202,19 +205,29 @@ final class AppSession {
         authError = nil
         clerkSessionId = Clerk.shared.session?.id
         _ = token
-        AppLog.bootstrap("refreshAuth signed-in (background admin/push deferred)")
+        AppLog.bootstrap("refreshAuth signed-in (background admin/push/chat deferred)")
 
         PushRegistrationService.shared.authTokenProvider = {
             try? await Self.sessionToken(forceRefresh: false)
         }
 
-        // Don't block first paint on admin probe / activity / push re-register.
+        // Don't block first paint on admin probe / activity / push / chat warm / JWT refresh.
         Task { @MainActor in
+            _ = try? await Self.sessionToken(forceRefresh: true)
             await PushRegistrationService.shared.retryPendingRegistration()
             await self.refreshAdminStatus()
             await self.recordActivityIfSignedIn()
             self.startActivityPingLoop()
+            if let client = self.apiClient {
+                await ChatCachePrefetcher.refresh(using: client, force: true)
+            }
         }
+    }
+
+    /// Prefetch chat channels/messages into disk cache (push arrival or idle warm).
+    func prefetchChatCache(channelId: String? = nil, force: Bool = false) async {
+        guard let client = apiClient else { return }
+        await ChatCachePrefetcher.refresh(using: client, channelId: channelId, force: force)
     }
 
     func recordActivityIfSignedIn() async {

@@ -41,12 +41,13 @@ enum AppBootstrapState: Equatable {
 
     @MainActor
     static func resolve(session: AppSession, splashFinished: Bool) -> AppBootstrapState {
-        guard splashFinished else { return .splash }
         // Prefer a usable welcome screen over a hard failure when Clerk is misconfigured.
         if let error = session.clerkSetupError, !AppConfig.hasValidClerkKey {
             return .misconfigured(error)
         }
+        // Once auth is known, paint the real shell under the splash overlay (warm schedule cache).
         if session.isSignedIn { return .signedIn }
+        guard splashFinished else { return .splash }
         if session.isLoading { return .connecting }
         return .welcome
     }

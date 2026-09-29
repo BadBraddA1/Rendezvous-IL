@@ -6,14 +6,14 @@ Native SwiftUI **attendee community hub** for [rendezvousil.com](https://rendezv
 
 | Area | Details |
 |------|---------|
-| **Sign-in gate** | Welcome screen → Clerk sheet → full app (Pew Packers pattern). Splash ends after Clerk is ready; admin/push/activity run in the background (2.0.9+). |
+| **Sign-in gate** | Welcome screen → Clerk sheet → full app (Pew Packers pattern). **Warm launch (2.0.9 / 223+):** if schedule is cached, splash ends as soon as Clerk’s cached JWT is ready (~80 ms floor); Schedule paints under a brief logo overlay. Admin/push/activity/chat-warm run in the background. |
 | **Family account** | Native manage members / emails / phones / app-access roster (`FamilyProfileView`). Registration + password change stay web handoff. |
 | **Account** | Payment status + total, directory photo, attendee map, app feedback, registration web links |
-| **Home** | Season year hub (or live board in retreat week); family manage link; cost + payment status |
+| **Home** | Season year hub (or live board in retreat week); family manage link; cost + payment status. **Lazy-mounted** until the tab is opened. |
 | **Map** | Campus map + **attendee map** (directory pins). Uses When-In-Use location for campus switch. |
-| **Chat** | Year cohort channels (Ably realtime when available; messages still load if Ably fails), retry + pull-to-refresh. **Disk cache** paints list/thread immediately; network + Ably refresh in the background. Tap a reaction chip to see who reacted. |
-| **Schedule** (center tab) | Day schedule + live updates (now/next, weather, announcements), meals, worship leaders, event reminders |
-| **Directory** | Family cards (tap for full details); disk cache then background refresh; search, year picker; **Your photo** toolbar |
+| **Chat** | Year cohort channels (Ably realtime when available; messages still load if Ably fails), retry + pull-to-refresh. **Disk cache** paints list/thread immediately; network + Ably refresh in the background. **Push prefetch:** chat APNs include `channelId` + `content-available` so the app pulls channels/messages onto disk in the background. Idle warm after launch. Lazy-mounted until opened. |
+| **Schedule** (center tab) | Always mounted (center). Day grid from **disk/bundled cache first**; meals / weather / worship show `***` placeholders until Wi‑Fi catches up. |
+| **Directory** | Family cards (tap for full details); disk cache then background refresh; search, year picker; **Your photo** toolbar. Lazy-mounted until opened. |
 | **Calculator** | Package presets (full / 3-9 / 2-6 / 1-3) via `POST /api/calculator/estimate` |
 | **App feedback** | More → App feedback — product bugs/ideas (not EEF) |
 | **Songs** | More → Songs — published Campfire / Racket Ball packs; opportunistic download to Documents by `content_hash`; offline PDFKit / Quick Look viewer with next/previous |

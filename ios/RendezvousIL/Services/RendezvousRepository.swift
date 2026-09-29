@@ -14,6 +14,8 @@ final class RendezvousRepository {
     var isLoadingSchedule = false
     var isRefreshingSchedule = false
     var isLoadingUpdates = false
+    /// Meals / worship slots / schedule announcements — deferred after first Schedule paint.
+    var isLoadingScheduleExtras = false
     var scheduleError: String?
     var scheduleSource: ScheduleDataSource?
     var lastScheduleRefresh: Date?
@@ -38,7 +40,7 @@ final class RendezvousRepository {
         applyOfflineScheduleIfNeeded()
     }
 
-    /// Offline-first bootstrap — call once after sign-in.
+    /// Offline-first bootstrap — paint schedule from disk, then refresh network in phases.
     func bootstrap() async {
         applyOfflineScheduleIfNeeded()
         if AppStoreScreenshotMode.isEnabled {
@@ -46,10 +48,13 @@ final class RendezvousRepository {
             lastBootstrapAt = Date()
             return
         }
-        async let scheduleTask: Void = loadScheduleBundle()
+        // Phase 1: schedule grid (core UX). Mark bootstrap recently so other tabs skip dupes.
+        await loadScheduleBundle()
+        lastBootstrapAt = Date()
+        // Phase 2: wifi-dependent extras — UI shows *** placeholders until these land.
         async let extrasTask: Void = loadScheduleExtras()
         async let updatesTask: Void = loadUpdates()
-        _ = await (scheduleTask, extrasTask, updatesTask)
+        _ = await (extrasTask, updatesTask)
         lastBootstrapAt = Date()
     }
 
@@ -92,6 +97,8 @@ final class RendezvousRepository {
     }
 
     func loadScheduleExtras() async {
+        isLoadingScheduleExtras = true
+        defer { isLoadingScheduleExtras = false }
         async let mealsTask: Void = fetchMeals()
         async let volunteerTask: Void = fetchVolunteers()
         async let scheduleAnnouncementsTask: Void = fetchScheduleAnnouncements()

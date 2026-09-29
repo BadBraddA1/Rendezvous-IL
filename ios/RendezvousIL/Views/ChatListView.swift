@@ -42,6 +42,12 @@ struct ChatListView: View {
             .navigationTitle("Chat")
             .refreshable { await load(force: true) }
             .task { await load(force: false) }
+            .onReceive(NotificationCenter.default.publisher(for: .rendezvousChatCacheUpdated)) { _ in
+                guard let cached = ChatDataStore.loadChannels(), !cached.isEmpty else { return }
+                channels = cached.sortedForDisplay()
+                isLoading = false
+                errorMessage = nil
+            }
             .safeAreaInset(edge: .top, spacing: 0) {
                 if session.isChatDemoMode {
                     HStack(spacing: 8) {
