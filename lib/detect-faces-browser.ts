@@ -87,9 +87,10 @@ async function loadMediaPipeFaceDetector(): Promise<MediaPipeFaceDetector | null
   return detectorPromise
 }
 
-/** Decode the directory JPEG via fetch so detection uses natural pixels (CORS-safe). */
+/** Decode the directory JPEG via same-origin proxy (CDN has no CORS). */
 export async function loadImageElementFromUrl(photoUrl: string): Promise<HTMLImageElement> {
-  const response = await fetch(photoUrl, { mode: "cors", credentials: "omit" })
+  const fetchUrl = sameOriginMediaUrl(photoUrl)
+  const response = await fetch(fetchUrl, { credentials: "same-origin" })
   if (!response.ok) {
     throw new Error("Could not download photo for face detection")
   }
@@ -106,6 +107,23 @@ export async function loadImageElementFromUrl(photoUrl: string): Promise<HTMLIma
   } finally {
     URL.revokeObjectURL(objectUrl)
   }
+}
+
+/** Route CDN URLs through our API — R2 custom domain blocks browser CORS fetch. */
+function sameOriginMediaUrl(photoUrl: string): string {
+  try {
+    const host = new URL(photoUrl, window.location.href).hostname
+    if (
+      host === "cdn.rendezvousil.com" ||
+      host.endsWith(".blob.vercel-storage.com") ||
+      host.endsWith(".r2.dev")
+    ) {
+      return `/api/media/cdn-proxy?url=${encodeURIComponent(photoUrl)}`
+    }
+  } catch {
+    // fall through
+  }
+  return photoUrl
 }
 
 function boxesFromMediaPipe(
