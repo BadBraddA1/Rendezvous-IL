@@ -1,14 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { checkAdminAuth, getAdminPermissions } from "@/lib/admin-auth"
 import {
-  detectAndStoreFamilyPhotoFaces,
   listFamilyPhotoFaces,
   replaceFamilyPhotoFaces,
   suggestFaceNames,
   updateFamilyPhotoFaceLabels,
 } from "@/lib/family-photo-faces"
 import { getFamilyDirectorySettings } from "@/lib/family-directory"
-import { normalizeDirectoryPhoto } from "@/lib/family-photo-process"
 
 export const dynamic = "force-dynamic"
 export const maxDuration = 60
@@ -137,23 +135,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       })
     }
 
-    const imageRes = await fetch(settings.photo_url)
-    if (!imageRes.ok) {
-      return NextResponse.json({ error: "Could not download current photo" }, { status: 502 })
-    }
-    const bytes = Buffer.from(await imageRes.arrayBuffer())
-    const { buffer } = await normalizeDirectoryPhoto(bytes, "image/jpeg")
-    const detected = await detectAndStoreFamilyPhotoFaces(familyId, settings.photo_url, buffer)
-    const nameSuggestions = await suggestFaceNames(familyId)
-
-    return NextResponse.json({
-      success: true,
-      faces: detected.faces,
-      name_suggestions: nameSuggestions,
-      photo_url: settings.photo_url,
-      detect_error: detected.error ?? null,
-      source: "server",
-    })
+    return NextResponse.json(
+      {
+        error:
+          "Face boxes are required. Use Find faces in the browser (MediaPipe) — server Gemini detection was removed because boxes were inaccurate.",
+      },
+      { status: 400 },
+    )
   } catch (err) {
     console.error("[admin/directory/faces] POST error:", err)
     return NextResponse.json({ error: "Failed to detect faces" }, { status: 500 })

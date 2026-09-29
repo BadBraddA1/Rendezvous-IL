@@ -10,7 +10,6 @@ import {
 import { deleteFamilyPhotoIfStored, uploadFamilyPhoto } from "@/lib/family-photo-storage"
 import {
   clearFamilyPhotoFaces,
-  detectAndStoreFamilyPhotoFaces,
   suggestFaceNames,
 } from "@/lib/family-photo-faces"
 
@@ -100,15 +99,17 @@ export async function POST(request: Request) {
     await setFamilyPhotoUrl(family.id, uploaded.url)
     await deleteFamilyPhotoIfStored(current?.photo_url)
 
-    const detected = await detectAndStoreFamilyPhotoFaces(family.id, uploaded.url, uploaded.buffer)
+    // Clear old boxes — accurate detection runs in the browser (MediaPipe / BlazeFace).
+    // Gemini LLM boxes are too imprecise for naming overlays.
+    await clearFamilyPhotoFaces(family.id)
     const nameSuggestions = await suggestFaceNames(family.id)
     const settings = await getFamilyDirectorySettings(family.id)
     return NextResponse.json({
       success: true,
       settings,
-      faces: detected.faces,
+      faces: [],
       name_suggestions: nameSuggestions,
-      detect_error: detected.error ?? null,
+      detect_error: null,
     })
   } catch (error) {
     console.error("[family-directory] POST photo error:", error)

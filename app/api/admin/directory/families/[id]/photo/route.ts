@@ -9,7 +9,6 @@ import {
 import { deleteFamilyPhotoIfStored, uploadFamilyPhoto } from "@/lib/family-photo-storage"
 import {
   clearFamilyPhotoFaces,
-  detectAndStoreFamilyPhotoFaces,
   suggestFaceNames,
 } from "@/lib/family-photo-faces"
 
@@ -53,7 +52,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const uploaded = await uploadFamilyPhoto(familyId, await file.arrayBuffer(), file.type)
     await setFamilyPhotoUrl(familyId, uploaded.url)
     await deleteFamilyPhotoIfStored(current?.photo_url)
-    const detected = await detectAndStoreFamilyPhotoFaces(familyId, uploaded.url, uploaded.buffer)
+    // Accurate boxes come from the browser (MediaPipe). Don't store Gemini guesses.
+    await clearFamilyPhotoFaces(familyId)
     const nameSuggestions = await suggestFaceNames(familyId)
 
     const { ipAddress, userAgent } = getRequestAuditMeta(req)
@@ -69,9 +69,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({
       success: true,
       photo_url: uploaded.url,
-      faces: detected.faces,
+      faces: [],
       name_suggestions: nameSuggestions,
-      detect_error: detected.error ?? null,
+      detect_error: null,
     })
   } catch (error) {
     console.error("[admin/directory/photo] POST error:", error)

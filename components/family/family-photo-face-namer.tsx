@@ -1,10 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import {
-  browserFaceDetectionSupported,
-  detectFacesInBrowserImage,
-} from "@/lib/detect-faces-browser"
+import { detectFacesInBrowserImage } from "@/lib/detect-faces-browser"
 import {
   faceBoxStyle,
   useFamilyPhotoLayout,
@@ -51,13 +48,16 @@ export function FamilyPhotoFaceNamer({
   const [saved, setSaved] = useState(false)
   const imgRef = useRef<HTMLImageElement>(null)
   const photoLayout = useFamilyPhotoLayout(imgRef, photoUrl)
+  const autoDetectAttempted = useRef(false)
 
   useEffect(() => {
     setFaces(initialFaces)
     setSuggestions(initialSuggestions)
+    autoDetectAttempted.current = false
     if (initialFaces.length > 0) {
       setSelectedId(initialFaces.find((f) => !f.label)?.id ?? initialFaces[0]?.id ?? null)
       setLoading(false)
+      autoDetectAttempted.current = true
     }
   }, [initialFaces, initialSuggestions, photoUrl])
 
@@ -76,6 +76,7 @@ export function FamilyPhotoFaceNamer({
         setFaces(next)
         setSuggestions((data.name_suggestions || []) as string[])
         setSelectedId(next.find((f) => !f.label)?.id ?? next[0]?.id ?? null)
+        if (next.length > 0) autoDetectAttempted.current = true
       } catch (loadError) {
         if (!cancelled) {
           setError(loadError instanceof Error ? loadError.message : "Could not load faces")
@@ -135,36 +136,27 @@ export function FamilyPhotoFaceNamer({
     return (data.faces || []) as ManageableFace[]
   }
 
-  async function handleDetect() {
+  async function handleDetect(force = false) {
     setDetecting(true)
     setError("")
     setSaved(false)
     try {
-      const img = imgRef.current
-      if (img?.complete && browserFaceDetectionSupported()) {
-        const boxes = await detectFacesInBrowserImage(img)
-        if (boxes.length > 0) {
-          const next = await persistDetectedBoxes(boxes)
-          setFaces(next)
-          setSelectedId(next.find((f) => !f.label)?.id ?? next[0]?.id ?? null)
-          const suggestionsRes = await fetch(facesApiPath)
-          const suggestionsData = await suggestionsRes.json()
-          if (suggestionsRes.ok) {
-            setSuggestions((suggestionsData.name_suggestions || []) as string[])
-          }
-          return
-        }
+      // MediaPipe BlazeFace in the browser — works in Firefox; Gemini boxes were unreliable.
+      const boxes = await detectFacesInBrowserImage(photoUrl)
+      if (boxes.length === 0) {
+        setError(
+          "No faces found. Try a clearer group photo, or wait a moment and click Find faces again (model loads from the CDN).",
+        )
+        if (force) setFaces([])
+        return
       }
-
-      const response = await fetch(facesApiPath, { method: "POST" })
-      const data = await response.json()
-      if (!response.ok) throw new Error(data.error || "Could not find faces")
-      const next = (data.faces || []) as ManageableFace[]
+      const next = await persistDetectedBoxes(boxes)
       setFaces(next)
-      setSuggestions((data.name_suggestions || []) as string[])
       setSelectedId(next.find((f) => !f.label)?.id ?? next[0]?.id ?? null)
-      if (data.detect_error && next.length === 0) {
-        setError(String(data.detect_error))
+      const suggestionsRes = await fetch(facesApiPath)
+      const suggestionsData = await suggestionsRes.json()
+      if (suggestionsRes.ok) {
+        setSuggestions((suggestionsData.name_suggestions || []) as string[])
       }
     } catch (detectError) {
       setError(detectError instanceof Error ? detectError.message : "Could not find faces")
@@ -172,6 +164,15 @@ export function FamilyPhotoFaceNamer({
       setDetecting(false)
     }
   }
+
+  // Auto-run MediaPipe when we have a photo but no boxes yet (upload no longer runs Gemini).
+  useEffect(() => {
+    if (loading || faces.length > 0 || detecting || autoDetectAttempted.current) return
+    if (!photoUrl) return
+    autoDetectAttempted.current = true
+    void handleDetect()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot when empty after load
+  }, [loading, photoUrl, faces.length, detecting])
 
   if (loading) {
     return (
@@ -191,7 +192,8 @@ export function FamilyPhotoFaceNamer({
         </h3>
         <p className="text-sm text-muted-foreground">
           Tap each person in the photo, then pick or type their name. Names show under their face
-          in the directory.
+          in the directory. Face boxes use MediaPipe (works in Firefox) — click Re-find faces if
+          they look off.
         </p>
       </div>
 
@@ -232,7 +234,7 @@ export function FamilyPhotoFaceNamer({
           <p className="text-sm text-muted-foreground">
             No faces found yet. Try “Find faces” — works best with clear front-facing people.
           </p>
-          <Button type="button" variant="outline" onClick={() => void handleDetect()} disabled={detecting}>
+          <Button type="button" variant="outline" onClick={() => void handleDetect(true)} disabled={detecting}>
             {detecting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
             Find faces
           </Button>
@@ -269,7 +271,7 @@ export function FamilyPhotoFaceNamer({
               {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Save names
             </Button>
-            <Button type="button" variant="outline" onClick={() => void handleDetect()} disabled={detecting}>
+            <Button type="button" variant="outline" onClick={() => void handleDetect(true)} disabled={detecting}>
               {detecting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
               Re-find faces
             </Button>

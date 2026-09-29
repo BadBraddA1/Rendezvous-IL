@@ -3,14 +3,12 @@ import { authUserContext } from "@/lib/clerk-auth"
 import { resolveFamilyForUser } from "@/lib/family-auth"
 import {
   clearFamilyPhotoFaces,
-  detectAndStoreFamilyPhotoFaces,
   listFamilyPhotoFaces,
   replaceFamilyPhotoFaces,
   suggestFaceNames,
   updateFamilyPhotoFaceLabels,
 } from "@/lib/family-photo-faces"
 import { getFamilyDirectorySettings } from "@/lib/family-directory"
-import { normalizeDirectoryPhoto } from "@/lib/family-photo-process"
 
 export const maxDuration = 60
 
@@ -90,8 +88,8 @@ export async function PUT(request: Request) {
 }
 
 /**
- * Re-run AI face detection, OR accept on-device boxes from the app:
- * `{ faces: [{ x, y, w, h }] }` — stores those boxes (no Gemini call).
+ * Store face boxes from the browser (MediaPipe) or iOS Vision.
+ * Body: `{ faces: [{ x, y, w, h }] }` — normalized 0–1.
  */
 export async function POST(request: Request) {
   try {
@@ -143,22 +141,13 @@ export async function POST(request: Request) {
       })
     }
 
-    const imageRes = await fetch(settings.photo_url)
-    if (!imageRes.ok) {
-      return NextResponse.json({ error: "Could not download current photo" }, { status: 502 })
-    }
-    const bytes = Buffer.from(await imageRes.arrayBuffer())
-    const { buffer } = await normalizeDirectoryPhoto(bytes, "image/jpeg")
-    const detected = await detectAndStoreFamilyPhotoFaces(family.id, settings.photo_url, buffer)
-
-    return NextResponse.json({
-      success: true,
-      faces: detected.faces,
-      name_suggestions: nameSuggestions,
-      photo_url: settings.photo_url,
-      detect_error: detected.error ?? null,
-      source: "server",
-    })
+    return NextResponse.json(
+      {
+        error:
+          "Face boxes are required from the browser or app. Server Gemini detection was removed — boxes were too inaccurate.",
+      },
+      { status: 400 },
+    )
   } catch (error) {
     console.error("[family-directory/faces] POST error:", error)
     return NextResponse.json({ error: "Failed to detect faces" }, { status: 500 })
