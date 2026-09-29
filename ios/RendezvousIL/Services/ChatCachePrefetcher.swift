@@ -11,6 +11,10 @@ extension Notification.Name {
 enum ChatCachePrefetcher {
     private static var lastFullRefreshAt: Date?
     private static let fullRefreshCooldown: TimeInterval = 45
+    /// How many channel threads to keep warm on disk (list order = most recent activity).
+    static let warmThreadLimit = 20
+    /// Cap stored messages per channel so disk stays lean.
+    static let messagesPerChannelLimit = 20
 
     /// Refresh channel list + optional focused channel messages. Safe to call often (coalesced).
     static func refresh(
@@ -34,12 +38,12 @@ enum ChatCachePrefetcher {
             ChatDataStore.saveChannels(channels)
             lastFullRefreshAt = now
 
-            let focusIds: [String]
-            if let channelId, !channelId.isEmpty {
-                focusIds = [channelId]
-            } else {
-                // Warm the top few threads so opening Chat → thread is instant.
-                focusIds = Array(channels.prefix(3).map(\.id))
+            var focusIds: [String] = Array(channels.prefix(warmThreadLimit).map(\.id))
+            if let channelId, !channelId.isEmpty, !focusIds.contains(channelId) {
+                focusIds.insert(channelId, at: 0)
+                if focusIds.count > warmThreadLimit {
+                    focusIds = Array(focusIds.prefix(warmThreadLimit))
+                }
             }
 
             await withTaskGroup(of: Void.self) { group in
@@ -63,9 +67,10 @@ enum ChatCachePrefetcher {
     private static func prefetchMessages(channelId: String, using client: APIClient) async {
         do {
             let response = try await RepositoryFetch.withTimeout(seconds: 20) {
-                try await client.getChatMessages(channelId: channelId)
+                try await client.getChatMessages(channelId: channelId, limit: messagesPerChannelLimit)
             }
-            ChatDataStore.saveMessages(response.messages, channelId: channelId)
+            let trimmed = Array(response.messages.suffix(messagesPerChannelLimit))
+            ChatDataStore.saveMessages(trimmed, channelId: channelId)
         } catch {
             #if DEBUG
             AppLog.bootstrap("chat message prefetch \(channelId) failed: \(error.localizedDescription)")

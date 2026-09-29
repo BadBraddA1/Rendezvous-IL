@@ -49,12 +49,33 @@ struct HomeView: View {
             .navigationBarTitleDisplayMode(.large)
             .refreshable { await refreshBoard() }
             .task {
-                if let cached = HomeBoardDataStore.load(year: AppConfig.eventYear) {
-                    board = cached
-                }
+                applyHomeSnapshotIfAvailable()
                 await refreshBoard()
             }
         }
+    }
+
+    private func applyHomeSnapshotIfAvailable() {
+        guard let snap = HomeSnapshotDataStore.load(year: AppConfig.eventYear) else { return }
+        if let board = snap.board { self.board = board }
+        if let yearHub = snap.yearHub { self.yearHub = yearHub }
+        if let checkIn = snap.checkIn { self.checkIn = checkIn }
+        if let volunteering = snap.volunteering { self.volunteering = volunteering }
+        chatUnreadTotal = snap.chatUnreadTotal
+    }
+
+    private func persistHomeSnapshot() {
+        HomeSnapshotDataStore.save(
+            HomeSnapshot(
+                eventYear: AppConfig.eventYear,
+                board: board,
+                yearHub: yearHub,
+                checkIn: checkIn,
+                volunteering: volunteering,
+                chatUnreadTotal: chatUnreadTotal,
+                savedAt: Date()
+            )
+        )
     }
 
     @ViewBuilder
@@ -84,6 +105,7 @@ struct HomeView: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         } else {
+            // No disk snapshot yet — first fetch in progress.
             Text("Loading your family hub…")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
@@ -566,14 +588,16 @@ struct HomeView: View {
         async let chatTask: Void = loadChatUnread()
         _ = await (updates, scheduleLoad, yearHubTask, boardTask, checkInTask, volunteeringTask, chatTask)
         nextMealLine = computeNextMealLine()
+        // Persist whatever we have so the next cold open paints instantly (aux meals/weather still network).
+        persistHomeSnapshot()
     }
 
     private func loadYearHub() async {
-        guard let client = session.apiClient else {
-            yearHub = nil
-            return
+        guard let client = session.apiClient else { return }
+        if let hub = try? await client.getYearHub() {
+            yearHub = hub
         }
-        yearHub = try? await client.getYearHub()
+        // Keep last snapshot on soft failure / offline.
     }
 
     private func loadHomeBoard() async {
@@ -585,11 +609,10 @@ struct HomeView: View {
     }
 
     private func loadCheckIn() async {
-        guard let client = session.apiClient else {
-            checkIn = nil
-            return
+        guard let client = session.apiClient else { return }
+        if let value = try? await client.getFamilyCheckIn() {
+            checkIn = value
         }
-        checkIn = try? await client.getFamilyCheckIn()
     }
 
     private func loadScheduleForBoard() async {
@@ -601,23 +624,23 @@ struct HomeView: View {
 
     private func loadVolunteering() async {
         guard let client = session.apiClient else {
-            volunteering = nil
-            await VolunteerReminderService.sync(from: nil)
+            await VolunteerReminderService.sync(from: volunteering)
             return
         }
-        let payload = try? await client.getFamilyVolunteering()
-        volunteering = payload
-        await VolunteerReminderService.sync(from: payload)
+        if let payload = try? await client.getFamilyVolunteering() {
+            volunteering = payload
+            await VolunteerReminderService.sync(from: payload)
+        } else {
+            await VolunteerReminderService.sync(from: volunteering)
+        }
     }
 
     private func loadChatUnread() async {
-        guard let client = session.apiClient else {
-            chatUnreadTotal = 0
-            return
-        }
+        guard let client = session.apiClient else { return }
         do {
             let response = try await client.getChatChannels()
             chatUnreadTotal = response.channels.reduce(0) { $0 + max(0, $1.unread_count ?? 0) }
+            ChatDataStore.saveChannels(response.channels.sortedForDisplay())
         } catch {
             // Keep last known count on soft failure.
         }
