@@ -23,8 +23,11 @@ struct ChatThreadView: View {
     @State private var pollOptions = ["", ""]
     @State private var enlargedPhotoURL: URL?
     @State private var reactionDetail: ReactionDetail?
+    /// First paint should jump to latest without animation; later appends can animate.
+    @State private var didInitialScrollToBottom = false
 
     private let maxPhotos = 6
+    private static let chatBottomID = "chat-thread-bottom"
 
     private struct ReactionDetail: Identifiable {
         let messageId: String
@@ -108,9 +111,10 @@ struct ChatThreadView: View {
             }
 
             // Messages only scroll — composer stays pinned via safeAreaInset (iMessage-style).
+            // Open at the latest message (bottom); LazyVStack + delayed layout used to leave us at the top.
             ScrollViewReader { proxy in
                 ScrollView {
-                    LazyVStack(spacing: 0) {
+                    VStack(spacing: 0) {
                         if isLoading && messages.isEmpty {
                             ProgressView()
                                 .frame(maxWidth: .infinity)
@@ -131,6 +135,9 @@ struct ChatThreadView: View {
                                     .id(message.id)
                             }
                         }
+                        Color.clear
+                            .frame(height: 1)
+                            .id(Self.chatBottomID)
                     }
                     .padding(.horizontal, 12)
                     .padding(.vertical, 8)
@@ -138,11 +145,15 @@ struct ChatThreadView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .scrollDismissesKeyboard(.interactively)
                 .refreshable { await reloadMessages() }
-                .onChange(of: messages.count) { _, _ in
-                    if let last = messages.last {
-                        withAnimation {
-                            proxy.scrollTo(last.id, anchor: .bottom)
-                        }
+                .onAppear {
+                    scrollToLatest(proxy: proxy, animated: false)
+                }
+                .onChange(of: messages.last?.id) { _, _ in
+                    scrollToLatest(proxy: proxy, animated: !didInitialScrollToBottom)
+                }
+                .onChange(of: isLoading) { _, loading in
+                    if !loading {
+                        scrollToLatest(proxy: proxy, animated: false)
                     }
                 }
             }
@@ -580,6 +591,26 @@ struct ChatThreadView: View {
         }
         .padding(.top, 8)
         .background(.bar)
+    }
+
+    /// Jump to the newest message (bottom). Retries once after layout so long threads don't stick at the top.
+    private func scrollToLatest(proxy: ScrollViewProxy, animated: Bool) {
+        guard !messages.isEmpty else { return }
+        let target = Self.chatBottomID
+        let apply = {
+            proxy.scrollTo(target, anchor: .bottom)
+        }
+        if animated {
+            withAnimation(.easeOut(duration: 0.2)) { apply() }
+        } else {
+            apply()
+        }
+        didInitialScrollToBottom = true
+        // Second pass after SwiftUI lays out tall bubbles / images.
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(50))
+            apply()
+        }
     }
 
     /// Paint disk cache immediately, then refresh + Ably off the critical path.
