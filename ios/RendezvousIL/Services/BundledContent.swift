@@ -83,4 +83,7 @@ enum BundledContent {
     ]
 
     static let bibleBowlPDF = URL(string: "https://pewpackers.com/pdf/1-Samuel-Memory-Work")!
+    /// This year's Rendezvous Bible Bowl study game (universal link into Pew Packers).
+    static let pewPackersGameURL = URL(string: "https://pewpackers.com/1-samuel")!
+    static let pewPackersAppStoreURL = URL(string: "https://apps.apple.com/app/pewpackers/id6751128562")!
 }
