@@ -507,43 +507,90 @@ struct DirectoryFamilyDetailView: View {
     }
 
     private var photoWithNameChips: some View {
-        Color.clear
-            .aspectRatio(4 / 3, contentMode: .fit)
-            .frame(maxHeight: 280)
-            .overlay {
-                if let photoUrl = family.photo_url, !photoUrl.isEmpty, let url = URL(string: photoUrl) {
-                    AsyncImage(url: url) { phase in
-                        switch phase {
-                        case .success(let image):
-                            image
-                                .resizable()
-                                .scaledToFill()
-                        case .failure, .empty:
-                            directoryPhotoPlaceholder
-                        @unknown default:
+        Group {
+            if !family.labeledPhotoFaces.isEmpty, let photoUrl = family.photo_url, let url = URL(string: photoUrl) {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .scaledToFit()
+                            .overlay {
+                                GeometryReader { geo in
+                                    ForEach(family.labeledPhotoFaces) { face in
+                                        let rect = CGRect(
+                                            x: face.x * geo.size.width,
+                                            y: face.y * geo.size.height,
+                                            width: face.w * geo.size.width,
+                                            height: face.h * geo.size.height
+                                        )
+                                        Text(face.label)
+                                            .font(.caption2.weight(.semibold))
+                                            .foregroundStyle(.white)
+                                            .padding(.horizontal, 6)
+                                            .padding(.vertical, 2)
+                                            .background(Color.black.opacity(0.72), in: Capsule())
+                                            .position(
+                                                x: rect.midX,
+                                                y: min(geo.size.height - 12, rect.maxY + 12)
+                                            )
+                                    }
+                                }
+                            }
+                    case .failure, .empty:
+                        directoryPhotoPlaceholder
+                            .aspectRatio(4 / 3, contentMode: .fit)
+                            .frame(maxHeight: 280)
+                    @unknown default:
+                        directoryPhotoPlaceholder
+                            .aspectRatio(4 / 3, contentMode: .fit)
+                            .frame(maxHeight: 280)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .frame(maxHeight: 320)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .accessibilityHint("Shows names under each person in the photo")
+            } else {
+                Color.clear
+                    .aspectRatio(4 / 3, contentMode: .fit)
+                    .frame(maxHeight: 280)
+                    .overlay {
+                        if let photoUrl = family.photo_url, !photoUrl.isEmpty, let url = URL(string: photoUrl) {
+                            AsyncImage(url: url) { phase in
+                                switch phase {
+                                case .success(let image):
+                                    image
+                                        .resizable()
+                                        .scaledToFill()
+                                case .failure, .empty:
+                                    directoryPhotoPlaceholder
+                                @unknown default:
+                                    directoryPhotoPlaceholder
+                                }
+                            }
+                        } else {
                             directoryPhotoPlaceholder
                         }
                     }
-                } else {
-                    directoryPhotoPlaceholder
-                }
+                    .overlay(alignment: .bottom) {
+                        if showNameChips, !chipNames.isEmpty {
+                            DirectoryNameChips(names: chipNames)
+                                .padding(12)
+                                .transition(.move(edge: .bottom).combined(with: .opacity))
+                        }
+                    }
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .contentShape(RoundedRectangle(cornerRadius: 16))
+                    .onTapGesture {
+                        guard !chipNames.isEmpty else { return }
+                        withAnimation(.easeOut(duration: 0.2)) {
+                            showNameChips.toggle()
+                        }
+                    }
+                    .accessibilityHint(chipNames.isEmpty ? "" : "Shows family member names on the photo")
             }
-            .overlay(alignment: .bottom) {
-                if showNameChips, !chipNames.isEmpty {
-                    DirectoryNameChips(names: chipNames)
-                        .padding(12)
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
-                }
-            }
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-            .contentShape(RoundedRectangle(cornerRadius: 16))
-            .onTapGesture {
-                guard !chipNames.isEmpty else { return }
-                withAnimation(.easeOut(duration: 0.2)) {
-                    showNameChips.toggle()
-                }
-            }
-            .accessibilityHint(chipNames.isEmpty ? "" : "Shows family member names on the photo")
+        }
     }
 
     private func phones(forMemberName name: String) -> [DirectoryContactPhone] {

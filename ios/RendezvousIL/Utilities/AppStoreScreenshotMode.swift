@@ -142,7 +142,8 @@ enum AppStoreScreenshotMode {
                 DirectoryMember(name: "Emma", role: "child", age: 14, is_adult: false, email: nil, phone: nil),
                 DirectoryMember(name: "Noah", role: "child", age: 11, is_adult: false, email: nil, phone: nil),
                 DirectoryMember(name: "Lily", role: "child", age: 8, is_adult: false, email: nil, phone: nil),
-            ]
+            ],
+            photo_faces: nil
         ),
         DirectoryFamily(
             id: 2,
@@ -165,7 +166,8 @@ enum AppStoreScreenshotMode {
                 DirectoryMember(name: "Rachel", role: "mother", age: 36, is_adult: true, email: nil, phone: nil),
                 DirectoryMember(name: "Olivia", role: "child", age: 12, is_adult: false, email: nil, phone: nil),
                 DirectoryMember(name: "Ethan", role: "child", age: 9, is_adult: false, email: nil, phone: nil),
-            ]
+            ],
+            photo_faces: nil
         ),
         DirectoryFamily(
             id: 3,
@@ -187,7 +189,8 @@ enum AppStoreScreenshotMode {
                 DirectoryMember(name: "David", role: "father", age: 45, is_adult: true, email: nil, phone: nil),
                 DirectoryMember(name: "Amy", role: "mother", age: 43, is_adult: true, email: nil, phone: nil),
                 DirectoryMember(name: "Grace", role: "child", age: 16, is_adult: false, email: nil, phone: nil),
-            ]
+            ],
+            photo_faces: nil
         ),
     ]
 }

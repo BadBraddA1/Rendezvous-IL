@@ -11,6 +11,10 @@ import { Badge } from "@/components/ui/badge"
 import { Camera, Loader2, Trash2, Users } from "lucide-react"
 import Link from "next/link"
 import { FAMILY_PHOTO_UPDATED_EVENT } from "@/components/user-menu-button"
+import {
+  FamilyPhotoFaceNamer,
+  type ManageableFace,
+} from "@/components/family/family-photo-face-namer"
 
 export type FamilyDirectoryPhotoState = {
   photo_url: string | null
@@ -38,6 +42,8 @@ export function FamilyDirectoryPhotoCard({ settings, onChange, eventYear = 2027 
     setBlurb(settings.directory_blurb || "")
   }, [settings.directory_blurb, settings.directory_opt_in])
   const [enabledYears, setEnabledYears] = useState<number[]>([2026])
+  const [faces, setFaces] = useState<ManageableFace[]>([])
+  const [nameSuggestions, setNameSuggestions] = useState<string[]>([])
 
   useEffect(() => {
     async function loadEnabledYears() {
@@ -73,6 +79,8 @@ export function FamilyDirectoryPhotoCard({ settings, onChange, eventYear = 2027 
       onChange(data.settings)
       setOptIn(Boolean(data.settings.directory_opt_in))
       setBlurb(data.settings.directory_blurb || "")
+      setFaces((data.faces || []) as ManageableFace[])
+      setNameSuggestions((data.name_suggestions || []) as string[])
       window.dispatchEvent(
         new CustomEvent(FAMILY_PHOTO_UPDATED_EVENT, {
           detail: { photoUrl: data.settings.photo_url ?? null },
@@ -96,9 +104,11 @@ export function FamilyDirectoryPhotoCard({ settings, onChange, eventYear = 2027 
       }
       onChange(data.settings)
       setBlurb(data.settings.directory_blurb || "")
+      setFaces([])
+      setNameSuggestions([])
       window.dispatchEvent(
         new CustomEvent(FAMILY_PHOTO_UPDATED_EVENT, {
-          detail: { photoUrl: data.settings.photo_url ?? null },
+          detail: { photoUrl: null },
         }),
       )
     } catch (removeError) {
@@ -215,6 +225,15 @@ export function FamilyDirectoryPhotoCard({ settings, onChange, eventYear = 2027 
             )}
           </div>
         </div>
+
+        {settings.photo_url ? (
+          <FamilyPhotoFaceNamer
+            key={settings.photo_url}
+            photoUrl={settings.photo_url}
+            initialFaces={faces}
+            initialSuggestions={nameSuggestions}
+          />
+        ) : null}
 
         <div className="space-y-3 rounded-xl border bg-muted/30 p-4">
           <div className="flex items-start gap-3">

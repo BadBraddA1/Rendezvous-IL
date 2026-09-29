@@ -120,9 +120,11 @@ export type FamilyDirectoryEntry = {
   member_names: string[]
   /** Registration members for the year: parents first, kids by age. Empty for legacy entries. */
   members: DirectoryMember[]
+  /** Labeled faces on the directory photo (names under faces). */
+  photo_faces: Array<{ x: number; y: number; w: number; h: number; label: string }>
 }
 
-type DirectoryEntryDraft = Omit<FamilyDirectoryEntry, "contact_phones" | "members"> & {
+type DirectoryEntryDraft = Omit<FamilyDirectoryEntry, "contact_phones" | "members" | "photo_faces"> & {
   legacy_husband_phone: string | null
   legacy_wife_phone: string | null
 }
@@ -346,7 +348,8 @@ export async function fetchDirectoryEntries(
   try {
     const entries = await queryDirectoryEntries(year)
     const withPhones = await attachDirectoryContactPhones(entries)
-    return attachRegistrationMembers(withPhones, year)
+    const withMembers = await attachRegistrationMembers(withPhones, year)
+    return attachLabeledPhotoFaces(withMembers)
   } catch (error) {
     if (
       isMissingSqliteColumn(error, "photo_url") ||
@@ -357,6 +360,18 @@ export async function fetchDirectoryEntries(
     }
     throw error
   }
+}
+
+async function attachLabeledPhotoFaces(
+  entries: FamilyDirectoryEntry[],
+): Promise<FamilyDirectoryEntry[]> {
+  if (entries.length === 0) return entries
+  const { labeledFacesByFamilyIds } = await import("@/lib/family-photo-faces")
+  const facesByFamily = await labeledFacesByFamilyIds(entries.map((entry) => entry.id))
+  return entries.map((entry) => ({
+    ...entry,
+    photo_faces: facesByFamily.get(entry.id) || [],
+  }))
 }
 
 function directoryMemberAge(row: SqlRow): number | null {
@@ -382,7 +397,7 @@ function directoryMemberAge(row: SqlRow): number | null {
  * through when the member checked "show in directory" during registration.
  */
 async function attachRegistrationMembers(
-  entries: Omit<FamilyDirectoryEntry, "members">[],
+  entries: Omit<FamilyDirectoryEntry, "members" | "photo_faces">[],
   year: RegistrationEventYear,
 ): Promise<FamilyDirectoryEntry[]> {
   if (entries.length === 0) return []
@@ -409,7 +424,7 @@ async function attachRegistrationMembers(
   } catch (error) {
     // Very old schemas may predate the contact columns; fall back gracefully.
     if (isMissingSqliteColumn(error, "share_contact_directory")) {
-      return entries.map((entry) => ({ ...entry, members: [] }))
+      return entries.map((entry) => ({ ...entry, members: [], photo_faces: [] }))
     }
     throw error
   }
@@ -462,6 +477,7 @@ async function attachRegistrationMembers(
       contact_phones: contactPhones,
       member_count: members.length > 0 ? members.length : entry.member_count,
       member_names: members.length > 0 ? members.map((m) => m.name) : entry.member_names,
+      photo_faces: [],
     }
   })
 }
@@ -540,7 +556,7 @@ async function queryDirectoryEntries(year: RegistrationEventYear): Promise<Direc
 
 async function attachDirectoryContactPhones(
   entries: DirectoryEntryDraft[],
-): Promise<Omit<FamilyDirectoryEntry, "members">[]> {
+): Promise<Omit<FamilyDirectoryEntry, "members" | "photo_faces">[]> {
   if (entries.length === 0) return []
 
   const memberRows = await sql`

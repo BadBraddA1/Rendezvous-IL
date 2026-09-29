@@ -224,6 +224,19 @@ actor APIClient {
         try await delete("/api/family/directory")
     }
 
+    func getFamilyPhotoFaces() async throws -> FamilyPhotoFacesResponse {
+        try await get("/api/family/directory/faces")
+    }
+
+    func saveFamilyPhotoFaceLabels(_ faces: [FamilyPhotoFaceLabelUpdate]) async throws -> FamilyPhotoFacesResponse {
+        try await put("/api/family/directory/faces", body: FamilyPhotoFaceLabelsBody(faces: faces))
+    }
+
+    func redetectFamilyPhotoFaces() async throws -> FamilyPhotoFacesResponse {
+        struct EmptyBody: Encodable {}
+        return try await post("/api/family/directory/faces", body: EmptyBody())
+    }
+
     func getFamilyVolunteering(year: Int = AppConfig.eventYear) async throws -> FamilyVolunteeringResponse {
         try await get("/api/family/volunteering?year=\(year)")
     }
@@ -687,6 +700,8 @@ struct DirectoryFamily: Codable, Identifiable, Hashable, Sendable {
     let member_names: [String]
     /// Structured members with ages (empty/legacy when missing).
     let members: [DirectoryMember]?
+    /// Labeled faces on the directory photo (names under faces).
+    let photo_faces: [DirectoryPhotoFace]?
 
     /// Location line for cards: city/state when available.
     var displayLocation: String? {
@@ -702,6 +717,16 @@ struct DirectoryFamily: Codable, Identifiable, Hashable, Sendable {
     }
 
     var structuredMembers: [DirectoryMember] { members ?? [] }
+    var labeledPhotoFaces: [DirectoryPhotoFace] { photo_faces ?? [] }
+}
+
+struct DirectoryPhotoFace: Codable, Hashable, Identifiable, Sendable {
+    var id: String { "\(x)-\(y)-\(w)-\(h)-\(label)" }
+    let x: Double
+    let y: Double
+    let w: Double
+    let h: Double
+    let label: String
 }
 
 struct DirectoryResponse: Codable, Sendable {
@@ -740,11 +765,40 @@ struct FamilyDirectorySettingsEnvelope: Decodable {
 struct FamilyDirectorySettingsResponse: Decodable {
     let success: Bool?
     let settings: FamilyDirectorySettings
+    let faces: [FamilyPhotoFace]?
+    let name_suggestions: [String]?
 }
 
 struct FamilyDirectorySettingsBody: Encodable {
     let directory_opt_in: Bool
     let directory_blurb: String?
+}
+
+struct FamilyPhotoFace: Codable, Identifiable, Hashable, Sendable {
+    let id: Int
+    let family_id: Int?
+    let x: Double
+    let y: Double
+    let w: Double
+    let h: Double
+    var label: String?
+    let sort_order: Int?
+}
+
+struct FamilyPhotoFacesResponse: Decodable {
+    let faces: [FamilyPhotoFace]
+    let name_suggestions: [String]?
+    let photo_url: String?
+    let success: Bool?
+}
+
+struct FamilyPhotoFaceLabelUpdate: Encodable {
+    let id: Int
+    let label: String?
+}
+
+struct FamilyPhotoFaceLabelsBody: Encodable {
+    let faces: [FamilyPhotoFaceLabelUpdate]
 }
 
 struct FamilyVolunteeringPendingAction: Codable, Hashable, Identifiable, Sendable {

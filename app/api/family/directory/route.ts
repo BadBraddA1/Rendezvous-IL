@@ -8,6 +8,11 @@ import {
   validateFamilyPhoto,
 } from "@/lib/family-directory"
 import { deleteFamilyPhotoIfStored, uploadFamilyPhoto } from "@/lib/family-photo-storage"
+import {
+  clearFamilyPhotoFaces,
+  detectAndStoreFamilyPhotoFaces,
+  suggestFaceNames,
+} from "@/lib/family-photo-faces"
 
 async function requireFamily(request: Request) {
   const ctx = await authUserContext(request)
@@ -91,12 +96,19 @@ export async function POST(request: Request) {
     }
 
     const current = await getFamilyDirectorySettings(family.id)
-    const photoUrl = await uploadFamilyPhoto(family.id, await file.arrayBuffer(), file.type)
-    await setFamilyPhotoUrl(family.id, photoUrl)
+    const uploaded = await uploadFamilyPhoto(family.id, await file.arrayBuffer(), file.type)
+    await setFamilyPhotoUrl(family.id, uploaded.url)
     await deleteFamilyPhotoIfStored(current?.photo_url)
 
+    const faces = await detectAndStoreFamilyPhotoFaces(family.id, uploaded.url, uploaded.buffer)
+    const nameSuggestions = await suggestFaceNames(family.id)
     const settings = await getFamilyDirectorySettings(family.id)
-    return NextResponse.json({ success: true, settings })
+    return NextResponse.json({
+      success: true,
+      settings,
+      faces,
+      name_suggestions: nameSuggestions,
+    })
   } catch (error) {
     console.error("[family-directory] POST photo error:", error)
     const message =
@@ -113,10 +125,11 @@ export async function DELETE(request: Request) {
 
     const current = await getFamilyDirectorySettings(family.id)
     await setFamilyPhotoUrl(family.id, null)
+    await clearFamilyPhotoFaces(family.id)
     await deleteFamilyPhotoIfStored(current?.photo_url)
 
     const settings = await getFamilyDirectorySettings(family.id)
-    return NextResponse.json({ success: true, settings })
+    return NextResponse.json({ success: true, settings, faces: [] })
   } catch (error) {
     console.error("[family-directory] DELETE photo error:", error)
     return NextResponse.json({ error: "Failed to remove family photo" }, { status: 500 })

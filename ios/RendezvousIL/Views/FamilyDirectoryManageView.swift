@@ -18,13 +18,18 @@ struct FamilyDirectoryManageView: View {
     @State private var isSaving = false
     @State private var errorMessage: String?
     @State private var successMessage: String?
+    @State private var faces: [FamilyPhotoFace] = []
+    @State private var nameSuggestions: [String] = []
+    @State private var selectedFaceId: Int?
+    @State private var isSavingFaces = false
+    @State private var isDetectingFaces = false
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 statusBanner
 
-                Text("Registered families appear in the directory by default. Add phone numbers on each family member on the website so the directory shows the right name with each number.")
+                Text("Registered families appear in the directory by default. After you upload a photo, name each face so the directory shows who is who.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
 
@@ -47,6 +52,8 @@ struct FamilyDirectoryManageView: View {
                             .frame(maxWidth: .infinity)
                     }
                     .disabled(isLoading)
+
+                    faceNamingSection
                 }
 
                 Toggle("Hide our family from the directory", isOn: Binding(
@@ -122,32 +129,139 @@ struct FamilyDirectoryManageView: View {
 
     @ViewBuilder
     private var photoPreview: some View {
-        Group {
-            if let urlString = settings.photo_url, let url = URL(string: urlString) {
-                AsyncImage(url: url) { phase in
-                    switch phase {
-                    case .success(let image):
-                        image
-                            .resizable()
-                            .scaledToFill()
-                    default:
-                        ProgressView()
+        GeometryReader { geo in
+            ZStack {
+                Group {
+                    if let urlString = settings.photo_url, let url = URL(string: urlString) {
+                        AsyncImage(url: url) { phase in
+                            switch phase {
+                            case .success(let image):
+                                image
+                                    .resizable()
+                                    .scaledToFit()
+                            default:
+                                ProgressView()
+                            }
+                        }
+                    } else {
+                        VStack(spacing: 8) {
+                            Image(systemName: "person.3.fill")
+                                .font(.largeTitle)
+                                .foregroundStyle(.secondary)
+                            Text("No photo yet")
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
-            } else {
-                VStack(spacing: 8) {
-                    Image(systemName: "person.3.fill")
-                        .font(.largeTitle)
-                        .foregroundStyle(.secondary)
-                    Text("No photo yet")
-                        .foregroundStyle(.secondary)
+                .frame(width: geo.size.width, height: geo.size.height)
+                .clipped()
+
+                ForEach(faces) { face in
+                    let rect = CGRect(
+                        x: face.x * geo.size.width,
+                        y: face.y * geo.size.height,
+                        width: face.w * geo.size.width,
+                        height: face.h * geo.size.height
+                    )
+                    Button {
+                        selectedFaceId = face.id
+                    } label: {
+                        RoundedRectangle(cornerRadius: 6)
+                            .stroke(selectedFaceId == face.id ? BrandColors.lake : Color.white.opacity(0.85), lineWidth: selectedFaceId == face.id ? 3 : 2)
+                            .background(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(selectedFaceId == face.id ? BrandColors.lake.opacity(0.18) : Color.clear)
+                            )
+                    }
+                    .frame(width: rect.width, height: rect.height)
+                    .position(x: rect.midX, y: rect.midY)
+
+                    if let label = face.label, !label.isEmpty {
+                        Text(label)
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.black.opacity(0.7), in: Capsule())
+                            .position(x: rect.midX, y: min(geo.size.height - 10, rect.maxY + 12))
+                    }
                 }
             }
         }
         .frame(maxWidth: .infinity)
-        .frame(height: 220)
+        .frame(height: 240)
         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
         .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+
+    @ViewBuilder
+    private var faceNamingSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Name the faces")
+                .font(.headline)
+            Text("Tap a face, then pick or type their name. Names show under faces in the directory.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+
+            if faces.isEmpty {
+                Text("No faces found yet.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            } else if let selected = faces.first(where: { $0.id == selectedFaceId }) {
+                TextField("Name for this person", text: Binding(
+                    get: { selected.label ?? "" },
+                    set: { newValue in
+                        if let index = faces.firstIndex(where: { $0.id == selected.id }) {
+                            faces[index].label = newValue.isEmpty ? nil : newValue
+                        }
+                    }
+                ))
+                .textFieldStyle(.roundedBorder)
+
+                if !nameSuggestions.isEmpty {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack {
+                            ForEach(nameSuggestions, id: \.self) { name in
+                                Button(name) {
+                                    if let index = faces.firstIndex(where: { $0.id == selected.id }) {
+                                        faces[index].label = name
+                                    }
+                                }
+                                .buttonStyle(.bordered)
+                            }
+                        }
+                    }
+                }
+            }
+
+            HStack {
+                Button {
+                    Task { await saveFaces() }
+                } label: {
+                    if isSavingFaces {
+                        ProgressView()
+                    } else {
+                        Text("Save names")
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(BrandColors.lake)
+                .disabled(isSavingFaces || faces.isEmpty)
+
+                Button {
+                    Task { await redetectFaces() }
+                } label: {
+                    if isDetectingFaces {
+                        ProgressView()
+                    } else {
+                        Label("Find faces", systemImage: "sparkles")
+                    }
+                }
+                .disabled(isDetectingFaces)
+            }
+        }
+        .padding(14)
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14))
     }
 
     private func loadSettings() async {
@@ -159,7 +273,25 @@ struct FamilyDirectoryManageView: View {
                 try await client.getFamilyDirectorySettings()
             }
             applySettings(settings)
+            if settings.photo_url != nil {
+                await loadFaces()
+            } else {
+                faces = []
+                nameSuggestions = []
+            }
             errorMessage = nil
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func loadFaces() async {
+        guard let client = session.apiClient else { return }
+        do {
+            let response = try await RepositoryFetch.withTimeout {
+                try await client.getFamilyPhotoFaces()
+            }
+            applyFaces(response)
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -177,7 +309,7 @@ struct FamilyDirectoryManageView: View {
                 throw APIError.badStatus(400)
             }
             let prepared = DirectoryImageProcessor.prepareForUpload(data)
-            let response = try await RepositoryFetch.withTimeout(seconds: 30) {
+            let response = try await RepositoryFetch.withTimeout(seconds: 60) {
                 try await client.uploadFamilyDirectoryPhoto(
                     imageData: prepared,
                     filename: "family-photo.jpg",
@@ -185,7 +317,16 @@ struct FamilyDirectoryManageView: View {
                 )
             }
             applySettings(response.settings)
-            successMessage = "Photo uploaded"
+            if let uploadedFaces = response.faces {
+                faces = uploadedFaces
+                nameSuggestions = response.name_suggestions ?? []
+                selectedFaceId = uploadedFaces.first(where: { ($0.label ?? "").isEmpty })?.id ?? uploadedFaces.first?.id
+            } else {
+                await loadFaces()
+            }
+            successMessage = faces.isEmpty
+                ? "Photo uploaded — tap Find faces to label people"
+                : "Photo uploaded — name each face below"
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -201,6 +342,9 @@ struct FamilyDirectoryManageView: View {
                 try await client.deleteFamilyDirectoryPhoto()
             }
             applySettings(response.settings)
+            faces = []
+            nameSuggestions = []
+            selectedFaceId = nil
             successMessage = "Photo removed"
         } catch {
             errorMessage = error.localizedDescription
@@ -227,10 +371,49 @@ struct FamilyDirectoryManageView: View {
         }
     }
 
+    private func saveFaces() async {
+        guard let client = session.apiClient else { return }
+        isSavingFaces = true
+        errorMessage = nil
+        defer { isSavingFaces = false }
+        do {
+            let updates = faces.map { FamilyPhotoFaceLabelUpdate(id: $0.id, label: $0.label) }
+            let response = try await RepositoryFetch.withTimeout {
+                try await client.saveFamilyPhotoFaceLabels(updates)
+            }
+            applyFaces(response)
+            successMessage = "Face names saved"
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func redetectFaces() async {
+        guard let client = session.apiClient else { return }
+        isDetectingFaces = true
+        errorMessage = nil
+        defer { isDetectingFaces = false }
+        do {
+            let response = try await RepositoryFetch.withTimeout(seconds: 45) {
+                try await client.redetectFamilyPhotoFaces()
+            }
+            applyFaces(response)
+            successMessage = faces.isEmpty ? "No faces found" : "Faces found — add names"
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
     private func applySettings(_ newSettings: FamilyDirectorySettings) {
         settings = newSettings
         optIn = newSettings.directory_opt_in
         blurb = newSettings.directory_blurb ?? ""
+    }
+
+    private func applyFaces(_ response: FamilyPhotoFacesResponse) {
+        faces = response.faces
+        nameSuggestions = response.name_suggestions ?? nameSuggestions
+        selectedFaceId = faces.first(where: { ($0.label ?? "").isEmpty })?.id ?? faces.first?.id
     }
 }
 

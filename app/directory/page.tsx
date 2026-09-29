@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select"
 import { Camera, Loader2, Mail, MapPin, MapPinned, Search, Users } from "lucide-react"
 import { DirectoryContactPhones } from "@/components/directory/directory-contact-phones"
+import { FamilyPhotoFaceLabels } from "@/components/family/family-photo-face-labels"
 import {
   contactMatchesMemberName,
   contactPhoneSearchHaystack,
@@ -56,6 +57,7 @@ type DirectoryFamily = {
   member_count: number
   member_names: string[]
   members: DirectoryMember[]
+  photo_faces?: Array<{ x: number; y: number; w: number; h: number; label: string }>
 }
 
 /** "Adult" for 18+, otherwise the age; nothing when age is unknown. */
@@ -353,18 +355,32 @@ export default function DirectoryPage() {
                 <div className="grid min-w-0 gap-5 sm:grid-cols-2 xl:grid-cols-3">
                   {filteredFamilies.map((family) => (
                     <Card key={family.id} className="gap-0 overflow-hidden py-0 shadow-sm">
-                      <div className="relative aspect-[4/3] overflow-hidden bg-muted">
+                      <div className="relative overflow-hidden bg-muted">
                         {family.photo_url ? (
-                          <Image
-                            src={family.photo_url}
-                            alt={`${family.family_last_name} family`}
-                            fill
-                            className="object-cover"
-                            sizes="(max-width: 768px) 100vw, 33vw"
-                            unoptimized
-                          />
+                          (family.photo_faces?.length ?? 0) > 0 ? (
+                            <div className="relative w-full">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={family.photo_url}
+                                alt={`${family.family_last_name} family`}
+                                className="block h-auto w-full"
+                              />
+                              <FamilyPhotoFaceLabels faces={family.photo_faces || []} />
+                            </div>
+                          ) : (
+                            <div className="relative aspect-[4/3]">
+                              <Image
+                                src={family.photo_url}
+                                alt={`${family.family_last_name} family`}
+                                fill
+                                className="object-cover"
+                                sizes="(max-width: 768px) 100vw, 33vw"
+                                unoptimized
+                              />
+                            </div>
+                          )
                         ) : (
-                          <div className="flex h-full flex-col items-center justify-center gap-2 px-4 text-center text-muted-foreground">
+                          <div className="flex aspect-[4/3] h-full flex-col items-center justify-center gap-2 px-4 text-center text-muted-foreground">
                             <Users className="h-10 w-10" />
                             <p className="text-sm">No photo yet</p>
                           </div>

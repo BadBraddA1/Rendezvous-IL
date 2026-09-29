@@ -8,7 +8,7 @@ Native SwiftUI **attendee community hub** for [rendezvousil.com](https://rendezv
 |------|---------|
 | **Sign-in gate** | Welcome screen → Clerk sheet → full app (Pew Packers pattern). **Warm launch (2.0.9 / 223+):** if schedule is cached, splash ends as soon as Clerk’s cached JWT is ready (~80 ms floor); Schedule paints under a brief logo overlay. Admin/push/activity/chat-warm run in the background. |
 | **Family account** | Native manage members / emails / phones / app-access roster (`FamilyProfileView`). Registration + password change stay web handoff. |
-| **Account** | Payment status + total, directory photo, attendee map, app feedback, registration web links |
+| **Account** | Payment status + total, directory photo + face naming, attendee map, app feedback, registration web links |
 | **Home** | Season year hub (or live board in retreat week); family manage link; cost + payment status. **Full Home snapshot on disk after first load** (year-hub/reg, board, check-in, volunteering, chat badge) — paints instantly next open, refreshes in background. Lazy-mounted until the tab is opened. |
 | **Map** | Campus map + **attendee map** (directory pins). Uses When-In-Use location for campus switch. |
 | **Chat** | Year cohort channels (Ably realtime when available; messages still load if Ably fails), retry + pull-to-refresh. **Disk cache** paints list/thread immediately; network + Ably refresh in the background. Prefetch keeps the **latest 20 channels** (20 messages each) warm; chat pushes also write that channel onto disk. Lazy-mounted until opened. |

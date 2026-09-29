@@ -7,6 +7,10 @@ import {
   validateFamilyPhoto,
 } from "@/lib/family-directory"
 import { deleteFamilyPhotoIfStored, uploadFamilyPhoto } from "@/lib/family-photo-storage"
+import {
+  clearFamilyPhotoFaces,
+  detectAndStoreFamilyPhotoFaces,
+} from "@/lib/family-photo-faces"
 
 export const dynamic = "force-dynamic"
 
@@ -45,9 +49,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
 
     const current = await getFamilyDirectorySettings(familyId)
-    const photoUrl = await uploadFamilyPhoto(familyId, await file.arrayBuffer(), file.type)
-    await setFamilyPhotoUrl(familyId, photoUrl)
+    const uploaded = await uploadFamilyPhoto(familyId, await file.arrayBuffer(), file.type)
+    await setFamilyPhotoUrl(familyId, uploaded.url)
     await deleteFamilyPhotoIfStored(current?.photo_url)
+    await detectAndStoreFamilyPhotoFaces(familyId, uploaded.url, uploaded.buffer)
 
     const { ipAddress, userAgent } = getRequestAuditMeta(req)
     await logAuditAction(
@@ -55,11 +60,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       "update_directory_family_photo",
       "family",
       familyId,
-      { photo_url: photoUrl },
+      { photo_url: uploaded.url },
       ipAddress,
       userAgent,
     )
-    return NextResponse.json({ success: true, photo_url: photoUrl })
+    return NextResponse.json({ success: true, photo_url: uploaded.url })
   } catch (error) {
     console.error("[admin/directory/photo] POST error:", error)
     const message = error instanceof Error ? error.message : "Failed to upload family photo"
@@ -78,6 +83,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   try {
     const current = await getFamilyDirectorySettings(familyId)
     await setFamilyPhotoUrl(familyId, null)
+    await clearFamilyPhotoFaces(familyId)
     await deleteFamilyPhotoIfStored(current?.photo_url)
 
     const { ipAddress, userAgent } = getRequestAuditMeta(req)
