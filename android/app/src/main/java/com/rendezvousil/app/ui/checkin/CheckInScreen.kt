@@ -185,6 +185,7 @@ fun CheckInScreen(
                         onScannedCode = viewModel::onScannedCode,
                         onPickDirectoryPhoto = { galleryLauncher.launch("image/*") },
                         onTakeDirectoryPhoto = { cameraLauncher.launch(null) },
+                        onNudgeDirectoryProfile = viewModel::nudgeDirectoryProfile,
                         modifier = Modifier
                             .fillMaxSize()
                             .verticalScroll(rememberScrollState())
@@ -469,6 +470,7 @@ private fun CheckInStationContent(
     onScannedCode: (String) -> Unit,
     onPickDirectoryPhoto: () -> Unit,
     onTakeDirectoryPhoto: () -> Unit,
+    onNudgeDirectoryProfile: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -502,6 +504,7 @@ private fun CheckInStationContent(
                 tshirtsDistributed = uiState.tshirtsDistributed,
                 isLoading = uiState.isLoading,
                 uploadingPhoto = uiState.uploadingPhoto,
+                nudgingFamily = uiState.nudgingFamily,
                 onRoomKeysChange = onRoomKeysChange,
                 onTshirtsDistributedChange = onTshirtsDistributedChange,
                 onSubmit = onSubmit,
@@ -509,6 +512,7 @@ private fun CheckInStationContent(
                 onScanNext = onScanNext,
                 onPickDirectoryPhoto = onPickDirectoryPhoto,
                 onTakeDirectoryPhoto = onTakeDirectoryPhoto,
+                onNudgeDirectoryProfile = onNudgeDirectoryProfile,
             )
         }
 
@@ -544,6 +548,7 @@ private fun ResultSection(
     tshirtsDistributed: Boolean,
     isLoading: Boolean,
     uploadingPhoto: Boolean,
+    nudgingFamily: Boolean,
     onRoomKeysChange: (String) -> Unit,
     onTshirtsDistributedChange: (Boolean) -> Unit,
     onSubmit: () -> Unit,
@@ -551,6 +556,7 @@ private fun ResultSection(
     onScanNext: () -> Unit,
     onPickDirectoryPhoto: () -> Unit,
     onTakeDirectoryPhoto: () -> Unit,
+    onNudgeDirectoryProfile: () -> Unit,
 ) {
     val registration = lookup.registration
     val lodgingLabel = registration.lodging_type
@@ -697,6 +703,28 @@ private fun ResultSection(
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                 )
+                val photoUrl = lookup.directory_photo_url
+                if (!photoUrl.isNullOrBlank()) {
+                    val labeled = lookup.directory_faces_labeled ?: 0
+                    val total = lookup.directory_faces_total ?: 0
+                    Text(
+                        text = if (total > 0) {
+                            "Photo on file · $labeled/$total faces named"
+                        } else {
+                            "Photo on file — ask family to name faces"
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    OutlinedButton(
+                        onClick = onNudgeDirectoryProfile,
+                        enabled = !isLoading && !uploadingPhoto && !nudgingFamily,
+                    ) {
+                        Text(
+                            if (nudgingFamily) "Pinging…" else "Ping family to finish profile",
+                        )
+                    }
+                }
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     OutlinedButton(
                         onClick = onTakeDirectoryPhoto,

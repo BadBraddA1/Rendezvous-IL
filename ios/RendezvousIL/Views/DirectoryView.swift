@@ -48,6 +48,13 @@ struct DirectoryView: View {
             }
         }
         .navigationTitle("Family Directory")
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            SyncStatusFooter(
+                key: "directory-\(year)",
+                hasLocalData: !families.isEmpty || DirectoryDataStore.loadFamilies(year: year) != nil
+            )
+            .background(.bar)
+        }
         .navigationDestination(for: DirectoryFamily.self) { family in
             DirectoryFamilyDetailView(family: family)
         }

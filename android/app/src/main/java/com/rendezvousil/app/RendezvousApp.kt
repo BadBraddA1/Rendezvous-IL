@@ -36,6 +36,7 @@ import com.rendezvousil.app.ui.admin.AdminDashboardScreen
 import com.rendezvousil.app.ui.admin.AdminEventPingsScreen
 import com.rendezvousil.app.ui.admin.AdminUsersScreen
 import com.rendezvousil.app.ui.admin.AdminUsersViewModel
+import com.rendezvousil.app.ui.admin.StaffDayOfScreen
 import com.rendezvousil.app.ui.about.AboutScreen
 import com.rendezvousil.app.ui.account.AccountScreen
 import com.rendezvousil.app.ui.checkin.CheckInScreen
@@ -117,6 +118,16 @@ fun RendezvousApp(
             }
             Routes.CHAT -> {
                 navigateToTab(navController, Routes.CHAT)
+                onDeepLinkConsumed()
+            }
+            Routes.DIRECTORY -> {
+                navigateToTab(navController, Routes.DIRECTORY)
+                onDeepLinkConsumed()
+            }
+            Routes.MORE_DIRECTORY_MANAGE -> {
+                navController.navigate(Routes.MORE_DIRECTORY_MANAGE) {
+                    launchSingleTop = true
+                }
                 onDeepLinkConsumed()
             }
         }
@@ -233,6 +244,7 @@ fun RendezvousApp(
                     onNavigateToAdminUsers = { navController.navigate(Routes.MORE_ADMIN_USERS) },
                     onNavigateToAdminAnnouncements = { navController.navigate(Routes.MORE_ADMIN_ANNOUNCEMENTS) },
                     onNavigateToAdminEventPings = { navController.navigate(Routes.MORE_ADMIN_EVENT_PINGS) },
+                    onNavigateToStaffDayOf = { navController.navigate(Routes.MORE_ADMIN_DAY_OF) },
                     onNavigateToCheckIn = { navController.navigate(Routes.MORE_CHECK_IN) },
                     onNavigateToDirectory = { navigateToTab(navController, Routes.DIRECTORY) },
                     onNavigateToDirectoryManage = { navController.navigate(Routes.MORE_DIRECTORY_MANAGE) },
@@ -398,6 +410,7 @@ fun RendezvousApp(
                     onNavigateToUsers = { navController.navigate(Routes.MORE_ADMIN_USERS) },
                     onNavigateToAnnouncements = { navController.navigate(Routes.MORE_ADMIN_ANNOUNCEMENTS) },
                     onNavigateToEventPings = { navController.navigate(Routes.MORE_ADMIN_EVENT_PINGS) },
+                    onNavigateToDayOf = { navController.navigate(Routes.MORE_ADMIN_DAY_OF) },
                     onNavigateToCheckIn = { navController.navigate(Routes.MORE_CHECK_IN) },
                 )
             }
@@ -420,6 +433,15 @@ fun RendezvousApp(
                     appSession = appSession,
                     viewModelFactory = viewModelFactory,
                     onBack = { navController.popBackStack() },
+                )
+            }
+            composable(Routes.MORE_ADMIN_DAY_OF) {
+                StaffDayOfScreen(
+                    appSession = appSession,
+                    onBack = { navController.popBackStack() },
+                    onNavigateToCheckIn = { navController.navigate(Routes.MORE_CHECK_IN) },
+                    onNavigateToAnnouncements = { navController.navigate(Routes.MORE_ADMIN_ANNOUNCEMENTS) },
+                    onNavigateToEventPings = { navController.navigate(Routes.MORE_ADMIN_EVENT_PINGS) },
                 )
             }
             composable(Routes.MORE_CHECKIN) {

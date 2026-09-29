@@ -70,6 +70,9 @@ struct MoreView: View {
                                 Label("Event pings", systemImage: "bell.badge.fill")
                             }
                         }
+                        NavigationLink { StaffDayOfView() } label: {
+                            Label("Day-of ops", systemImage: "sun.max.fill")
+                        }
                         if session.canManageUsers {
                             NavigationLink { AdminUsersView() } label: {
                                 Label("User management", systemImage: "person.2.badge.gearshape")
@@ -80,6 +83,11 @@ struct MoreView: View {
 
                 if session.canCheckIn {
                     Section("Staff") {
+                        if !session.canViewDashboard {
+                            NavigationLink { StaffDayOfView() } label: {
+                                Label("Day-of ops", systemImage: "sun.max.fill")
+                            }
+                        }
                         NavigationLink { CheckInView() } label: {
                             Label("Check-in station", systemImage: "person.badge.key")
                         }

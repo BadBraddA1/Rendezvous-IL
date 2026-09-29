@@ -38,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.rendezvousil.app.data.SyncStatusFooter
 import com.rendezvousil.app.theme.BrandColors
 import com.rendezvousil.app.ui.components.EventCard
 import com.rendezvousil.app.notifications.ReminderService
@@ -110,17 +111,24 @@ fun ScheduleScreen(
                     }
                 }
                 schedule != null -> {
-                    ScheduleContent(
-                        schedule = schedule!!,
-                        announcements = announcements,
-                        selectedDayIndex = selectedDayIndex,
-                        onDaySelected = { selectedDayIndex = it },
-                        listState = listState,
-                        mealFor = { date, event -> mealFor(viewModel, date, event) },
-                        volunteersFor = { date, event -> volunteersFor(viewModel, date, event) },
-                        reminderService = reminderService,
-                        onReminderClick = { reminderItem = it },
-                    )
+                    Column(Modifier.fillMaxSize()) {
+                        ScheduleContent(
+                            schedule = schedule!!,
+                            announcements = announcements,
+                            selectedDayIndex = selectedDayIndex,
+                            onDaySelected = { selectedDayIndex = it },
+                            listState = listState,
+                            mealFor = { date, event -> mealFor(viewModel, date, event) },
+                            volunteersFor = { date, event -> volunteersFor(viewModel, date, event) },
+                            reminderService = reminderService,
+                            onReminderClick = { reminderItem = it },
+                            modifier = Modifier.weight(1f),
+                        )
+                        SyncStatusFooter(
+                            key = "schedule",
+                            hasLocalData = true,
+                        )
+                    }
                 }
                 else -> {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -162,8 +170,9 @@ private fun ScheduleContent(
     volunteersFor: (String, com.rendezvousil.core.schedule.model.ScheduleEvent) -> com.rendezvousil.core.schedule.model.VolunteerScheduleSlot?,
     reminderService: ReminderService,
     onReminderClick: (LUScheduleItem) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = modifier.fillMaxSize()) {
         if (announcements.isNotEmpty()) {
             AnnouncementsBanner(announcements = announcements)
         }

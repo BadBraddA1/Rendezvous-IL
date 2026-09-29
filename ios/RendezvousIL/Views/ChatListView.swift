@@ -40,6 +40,13 @@ struct ChatListView: View {
                 }
             }
             .navigationTitle("Chat")
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                SyncStatusFooter(
+                    key: "chat",
+                    hasLocalData: ChatDataStore.loadChannels() != nil
+                )
+                .background(.bar)
+            }
             .refreshable { await load(force: true) }
             .task { await load(force: false) }
             .onReceive(NotificationCenter.default.publisher(for: .rendezvousChatCacheUpdated)) { _ in

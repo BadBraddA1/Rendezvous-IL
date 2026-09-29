@@ -265,6 +265,13 @@ struct AdminDashboardView: View {
                 .font(.headline)
                 .foregroundStyle(BrandColors.lake)
 
+            if session.canViewDashboard || session.canCheckIn {
+                NavigationLink {
+                    StaffDayOfView()
+                } label: {
+                    linkRow(title: "Day-of ops", icon: "sun.max.fill")
+                }
+            }
             if session.canEdit {
                 NavigationLink {
                     AdminAnnouncementsView()

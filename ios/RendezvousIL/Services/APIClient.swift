@@ -220,7 +220,10 @@ actor APIClient {
             registration: payload.registration,
             family_members: payload.family_members,
             tshirt_orders: payload.tshirt_orders,
-            directory_family_id: payload.directory_family_id
+            directory_family_id: payload.directory_family_id,
+            directory_photo_url: payload.directory_photo_url,
+            directory_faces_labeled: payload.directory_faces_labeled,
+            directory_faces_total: payload.directory_faces_total
         )
     }
 
@@ -285,6 +288,18 @@ actor APIClient {
             filename: filename,
             mimeType: mimeType
         )
+    }
+
+    func nudgeFamilyDirectoryProfile(familyId: Int) async throws -> AdminDirectoryNudgeResponse {
+        struct EmptyBody: Encodable {}
+        return try await post(
+            "/api/admin/directory/families/\(familyId)/nudge",
+            body: EmptyBody()
+        )
+    }
+
+    func getStaffDayOf(year: Int = AppConfig.eventYear) async throws -> StaffDayOfResponse {
+        try await get("/api/admin/mobile/day-of?year=\(year)")
     }
 
     func deleteFamilyDirectoryPhoto() async throws -> FamilyDirectorySettingsResponse {
@@ -773,6 +788,9 @@ struct CheckInLookupResponse: Decodable {
     let family_members: [CheckInFamilyMember]?
     let tshirt_orders: [CheckInTshirtOrder]?
     let directory_family_id: Int?
+    let directory_photo_url: String?
+    let directory_faces_labeled: Int?
+    let directory_faces_total: Int?
 }
 
 struct CheckInFullResponse: Decodable {
@@ -780,6 +798,9 @@ struct CheckInFullResponse: Decodable {
     let family_members: [CheckInFamilyMember]?
     let tshirt_orders: [CheckInTshirtOrder]?
     let directory_family_id: Int?
+    let directory_photo_url: String?
+    let directory_faces_labeled: Int?
+    let directory_faces_total: Int?
 }
 
 struct CheckInSubmitBody: Encodable {
@@ -930,6 +951,33 @@ struct AdminDirectoryPhotoUploadResponse: Decodable {
     let faces: [FamilyPhotoFace]?
     let name_suggestions: [String]?
     let detect_error: String?
+    let notify_recipients: Int?
+}
+
+struct AdminDirectoryNudgeResponse: Decodable {
+    let success: Bool?
+    let recipients: Int?
+    let message: String?
+    let unlabeled_faces: Int?
+}
+
+struct StaffDayOfResponse: Decodable {
+    let eventYear: Int
+    let checkedIn: Int
+    let notCheckedIn: Int
+    let totalRegistrations: Int
+    let activeAnnouncements: Int
+    let nextEvent: StaffDayOfNextEvent?
+    let updatedAt: String
+}
+
+struct StaffDayOfNextEvent: Decodable {
+    let id: Int
+    let time: String
+    let title: String
+    let location: String?
+    let day: String
+    let startsAt: String?
 }
 
 struct FamilyDirectorySettingsBody: Encodable {

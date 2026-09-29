@@ -22,6 +22,13 @@ struct ScheduleView: View {
                 }
             }
             .navigationTitle("Schedule")
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                SyncStatusFooter(
+                    key: "schedule",
+                    hasLocalData: repository.schedule != nil
+                )
+                .background(.bar)
+            }
             .toolbar {
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     if repository.isRefreshingSchedule || repository.isLoadingUpdates {

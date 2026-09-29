@@ -1,6 +1,7 @@
 package com.rendezvousil.app.directory
 
 import android.content.Context
+import com.rendezvousil.app.data.SyncStampStore
 import com.rendezvousil.core.network.dto.DirectoryFamily
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.serializer
@@ -9,7 +10,8 @@ import java.io.File
 
 /** On-disk directory cache so the list appears instantly, then refreshes in the background. */
 class DirectoryDataStore(context: Context) {
-    private val dir = File(context.applicationContext.filesDir, "directory-cache").also { it.mkdirs() }
+    private val context = context.applicationContext
+    private val dir = File(this.context.filesDir, "directory-cache").also { it.mkdirs() }
     private val json = Json {
         ignoreUnknownKeys = true
         encodeDefaults = true
@@ -26,6 +28,7 @@ class DirectoryDataStore(context: Context) {
 
     fun saveFamilies(year: Int, families: List<DirectoryFamily>) {
         writeList(familiesFile(year), families, DirectoryFamily.serializer())
+        SyncStampStore.mark(context, "directory-$year")
     }
 
     private fun yearsFile() = File(dir, "directory-years.json")

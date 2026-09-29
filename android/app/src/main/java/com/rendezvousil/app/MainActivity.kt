@@ -77,8 +77,13 @@ class MainActivity : ComponentActivity() {
 
     private fun handleDeepLink(intent: Intent?) {
         val uri: Uri = intent?.data ?: return
-        if (uri.scheme == "rendezvousil" && uri.host == "schedule") {
-            deepLinkRoute = Routes.SCHEDULE
+        if (uri.scheme != "rendezvousil") return
+        deepLinkRoute = when (uri.host) {
+            "schedule" -> Routes.SCHEDULE
+            "chat" -> Routes.CHAT
+            "directory-photo", "directory-manage" -> Routes.MORE_DIRECTORY_MANAGE
+            "directory" -> Routes.DIRECTORY
+            else -> null
         }
     }
 

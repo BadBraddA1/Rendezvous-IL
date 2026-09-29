@@ -9,6 +9,11 @@ enum VolunteerReminderService {
 
     static func sync(from payload: FamilyVolunteeringResponse?) async {
         let center = UNUserNotificationCenter.current()
+        let settings = await center.notificationSettings()
+        if settings.authorizationStatus == .notDetermined {
+            _ = try? await center.requestAuthorization(options: [.alert, .sound, .badge])
+        }
+
         let pending = await center.pendingNotificationRequests()
         let stale = pending.map(\.identifier).filter { $0.hasPrefix(idPrefix) }
         center.removePendingNotificationRequests(withIdentifiers: stale)
@@ -67,6 +72,7 @@ enum VolunteerReminderService {
             content.body = slot.body
             content.sound = .default
             content.userInfo = ["url": "rendezvousil://home"]
+            content.threadIdentifier = "rendezvous-volunteering"
 
             let trigger: UNNotificationTrigger
             if interval < 30 * 24 * 60 * 60 {

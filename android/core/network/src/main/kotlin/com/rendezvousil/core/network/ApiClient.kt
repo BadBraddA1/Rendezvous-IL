@@ -14,10 +14,12 @@ import com.rendezvousil.core.network.dto.AdminAnnouncementActiveBody
 import com.rendezvousil.core.network.dto.AdminAnnouncementsListResponse
 import com.rendezvousil.core.network.dto.AdminCreateAnnouncementBody
 import com.rendezvousil.core.network.dto.AdminCreateAnnouncementResponse
+import com.rendezvousil.core.network.dto.AdminDirectoryNudgeResponse
 import com.rendezvousil.core.network.dto.AdminDirectoryPhotoUploadResponse
 import com.rendezvousil.core.network.dto.AdminEventPingBody
 import com.rendezvousil.core.network.dto.AdminEventPingResponse
 import com.rendezvousil.core.network.dto.AdminScheduleEventsResponse
+import com.rendezvousil.core.network.dto.StaffDayOfResponse
 import com.rendezvousil.core.network.dto.SimpleSuccessResponse
 import com.rendezvousil.core.network.dto.AnnouncementsResponse
 import com.rendezvousil.core.network.dto.ChatChannelsResponse
@@ -471,6 +473,15 @@ class ApiClient private constructor(
             .build()
         return executeJsonRequest(request)
     }
+
+    suspend fun nudgeFamilyDirectoryProfile(familyId: Int): AdminDirectoryNudgeResponse =
+        postJson("api/admin/directory/families/$familyId/nudge", EmptyJsonBody())
+
+    suspend fun getStaffDayOf(year: Int = AppConfig.EVENT_YEAR): StaffDayOfResponse =
+        getJson(
+            path = "api/admin/mobile/day-of",
+            queryParameters = mapOf("year" to year.toString()),
+        )
 
     suspend fun getAdminAnnouncements(): AdminAnnouncementsListResponse =
         getJson("api/admin/announcements")

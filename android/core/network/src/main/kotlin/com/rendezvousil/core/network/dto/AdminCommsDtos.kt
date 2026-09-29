@@ -91,4 +91,34 @@ data class AdminEventPingResponse(
 data class AdminDirectoryPhotoUploadResponse(
     val success: Boolean? = null,
     val photo_url: String? = null,
+    val notify_recipients: Int? = null,
+)
+
+@Serializable
+data class AdminDirectoryNudgeResponse(
+    val success: Boolean? = null,
+    val recipients: Int? = null,
+    val message: String? = null,
+    val unlabeled_faces: Int? = null,
+)
+
+@Serializable
+data class StaffDayOfResponse(
+    val eventYear: Int,
+    val checkedIn: Int,
+    val notCheckedIn: Int,
+    val totalRegistrations: Int,
+    val activeAnnouncements: Int,
+    val nextEvent: StaffDayOfNextEvent? = null,
+    val updatedAt: String,
+)
+
+@Serializable
+data class StaffDayOfNextEvent(
+    val id: Int,
+    val time: String,
+    val title: String,
+    val location: String? = null,
+    val day: String,
+    val startsAt: String? = null,
 )

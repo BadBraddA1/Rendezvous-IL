@@ -1,6 +1,7 @@
 package com.rendezvousil.app.chat
 
 import android.content.Context
+import com.rendezvousil.app.data.SyncStampStore
 import com.rendezvousil.core.network.dto.ChatChannelSummary
 import com.rendezvousil.core.network.dto.ChatMessage
 import kotlinx.serialization.builtins.ListSerializer
@@ -9,7 +10,8 @@ import java.io.File
 
 /** On-disk chat cache so lists/threads appear instantly, then refresh in the background. */
 class ChatDataStore(context: Context) {
-    private val dir = File(context.applicationContext.filesDir, "chat-cache").also { it.mkdirs() }
+    private val context = context.applicationContext
+    private val dir = File(this.context.filesDir, "chat-cache").also { it.mkdirs() }
     private val json = Json {
         ignoreUnknownKeys = true
         encodeDefaults = true
@@ -19,6 +21,7 @@ class ChatDataStore(context: Context) {
 
     fun saveChannels(channels: List<ChatChannelSummary>) {
         writeList(channelsFile(), channels, ChatChannelSummary.serializer())
+        SyncStampStore.mark(context, "chat")
     }
 
     fun loadMessages(channelId: String): List<ChatMessage>? =
@@ -26,6 +29,7 @@ class ChatDataStore(context: Context) {
 
     fun saveMessages(channelId: String, messages: List<ChatMessage>) {
         writeList(messagesFile(channelId), messages, ChatMessage.serializer())
+        SyncStampStore.mark(context, "chat")
     }
 
     private fun channelsFile() = File(dir, "channels.json")

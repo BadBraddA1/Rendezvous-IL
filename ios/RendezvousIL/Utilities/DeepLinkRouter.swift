@@ -76,6 +76,9 @@ enum DeepLinkRouter {
             return DeepLinkDestination(tab: .schedule, more: nil, mapPinId: nil)
         }
         if normalized.hasPrefix("/chat") { return DeepLinkDestination(tab: .chat, more: nil, mapPinId: nil) }
+        if normalized.hasPrefix("/directory-photo") || normalized.hasPrefix("/directory-manage") {
+            return DeepLinkDestination(tab: .more, more: .directoryPhoto, mapPinId: nil)
+        }
         if normalized.hasPrefix("/directory") {
             return DeepLinkDestination(tab: .directory, more: nil, mapPinId: nil)
         }

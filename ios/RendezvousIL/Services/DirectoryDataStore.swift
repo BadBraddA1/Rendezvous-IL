@@ -26,6 +26,7 @@ enum DirectoryDataStore {
     static func saveFamilies(_ families: [DirectoryFamily], year: Int) {
         guard let data = try? JSONEncoder().encode(families) else { return }
         try? data.write(to: cacheURL(year: year), options: .atomic)
+        SyncStampStore.mark("directory-\(year)")
     }
 
     static func loadYears() -> [Int]? {

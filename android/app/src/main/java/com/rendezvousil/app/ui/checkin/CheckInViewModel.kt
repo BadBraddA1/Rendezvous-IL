@@ -20,6 +20,7 @@ data class CheckInUiState(
     val tshirtsDistributed: Boolean = false,
     val isLoading: Boolean = false,
     val uploadingPhoto: Boolean = false,
+    val nudgingFamily: Boolean = false,
     val errorMessage: String? = null,
     val successMessage: String? = null,
     /** Full-screen celebration after successful check-in. */
@@ -101,14 +102,28 @@ class CheckInViewModel(
                 it.copy(uploadingPhoto = true, errorMessage = null, successMessage = null)
             }
             try {
-                client.uploadAdminDirectoryFamilyPhoto(
+                val response = client.uploadAdminDirectoryFamilyPhoto(
                     familyId = familyId,
                     bytes = bytes,
                     filename = "family-photo.jpg",
                     mimeType = "image/jpeg",
                 )
-                _uiState.update {
-                    it.copy(uploadingPhoto = false, successMessage = "Directory photo uploaded.")
+                val pinged = response.notify_recipients ?: 0
+                _uiState.update { state ->
+                    val lookup = state.lookup
+                    state.copy(
+                        uploadingPhoto = false,
+                        successMessage = if (pinged > 0) {
+                            "Photo uploaded · pinged family ($pinged)"
+                        } else {
+                            "Photo uploaded · family has no app devices yet"
+                        },
+                        lookup = lookup?.copy(
+                            directory_photo_url = response.photo_url ?: lookup.directory_photo_url,
+                            directory_faces_labeled = 0,
+                            directory_faces_total = 0,
+                        ),
+                    )
                 }
                 _boops.emit(CheckInBoopEvent.Good)
             } catch (error: Exception) {
@@ -116,6 +131,34 @@ class CheckInViewModel(
                     it.copy(
                         uploadingPhoto = false,
                         errorMessage = error.message ?: "Photo upload failed",
+                    )
+                }
+                _boops.emit(CheckInBoopEvent.Bad)
+            }
+        }
+    }
+
+    fun nudgeDirectoryProfile() {
+        val client = appSession.authenticatedApiClient ?: return
+        val familyId = _uiState.value.lookup?.directory_family_id ?: return
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(nudgingFamily = true, errorMessage = null, successMessage = null)
+            }
+            try {
+                val response = client.nudgeFamilyDirectoryProfile(familyId)
+                _uiState.update {
+                    it.copy(
+                        nudgingFamily = false,
+                        successMessage = response.message ?: "Family pinged",
+                    )
+                }
+                _boops.emit(CheckInBoopEvent.Good)
+            } catch (error: Exception) {
+                _uiState.update {
+                    it.copy(
+                        nudgingFamily = false,
+                        errorMessage = error.message ?: "Nudge failed",
                     )
                 }
                 _boops.emit(CheckInBoopEvent.Bad)

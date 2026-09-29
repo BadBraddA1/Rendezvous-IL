@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.VolunteerActivism
+import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -57,6 +58,7 @@ fun MoreScreen(
     onNavigateToAdminUsers: () -> Unit,
     onNavigateToAdminAnnouncements: () -> Unit = {},
     onNavigateToAdminEventPings: () -> Unit = {},
+    onNavigateToStaffDayOf: () -> Unit = {},
     onNavigateToCheckIn: () -> Unit,
     onNavigateToDirectory: () -> Unit,
     onNavigateToDirectoryManage: () -> Unit,
@@ -141,6 +143,11 @@ fun MoreScreen(
                             onClick = onNavigateToAdminEventPings,
                         )
                     }
+                    NavListItem(
+                        title = "Day-of ops",
+                        icon = { Icon(Icons.Default.WbSunny, contentDescription = null) },
+                        onClick = onNavigateToStaffDayOf,
+                    )
                     if (canManageUsers) {
                         NavListItem(
                             title = "User management",
@@ -155,6 +162,23 @@ fun MoreScreen(
                             onClick = onNavigateToCheckIn,
                         )
                     }
+                }
+            } else if (canCheckIn) {
+                item {
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                    SectionHeader("Staff")
+                }
+                item {
+                    NavListItem(
+                        title = "Day-of ops",
+                        icon = { Icon(Icons.Default.WbSunny, contentDescription = null) },
+                        onClick = onNavigateToStaffDayOf,
+                    )
+                    NavListItem(
+                        title = "Staff check-in",
+                        icon = { Icon(Icons.Default.Badge, contentDescription = null) },
+                        onClick = onNavigateToCheckIn,
+                    )
                 }
             }
 

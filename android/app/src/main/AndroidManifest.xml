@@ -29,9 +29,11 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data
-                    android:host="schedule"
-                    android:scheme="rendezvousil" />
+                <data android:scheme="rendezvousil" android:host="schedule" />
+                <data android:scheme="rendezvousil" android:host="chat" />
+                <data android:scheme="rendezvousil" android:host="directory" />
+                <data android:scheme="rendezvousil" android:host="directory-photo" />
+                <data android:scheme="rendezvousil" android:host="directory-manage" />
             </intent-filter>
         </activity>
 

@@ -40,6 +40,7 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Park
 import androidx.compose.material.icons.filled.VpnKey
+import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -102,6 +103,7 @@ fun AdminDashboardScreen(
     onNavigateToUsers: (() -> Unit)? = null,
     onNavigateToAnnouncements: (() -> Unit)? = null,
     onNavigateToEventPings: (() -> Unit)? = null,
+    onNavigateToDayOf: (() -> Unit)? = null,
     onNavigateToCheckIn: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
@@ -170,6 +172,7 @@ fun AdminDashboardScreen(
                         onNavigateToUsers = onNavigateToUsers,
                         onNavigateToAnnouncements = onNavigateToAnnouncements,
                         onNavigateToEventPings = onNavigateToEventPings,
+                        onNavigateToDayOf = onNavigateToDayOf,
                         onNavigateToCheckIn = onNavigateToCheckIn,
                         modifier = Modifier
                             .fillMaxSize()
@@ -344,6 +347,7 @@ private fun DashboardContent(
     onNavigateToUsers: (() -> Unit)?,
     onNavigateToAnnouncements: (() -> Unit)?,
     onNavigateToEventPings: (() -> Unit)?,
+    onNavigateToDayOf: (() -> Unit)?,
     onNavigateToCheckIn: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
@@ -376,6 +380,7 @@ private fun DashboardContent(
             onNavigateToUsers = onNavigateToUsers,
             onNavigateToAnnouncements = onNavigateToAnnouncements,
             onNavigateToEventPings = onNavigateToEventPings,
+            onNavigateToDayOf = onNavigateToDayOf,
             onNavigateToCheckIn = onNavigateToCheckIn,
             openWeb = openWeb,
         )
@@ -718,6 +723,7 @@ private fun QuickLinksCard(
     onNavigateToUsers: (() -> Unit)?,
     onNavigateToAnnouncements: (() -> Unit)?,
     onNavigateToEventPings: (() -> Unit)?,
+    onNavigateToDayOf: (() -> Unit)?,
     onNavigateToCheckIn: (() -> Unit)?,
     openWeb: (String) -> Unit,
 ) {
@@ -729,6 +735,9 @@ private fun QuickLinksCard(
             color = BrandColors.Lake,
         )
         Spacer(modifier = Modifier.height(8.dp))
+        WebLinkRow("Day-of ops", Icons.Default.WbSunny) {
+            onNavigateToDayOf?.invoke()
+        }
         if (canEdit) {
             WebLinkRow("Announcements & scheduled pushes", Icons.Default.Campaign) {
                 onNavigateToAnnouncements?.invoke() ?: openWeb("/admin/announcements")

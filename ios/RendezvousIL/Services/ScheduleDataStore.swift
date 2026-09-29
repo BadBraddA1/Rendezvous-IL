@@ -36,6 +36,7 @@ enum ScheduleDataStore {
     static func saveCached(_ schedule: SchedulePayload) {
         guard let data = try? JSONEncoder().encode(schedule) else { return }
         try? data.write(to: cacheURL, options: .atomic)
+        SyncStampStore.mark("schedule")
     }
 
     static func bestOfflineSchedule() -> (schedule: SchedulePayload, source: ScheduleDataSource)? {

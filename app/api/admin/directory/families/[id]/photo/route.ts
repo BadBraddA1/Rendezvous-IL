@@ -11,6 +11,7 @@ import {
   clearFamilyPhotoFaces,
   suggestFaceNames,
 } from "@/lib/family-photo-faces"
+import { notifyFamilyDirectoryPhotoUploaded } from "@/lib/family-directory-notify"
 
 export const dynamic = "force-dynamic"
 
@@ -58,13 +59,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     await clearFamilyPhotoFaces(familyId)
     const nameSuggestions = await suggestFaceNames(familyId)
 
+    // Best-effort: ping the family to name faces in the app.
+    const notify = await notifyFamilyDirectoryPhotoUploaded(familyId)
+
     const { ipAddress, userAgent } = getRequestAuditMeta(req)
     await logAuditAction(
       admin.email,
       "update_directory_family_photo",
       "family",
       familyId,
-      { photo_url: uploaded.url },
+      { photo_url: uploaded.url, notify_recipients: notify.recipients },
       ipAddress,
       userAgent,
     )
@@ -74,6 +78,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       faces: [],
       name_suggestions: nameSuggestions,
       detect_error: null,
+      notify_recipients: notify.recipients,
     })
   } catch (error) {
     console.error("[admin/directory/photo] POST error:", error)

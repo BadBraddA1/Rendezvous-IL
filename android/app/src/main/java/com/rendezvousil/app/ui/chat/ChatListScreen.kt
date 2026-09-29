@@ -36,6 +36,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.rendezvousil.app.chat.ChatFormatting
+import com.rendezvousil.app.data.SyncStatusFooter
 import com.rendezvousil.app.theme.BrandColors
 import com.rendezvousil.core.network.dto.ChatChannelSummary
 import kotlinx.coroutines.launch
@@ -114,6 +115,12 @@ fun ChatListScreen(
                             ChannelRow(
                                 channel = channel,
                                 onClick = { onOpenChannel(channel) },
+                            )
+                        }
+                        item {
+                            SyncStatusFooter(
+                                key = "chat",
+                                hasLocalData = state.channels.isNotEmpty(),
                             )
                         }
                     }

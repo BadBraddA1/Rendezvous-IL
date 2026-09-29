@@ -1,6 +1,7 @@
 package com.rendezvousil.app.data
 
 import android.content.Context
+import com.rendezvousil.app.data.SyncStampStore
 import com.rendezvousil.core.schedule.model.NowNextResult
 import com.rendezvousil.core.schedule.model.SchedulePayload
 import com.rendezvousil.widgets.ScheduleSnapshotStore
@@ -19,6 +20,9 @@ object ScheduleSnapshotPublisher {
         scope: CoroutineScope,
     ) {
         ScheduleSnapshotStore.publish(context, schedule, nowNext)
+        if (schedule != null) {
+            SyncStampStore.mark(context, "schedule")
+        }
         scope.launch {
             WidgetRefresh.updateAll(context)
         }

@@ -50,6 +50,9 @@ data class CheckInLookupResponse(
     val family_members: List<CheckInFamilyMember>? = null,
     val tshirt_orders: List<CheckInTshirtOrder>? = null,
     val directory_family_id: Int? = null,
+    val directory_photo_url: String? = null,
+    val directory_faces_labeled: Int? = null,
+    val directory_faces_total: Int? = null,
 )
 
 @Serializable
@@ -58,6 +61,9 @@ data class CheckInFullResponse(
     val family_members: List<CheckInFamilyMember>? = null,
     val tshirt_orders: List<CheckInTshirtOrder>? = null,
     val directory_family_id: Int? = null,
+    val directory_photo_url: String? = null,
+    val directory_faces_labeled: Int? = null,
+    val directory_faces_total: Int? = null,
 )
 
 @Serializable

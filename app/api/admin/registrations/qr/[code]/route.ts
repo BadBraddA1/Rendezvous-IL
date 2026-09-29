@@ -1,6 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { checkCheckInAuth } from "@/lib/admin-auth"
 import { resolveDirectoryFamilyIdForRegistration } from "@/lib/checkin-directory-family"
+import { getFamilyDirectorySettings } from "@/lib/family-directory"
+import { listFamilyPhotoFaces } from "@/lib/family-photo-faces"
 import { sql } from "@/lib/db"
 import { normalizeRegistrationRow } from "@/lib/normalize-string-array"
 
@@ -39,11 +41,27 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ code
       email: registration.email != null ? String(registration.email) : null,
     })
 
+    let directoryPhotoUrl: string | null = null
+    let directoryFacesLabeled = 0
+    let directoryFacesTotal = 0
+    if (directoryFamilyId) {
+      const settings = await getFamilyDirectorySettings(directoryFamilyId)
+      directoryPhotoUrl = settings?.photo_url ?? null
+      if (directoryPhotoUrl) {
+        const faces = await listFamilyPhotoFaces(directoryFamilyId)
+        directoryFacesTotal = faces.length
+        directoryFacesLabeled = faces.filter((f) => Boolean(f.label?.trim())).length
+      }
+    }
+
     return NextResponse.json({
       registration: normalizeRegistrationRow(registration),
       family_members: familyMembers,
       tshirt_orders: tshirtOrders,
       directory_family_id: directoryFamilyId,
+      directory_photo_url: directoryPhotoUrl,
+      directory_faces_labeled: directoryFacesLabeled,
+      directory_faces_total: directoryFacesTotal,
     })
   } catch (error) {
     console.error("[v0] Failed to lookup by QR code:", error)

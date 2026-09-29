@@ -26,6 +26,7 @@ enum ChatDataStore {
     static func saveChannels(_ channels: [ChatChannelSummary]) {
         guard let data = try? JSONEncoder().encode(channels) else { return }
         try? data.write(to: channelsURL, options: .atomic)
+        SyncStampStore.mark("chat")
     }
 
     static func loadMessages(channelId: String) -> [ChatMessage]? {
@@ -36,5 +37,6 @@ enum ChatDataStore {
     static func saveMessages(_ messages: [ChatMessage], channelId: String) {
         guard let data = try? JSONEncoder().encode(messages) else { return }
         try? data.write(to: messagesURL(channelId: channelId), options: .atomic)
+        SyncStampStore.mark("chat")
     }
 }

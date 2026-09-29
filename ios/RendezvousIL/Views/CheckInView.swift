@@ -23,6 +23,7 @@ struct CheckInView: View {
     @State private var directoryPickerItem: PhotosPickerItem?
     @State private var showDirectoryCamera = false
     @State private var uploadingDirectoryPhoto = false
+    @State private var nudgingFamily = false
 
     var body: some View {
         Group {
@@ -244,6 +245,28 @@ struct CheckInView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Directory photo")
                         .font(.headline)
+                    if let photoUrl = lookup.directory_photo_url, !photoUrl.isEmpty {
+                        let labeled = lookup.directory_faces_labeled ?? 0
+                        let total = lookup.directory_faces_total ?? 0
+                        Text(
+                            total > 0
+                                ? "Photo on file · \(labeled)/\(total) faces named"
+                                : "Photo on file — ask family to name faces"
+                        )
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        Button {
+                            Task { await nudgeDirectoryProfile(familyId: familyId) }
+                        } label: {
+                            if nudgingFamily {
+                                ProgressView()
+                            } else {
+                                Label("Ping family to finish profile", systemImage: "bell.badge")
+                            }
+                        }
+                        .font(.subheadline.weight(.semibold))
+                        .disabled(nudgingFamily || isLoading)
+                    }
                     HStack(spacing: 10) {
                         PhotosPicker(selection: $directoryPickerItem, matching: .images) {
                             Label(
@@ -337,7 +360,7 @@ struct CheckInView: View {
 
         do {
             let prepared = DirectoryImageProcessor.prepareForUpload(data)
-            _ = try await RepositoryFetch.withTimeout(seconds: 90) {
+            let response = try await RepositoryFetch.withTimeout(seconds: 90) {
                 try await client.uploadAdminDirectoryFamilyPhoto(
                     familyId: familyId,
                     imageData: prepared,
@@ -345,7 +368,39 @@ struct CheckInView: View {
                     mimeType: "image/jpeg"
                 )
             }
-            successMessage = "Directory photo uploaded."
+            let pinged = response.notify_recipients ?? 0
+            successMessage = pinged > 0
+                ? "Photo uploaded · pinged family (\(pinged))"
+                : "Photo uploaded · family has no app devices yet"
+            if let current = lookup {
+                lookup = CheckInLookupResponse(
+                    registration: current.registration,
+                    family_members: current.family_members,
+                    tshirt_orders: current.tshirt_orders,
+                    directory_family_id: current.directory_family_id,
+                    directory_photo_url: response.photo_url ?? current.directory_photo_url,
+                    directory_faces_labeled: 0,
+                    directory_faces_total: 0
+                )
+            }
+            boop(.good)
+        } catch {
+            errorMessage = error.localizedDescription
+            boop(.bad)
+        }
+    }
+
+    private func nudgeDirectoryProfile(familyId: Int) async {
+        guard let client = session.apiClient else { return }
+        nudgingFamily = true
+        errorMessage = nil
+        successMessage = nil
+        defer { nudgingFamily = false }
+        do {
+            let response = try await RepositoryFetch.withTimeout {
+                try await client.nudgeFamilyDirectoryProfile(familyId: familyId)
+            }
+            successMessage = response.message ?? "Family pinged"
             boop(.good)
         } catch {
             errorMessage = error.localizedDescription
@@ -461,7 +516,10 @@ struct CheckInView: View {
                     registration: updated,
                     family_members: lookup?.family_members,
                     tshirt_orders: lookup?.tshirt_orders,
-                    directory_family_id: lookup?.directory_family_id
+                    directory_family_id: lookup?.directory_family_id,
+                    directory_photo_url: lookup?.directory_photo_url,
+                    directory_faces_labeled: lookup?.directory_faces_labeled,
+                    directory_faces_total: lookup?.directory_faces_total
                 )
             }
             successMessage = nil

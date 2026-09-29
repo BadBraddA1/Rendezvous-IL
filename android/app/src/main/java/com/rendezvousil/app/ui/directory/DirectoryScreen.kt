@@ -72,12 +72,14 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.rendezvousil.app.data.SyncStatusFooter
 import com.rendezvousil.app.theme.BrandColors
 import com.rendezvousil.core.network.YearFormatting
 import com.rendezvousil.core.network.dto.DirectoryContactPhone
 import com.rendezvousil.core.network.dto.DirectoryFamily
 import com.rendezvousil.core.network.dto.DirectoryPhotoFace
 import androidx.compose.foundation.background
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -250,6 +252,12 @@ fun DirectoryScreen(
                             ) {
                                 items(filteredFamilies, key = { it.id }) { family ->
                                     DirectoryFamilyCard(family = family)
+                                }
+                                item(span = { GridItemSpan(maxLineSpan) }) {
+                                    SyncStatusFooter(
+                                        key = "directory-${uiState.selectedYear}",
+                                        hasLocalData = filteredFamilies.isNotEmpty(),
+                                    )
                                 }
                             }
                         }
