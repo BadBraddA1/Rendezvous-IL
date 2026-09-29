@@ -94,12 +94,12 @@ export function ScheduleView({
                     <p className="lu-type-board-sm leading-snug text-balance">{row.title}</p>
                     <p className="lu-text-secondary mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-base">
                       <span className="inline-flex items-center gap-1.5">
-                        <Clock className="lu-text-schedule h-4 w-4 opacity-70" aria-hidden="true" />
+                        <Clock className="lu-text-schedule h-4 w-4 " aria-hidden="true" />
                         {row.time}
                       </span>
                       {row.location && (
                         <span className="inline-flex items-center gap-1.5 truncate">
-                          <MapPin className="lu-text-schedule h-4 w-4 opacity-70" aria-hidden="true" />
+                          <MapPin className="lu-text-schedule h-4 w-4 " aria-hidden="true" />
                           {row.location}
                         </span>
                       )}

@@ -42,7 +42,7 @@ export function WeatherView({ weather }: { weather: WeatherData | null }) {
 
               {hourly.length > 0 && (
                 <div className="w-full max-w-5xl">
-                  <p className="lu-type-label lu-text-schedule mb-4 text-center opacity-85">
+                  <p className="lu-type-label lu-text-schedule mb-4 text-center ">
                     Next few hours
                   </p>
                   <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">

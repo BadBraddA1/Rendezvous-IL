@@ -255,7 +255,7 @@ export function MapView({
                   className={`relative drop-shadow-sm transition-colors ${
                     isFeatured ? "h-14 w-14" 
                     : isPrev ? "h-10 w-10" 
-                    : "h-7 w-7 opacity-70"
+                    : "h-7 w-7 "
                   }`}
                   style={{ color: isPrev ? LU_MAP.labelOnPin : hex }}
                   fill={isFeatured ? hex : isPrev ? LU_MAP.prevFill : "white"}

@@ -126,12 +126,12 @@ export function LiveUpdatesShell() {
   // rem-based Tailwind class (text-*, p-*, h-*, w-*, gap-*) scales in
   // lockstep. We use a fixed 16px baseline (browser default) so Tailwind's
   // size classes render at their documented pixel values:
-  //   text-base=16, text-xl=20, text-2xl=24, text-3xl=30, text-4xl=36,
-  //   text-5xl=48, text-6xl=60, text-7xl=72.
+  // text-base=16, text-xl=20, text-2xl=24, text-3xl=30, text-4xl=36,
+  // text-5xl=48, text-6xl=60, text-7xl=72.
   // The user-controllable zoom multiplier (1× – 2.5×) lets each TV pick a
   // size that's readable across the room. The previous viewport-scaled
   // baseline was overshooting badly (~50px at 1080p), making text-2xl
-  // render at 76px and breaking every layout  -  this is the fix for that.
+  // render at 76px and breaking every layout - this is the fix for that.
   useEffect(() => {
     if (typeof document === "undefined") return
     const root = document.documentElement
@@ -248,12 +248,12 @@ export function LiveUpdatesShell() {
   // Auto-refresh when a new deployment is detected.
   //
   // The /api/version endpoint returns a BUILD_TIME that changes on each deploy.
-  // We store the version we loaded with and poll every 30 seconds  -  when the
+  // We store the version we loaded with and poll every 30 seconds - when the
   // server's version differs from ours, we reload the page so the TVs pick up
   // the new code automatically without anyone having to manually refresh.
   //
   // We preserve both fullscreen AND the current view/slide across the reload
-  // so the experience is seamless  -  the page comes back to exactly where it was.
+  // so the experience is seamless - the page comes back to exactly where it was.
   const FULLSCREEN_RESTORE_KEY = "lu_restore_fullscreen"
   const VIEW_RESTORE_KEY = "lu_restore_view"
   const AUTO_ROTATE_RESTORE_KEY = "lu_restore_auto_rotate"
@@ -305,7 +305,7 @@ export function LiveUpdatesShell() {
       }
     }
 
-    // Restore controls visibility  -  hide controls on restore for clean TV display
+    // Restore controls visibility - hide controls on restore for clean TV display
     const savedControls = sessionStorage.getItem(CONTROLS_RESTORE_KEY)
     if (savedControls !== null) {
       sessionStorage.removeItem(CONTROLS_RESTORE_KEY)
@@ -320,7 +320,7 @@ export function LiveUpdatesShell() {
       // browsers (and Chrome in kiosk mode) allow it.
       setTimeout(() => {
         document.documentElement.requestFullscreen?.().catch(() => {
-          // Browser blocked it  -  user will need to press F again.
+          // Browser blocked it - user will need to press F again.
         })
       }, 300)
     }
@@ -368,10 +368,10 @@ export function LiveUpdatesShell() {
         const res = await fetch("/api/version", { cache: "no-store" })
         const data = await res.json()
         if (!initialVersion) {
-          // First load  -  record the version we started with.
+          // First load - record the version we started with.
           initialVersion = data.version
         } else if (data.version !== initialVersion) {
-          // Server version changed  -  a new deploy happened.
+          // Server version changed - a new deploy happened.
           // Stash ALL UI state so we can restore it after reload.
           sessionStorage.setItem(VIEW_RESTORE_KEY, currentView)
           sessionStorage.setItem(AUTO_ROTATE_RESTORE_KEY, String(isAutoRotating))
@@ -383,7 +383,7 @@ export function LiveUpdatesShell() {
           window.location.reload()
         }
       } catch {
-        // Network blip  -  ignore and try again next interval.
+        // Network blip - ignore and try again next interval.
       }
     }
 
@@ -553,11 +553,11 @@ export function LiveUpdatesShell() {
   // Fetch meal data for the next upcoming meal.
   //
   // - Uses `nextMeal.date` (YYYY-MM-DD) directly so the lookup is correct
-  //   even when "next meal" is tomorrow morning.
+  // even when "next meal" is tomorrow morning.
   // - Re-fetches every 2 minutes while the next meal is pinned, so the LU
-  //   page recovers from transient API failures (TVs on flaky WiFi).
-  // - Does NOT clear `mealData` on error  -  we keep the last good payload
-  //   so a brief network blip never reverts the screen to "coming soon".
+  // page recovers from transient API failures (TVs on flaky WiFi).
+  // - Does NOT clear `mealData` on error - we keep the last good payload
+  // so a brief network blip never reverts the screen to "coming soon".
   useEffect(() => {
     if (!nextMeal || !nextMeal.isMeal) {
       setMealData(null)
@@ -597,7 +597,7 @@ export function LiveUpdatesShell() {
   // Fetch volunteer schedule for the NEXT upcoming devotion.
   //
   // Earlier versions hard-coded clock cutoffs (e.g. "before 10:30 AM →
-  // Morning Devotion"), which broke on days that don't have both slots  - 
+  // Morning Devotion"), which broke on days that don't have both slots - 
   // notably Monday, which has no Morning Devotion at all. The card would
   // ask the API for `Monday Morning Devotion`, get nothing, and show a
   // stale or empty schedule.
@@ -635,7 +635,7 @@ export function LiveUpdatesShell() {
 
         const targetDateStr = nextAssembly.date
 
-        // Friendly label like "Tuesday Morning Devotion"  -  derived from the
+        // Friendly label like "Tuesday Morning Devotion" - derived from the
         // ScheduleItem's own `date` so it always matches the row we'll
         // request from the API.
         const [y, m, d] = targetDateStr.split("-").map(Number)
@@ -926,14 +926,14 @@ export function LiveUpdatesShell() {
         </div>
       )}
 
-      {/* Header  -  kept minimal: a tiny logo + the clock. Everything else
+      {/* Header - kept minimal: a tiny logo + the clock. Everything else
           (WiFi, branding tagline, etc.) was removed so the views below get
           maximum vertical space and aren't competing with header noise.
           Dedicated photoshow mode hides chrome for a true room slideshow. */}
       {!photoshowOnly && !blackout && (
-      <header className="site-chrome-top shrink-0 flex items-center justify-between gap-3 border-b border-white/25 px-4 py-3 sm:gap-6 sm:px-8 sm:py-4">
+      <header className="site-chrome-top shrink-0 flex items-center justify-between gap-3 border-b-2 border-white/45 px-4 py-3 sm:gap-6 sm:px-8 sm:py-4">
         <div className="flex items-center gap-3 min-w-0 shrink">
-          <div className="relative h-11 w-11 shrink-0 rounded-md bg-white/10 border border-white/25 p-1.5 flex items-center justify-center">
+          <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-md border-2 border-white/45 bg-[#243036] p-1.5">
             <Image
               src="/rendezvous-logo.png"
               alt="Rendezvous Homeschool Family Retreat"
@@ -1033,7 +1033,7 @@ export function LiveUpdatesShell() {
 
       {/* Keyboard Controls Footer - hidden in fullscreen or when controls are hidden (press H to toggle) */}
       {!isFullscreen && showControls && !photoshowOnly && (
-      <footer className="site-chrome-bottom shrink-0 border-t border-white/25 px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-8 sm:py-6 lg:px-12">
+      <footer className="site-chrome-bottom shrink-0 border-t-2 border-white/45 px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-8 sm:py-6 lg:px-12">
         <div className="scroll-touch-x flex flex-nowrap items-center justify-start gap-4 sm:flex-wrap sm:justify-center">
           <KeyButton shortcut="1" name="All" active={currentView === "all"} onClick={() => selectView("all")} />
           <KeyButton shortcut="2" name="Weather" active={currentView === "weather"} onClick={() => selectView("weather")} />
@@ -1086,31 +1086,31 @@ export function LiveUpdatesShell() {
             ariaLabel={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
           />
 
-          {/* Per-view zoom controls  -  saved to localStorage so each TV
+          {/* Per-view zoom controls - saved to localStorage so each TV
               remembers its preferred size for each panel. The widget is
               intentionally larger / brighter than the keyboard hints so it's
               easy to find on a projection screen. The label includes the
               current view name so it's obvious that resizing is per-page. */}
-          <div className="ml-2 flex items-center gap-2 rounded-xl border border-white/25 bg-white/10 px-4 py-2">
+          <div className="ml-2 flex items-center gap-2 rounded-xl border-2 border-white/45 bg-[#243036] px-4 py-2">
             <span className="mr-1 text-base font-semibold text-primary">Size</span>
             <button
               type="button"
               onClick={zoomOut}
               disabled={currentZoom <= ZOOM_MIN + 0.001}
-              className="flex items-center justify-center h-12 w-12 rounded-lg border border-white/25 bg-white/10 hover:bg-white/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-lg"
+              className="flex h-12 w-12 items-center justify-center rounded-lg border-2 border-white/40 bg-[#1a2428] text-lg transition-colors hover:bg-[#2e3c42] disabled:cursor-not-allowed disabled:opacity-50"
               aria-label="Decrease size"
               title="Decrease size"
             >
               <ZoomOut className="h-6 w-6" />
             </button>
-            <span className="lu-text-body text-xl tabular-nums w-20 text-center font-bold">
+            <span className="lu-text-body w-20 text-center text-xl font-bold tabular-nums">
               {Math.round(currentZoom * 100)}%
             </span>
             <button
               type="button"
               onClick={zoomIn}
               disabled={currentZoom >= ZOOM_MAX - 0.001}
-              className="flex items-center justify-center h-12 w-12 rounded-lg border border-white/25 bg-white/10 hover:bg-white/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-lg"
+              className="flex h-12 w-12 items-center justify-center rounded-lg border-2 border-white/40 bg-[#1a2428] text-lg transition-colors hover:bg-[#2e3c42] disabled:cursor-not-allowed disabled:opacity-50"
               aria-label="Increase size"
               title="Increase size"
             >
@@ -1120,7 +1120,7 @@ export function LiveUpdatesShell() {
               type="button"
               onClick={resetZoom}
               disabled={Math.abs(currentZoom - ZOOM_DEFAULT) < 0.001}
-              className="flex items-center justify-center h-12 w-12 rounded-lg border border-white/25 bg-white/10 hover:bg-white/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="flex h-12 w-12 items-center justify-center rounded-lg border-2 border-white/40 bg-[#1a2428] transition-colors hover:bg-[#2e3c42] disabled:cursor-not-allowed disabled:opacity-50"
               aria-label="Reset size"
               title="Reset size"
             >

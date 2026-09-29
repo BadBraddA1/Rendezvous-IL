@@ -33,7 +33,7 @@ function formatClockParts(date: Date) {
   ]
 
   return {
-    time: `${hours12}:${String(minutes).padStart(2, "0")}  ${ampm}`,
+    time: `${hours12}:${String(minutes).padStart(2, "0")} ${ampm}`,
     date: `${weekdays[date.getDay()]}, ${months[date.getMonth()]} ${date.getDate()}`,
   }
 }

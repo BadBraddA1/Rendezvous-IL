@@ -80,18 +80,18 @@ export function AllView({
                 )}
               </div>
               <div className="flex items-start gap-6">
-                <div className="shrink-0 rounded-2xl bg-white/5 border border-primary/20 p-4">
+                <div className="shrink-0 rounded-2xl border-2 border-white/45 bg-[#243036] p-4">
                   {getEventIcon(featuredItem.title, featuredItem.isMeal, "lg")}
                 </div>
                 <div className="flex-1 min-w-0">
                   <h2 className="lu-type-board-lg mb-3 text-balance">{featuredItem.title}</h2>
                   <div className="flex flex-wrap gap-3">
-                    <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-primary/20 text-base">
+                    <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full border-2 border-white/45 bg-[#243036] text-base">
                       <Clock className="h-4 w-4 lu-text-upcoming" />
                       {featuredIsNow ? featuredItem.time : `${featuredItem.day} ${featuredItem.time}`}
                     </span>
                     {featuredItem.location && (
-                      <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-primary/20 text-base">
+                      <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full border-2 border-white/45 bg-[#243036] text-base">
                         <MapPin className="h-4 w-4 lu-text-upcoming" />
                         {featuredItem.location}
                       </span>
@@ -101,7 +101,7 @@ export function AllView({
               </div>
             </div>
           ) : (
-            <div className="rounded-2xl border border-primary/20 bg-white/[0.03] p-8 text-center">
+            <div className="rounded-2xl border-2 border-white/45 bg-[#1a2428] p-8 text-center">
               <Bed className="h-16 w-16 lu-icon-muted mx-auto mb-4" />
               <p className="text-2xl font-semibold lu-text-muted">Free Time</p>
               <p className="text-base lu-text-subtle mt-2">Enjoy the retreat!</p>
@@ -116,10 +116,10 @@ export function AllView({
         <div className="group relative overflow-hidden lu-panel p-7">
           <div className="relative">
             <div className="flex items-center gap-3 mb-6">
-              <div className="rounded-xl lu-pin-lake-surface p-2.5 border lu-pin-lake-border">
+              <div className="lu-pin-lake-surface lu-pin-lake-border rounded-xl border-2 p-2.5">
                 <Droplets className="h-5 w-5 lu-text-schedule" />
               </div>
-              <span className="lu-type-label lu-text-schedule opacity-90">Weather</span>
+              <span className="lu-type-label lu-text-schedule ">Weather</span>
             </div>
             {weather ? (
               <div className="space-y-5">
@@ -130,7 +130,7 @@ export function AllView({
                 <p className="lu-text-secondary capitalize text-lg">{weather.current.weather[0].description}</p>
                 <div className="grid grid-cols-3 gap-2">
                   {weather.hourly.slice(0, 3).map((hour) => (
-                    <div key={hour.dt} className="text-center p-3 rounded-xl bg-white/5 border border-white/5">
+                    <div key={hour.dt} className="text-center p-3 rounded-xl border-2 border-white/40 bg-[#243036]">
                       <p className="text-xs lu-text-muted font-medium">{formatTime(hour.dt)}</p>
                       <div className="flex justify-center my-2">
                         {getWeatherIcon(hour.weather[0].id, hour.weather[0].icon, "sm")}
@@ -159,14 +159,14 @@ export function AllView({
         <div className="group relative overflow-hidden lu-panel p-7">
           <div className="relative">
             <div className="flex items-center gap-3 mb-6">
-              <div className="rounded-xl lu-priority-normal-surface p-2.5 border lu-pin-warm-border">
+              <div className="lu-priority-normal-surface lu-pin-warm-border rounded-xl border-2 p-2.5">
                 <UtensilsCrossed className="h-5 w-5 lu-text-meal" />
               </div>
-              <span className="lu-type-label lu-text-meal opacity-90">Next Meal</span>
+              <span className="lu-type-label lu-text-meal ">Next Meal</span>
             </div>
             {nextMeal ? (
               <div className="flex flex-col items-center justify-center text-center pt-2">
-                <div className="mb-4 rounded-2xl bg-white/5 border border-white/10 p-4">
+                <div className="mb-4 rounded-2xl border-2 border-white/45 bg-[#243036] p-4">
                   {getEventIcon(nextMeal.title, true, "lg")}
                 </div>
                 <h3 className="lu-type-board-sm mb-2">{nextMeal.title}</h3>
@@ -200,10 +200,10 @@ export function AllView({
           <div className="group relative overflow-hidden lu-panel p-7">
             <div className="relative">
               <div className="flex items-center gap-3 mb-6">
-                <div className="rounded-xl lu-pin-coral-surface p-2.5 border lu-pin-coral-border">
+                <div className="lu-pin-coral-surface lu-pin-coral-border rounded-xl border-2 p-2.5">
                   <Users className="h-5 w-5 lu-pin-coral-text" />
                 </div>
-                <span className="lu-type-label lu-pin-coral-text opacity-90 truncate">{volunteerTimeSlot}</span>
+                <span className="lu-type-label lu-pin-coral-text truncate">{volunteerTimeSlot}</span>
               </div>
               <div className="space-y-2.5">
                 {volunteerItems.map((item, index) => (

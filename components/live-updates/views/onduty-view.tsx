@@ -18,7 +18,7 @@ export function OndutyView({ assignments }: { assignments: OnDutyAssignment[] })
             </div>
             <h2 className="lu-type-board-xl">On duty</h2>
           </div>
-          <p className="lu-type-label-lg lu-text-schedule opacity-80">Special assignments</p>
+          <p className="lu-type-label-lg lu-text-schedule ">Special assignments</p>
         </div>
 
         {rows.length === 0 ? (
@@ -32,7 +32,7 @@ export function OndutyView({ assignments }: { assignments: OnDutyAssignment[] })
             <div className="relative grid grid-cols-1 gap-4 md:grid-cols-2">
               {rows.map((row) => (
                 <div key={row.id} className="lu-panel-inner p-5 sm:p-6">
-                  <p className="lu-type-label lu-text-schedule mb-2 opacity-85">{row.activity}</p>
+                  <p className="lu-type-label lu-text-schedule mb-2 ">{row.activity}</p>
                   <p
                     className={`lu-type-board-lg leading-tight text-balance ${
                       row.person ? "" : "lu-text-muted italic"

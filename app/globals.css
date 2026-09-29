@@ -1026,75 +1026,78 @@ body.lu-display-mode button[aria-label="Back to top"] {
 /* Brand dark shell — live updates display board, silent mode, etc. */
 .brand-dark-shell,
 .live-updates-shell {
-  /* TV / projection board: deep lake canvas with clearly lifted panels */
-  background: oklch(0.16 0.03 195);
-  color: oklch(0.98 0.01 178);
-  /* Site primary is mid-teal — too dim on TVs; brighten for this shell only */
-  --primary: oklch(0.82 0.1 175);
-  --primary-foreground: oklch(0.16 0.03 195);
+  /*
+   * PROJECTOR-FIRST: venue projectors crush midtones and fade soft borders.
+   * Use near-black canvas, clearly lifted panels, pure white type, and
+   * bright accents — avoid gray-on-gray and opacity fades.
+   */
+  background: #05080a;
+  color: #ffffff;
+  --primary: #7fe0d0;
+  --primary-foreground: #05080a;
 }
 
 .brand-dark-shell .brand-dark-surface,
 .live-updates-shell .lu-panel {
-  border: 1px solid oklch(1 0 0 / 0.22);
-  background: oklch(0.22 0.032 195);
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  background: #1a2428;
   border-radius: 0.75rem;
-  box-shadow: 0 1px 0 oklch(1 0 0 / 0.06) inset;
+  box-shadow: none;
 }
 
 .brand-dark-shell .brand-dark-surface-soft,
 .live-updates-shell .lu-panel-soft {
-  border: 1px solid oklch(1 0 0 / 0.18);
-  background: oklch(0.2 0.028 195);
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  background: #162022;
   border-radius: 0.625rem;
 }
 
 .brand-dark-shell .brand-dark-surface-inner,
 .live-updates-shell .lu-panel-inner {
-  border: 1px solid oklch(1 0 0 / 0.2);
-  background: oklch(0.26 0.03 195);
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  background: #243036;
   border-radius: 0.5rem;
 }
 
 .brand-dark-shell .brand-dark-text-muted {
-  color: oklch(0.86 0.02 178);
+  color: #e8f2f0;
 }
 
 .brand-dark-shell .brand-dark-text-subtle {
-  color: oklch(0.78 0.02 178);
+  color: #d4e4e0;
 }
 
 .brand-dark-shell .brand-dark-text-body {
-  color: oklch(0.94 0.015 178);
+  color: #ffffff;
 }
 
 .brand-dark-shell .brand-dark-text-strong {
-  color: oklch(0.99 0.005 178);
+  color: #ffffff;
 }
 
 .brand-dark-shell .brand-dark-track {
-  color: oklch(0.28 0.03 195);
+  color: #2a383c;
 }
 
 .brand-dark-shell .brand-dark-paused {
-  color: oklch(0.88 0.12 85);
+  color: #ffd56a;
 }
 
 .brand-dark-shell .brand-dark-link {
-  color: oklch(0.86 0.02 178);
+  color: #e8f2f0;
 }
 
 .brand-dark-shell .brand-dark-link:hover {
-  color: oklch(0.99 0.005 178);
+  color: #ffffff;
 }
 
 .live-updates-shell .lu-kicker {
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: var(--lu-tracking-label, 0.1em);
   text-transform: uppercase;
   line-height: 1.3;
-  color: oklch(0.86 0.08 175);
+  color: #9aefe0;
 }
 
 .live-updates-shell [class*="blur-3xl"],
@@ -1103,26 +1106,26 @@ body.lu-display-mode button[aria-label="Back to top"] {
   display: none;
 }
 
-/* High-contrast ink + accents for hallway TVs / projectors */
+/* Projector ink: only ~2 readable steps — white and near-white. */
 .live-updates-shell {
-  --lu-ink-body: oklch(0.98 0.008 178);
-  --lu-ink-secondary: oklch(0.9 0.015 195);
-  --lu-ink-muted: oklch(0.82 0.02 195);
-  --lu-ink-subtle: oklch(0.74 0.02 195);
-  --lu-now: oklch(0.72 0.14 155);
-  --lu-now-bright: oklch(0.86 0.12 155);
-  --lu-upcoming: oklch(0.86 0.12 45);
-  --lu-schedule: oklch(0.86 0.09 175);
-  --lu-meal: oklch(0.88 0.1 70);
-  --lu-pin-coral: oklch(0.78 0.14 38);
-  --lu-pin-warm: oklch(0.86 0.1 70);
-  --lu-pin-highlight: oklch(0.88 0.12 90);
-  --lu-pin-success: oklch(0.78 0.12 155);
-  --lu-pin-lake: oklch(0.82 0.1 175);
-  --lu-pin-ink: oklch(0.8 0.05 195);
-  --lu-destructive: oklch(0.78 0.18 25);
-  --lu-warning: oklch(0.86 0.12 45);
-  --lu-announce: oklch(0.88 0.1 70);
+  --lu-ink-body: #ffffff;
+  --lu-ink-secondary: #f0f7f5;
+  --lu-ink-muted: #e2eeea;
+  --lu-ink-subtle: #d0e0db;
+  --lu-now: #3dd68c;
+  --lu-now-bright: #6ef0ad;
+  --lu-upcoming: #ffb45c;
+  --lu-schedule: #7fe0d0;
+  --lu-meal: #ffd56a;
+  --lu-pin-coral: #ff9a7a;
+  --lu-pin-warm: #ffd56a;
+  --lu-pin-highlight: #ffe566;
+  --lu-pin-success: #6ef0ad;
+  --lu-pin-lake: #7fe0d0;
+  --lu-pin-ink: #c5d8d4;
+  --lu-destructive: #ff7a6e;
+  --lu-warning: #ffb45c;
+  --lu-announce: #ffd56a;
 
   /* Projection-board type ramp (scales with per-view html font-size zoom) */
   --lu-leading-body: 1.55;
@@ -1264,11 +1267,13 @@ body.lu-display-mode button[aria-label="Back to top"] {
 
 .live-updates-shell .lu-bg-now { background: var(--lu-now); }
 .live-updates-shell .lu-surface-now {
-  background: color-mix(in oklch, var(--lu-now) 28%, transparent);
-  border-color: color-mix(in oklch, var(--lu-now-bright) 55%, transparent);
+  background: rgba(61, 214, 140, 0.28);
+  border-color: #6ef0ad;
+  border-width: 2px;
 }
 .live-updates-shell .lu-border-now {
-  border-color: color-mix(in oklch, var(--lu-now-bright) 55%, transparent);
+  border-color: #6ef0ad;
+  border-width: 2px;
 }
 .live-updates-shell .lu-text-upcoming { color: var(--lu-upcoming); }
 .live-updates-shell .lu-text-schedule { color: var(--lu-schedule); }
@@ -1280,116 +1285,125 @@ body.lu-display-mode button[aria-label="Back to top"] {
 
 .live-updates-shell .lu-weather-storm { color: var(--lu-meal); }
 .live-updates-shell .lu-weather-rain { color: var(--lu-schedule); }
-.live-updates-shell .lu-weather-snow { color: oklch(0.82 0.04 178); }
+.live-updates-shell .lu-weather-snow { color: #ffffff; }
 .live-updates-shell .lu-weather-wind { color: var(--lu-ink-muted); }
 .live-updates-shell .lu-weather-sun { color: var(--lu-meal); }
 
-.live-updates-shell .lu-priority-urgent-text { color: oklch(0.9 0.14 25); }
+.live-updates-shell .lu-priority-urgent-text { color: #ff9a90; }
 .live-updates-shell .lu-priority-urgent-border {
-  border-color: color-mix(in oklch, var(--lu-destructive) 65%, transparent);
+  border-color: #ff7a6e;
+  border-width: 2px;
 }
 .live-updates-shell .lu-priority-urgent-surface {
-  background: color-mix(in oklch, var(--lu-destructive) 22%, transparent);
+  background: rgba(255, 122, 110, 0.28);
 }
 .live-updates-shell .lu-priority-urgent-glow {
-  background: color-mix(in oklch, var(--lu-destructive) 28%, transparent);
+  background: rgba(255, 122, 110, 0.35);
 }
 
-.live-updates-shell .lu-priority-high-text { color: oklch(0.9 0.12 45); }
+.live-updates-shell .lu-priority-high-text { color: #ffc078; }
 .live-updates-shell .lu-priority-high-border {
-  border-color: color-mix(in oklch, var(--lu-warning) 65%, transparent);
+  border-color: #ffb45c;
+  border-width: 2px;
 }
 .live-updates-shell .lu-priority-high-surface {
-  background: color-mix(in oklch, var(--lu-warning) 22%, transparent);
+  background: rgba(255, 180, 92, 0.28);
 }
 .live-updates-shell .lu-priority-high-glow {
-  background: color-mix(in oklch, var(--lu-warning) 28%, transparent);
+  background: rgba(255, 180, 92, 0.35);
 }
 
 .live-updates-shell .lu-priority-normal-text { color: var(--lu-announce); }
 .live-updates-shell .lu-priority-normal-surface {
-  background: color-mix(in oklch, var(--lu-announce) 18%, transparent);
+  background: rgba(255, 213, 106, 0.22);
 }
 .live-updates-shell .lu-priority-normal-glow {
-  background: color-mix(in oklch, var(--lu-announce) 24%, transparent);
+  background: rgba(255, 213, 106, 0.3);
 }
 
 .live-updates-shell .lu-announce-header {
   color: var(--lu-announce);
-  background: color-mix(in oklch, var(--lu-announce) 14%, transparent);
-  border-color: color-mix(in oklch, var(--lu-announce) 22%, transparent);
+  background: rgba(255, 213, 106, 0.28);
+  border-color: #ffd56a;
+  border-width: 2px;
 }
 
 .live-updates-shell .lu-pin-coral { color: var(--lu-pin-coral); }
-.live-updates-shell .lu-pin-coral-text { color: oklch(0.9 0.1 38); }
+.live-updates-shell .lu-pin-coral-text { color: #ffb49a; }
 .live-updates-shell .lu-pin-coral-border {
-  border-color: color-mix(in oklch, var(--lu-pin-coral) 60%, transparent);
+  border-color: #ff9a7a;
+  border-width: 2px;
 }
 .live-updates-shell .lu-pin-coral-surface {
-  background: color-mix(in oklch, var(--lu-pin-coral) 22%, transparent);
+  background: rgba(255, 154, 122, 0.28);
 }
 .live-updates-shell .lu-pin-coral-glow {
-  background: color-mix(in oklch, var(--lu-pin-coral) 28%, transparent);
+  background: rgba(255, 154, 122, 0.35);
 }
 
 .live-updates-shell .lu-pin-warm { color: var(--lu-pin-warm); }
-.live-updates-shell .lu-pin-warm-text { color: oklch(0.92 0.08 70); }
+.live-updates-shell .lu-pin-warm-text { color: #ffe08a; }
 .live-updates-shell .lu-pin-warm-border {
-  border-color: color-mix(in oklch, var(--lu-pin-warm) 60%, transparent);
+  border-color: #ffd56a;
+  border-width: 2px;
 }
 .live-updates-shell .lu-pin-warm-surface {
-  background: color-mix(in oklch, var(--lu-pin-warm) 22%, transparent);
+  background: rgba(255, 213, 106, 0.28);
 }
 .live-updates-shell .lu-pin-warm-glow {
-  background: color-mix(in oklch, var(--lu-pin-warm) 28%, transparent);
+  background: rgba(255, 213, 106, 0.35);
 }
 
 .live-updates-shell .lu-pin-highlight { color: var(--lu-pin-highlight); }
-.live-updates-shell .lu-pin-highlight-text { color: oklch(0.92 0.1 90); }
+.live-updates-shell .lu-pin-highlight-text { color: #fff0a0; }
 .live-updates-shell .lu-pin-highlight-border {
-  border-color: color-mix(in oklch, var(--lu-pin-highlight) 60%, transparent);
+  border-color: #ffe566;
+  border-width: 2px;
 }
 .live-updates-shell .lu-pin-highlight-surface {
-  background: color-mix(in oklch, var(--lu-pin-highlight) 22%, transparent);
+  background: rgba(255, 229, 102, 0.28);
 }
 .live-updates-shell .lu-pin-highlight-glow {
-  background: color-mix(in oklch, var(--lu-pin-highlight) 28%, transparent);
+  background: rgba(255, 229, 102, 0.35);
 }
 
 .live-updates-shell .lu-pin-success { color: var(--lu-pin-success); }
-.live-updates-shell .lu-pin-success-text { color: oklch(0.88 0.1 155); }
+.live-updates-shell .lu-pin-success-text { color: #8ff5bc; }
 .live-updates-shell .lu-pin-success-border {
-  border-color: color-mix(in oklch, var(--lu-pin-success) 60%, transparent);
+  border-color: #6ef0ad;
+  border-width: 2px;
 }
 .live-updates-shell .lu-pin-success-surface {
-  background: color-mix(in oklch, var(--lu-pin-success) 22%, transparent);
+  background: rgba(110, 240, 173, 0.28);
 }
 .live-updates-shell .lu-pin-success-glow {
-  background: color-mix(in oklch, var(--lu-pin-success) 28%, transparent);
+  background: rgba(110, 240, 173, 0.35);
 }
 
 .live-updates-shell .lu-pin-lake { color: var(--lu-pin-lake); }
-.live-updates-shell .lu-pin-lake-text { color: oklch(0.9 0.08 175); }
+.live-updates-shell .lu-pin-lake-text { color: #a8f0e4; }
 .live-updates-shell .lu-pin-lake-border {
-  border-color: color-mix(in oklch, var(--lu-pin-lake) 60%, transparent);
+  border-color: #7fe0d0;
+  border-width: 2px;
 }
 .live-updates-shell .lu-pin-lake-surface {
-  background: color-mix(in oklch, var(--lu-pin-lake) 22%, transparent);
+  background: rgba(127, 224, 208, 0.28);
 }
 .live-updates-shell .lu-pin-lake-glow {
-  background: color-mix(in oklch, var(--lu-pin-lake) 28%, transparent);
+  background: rgba(127, 224, 208, 0.35);
 }
 
 .live-updates-shell .lu-pin-ink { color: var(--lu-pin-ink); }
-.live-updates-shell .lu-pin-ink-text { color: oklch(0.88 0.04 195); }
+.live-updates-shell .lu-pin-ink-text { color: #e2eeea; }
 .live-updates-shell .lu-pin-ink-border {
-  border-color: color-mix(in oklch, var(--lu-pin-ink) 60%, transparent);
+  border-color: #c5d8d4;
+  border-width: 2px;
 }
 .live-updates-shell .lu-pin-ink-surface {
-  background: color-mix(in oklch, var(--lu-pin-ink) 22%, transparent);
+  background: rgba(197, 216, 212, 0.22);
 }
 .live-updates-shell .lu-pin-ink-glow {
-  background: color-mix(in oklch, var(--lu-pin-ink) 28%, transparent);
+  background: rgba(197, 216, 212, 0.3);
 }
 
 /* Quieter display board: no decorative ping/pulse; blurs already suppressed above */

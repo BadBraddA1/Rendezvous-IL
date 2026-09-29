@@ -30,7 +30,7 @@ export function VolunteersView({
         </div>
       ) : (
         <div className="relative w-full max-w-7xl flex flex-col items-center">
-          {/* Header panel  -  bigger time-slot title and tagline so it reads
+          {/* Header panel - bigger time-slot title and tagline so it reads
               clearly from the back of the room. */}
           <div className="relative w-full overflow-hidden lu-panel p-10 mb-6 text-center">
             <div className="relative flex items-center justify-center gap-5 mb-3">
@@ -39,10 +39,10 @@ export function VolunteersView({
               </div>
               <h2 className="lu-type-board-xl">{volunteerTimeSlot}</h2>
             </div>
-            <p className="lu-type-label-lg lu-pin-coral-text opacity-80">Devotional Assignments</p>
+            <p className="lu-type-label-lg lu-pin-coral-text ">Devotional Assignments</p>
           </div>
 
-          {/* Roles grid  -  every role card scaled up so the assignee name is
+          {/* Roles grid - every role card scaled up so the assignee name is
               the dominant element. Labels are still de-emphasized but now
               large enough to be legible across the room. */}
           <div className="relative w-full overflow-hidden lu-panel p-8">
@@ -52,7 +52,7 @@ export function VolunteersView({
                   key={index}
                   className="p-6 lu-panel-inner"
                 >
-                  <p className="lu-type-label lu-pin-coral-text opacity-80 mb-3">{role.label}</p>
+                  <p className="lu-type-label lu-pin-coral-text mb-3">{role.label}</p>
                   <p className="lu-type-board-lg leading-tight text-balance">{role.value}</p>
                   {role.subtitle && (
                     <p className="lu-text-muted mt-2 text-balance lu-type-board-sm italic">({role.subtitle})</p>

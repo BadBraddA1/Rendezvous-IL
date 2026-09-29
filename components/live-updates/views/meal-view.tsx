@@ -43,7 +43,7 @@ export function MealView({
           <div className="relative flex flex-col items-center">
             <div className="lu-pin-warm-border lu-priority-normal-surface mb-8 inline-flex items-center gap-3 rounded-full border px-5 py-2">
               {getEventIcon(nextMeal.title, true, "sm")}
-              <span className="lu-type-label-lg lu-text-meal opacity-90">
+              <span className="lu-type-label-lg lu-text-meal ">
                 {mealLabel} · {nextMeal.title}
               </span>
             </div>
@@ -59,7 +59,7 @@ export function MealView({
                         : "lu-type-board-xl font-semibold text-balance"
                     }
                   >
-                    {cleanMain && <span className="lu-text-meal mr-2 opacity-70">with</span>}
+                    {cleanMain && <span className="lu-text-meal mr-2 ">with</span>}
                     {cleanSides.join(", ")}
                   </p>
                 )}
@@ -70,19 +70,19 @@ export function MealView({
 
             <div className="lu-text-muted flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
               <p className="lu-type-board-md flex items-center gap-3">
-                <Clock className="lu-text-meal h-8 w-8 opacity-70" aria-hidden="true" />
+                <Clock className="lu-text-meal h-8 w-8 " aria-hidden="true" />
                 Served at {nextMeal.time}
               </p>
               {nextMeal.location && (
                 <p className="lu-type-board-md flex items-center gap-3">
-                  <MapPin className="lu-text-meal h-8 w-8 opacity-70" aria-hidden="true" />
+                  <MapPin className="lu-text-meal h-8 w-8 " aria-hidden="true" />
                   {nextMeal.location}
                 </p>
               )}
             </div>
 
             {followingMeal && (
-              <p className="lu-type-board-sm lu-text-secondary mt-10 border-t border-white/10 pt-6">
+              <p className="lu-type-board-sm lu-text-secondary mt-10 border-t-2 border-white/40 pt-6">
                 Then · {followingMeal.title} at {followingMeal.time}
                 {followingMeal.day !== nextMeal.day ? ` (${followingMeal.day})` : ""}
               </p>

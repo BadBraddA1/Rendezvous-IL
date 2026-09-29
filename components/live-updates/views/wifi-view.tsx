@@ -11,7 +11,7 @@ export function WifiView() {
             <Wifi className="lu-text-schedule h-20 w-20" aria-hidden="true" />
           </div>
 
-          <p className="lu-type-label-lg lu-text-schedule mb-10 opacity-90">Free WiFi</p>
+          <p className="lu-type-label-lg lu-text-schedule mb-10 ">Free WiFi</p>
 
           <div className="grid w-full max-w-4xl gap-5 sm:grid-cols-2">
             <div className="lu-panel-inner px-8 py-7">

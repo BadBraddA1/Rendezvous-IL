@@ -49,7 +49,7 @@ export function UpcomingView({
               <h2 className="lu-type-board-xl font-bold">
                 {usingToday ? "Today’s agenda" : "Up Next"}
               </h2>
-              <p className="lu-type-label lu-text-schedule mt-1 opacity-80">
+              <p className="lu-type-label lu-text-schedule mt-1 ">
                 {usingToday ? "Rest of the day" : "Coming up"}
               </p>
             </div>
@@ -65,10 +65,10 @@ export function UpcomingView({
               {events.map(({ item, isNow }, idx) => (
                 <div
                   key={`${item.date}-${item.time}-${item.title}-${idx}`}
-                  className={`flex items-center gap-5 rounded-xl border px-5 py-4 transition-colors ${
+                  className={`flex items-center gap-5 rounded-xl border-2 px-5 py-4 transition-colors ${
                     isNow
-                      ? "lu-surface-now lu-border-now border"
-                      : "border-white/20 bg-white/[0.06]"
+                      ? "lu-surface-now lu-border-now"
+                      : "border-2 border-white/45 bg-[#243036]"
                   }`}
                 >
                   <div className="shrink-0">
@@ -92,12 +92,12 @@ export function UpcomingView({
                     <h3 className="lu-type-board-md leading-tight text-balance">{item.title}</h3>
                     <div className="lu-type-board-sm lu-text-secondary mt-1.5 flex flex-wrap items-center gap-x-5 gap-y-1">
                       <span className="flex items-center gap-2">
-                        <Clock className="lu-text-schedule h-5 w-5 opacity-70" aria-hidden="true" />
+                        <Clock className="lu-text-schedule h-5 w-5 " aria-hidden="true" />
                         {item.day} {item.time}
                       </span>
                       {item.location && (
                         <span className="flex items-center gap-2">
-                          <MapPin className="lu-text-schedule h-5 w-5 opacity-70" aria-hidden="true" />
+                          <MapPin className="lu-text-schedule h-5 w-5 " aria-hidden="true" />
                           {item.location}
                         </span>
                       )}

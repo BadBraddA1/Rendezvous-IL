@@ -32,23 +32,23 @@ export function ScheduleCard({
   return (
     <div className="group relative overflow-hidden lu-panel p-7">
       <div className="relative">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="rounded-xl bg-primary/10 p-2.5 border border-primary/20">
-            <Calendar className="h-5 w-5 text-primary" />
+          <div className="mb-6 flex items-center gap-3">
+          <div className="lu-pin-lake-surface lu-pin-lake-border rounded-xl border-2 p-2.5">
+            <Calendar className="lu-text-schedule h-5 w-5" />
           </div>
-          <span className="lu-type-label text-primary/90">Schedule</span>
+          <span className="lu-type-label lu-text-schedule">Schedule</span>
         </div>
         <div className="space-y-2.5">
           {eventsToShow.length > 0 ? (
             eventsToShow.map(({ item, isNow }, index) => (
               <div
                 key={index}
-                className={`p-3.5 rounded-xl border transition-colors ${
+                className={`rounded-xl border-2 p-3.5 transition-colors ${
                   isNow
-                    ? "lu-surface-now border lu-border-now"
+                    ? "lu-surface-now lu-border-now"
                     : item === nextItem
-                      ? "bg-white/[0.07] border-white/15"
-                      : "bg-white/[0.03] border-white/5"
+                      ? "border-white/45 bg-[#243036]"
+                      : "border-white/35 bg-[#1a2428]"
                 }`}
               >
                 <div className="flex items-start gap-3">
