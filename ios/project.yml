@@ -58,7 +58,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.rendezvousil.braddcorp.app
         PRODUCT_NAME: Rendezvous IL
         MARKETING_VERSION: "2.0.9"
-        CURRENT_PROJECT_VERSION: "230"
+        CURRENT_PROJECT_VERSION: "231"
         DEVELOPMENT_TEAM: F5HPRRCC5H
         CODE_SIGN_STYLE: Automatic
         INFOPLIST_FILE: RendezvousIL/Info.plist
@@ -82,7 +82,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.rendezvousil.braddcorp.app.widgets
         PRODUCT_NAME: RendezvousILWidgets
         MARKETING_VERSION: "2.0.9"
-        CURRENT_PROJECT_VERSION: "230"
+        CURRENT_PROJECT_VERSION: "231"
         DEVELOPMENT_TEAM: F5HPRRCC5H
         CODE_SIGN_STYLE: Automatic
         INFOPLIST_KEY_CFBundleDisplayName: Rendezvous Widgets
@@ -104,7 +104,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.rendezvousil.braddcorp.app.notification-service
         PRODUCT_NAME: RendezvousILNotificationService
         MARKETING_VERSION: "2.0.9"
-        CURRENT_PROJECT_VERSION: "230"
+        CURRENT_PROJECT_VERSION: "231"
         DEVELOPMENT_TEAM: F5HPRRCC5H
         CODE_SIGN_STYLE: Automatic
         INFOPLIST_KEY_CFBundleDisplayName: Rendezvous Notifications

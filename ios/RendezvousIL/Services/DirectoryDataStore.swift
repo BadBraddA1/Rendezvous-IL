@@ -10,7 +10,8 @@ enum DirectoryDataStore {
     }
 
     private static func cacheURL(year: Int) -> URL {
-        cacheDirectory.appendingPathComponent("directory-\(year).json")
+        // v2: include photo_faces in cached payloads (old v1 caches omit labels).
+        cacheDirectory.appendingPathComponent("directory-v2-\(year).json")
     }
 
     private static func yearsURL() -> URL {

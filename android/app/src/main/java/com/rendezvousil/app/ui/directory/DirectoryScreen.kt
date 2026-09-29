@@ -3,6 +3,7 @@ package com.rendezvousil.app.ui.directory
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,40 +14,19 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.Message
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.People
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Phone
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.sp
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -340,18 +320,21 @@ private fun DirectoryFamilyCard(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(140.dp)
                     .clip(RoundedCornerShape(12.dp)),
             ) {
                 if (!family.photo_url.isNullOrEmpty()) {
-                    AsyncImage(
-                        model = family.photo_url,
+                    DirectoryPhotoWithFaceLabels(
+                        photoUrl = family.photo_url!!,
+                        faces = family.photo_faces,
                         contentDescription = "${family.family_last_name} family photo",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop,
+                        cropWhenUnlabeled = true,
                     )
                 } else {
-                    DirectoryPhotoPlaceholder()
+                    DirectoryPhotoPlaceholder(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(140.dp),
+                    )
                 }
             }
 
@@ -475,6 +458,74 @@ private fun DirectoryFamilyCard(
                         style = MaterialTheme.typography.labelSmall,
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DirectoryPhotoWithFaceLabels(
+    photoUrl: String,
+    faces: List<DirectoryPhotoFace>,
+    contentDescription: String,
+    cropWhenUnlabeled: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val labeled = faces.filter { it.label.isNotBlank() }
+    val density = LocalDensity.current
+    var laidOut by remember(photoUrl) { mutableStateOf(IntSize.Zero) }
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .then(
+                if (labeled.isEmpty() && cropWhenUnlabeled) {
+                    Modifier.height(140.dp)
+                } else {
+                    Modifier.wrapContentHeight()
+                },
+            ),
+    ) {
+        AsyncImage(
+            model = photoUrl,
+            contentDescription = contentDescription,
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(
+                    if (labeled.isEmpty() && cropWhenUnlabeled) {
+                        Modifier.fillMaxSize()
+                    } else {
+                        Modifier.wrapContentHeight()
+                    },
+                )
+                .onGloballyPositioned { laidOut = it.size },
+            contentScale = if (labeled.isEmpty() && cropWhenUnlabeled) {
+                ContentScale.Crop
+            } else {
+                ContentScale.FillWidth
+            },
+        )
+
+        if (labeled.isNotEmpty() && laidOut.width > 0 && laidOut.height > 0) {
+            labeled.forEach { face ->
+                val labelX = (face.x * laidOut.width).toInt()
+                val labelY = ((face.y + face.h) * laidOut.height).toInt()
+                val labelMaxWidth = with(density) {
+                    maxOf(face.w * laidOut.width, laidOut.width * 0.12f).toDp()
+                }
+                Text(
+                    text = face.label,
+                    color = Color.White,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .offset { IntOffset(labelX, labelY + with(density) { 2.dp.roundToPx() }) }
+                        .widthIn(max = labelMaxWidth)
+                        .background(Color.Black.copy(alpha = 0.72f), RoundedCornerShape(4.dp))
+                        .padding(horizontal = 4.dp, vertical = 2.dp),
+                )
             }
         }
     }

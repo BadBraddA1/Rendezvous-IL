@@ -30,7 +30,7 @@ class DirectoryDataStore(context: Context) {
 
     private fun yearsFile() = File(dir, "directory-years.json")
 
-    private fun familiesFile(year: Int) = File(dir, "directory-$year.json")
+    private fun familiesFile(year: Int) = File(dir, "directory-v2-$year.json")
 
     private fun <T> readList(
         file: File,

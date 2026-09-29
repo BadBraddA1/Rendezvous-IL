@@ -28,6 +28,15 @@ data class DirectoryMember(
 }
 
 @Serializable
+data class DirectoryPhotoFace(
+    val x: Double,
+    val y: Double,
+    val w: Double,
+    val h: Double,
+    val label: String,
+)
+
+@Serializable
 data class DirectoryFamily(
     val id: Int,
     val family_last_name: String,
@@ -46,6 +55,8 @@ data class DirectoryFamily(
     val member_count: Int = 0,
     val member_names: List<String> = emptyList(),
     val members: List<DirectoryMember> = emptyList(),
+    /** Labeled faces on the directory photo (names under faces). */
+    val photo_faces: List<DirectoryPhotoFace> = emptyList(),
 ) {
     val displayLocation: String?
         get() {
