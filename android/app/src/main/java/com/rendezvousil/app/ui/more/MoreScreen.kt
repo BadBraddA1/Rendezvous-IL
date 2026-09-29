@@ -20,7 +20,9 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.ManageAccounts
 import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.Campaign
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.VolunteerActivism
@@ -53,6 +55,8 @@ fun MoreScreen(
     onNavigateToAbout: () -> Unit,
     onNavigateToAdminDashboard: () -> Unit,
     onNavigateToAdminUsers: () -> Unit,
+    onNavigateToAdminAnnouncements: () -> Unit = {},
+    onNavigateToAdminEventPings: () -> Unit = {},
     onNavigateToCheckIn: () -> Unit,
     onNavigateToDirectory: () -> Unit,
     onNavigateToDirectoryManage: () -> Unit,
@@ -66,6 +70,7 @@ fun MoreScreen(
     val canViewDashboard by appSession.canViewDashboardFlow.collectAsStateWithLifecycle()
     val canManageUsers by appSession.canManageUsersFlow.collectAsStateWithLifecycle()
     val canCheckIn by appSession.canCheckInFlow.collectAsStateWithLifecycle()
+    val canEdit by appSession.canEditFlow.collectAsStateWithLifecycle()
 
     Scaffold(
         modifier = modifier,
@@ -124,6 +129,18 @@ fun MoreScreen(
                         icon = { Icon(Icons.Default.Analytics, contentDescription = null) },
                         onClick = onNavigateToAdminDashboard,
                     )
+                    if (canEdit) {
+                        NavListItem(
+                            title = "Announcements",
+                            icon = { Icon(Icons.Default.Campaign, contentDescription = null) },
+                            onClick = onNavigateToAdminAnnouncements,
+                        )
+                        NavListItem(
+                            title = "Event pings",
+                            icon = { Icon(Icons.Default.NotificationsActive, contentDescription = null) },
+                            onClick = onNavigateToAdminEventPings,
+                        )
+                    }
                     if (canManageUsers) {
                         NavListItem(
                             title = "User management",

@@ -231,6 +231,8 @@ fun RendezvousApp(
                     onNavigateToAbout = { navController.navigate(Routes.MORE_ABOUT) },
                     onNavigateToAdminDashboard = { navController.navigate(Routes.MORE_ADMIN_DASHBOARD) },
                     onNavigateToAdminUsers = { navController.navigate(Routes.MORE_ADMIN_USERS) },
+                    onNavigateToAdminAnnouncements = { navController.navigate(Routes.MORE_ADMIN_ANNOUNCEMENTS) },
+                    onNavigateToAdminEventPings = { navController.navigate(Routes.MORE_ADMIN_EVENT_PINGS) },
                     onNavigateToCheckIn = { navController.navigate(Routes.MORE_CHECK_IN) },
                     onNavigateToDirectory = { navigateToTab(navController, Routes.DIRECTORY) },
                     onNavigateToDirectoryManage = { navController.navigate(Routes.MORE_DIRECTORY_MANAGE) },
