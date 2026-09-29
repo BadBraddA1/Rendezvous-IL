@@ -349,14 +349,6 @@ private struct DirectoryFamilyCard: View {
                     .lineLimit(2)
             }
 
-            if let church = family.home_congregation?.trimmingCharacters(in: .whitespacesAndNewlines),
-               !church.isEmpty {
-                Label(church, systemImage: "building.columns")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
-            }
-
             Text("\(family.member_count) attendee\(family.member_count == 1 ? "" : "s")")
                 .font(.caption)
                 .foregroundStyle(.secondary)

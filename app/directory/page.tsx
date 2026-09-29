@@ -222,7 +222,7 @@ export default function DirectoryPage() {
               <h1 className="text-section-title text-balance">Family Directory</h1>
               <p className="text-lead text-muted-foreground">
                 Meet other homeschool families coming to Rendezvous. Each listing includes contact
-                info, congregation, and attendees from your family profile.
+                info and attendees from your family profile.
               </p>
             </div>
             <div className="flex w-full shrink-0 flex-col gap-3 sm:w-auto lg:items-end">
