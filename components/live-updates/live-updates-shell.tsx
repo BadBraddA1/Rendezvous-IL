@@ -1091,26 +1091,26 @@ export function LiveUpdatesShell() {
               intentionally larger / brighter than the keyboard hints so it's
               easy to find on a projection screen. The label includes the
               current view name so it's obvious that resizing is per-page. */}
-          <div className="ml-2 flex items-center gap-2 rounded-xl border-2 border-white/45 bg-[#243036] px-4 py-2">
-            <span className="mr-1 text-base font-semibold text-primary">Size</span>
+          <div className="ml-2 flex items-center gap-2 rounded-xl border-2 border-white/55 bg-[#243036] px-4 py-2">
+            <span className="mr-1 text-base font-bold text-[#7fe0d0]">Size</span>
             <button
               type="button"
               onClick={zoomOut}
               disabled={currentZoom <= ZOOM_MIN + 0.001}
-              className="flex h-12 w-12 items-center justify-center rounded-lg border-2 border-white/40 bg-[#1a2428] text-lg transition-colors hover:bg-[#2e3c42] disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex h-12 w-12 items-center justify-center rounded-lg border-2 border-white/55 bg-[#05080a] text-lg text-white transition-colors hover:bg-[#2e3c42] disabled:cursor-not-allowed disabled:opacity-50"
               aria-label="Decrease size"
               title="Decrease size"
             >
               <ZoomOut className="h-6 w-6" />
             </button>
-            <span className="lu-text-body w-20 text-center text-xl font-bold tabular-nums">
+            <span className="w-20 text-center text-xl font-bold tabular-nums text-white">
               {Math.round(currentZoom * 100)}%
             </span>
             <button
               type="button"
               onClick={zoomIn}
               disabled={currentZoom >= ZOOM_MAX - 0.001}
-              className="flex h-12 w-12 items-center justify-center rounded-lg border-2 border-white/40 bg-[#1a2428] text-lg transition-colors hover:bg-[#2e3c42] disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex h-12 w-12 items-center justify-center rounded-lg border-2 border-white/55 bg-[#05080a] text-lg text-white transition-colors hover:bg-[#2e3c42] disabled:cursor-not-allowed disabled:opacity-50"
               aria-label="Increase size"
               title="Increase size"
             >
@@ -1120,7 +1120,7 @@ export function LiveUpdatesShell() {
               type="button"
               onClick={resetZoom}
               disabled={Math.abs(currentZoom - ZOOM_DEFAULT) < 0.001}
-              className="flex h-12 w-12 items-center justify-center rounded-lg border-2 border-white/40 bg-[#1a2428] transition-colors hover:bg-[#2e3c42] disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex h-12 w-12 items-center justify-center rounded-lg border-2 border-white/55 bg-[#05080a] text-white transition-colors hover:bg-[#2e3c42] disabled:cursor-not-allowed disabled:opacity-50"
               aria-label="Reset size"
               title="Reset size"
             >
@@ -1129,7 +1129,7 @@ export function LiveUpdatesShell() {
           </div>
 
           {isAutoRotating && (
-            <span className="lu-text-muted text-sm ml-4 hidden sm:inline">
+            <span className="ml-3 hidden text-base font-bold text-[#7fe0d0] sm:inline">
               Auto-rotating
             </span>
           )}
