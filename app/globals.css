@@ -1143,6 +1143,14 @@ body.lu-display-mode button[aria-label="Back to top"] {
   --lu-type-display-sm: clamp(2.5rem, 2rem + 1.5vw, 3.75rem);
 }
 
+.live-updates-shell .lu-type-board-md,
+.live-updates-shell .lu-type-board-sm,
+.live-updates-shell .lu-type-board-lg,
+.live-updates-shell .lu-type-board-xl,
+.live-updates-shell .lu-type-feature {
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
 .live-updates-shell .lu-type-feature {
   font-size: var(--lu-type-feature);
   font-weight: 700;

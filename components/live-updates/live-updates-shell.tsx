@@ -958,10 +958,10 @@ export function LiveUpdatesShell() {
       {/* Main Content */}
       <main
         id="main-content"
-        className={`relative flex min-h-0 flex-1 items-center justify-center overflow-y-auto overflow-x-hidden [contain:layout_style_paint] ${
+        className={`relative flex min-h-0 flex-1 flex-col overflow-hidden ${
           photoshowOnly
-            ? "p-0 lg:overflow-hidden"
-            : "p-4 sm:p-8 lg:overflow-hidden lg:p-12"
+            ? "p-0"
+            : "p-3 sm:p-5 lg:p-6"
         }`}
       >
         <ViewTransition
@@ -969,7 +969,7 @@ export function LiveUpdatesShell() {
           className={
             photoshowOnly
               ? "absolute inset-0"
-              : "flex h-full w-full items-center justify-center"
+              : "flex h-full min-h-0 w-full flex-1 items-stretch justify-center"
           }
         >
           {currentView === "all" && (
