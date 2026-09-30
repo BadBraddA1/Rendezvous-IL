@@ -286,7 +286,7 @@ fun StaffDirectoryPhotoScreen(
                 Text(message, color = Color(0xFF2E7D32))
             }
             if (uiState.isLoading || uiState.uploadingPhoto) {
-                Box(Modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = BrandColors.Lake)
                 }
             }

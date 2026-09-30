@@ -61,7 +61,6 @@ import com.rendezvousil.core.network.dto.RatesPayload
 import com.rendezvousil.core.network.dto.ScheduleAnnouncementsResponse
 import com.rendezvousil.core.network.dto.SongPackDetailResponse
 import com.rendezvousil.core.network.dto.SongPacksResponse
-import com.rendezvousil.core.network.dto.SongSearchResponse
 import com.rendezvousil.core.network.dto.UserActivityBody
 import com.rendezvousil.core.network.dto.UserActivityResponse
 import com.rendezvousil.core.network.dto.VolunteerWeekResponse

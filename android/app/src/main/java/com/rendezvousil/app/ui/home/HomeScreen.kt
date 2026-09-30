@@ -172,7 +172,7 @@ private fun SeasonHubContent(
                 color = BrandColors.LakeLight.copy(alpha = 0.45f),
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Column(Modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
                         text = "Not registered for ${YearFormatting.label(yearHub.eventYear)} yet",
                         style = MaterialTheme.typography.titleMedium,

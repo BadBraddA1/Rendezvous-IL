@@ -572,7 +572,7 @@ private fun DirectoryPhotoWithFaceLabels(
         if (showNames && labeled.isNotEmpty() && laidOut.width > 0 && laidOut.height > 0) {
             labeled.forEach { face ->
                 val labelMaxWidth = with(density) {
-                    maxOf(face.w * laidOut.width, laidOut.width * 0.12f).toDp()
+                    maxOf((face.w * laidOut.width).toFloat(), laidOut.width * 0.12f).toDp()
                 }
                 val gapPx = with(density) { 6.dp.roundToPx() }
                 val approxLabelHeight = with(density) { 18.dp.roundToPx() }

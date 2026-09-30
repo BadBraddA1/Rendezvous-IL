@@ -87,7 +87,10 @@ class VolunteeringViewModel(
     fun refresh() {
         viewModelScope.launch {
             _isLoading.value = true
-            val client = appSession.authenticatedApiClient
+            val client = appSession.authenticatedApiClient ?: run {
+                _isLoading.value = false
+                return@launch
+            }
             val payload = withContext(Dispatchers.IO) {
                 runCatching { client.getFamilyVolunteering() }.getOrNull()
             }
@@ -106,7 +109,11 @@ class VolunteeringViewModel(
         viewModelScope.launch {
             _uploadingSignupId.value = signupId
             _statusMessage.value = "Uploading…"
-            val client = appSession.authenticatedApiClient
+            val client = appSession.authenticatedApiClient ?: run {
+                _uploadingSignupId.value = null
+                _statusMessage.value = "Sign in required"
+                return@launch
+            }
             val result = withContext(Dispatchers.IO) {
                 runCatching {
                     client.uploadLessonSlides(signupId, bytes, filename, mimeType)
@@ -128,7 +135,14 @@ class VolunteeringViewModel(
             eventYear = eventYear,
         )
         viewModelScope.launch {
-            val client = appSession.authenticatedApiClient
+            val client = appSession.authenticatedApiClient ?: run {
+                val current = _songSetEditor.value ?: return@launch
+                _songSetEditor.value = current.copy(
+                    isLoading = false,
+                    statusMessage = "Sign in required",
+                )
+                return@launch
+            }
             val result = withContext(Dispatchers.IO) {
                 runCatching { client.getWorshipSongSet(signupId, eventYear) }
             }
@@ -170,7 +184,11 @@ class VolunteeringViewModel(
             delay(180)
             val editor = _songSetEditor.value ?: return@launch
             _songSetEditor.value = editor.copy(isSearching = true)
-            val client = appSession.authenticatedApiClient
+            val client = appSession.authenticatedApiClient ?: run {
+                val latest = _songSetEditor.value ?: return@launch
+                _songSetEditor.value = latest.copy(hits = emptyList(), isSearching = false)
+                return@launch
+            }
             val hits = withContext(Dispatchers.IO) {
                 runCatching { client.searchSongs(q, editor.eventYear).results }.getOrDefault(emptyList())
             }
@@ -319,7 +337,13 @@ class VolunteeringViewModel(
         }
         viewModelScope.launch {
             _songSetEditor.value = current.copy(isSaving = true, statusMessage = null)
-            val client = appSession.authenticatedApiClient
+            val client = appSession.authenticatedApiClient ?: run {
+                _songSetEditor.value = current.copy(
+                    isSaving = false,
+                    statusMessage = "Sign in required",
+                )
+                return@launch
+            }
             val result = withContext(Dispatchers.IO) {
                 runCatching {
                     client.putWorshipSongSet(
