@@ -19,9 +19,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import com.rendezvousil.app.theme.BrandColors
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
@@ -31,9 +32,14 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.braddcorp.auth.AuthGate
+import com.clerk.api.Clerk
+import com.rendezvousil.app.auth.AppSession
+import com.rendezvousil.app.auth.rememberRenBrandAuth
 import com.rendezvousil.app.di.RendezvousViewModelFactory
 import com.rendezvousil.app.navigation.Routes
-import com.rendezvousil.app.auth.AppSession
+import com.rendezvousil.app.theme.BrandColors
+import kotlinx.coroutines.launch
 import com.rendezvousil.app.ui.admin.AdminAnnouncementsScreen
 import com.rendezvousil.app.ui.admin.AdminDashboardScreen
 import com.rendezvousil.app.ui.admin.AdminEventPingsScreen
@@ -73,7 +79,6 @@ import com.rendezvousil.app.notifications.FcmRegistrationService
 import com.rendezvousil.app.notifications.NotificationPreferences
 import com.rendezvousil.app.notifications.ReminderService
 import com.rendezvousil.core.network.RendezvousRepository
-import kotlinx.coroutines.launch
 
 private data class BottomNavItem(
     val route: String,
@@ -98,6 +103,43 @@ fun RendezvousApp(
     fcmRegistrationService: FcmRegistrationService,
     deepLinkRoute: String? = null,
     onDeepLinkConsumed: () -> Unit = {},
+) {
+    val scope = rememberCoroutineScope()
+    val isSignedIn by appSession.isSignedInFlow.collectAsStateWithLifecycle()
+    val isLoading by appSession.isLoadingFlow.collectAsStateWithLifecycle()
+    val clerkSetupError by appSession.clerkSetupErrorFlow.collectAsStateWithLifecycle()
+    val clerkReady by Clerk.isInitialized.collectAsStateWithLifecycle()
+    val brandAuth = rememberRenBrandAuth()
+
+    AuthGate(
+        isSignedIn = isSignedIn,
+        isLoading = isLoading && !isSignedIn,
+        clerkReady = clerkReady,
+        clerkSetupError = clerkSetupError,
+        config = brandAuth,
+        onAuthenticated = { scope.launch { appSession.refreshAuth() } },
+    ) {
+        RendezvousSignedInApp(
+            repository = repository,
+            appSession = appSession,
+            reminderService = reminderService,
+            notificationPreferences = notificationPreferences,
+            fcmRegistrationService = fcmRegistrationService,
+            deepLinkRoute = deepLinkRoute,
+            onDeepLinkConsumed = onDeepLinkConsumed,
+        )
+    }
+}
+
+@Composable
+private fun RendezvousSignedInApp(
+    repository: RendezvousRepository,
+    appSession: AppSession,
+    reminderService: ReminderService,
+    notificationPreferences: NotificationPreferences,
+    fcmRegistrationService: FcmRegistrationService,
+    deepLinkRoute: String?,
+    onDeepLinkConsumed: () -> Unit,
 ) {
     val navController = rememberNavController()
     val viewModelFactory = RendezvousViewModelFactory(

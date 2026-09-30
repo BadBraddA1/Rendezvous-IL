@@ -2,7 +2,7 @@
 
 Native Kotlin + Jetpack Compose companion for [rendezvousil.com](https://rendezvousil.com).
 
-**Phase 1** covers public, unauthenticated features. **Phase 2** adds Clerk auth, family account, and directory.
+**Phase 1** covered public features. The app is now **login-required** (same as iOS): you cannot use tabs until Clerk sign-in completes. Auth UI is the BraddCorp Android Clerk kit (`com.braddcorp.auth` — native email/password, no `AuthView` chrome).
 
 ## Requirements
 
@@ -27,7 +27,7 @@ Default API base URL: **`https://rendezvousil.com`** (override via `BASE_URL` in
 CLERK_PUBLISHABLE_KEY=pk_test_...
 ```
 
-If the key is missing, the app still runs in public-only mode and `AppSession.clerkSetupError` explains what to add.
+If the key is missing, the login gate shows `AppSession.clerkSetupError` and the rest of the app stays locked.
 
 For local Next.js dev against the emulator:
 
@@ -79,9 +79,10 @@ Generates `app/src/main/assets/schedule-fallback.json` from `lib/schedule-data.t
 
 | Area | Details |
 |------|---------|
-| **Clerk** | `clerk-android-ui` 1.0.31; `CLERK_PUBLISHABLE_KEY` in `local.properties` / BuildConfig |
+| **Clerk** | `clerk-android-api` / `ui` 1.0.31; publishable key in `local.properties` |
+| **Login gate** | `AuthGate` + `rememberRenBrandAuth()` — welcome hub until signed in (iOS `RootView` parity); kit in `com.braddcorp.auth` |
 | **AppSession** | `com.rendezvousil.app.auth.AppSession` — signed-in state, admin flags, bearer `ApiClient` |
-| **Account** | `AccountScreen` — `AuthView` sign-in/out, web links (`BuildConfig.BASE_URL`), directory nav |
+| **Account** | `AccountScreen` — profile / sign-out; root gate owns the sign-in sheet |
 | **Directory** | Browse by year + search; photo upload/replace/remove, opt-out, blurb (Coil + multipart `photo`) |
 | **More tab** | Account section: Family account, Family directory, Directory photo; Plan section includes **Songs** (packs → offline PDF/image viewer) |
 | **API** | `GET /api/admin/me`, `POST /api/auth/activity`, directory endpoints |
