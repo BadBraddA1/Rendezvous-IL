@@ -1,5 +1,6 @@
 package com.braddcorp.auth
 
+import androidx.annotation.DrawableRes
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
 
@@ -17,6 +18,8 @@ data class BrandAuthConfig(
     val ink: Color,
     val muted: Color,
     val danger: Color = Color(0xFFDC2626),
+    /** Optional brand wordmark / mark shown above the hero title. */
+    @DrawableRes val logoResId: Int? = null,
     val heroTitle: String,
     val heroSubtitle: String? = null,
     val heroMeta: String? = null,

@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import com.braddcorp.auth.BrandAuthConfig
+import com.rendezvousil.app.R
 import com.rendezvousil.app.theme.BrandColors
 import com.rendezvousil.core.network.AppConfig
 
@@ -25,6 +26,7 @@ fun rememberRenBrandAuth(): BrandAuthConfig {
             card = card,
             ink = ink,
             muted = muted,
+            logoResId = R.drawable.rendezvous_logo,
             heroTitle = "Rendezvous $year",
             heroSubtitle = "Your retreat community",
             heroMeta = "${AppConfig.EVENT_DATES} · ${AppConfig.LOCATION}",
