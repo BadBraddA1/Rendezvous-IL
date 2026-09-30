@@ -60,6 +60,7 @@ fun MoreScreen(
     onNavigateToAdminEventPings: () -> Unit = {},
     onNavigateToStaffDayOf: () -> Unit = {},
     onNavigateToCheckIn: () -> Unit,
+    onNavigateToStaffDirectoryPhotos: () -> Unit = {},
     onNavigateToDirectory: () -> Unit,
     onNavigateToDirectoryManage: () -> Unit,
     onNavigateToVolunteering: () -> Unit = {},
@@ -161,6 +162,11 @@ fun MoreScreen(
                             icon = { Icon(Icons.Default.Badge, contentDescription = null) },
                             onClick = onNavigateToCheckIn,
                         )
+                        NavListItem(
+                            title = "Directory photos",
+                            icon = { Icon(Icons.Default.CameraAlt, contentDescription = null) },
+                            onClick = onNavigateToStaffDirectoryPhotos,
+                        )
                     }
                 }
             } else if (canCheckIn) {
@@ -178,6 +184,11 @@ fun MoreScreen(
                         title = "Staff check-in",
                         icon = { Icon(Icons.Default.Badge, contentDescription = null) },
                         onClick = onNavigateToCheckIn,
+                    )
+                    NavListItem(
+                        title = "Directory photos",
+                        icon = { Icon(Icons.Default.CameraAlt, contentDescription = null) },
+                        onClick = onNavigateToStaffDirectoryPhotos,
                     )
                 }
             }

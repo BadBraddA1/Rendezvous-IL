@@ -1,7 +1,5 @@
 package com.rendezvousil.app.ui.checkin
 
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -19,17 +17,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.OpenInBrowser
-import androidx.compose.material.icons.filled.PhotoLibrary
-import android.graphics.Bitmap
-import java.io.ByteArrayOutputStream
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -89,33 +79,6 @@ fun CheckInScreen(
     val clerkInitialized by Clerk.isInitialized.collectAsStateWithLifecycle()
     val clerkSetupError by appSession.clerkSetupErrorFlow.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-
-    val galleryLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.GetContent(),
-    ) { uri ->
-        if (uri == null) return@rememberLauncherForActivityResult
-        scope.launch {
-            val bytes = withContext(Dispatchers.IO) {
-                context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
-            } ?: return@launch
-            viewModel.uploadDirectoryPhoto(bytes)
-        }
-    }
-
-    val cameraLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.TakePicturePreview(),
-    ) { bitmap: Bitmap? ->
-        if (bitmap == null) return@rememberLauncherForActivityResult
-        scope.launch {
-            val bytes = withContext(Dispatchers.Default) {
-                val stream = ByteArrayOutputStream()
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 90, stream)
-                stream.toByteArray()
-            }
-            viewModel.uploadDirectoryPhoto(bytes)
-        }
-    }
 
     LaunchedEffect(Unit) {
         appSession.refreshAuth()
@@ -183,9 +146,6 @@ fun CheckInScreen(
                         onUndo = viewModel::undoCheckIn,
                         onScanNext = viewModel::resetStation,
                         onScannedCode = viewModel::onScannedCode,
-                        onPickDirectoryPhoto = { galleryLauncher.launch("image/*") },
-                        onTakeDirectoryPhoto = { cameraLauncher.launch(null) },
-                        onNudgeDirectoryProfile = viewModel::nudgeDirectoryProfile,
                         modifier = Modifier
                             .fillMaxSize()
                             .verticalScroll(rememberScrollState())
@@ -468,9 +428,6 @@ private fun CheckInStationContent(
     onUndo: () -> Unit,
     onScanNext: () -> Unit,
     onScannedCode: (String) -> Unit,
-    onPickDirectoryPhoto: () -> Unit,
-    onTakeDirectoryPhoto: () -> Unit,
-    onNudgeDirectoryProfile: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -503,16 +460,11 @@ private fun CheckInStationContent(
                 roomKeys = uiState.roomKeys,
                 tshirtsDistributed = uiState.tshirtsDistributed,
                 isLoading = uiState.isLoading,
-                uploadingPhoto = uiState.uploadingPhoto,
-                nudgingFamily = uiState.nudgingFamily,
                 onRoomKeysChange = onRoomKeysChange,
                 onTshirtsDistributedChange = onTshirtsDistributedChange,
                 onSubmit = onSubmit,
                 onUndo = onUndo,
                 onScanNext = onScanNext,
-                onPickDirectoryPhoto = onPickDirectoryPhoto,
-                onTakeDirectoryPhoto = onTakeDirectoryPhoto,
-                onNudgeDirectoryProfile = onNudgeDirectoryProfile,
             )
         }
 
@@ -532,7 +484,7 @@ private fun CheckInStationContent(
             )
         }
 
-        if (uiState.isLoading || uiState.uploadingPhoto) {
+        if (uiState.isLoading) {
             CircularProgressIndicator(
                 modifier = Modifier.align(Alignment.CenterHorizontally),
                 color = BrandColors.Lake,
@@ -547,16 +499,11 @@ private fun ResultSection(
     roomKeys: String,
     tshirtsDistributed: Boolean,
     isLoading: Boolean,
-    uploadingPhoto: Boolean,
-    nudgingFamily: Boolean,
     onRoomKeysChange: (String) -> Unit,
     onTshirtsDistributedChange: (Boolean) -> Unit,
     onSubmit: () -> Unit,
     onUndo: () -> Unit,
     onScanNext: () -> Unit,
-    onPickDirectoryPhoto: () -> Unit,
-    onTakeDirectoryPhoto: () -> Unit,
-    onNudgeDirectoryProfile: () -> Unit,
 ) {
     val registration = lookup.registration
     val lodgingLabel = registration.lodging_type
@@ -694,59 +641,6 @@ private fun ResultSection(
                 ) {
                     Text("Scan next family")
                 }
-            }
-
-            val familyId = lookup.directory_family_id
-            if (familyId != null && familyId > 0) {
-                Text(
-                    text = "Directory photo",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                val photoUrl = lookup.directory_photo_url
-                if (!photoUrl.isNullOrBlank()) {
-                    val labeled = lookup.directory_faces_labeled ?: 0
-                    val total = lookup.directory_faces_total ?: 0
-                    Text(
-                        text = if (total > 0) {
-                            "Photo on file · $labeled/$total faces named"
-                        } else {
-                            "Photo on file — ask family to name faces"
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    OutlinedButton(
-                        onClick = onNudgeDirectoryProfile,
-                        enabled = !isLoading && !uploadingPhoto && !nudgingFamily,
-                    ) {
-                        Text(
-                            if (nudgingFamily) "Pinging…" else "Ping family to finish profile",
-                        )
-                    }
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    OutlinedButton(
-                        onClick = onTakeDirectoryPhoto,
-                        enabled = !isLoading && !uploadingPhoto,
-                    ) {
-                        Icon(Icons.Default.CameraAlt, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Text(modifier = Modifier.padding(start = 6.dp), text = "Take photo")
-                    }
-                    OutlinedButton(
-                        onClick = onPickDirectoryPhoto,
-                        enabled = !isLoading && !uploadingPhoto,
-                    ) {
-                        Icon(Icons.Default.PhotoLibrary, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Text(modifier = Modifier.padding(start = 6.dp), text = "Choose")
-                    }
-                }
-            } else {
-                Text(
-                    text = "No family directory profile linked — photo upload unavailable.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
             }
         }
     }

@@ -37,6 +37,7 @@ import com.rendezvousil.app.ui.admin.AdminEventPingsScreen
 import com.rendezvousil.app.ui.admin.AdminUsersScreen
 import com.rendezvousil.app.ui.admin.AdminUsersViewModel
 import com.rendezvousil.app.ui.admin.StaffDayOfScreen
+import com.rendezvousil.app.ui.admin.StaffDirectoryPhotoScreen
 import com.rendezvousil.app.ui.about.AboutScreen
 import com.rendezvousil.app.ui.account.AccountScreen
 import com.rendezvousil.app.ui.checkin.CheckInScreen
@@ -246,6 +247,7 @@ fun RendezvousApp(
                     onNavigateToAdminEventPings = { navController.navigate(Routes.MORE_ADMIN_EVENT_PINGS) },
                     onNavigateToStaffDayOf = { navController.navigate(Routes.MORE_ADMIN_DAY_OF) },
                     onNavigateToCheckIn = { navController.navigate(Routes.MORE_CHECK_IN) },
+                    onNavigateToStaffDirectoryPhotos = { navController.navigate(Routes.MORE_STAFF_DIRECTORY_PHOTOS) },
                     onNavigateToDirectory = { navigateToTab(navController, Routes.DIRECTORY) },
                     onNavigateToDirectoryManage = { navController.navigate(Routes.MORE_DIRECTORY_MANAGE) },
                     onNavigateToVolunteering = { navController.navigate(Routes.MORE_VOLUNTEERING) },
@@ -442,6 +444,13 @@ fun RendezvousApp(
                     onNavigateToCheckIn = { navController.navigate(Routes.MORE_CHECK_IN) },
                     onNavigateToAnnouncements = { navController.navigate(Routes.MORE_ADMIN_ANNOUNCEMENTS) },
                     onNavigateToEventPings = { navController.navigate(Routes.MORE_ADMIN_EVENT_PINGS) },
+                )
+            }
+            composable(Routes.MORE_STAFF_DIRECTORY_PHOTOS) {
+                StaffDirectoryPhotoScreen(
+                    appSession = appSession,
+                    viewModelFactory = viewModelFactory,
+                    onBack = { navController.popBackStack() },
                 )
             }
             composable(Routes.MORE_CHECKIN) {

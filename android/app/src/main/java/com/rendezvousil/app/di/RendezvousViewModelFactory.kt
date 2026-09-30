@@ -9,6 +9,7 @@ import com.rendezvousil.app.ui.admin.AdminAnnouncementsViewModel
 import com.rendezvousil.app.ui.admin.AdminEventPingsViewModel
 import com.rendezvousil.app.ui.admin.AdminUsersViewModel
 import com.rendezvousil.app.ui.admin.AdminDashboardViewModel
+import com.rendezvousil.app.ui.admin.StaffDirectoryPhotoViewModel
 import com.rendezvousil.app.ui.calculator.CalculatorViewModel
 import com.rendezvousil.app.ui.chat.ChatListViewModel
 import com.rendezvousil.app.ui.chat.ChatThreadViewModel
@@ -66,6 +67,8 @@ class RendezvousViewModelFactory(
                 AdminAnnouncementsViewModel(appSession) as T
             modelClass.isAssignableFrom(AdminEventPingsViewModel::class.java) ->
                 AdminEventPingsViewModel(appSession) as T
+            modelClass.isAssignableFrom(StaffDirectoryPhotoViewModel::class.java) ->
+                StaffDirectoryPhotoViewModel(appSession) as T
             modelClass.isAssignableFrom(SongPacksViewModel::class.java) ->
                 SongPacksViewModel(appSession, application) as T
             else -> throw IllegalArgumentException("Unknown ViewModel: ${modelClass.name}")

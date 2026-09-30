@@ -302,6 +302,11 @@ struct AdminDashboardView: View {
                 } label: {
                     linkRow(title: "Check-in station", icon: "person.badge.key")
                 }
+                NavigationLink {
+                    StaffDirectoryPhotoView()
+                } label: {
+                    linkRow(title: "Directory photos", icon: "camera.fill")
+                }
             }
 
             Text("Open on web")

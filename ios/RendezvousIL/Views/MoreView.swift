@@ -91,6 +91,9 @@ struct MoreView: View {
                         NavigationLink { CheckInView() } label: {
                             Label("Check-in station", systemImage: "person.badge.key")
                         }
+                        NavigationLink { StaffDirectoryPhotoView() } label: {
+                            Label("Directory photos", systemImage: "camera.fill")
+                        }
                     }
                 }
 
