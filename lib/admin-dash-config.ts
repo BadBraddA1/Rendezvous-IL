@@ -41,6 +41,7 @@ export const adminDashConfig = {
     { href: "/admin/lesson-slides", label: "Lesson slides", permission: "communication" },
     { href: "/admin/worship-songs", label: "Worship songs", permission: "communication" },
     { href: "/admin/chat", label: "Year Chat", permission: "communication" },
+    { href: "/admin/push-activity", label: "Push activity", permission: "communication" },
     { href: "/admin/messaging", label: "Messaging", permission: "communication" },
     { href: "/admin/feedback", label: "Feedback", permission: "communication" },
     { href: "/admin/schedule", label: "Schedule", permission: "event" },

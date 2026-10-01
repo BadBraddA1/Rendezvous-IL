@@ -21,6 +21,7 @@ import {
   Utensils,
   HeartHandshake,
   Megaphone,
+  Radio,
   UserCheck,
   type LucideIcon,
 } from "lucide-react"
@@ -50,6 +51,7 @@ const ICONS: Partial<Record<string, LucideIcon>> = {
   "/admin/checked-in": UserCheck,
   "/admin/announcements": Megaphone,
   "/admin/chat": MessageSquare,
+  "/admin/push-activity": Radio,
   "/admin/messaging": MessageSquare,
   "/admin/feedback": Star,
   "/admin/schedule": CalendarDays,

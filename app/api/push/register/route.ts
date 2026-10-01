@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { sql } from "@/lib/db"
 import { authUserContext } from "@/lib/clerk-auth"
+import { logPushRegister, logPushUnregister } from "@/lib/push-activity"
 import { ensurePushSchema } from "@/lib/push-schema"
 
 export const dynamic = "force-dynamic"
@@ -25,6 +26,13 @@ export async function POST(request: Request) {
 
     if (platform === "android") {
       if (!token || token.length < 20) {
+        await logPushRegister({
+          platform,
+          token: token || "invalid",
+          clerkUserId,
+          ok: false,
+          reason: "Invalid device token",
+        })
         return NextResponse.json({ error: "Invalid device token" }, { status: 400 })
       }
 
@@ -37,6 +45,7 @@ export async function POST(request: Request) {
           is_active = 1,
           updated_at = datetime('now')
       `
+      await logPushRegister({ platform, token, clerkUserId, ok: true })
     } else {
       const environment =
         body.environment === "sandbox" || body.environment === "production"
@@ -44,6 +53,14 @@ export async function POST(request: Request) {
           : "production"
 
       if (!token || token.length < 32) {
+        await logPushRegister({
+          platform,
+          token: token || "invalid",
+          clerkUserId,
+          environment,
+          ok: false,
+          reason: "Invalid device token",
+        })
         return NextResponse.json({ error: "Invalid device token" }, { status: 400 })
       }
 
@@ -57,6 +74,7 @@ export async function POST(request: Request) {
           is_active = 1,
           updated_at = datetime('now')
       `
+      await logPushRegister({ platform, token, clerkUserId, environment, ok: true })
     }
 
     return NextResponse.json({ success: true, platform, linkedUser: Boolean(clerkUserId) })
@@ -73,6 +91,12 @@ export async function DELETE(request: Request) {
     const platform = parsePlatform(body.platform)
     const token = typeof body.token === "string" ? body.token.trim() : ""
     if (!token) {
+      await logPushUnregister({
+        platform,
+        token: "missing",
+        ok: false,
+        reason: "Token required",
+      })
       return NextResponse.json({ error: "Token required" }, { status: 400 })
     }
 
@@ -90,6 +114,7 @@ export async function DELETE(request: Request) {
       `
     }
 
+    await logPushUnregister({ platform, token, ok: true })
     return NextResponse.json({ success: true, platform })
   } catch (error) {
     console.error("[push/register] delete error:", error)

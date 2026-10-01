@@ -12,7 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { LayoutDashboard, Users, Settings, FileText, MapPin, MessageSquare, Utensils, Eye, ClipboardCheck, User, Home, Shield, DollarSign, ScanLine, UserCheck, QrCode, Megaphone, Star, Calculator, ChevronDown, Monitor, Church, BookOpen, ClipboardList, HeartHandshake, CalendarDays, Contact, Images, PanelsTopLeft, Music, Presentation } from "lucide-react"
+import { LayoutDashboard, Users, Settings, FileText, MapPin, MessageSquare, Utensils, Eye, ClipboardCheck, User, Home, Shield, DollarSign, ScanLine, UserCheck, QrCode, Megaphone, Star, Calculator, ChevronDown, Monitor, Church, BookOpen, ClipboardList, HeartHandshake, CalendarDays, Contact, Images, PanelsTopLeft, Music, Presentation, Radio } from "lucide-react"
 import type { AdminRole } from "@/lib/admin-permissions"
 import { getAdminPermissions } from "@/lib/admin-permissions"
 
@@ -155,6 +155,13 @@ export function AdminNav({ currentPage, admin }: AdminNavProps) {
           label: "Year Chat",
           icon: MessageSquare,
           page: "chat",
+          show: (role) => getAdminPermissions(role).canViewRegistrations,
+        },
+        {
+          href: "/admin/push-activity",
+          label: "Push activity",
+          icon: Radio,
+          page: "push-activity",
           show: (role) => getAdminPermissions(role).canViewRegistrations,
         },
         {

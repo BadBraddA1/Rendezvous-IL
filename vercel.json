@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/publish-announcements",
       "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/prune-push-events",
+      "schedule": "15 * * * *"
     }
   ]
 }

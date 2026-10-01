@@ -9,9 +9,19 @@ import { listChatChannelMemberIds } from "@/lib/chat/channels"
 import { ensureChatSchema, yearChannelId } from "@/lib/chat-schema"
 import { isFcmConfigured, isPermanentFcmTokenFailure, sendFcmAlerts } from "@/lib/fcm"
 import { ensureFamilyMembershipSchema } from "@/lib/family-membership"
+import { logPushSend, type PushFailureDetail } from "@/lib/push-activity"
 import { ensurePushSchema } from "@/lib/push-schema"
 import type { RegistrationEventYear } from "@/lib/registration-event-years"
 import type { ChatMessagePayload } from "@/types/chat"
+
+type ApnsSendStats = {
+  attempted: number
+  succeeded: number
+  failed: number
+  sandboxTokens: number
+  productionTokens: number
+  failures: PushFailureDetail[]
+}
 
 /**
  * Send to every active iOS token for the given Clerk users, routing each token
@@ -22,35 +32,68 @@ import type { ChatMessagePayload } from "@/types/chat"
 async function sendApnsToClerkUsers(
   clerkUserIds: string[],
   payload: ApnsAlertPayload,
-): Promise<void> {
-  if (!isApnsConfigured() || clerkUserIds.length === 0) return
+): Promise<ApnsSendStats> {
+  const empty: ApnsSendStats = {
+    attempted: 0,
+    succeeded: 0,
+    failed: 0,
+    sandboxTokens: 0,
+    productionTokens: 0,
+    failures: [],
+  }
+  if (!isApnsConfigured() || clerkUserIds.length === 0) return empty
 
   const placeholders = clerkUserIds.map(() => "?").join(", ")
   const rows = await sql.query(
-    `SELECT token, environment FROM ios_device_tokens
+    `SELECT token, environment, clerk_user_id FROM ios_device_tokens
      WHERE is_active = 1
        AND clerk_user_id IN (${placeholders})`,
     clerkUserIds,
   )
 
-  const byEnv = new Map<ApnsEnvironment, string[]>()
+  const byEnv = new Map<ApnsEnvironment, { token: string; clerkUserId: string | null }[]>()
   for (const row of rows) {
     const env: ApnsEnvironment =
       String(row.environment) === "sandbox" ? "sandbox" : "production"
     const list = byEnv.get(env) ?? []
-    list.push(String(row.token))
+    list.push({
+      token: String(row.token),
+      clerkUserId: row.clerk_user_id != null ? String(row.clerk_user_id) : null,
+    })
     byEnv.set(env, list)
   }
 
-  for (const [environment, tokens] of byEnv) {
-    if (tokens.length === 0) continue
+  const stats: ApnsSendStats = { ...empty, failures: [] }
+  for (const [environment, devices] of byEnv) {
+    if (devices.length === 0) continue
+    if (environment === "sandbox") stats.sandboxTokens += devices.length
+    else stats.productionTokens += devices.length
+
+    const tokens = devices.map((d) => d.token)
+    const byToken = new Map(devices.map((d) => [d.token, d.clerkUserId]))
     const results = await sendApnsAlerts(tokens, payload, { environment })
-    for (const f of results.filter((r) => !r.success)) {
-      if (f.reason?.includes("BadDeviceToken") || f.reason?.includes("Unregistered")) {
-        await sql`UPDATE ios_device_tokens SET is_active = 0 WHERE token = ${f.deviceToken}`
+    stats.attempted += results.length
+    for (const r of results) {
+      if (r.success) {
+        stats.succeeded += 1
+        continue
+      }
+      stats.failed += 1
+      stats.failures.push({
+        platform: "ios",
+        environment,
+        clerkUserId: byToken.get(r.deviceToken) ?? null,
+        token: r.deviceToken,
+        reason: r.reason ?? null,
+        statusCode: r.status ?? null,
+      })
+      if (r.reason?.includes("BadDeviceToken") || r.reason?.includes("Unregistered")) {
+        await sql`UPDATE ios_device_tokens SET is_active = 0 WHERE token = ${r.deviceToken}`
       }
     }
   }
+
+  return stats
 }
 
 async function recipientClerkIds(channelId: string, senderClerkId: string): Promise<string[]> {
@@ -155,7 +198,23 @@ export async function notifyChatMessagePush(input: {
     await ensurePushSchema()
 
     const recipients = await recipientClerkIds(input.channelId, input.message.sender_clerk_id)
-    if (recipients.length === 0) return
+    if (recipients.length === 0) {
+      await logPushSend({
+        source: "chat",
+        title: input.channelTitle,
+        bodyPreview: "No recipients",
+        channelId: input.channelId,
+        messageId: input.message.id,
+        recipientCount: 0,
+        iosAttempted: 0,
+        iosSucceeded: 0,
+        iosFailed: 0,
+        androidAttempted: 0,
+        androidSucceeded: 0,
+        androidFailed: 0,
+      })
+      return
+    }
 
     const title = input.message.is_announcement
       ? `Announcement · ${input.channelTitle}`
@@ -184,7 +243,7 @@ export async function notifyChatMessagePush(input: {
 
     const placeholders = recipients.map(() => "?").join(", ")
 
-    await sendApnsToClerkUsers(recipients, {
+    const ios = await sendApnsToClerkUsers(recipients, {
       title,
       body,
       url: deepLink,
@@ -195,28 +254,72 @@ export async function notifyChatMessagePush(input: {
       imageUrl,
     })
 
+    let androidAttempted = 0
+    let androidSucceeded = 0
+    let androidFailed = 0
+    const androidFailures: PushFailureDetail[] = []
+
     if (isFcmConfigured()) {
       const rows = await sql.query(
-        `SELECT token FROM android_device_tokens
+        `SELECT token, clerk_user_id FROM android_device_tokens
          WHERE is_active = 1
            AND clerk_user_id IN (${placeholders})`,
         [...recipients],
       )
-      const tokens = rows.map((r) => String(r.token)).filter(Boolean)
-      if (tokens.length > 0) {
-        const results = await sendFcmAlerts(tokens, {
-          title,
-          body,
-          url: webUrl,
-          imageUrl,
-        })
-        for (const f of results.filter((r) => !r.success)) {
-          if (isPermanentFcmTokenFailure(f.reason)) {
-            await sql`UPDATE android_device_tokens SET is_active = 0 WHERE token = ${f.deviceToken}`
+      const devices = rows.map((r) => ({
+        token: String(r.token),
+        clerkUserId: r.clerk_user_id != null ? String(r.clerk_user_id) : null,
+      }))
+      if (devices.length > 0) {
+        const byToken = new Map(devices.map((d) => [d.token, d.clerkUserId]))
+        const results = await sendFcmAlerts(
+          devices.map((d) => d.token),
+          {
+            title,
+            body,
+            url: webUrl,
+            imageUrl,
+          },
+        )
+        androidAttempted = results.length
+        for (const r of results) {
+          if (r.success) {
+            androidSucceeded += 1
+            continue
+          }
+          androidFailed += 1
+          androidFailures.push({
+            platform: "android",
+            clerkUserId: byToken.get(r.deviceToken) ?? null,
+            token: r.deviceToken,
+            reason: r.reason ?? null,
+            statusCode: r.status ?? null,
+          })
+          if (isPermanentFcmTokenFailure(r.reason)) {
+            await sql`UPDATE android_device_tokens SET is_active = 0 WHERE token = ${r.deviceToken}`
           }
         }
       }
     }
+
+    await logPushSend({
+      source: "chat",
+      title,
+      bodyPreview: body,
+      channelId: input.channelId,
+      messageId: input.message.id,
+      recipientCount: recipients.length,
+      iosAttempted: ios.attempted,
+      iosSucceeded: ios.succeeded,
+      iosFailed: ios.failed,
+      androidAttempted,
+      androidSucceeded,
+      androidFailed,
+      sandboxTokens: ios.sandboxTokens,
+      productionTokens: ios.productionTokens,
+      failures: [...ios.failures, ...androidFailures],
+      meta: { hasImage: Boolean(imageUrl) },
+    })
   } catch (error) {
     console.error("[chat/notify] push failed:", error)
   }
@@ -241,7 +344,7 @@ export async function notifyChatReactionPush(input: {
     const deepLink = `rendezvousil://chat?channel=${encodeURIComponent(input.channelId)}`
     const webUrl = "https://rendezvousil.com/chat"
 
-    await sendApnsToClerkUsers([recipient], {
+    const ios = await sendApnsToClerkUsers([recipient], {
       title,
       body,
       url: deepLink,
@@ -251,26 +354,64 @@ export async function notifyChatReactionPush(input: {
       sound: "chat.caf",
     })
 
+    let androidAttempted = 0
+    let androidSucceeded = 0
+    let androidFailed = 0
+    const androidFailures: PushFailureDetail[] = []
+
     if (isFcmConfigured()) {
       const rows = await sql`
-        SELECT token FROM android_device_tokens
+        SELECT token, clerk_user_id FROM android_device_tokens
         WHERE is_active = 1
           AND clerk_user_id = ${recipient}
       `
-      const tokens = rows.map((r) => String(r.token)).filter(Boolean)
-      if (tokens.length > 0) {
-        const results = await sendFcmAlerts(tokens, {
-          title,
-          body,
-          url: webUrl,
-        })
-        for (const f of results.filter((r) => !r.success)) {
-          if (isPermanentFcmTokenFailure(f.reason)) {
-            await sql`UPDATE android_device_tokens SET is_active = 0 WHERE token = ${f.deviceToken}`
+      const devices = rows.map((r) => ({
+        token: String(r.token),
+        clerkUserId: r.clerk_user_id != null ? String(r.clerk_user_id) : null,
+      }))
+      if (devices.length > 0) {
+        const byToken = new Map(devices.map((d) => [d.token, d.clerkUserId]))
+        const results = await sendFcmAlerts(
+          devices.map((d) => d.token),
+          { title, body, url: webUrl },
+        )
+        androidAttempted = results.length
+        for (const r of results) {
+          if (r.success) {
+            androidSucceeded += 1
+            continue
+          }
+          androidFailed += 1
+          androidFailures.push({
+            platform: "android",
+            clerkUserId: byToken.get(r.deviceToken) ?? null,
+            token: r.deviceToken,
+            reason: r.reason ?? null,
+            statusCode: r.status ?? null,
+          })
+          if (isPermanentFcmTokenFailure(r.reason)) {
+            await sql`UPDATE android_device_tokens SET is_active = 0 WHERE token = ${r.deviceToken}`
           }
         }
       }
     }
+
+    await logPushSend({
+      source: "chat_reaction",
+      title,
+      bodyPreview: body,
+      channelId: input.channelId,
+      recipientCount: 1,
+      iosAttempted: ios.attempted,
+      iosSucceeded: ios.succeeded,
+      iosFailed: ios.failed,
+      androidAttempted,
+      androidSucceeded,
+      androidFailed,
+      sandboxTokens: ios.sandboxTokens,
+      productionTokens: ios.productionTokens,
+      failures: [...ios.failures, ...androidFailures],
+    })
   } catch (error) {
     console.error("[chat/notify] reaction push failed:", error)
   }
