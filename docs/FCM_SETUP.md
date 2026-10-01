@@ -2,23 +2,34 @@
 
 The native Android app registers device tokens at `POST /api/push/register` with `platform: "android"`. Admin **Send Push Notification** in messaging uses **APNs** for iOS tokens and **FCM HTTP v1** for Android tokens (when configured), then falls back to OneSignal.
 
+## BraddCorp status (2026-09)
+
+| Piece | Value |
+| --- | --- |
+| Google account | `adin@braddcorp.com` |
+| Firebase project | **`rendezvous-il-app`** |
+| Android package | `com.rendezvousil.app` |
+| Local config | `android/app/google-services.json` (gitignored) |
+| Vercel (production) | `FCM_PROJECT_ID` + `FCM_SERVICE_ACCOUNT_JSON` (set; production redeployed) |
+| Service account key (local ops) | `~/.config/braddcorp-ops/rendezvous-il-fcm-sa.json` (never commit) |
+
 ## 1. Firebase project setup
 
-1. [Firebase Console](https://console.firebase.google.com) → create or open the Rendezvous IL project
-2. **Add app** → Android → package name `com.rendezvousil.app` (match iOS bundle ID)
-3. Download `google-services.json` into the Android app module (see `android/README.md`)
-4. **Project settings** → **Service accounts** → **Generate new private key** (JSON)
+Already provisioned under BraddCorp. To recreate on another machine:
 
-The service account needs permission to send FCM messages (Firebase Admin SDK service account role is sufficient).
+1. [Firebase Console](https://console.firebase.google.com) → project **`rendezvous-il-app`**
+2. Android app package `com.rendezvousil.app`
+3. Download `google-services.json` → `android/app/google-services.json`
+4. Service account with `roles/firebase.admin` (or use existing `fcm-send@rendezvous-il-app.iam.gserviceaccount.com`)
 
 ## 2. Vercel environment variables
 
-Add to the production project:
+Production (v0-ren) expects:
 
 | Variable | Example | Purpose |
 |----------|---------|---------|
-| `FCM_PROJECT_ID` | `rendezvous-il-abc123` | Firebase project ID |
-| `FCM_SERVICE_ACCOUNT_JSON` | `{"type":"service_account",...}` | Full service account JSON (single line in Vercel) |
+| `FCM_PROJECT_ID` | `rendezvous-il-app` | Firebase project ID |
+| `FCM_SERVICE_ACCOUNT_JSON` | `{"type":"service_account",...}` | Full service account JSON (single line) |
 
 **Alternative** (split credentials):
 
@@ -42,7 +53,7 @@ pnpm db:verify   # confirm tables exist after migration
 ## 4. Register / unregister API
 
 ```bash
-# Register Android token
+# Register Android token (app does this after permission + FCM init)
 curl -X POST https://rendezvousil.com/api/push/register \
   -H 'Content-Type: application/json' \
   -d '{"platform":"android","token":"YOUR_FCM_TOKEN","bundleId":"com.rendezvousil.app"}'
@@ -57,10 +68,11 @@ iOS clients omit `platform` (defaults to `"ios"`) — behavior unchanged.
 
 ## 5. Test broadcast
 
-1. Install the Android app on a **physical device** and allow notifications
-2. Confirm a row appears in `android_device_tokens`
-3. Admin → Messaging → **Send Push Notification**
-4. Or curl:
+1. Install the Android debug APK with `google-services.json` present; allow notifications
+2. Sign in → More → **Notifications & widgets** → enable broadcast alerts
+3. Confirm a row appears in `android_device_tokens`
+4. Admin → Messaging → **Send Push Notification** (or Announcements with push)
+5. Or curl:
 
 ```bash
 curl -X POST https://rendezvousil.com/api/push-notification \
@@ -68,7 +80,7 @@ curl -X POST https://rendezvousil.com/api/push-notification \
   -d '{"title":"Test","message":"FCM hello from Rendezvous"}'
 ```
 
-Response `channel: "fcm"` confirms the FCM path. When both iOS and Android tokens are registered, expect `channel: "apns+fcm"` with per-platform counts.
+Response `channel: "fcm"` (or `apns+fcm`) confirms the path.
 
 ## 6. What uses what
 

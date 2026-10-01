@@ -1,14 +1,14 @@
 {
-  "_comment": "Copy this file to google-services.json after creating an Android app in the Firebase console.",
+  "_comment": "Shape only — real file is gitignored. BraddCorp project rendezvous-il-app.",
   "project_info": {
-    "project_number": "000000000000",
-    "project_id": "your-firebase-project-id",
-    "storage_bucket": "your-firebase-project-id.appspot.com"
+    "project_number": "985814020091",
+    "project_id": "rendezvous-il-app",
+    "storage_bucket": "rendezvous-il-app.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:000000000000:android:0000000000000000000000",
+        "mobilesdk_app_id": "1:985814020091:android:fb3c1bb16c2720bdb1255e",
         "android_client_info": {
           "package_name": "com.rendezvousil.app"
         }
@@ -16,7 +16,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "YOUR_FIREBASE_API_KEY"
+          "current_key": "REPLACE_FROM_FIREBASE_CONSOLE"
         }
       ],
       "services": {

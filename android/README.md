@@ -121,18 +121,19 @@ Snapshot prefs: `com.rendezvousil.app.schedule` / key `schedule_snapshot` (app-p
 
 ### Firebase setup
 
-1. Create an Android app in the [Firebase console](https://console.firebase.google.com/) with package **`com.rendezvousil.app`**.
-2. Download `google-services.json` and place it at **`android/app/google-services.json`** (gitignored — do not commit).
-3. Copy `android/app/google-services.json.example` as a reference if needed.
-4. Sync Gradle; the Google Services plugin applies automatically when the file is present.
+**BraddCorp (current):** Firebase project `rendezvous-il-app`, Android package `com.rendezvousil.app`.  
+Local file: `android/app/google-services.json` (gitignored). Server send keys: Vercel `FCM_PROJECT_ID` + `FCM_SERVICE_ACCOUNT_JSON` — see [`docs/FCM_SETUP.md`](../docs/FCM_SETUP.md).
+
+1. Confirm `android/app/google-services.json` exists (agent/ops copy from Firebase; do not commit).
+2. Sync Gradle; the Google Services plugin applies automatically when the file is present.
 
 **Without `google-services.json`:** optional manual init via `local.properties` (Firebase console → Project settings):
 
 ```properties
-FIREBASE_PROJECT_ID=your-project-id
-FIREBASE_APP_ID=1:123456789:android:abcdef
-FIREBASE_API_KEY=AIza...
-FIREBASE_GCM_SENDER_ID=123456789
+FIREBASE_PROJECT_ID=rendezvous-il-app
+FIREBASE_APP_ID=1:985814020091:android:fb3c1bb16c2720bdb1255e
+FIREBASE_API_KEY=…
+FIREBASE_GCM_SENDER_ID=985814020091
 ```
 
 Local event reminders work without Firebase. FCM broadcast alerts require Firebase configuration.
