@@ -182,8 +182,9 @@ fun NativeAuthFlow(
     ) {
         Text(
             text = stepTitle(step, isSignUp),
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.SemiBold,
+            // iOS SignInPrompt uses serif display for "Welcome back"
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
             color = config.ink,
         )
         Text(
@@ -197,8 +198,9 @@ fun NativeAuthFlow(
                 value = email,
                 onValueChange = { email = it },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("Email") },
+                label = { Text("Email address") },
                 singleLine = true,
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Email,
                     imeAction = ImeAction.Go,
@@ -335,11 +337,14 @@ fun NativeAuthFlow(
                     }
                 }
             },
-            enabled = !isWorking,
+            enabled = !isWorking && primaryActionEnabled(step, email, password, code),
             modifier = Modifier.fillMaxWidth(),
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(percent = 50),
             colors = ButtonDefaults.buttonColors(
                 containerColor = config.primary,
                 contentColor = config.onPrimary,
+                disabledContainerColor = config.cardBorder,
+                disabledContentColor = config.muted,
             ),
         ) {
             if (isWorking) {
@@ -366,7 +371,7 @@ fun NativeAuthFlow(
                 password = ""
                 errorMessage = null
             }) {
-                Text("Create an account", color = config.primary)
+                Text("New here? Create an account", color = config.primary)
             }
         }
 
@@ -393,7 +398,7 @@ private enum class AuthStep {
 }
 
 private fun stepTitle(step: AuthStep, isSignUp: Boolean): String = when (step) {
-    AuthStep.Identifier -> if (isSignUp) "Create account" else "Welcome"
+    AuthStep.Identifier -> if (isSignUp) "Create account" else "Welcome back"
     AuthStep.Password -> "Enter password"
     AuthStep.CreatePassword -> "Create password"
     AuthStep.EmailCode, AuthStep.EmailCodeSecond -> "Check your email"
@@ -401,7 +406,7 @@ private fun stepTitle(step: AuthStep, isSignUp: Boolean): String = when (step) {
 }
 
 private fun stepSubtitle(step: AuthStep, email: String): String = when (step) {
-    AuthStep.Identifier -> "Enter the email you use on the website."
+    AuthStep.Identifier -> "Use the same email as rendezvousil.com."
     AuthStep.Password -> "Password for $email"
     AuthStep.CreatePassword -> "Choose a password (8+ characters)."
     AuthStep.EmailCode, AuthStep.EmailCodeSecond -> "Enter the code we sent to $email"
@@ -413,6 +418,18 @@ private fun primaryActionLabel(step: AuthStep): String = when (step) {
     AuthStep.Password -> "Sign in"
     AuthStep.CreatePassword -> "Create account"
     AuthStep.EmailCode, AuthStep.EmailCodeSecond, AuthStep.Totp -> "Verify"
+}
+
+/** Match iOS: Continue stays disabled until the field has something usable. */
+private fun primaryActionEnabled(
+    step: AuthStep,
+    email: String,
+    password: String,
+    code: String,
+): Boolean = when (step) {
+    AuthStep.Identifier -> email.trim().contains("@")
+    AuthStep.Password, AuthStep.CreatePassword -> password.isNotEmpty()
+    AuthStep.EmailCode, AuthStep.EmailCodeSecond, AuthStep.Totp -> code.isNotBlank()
 }
 
 private suspend fun submitIdentifier(

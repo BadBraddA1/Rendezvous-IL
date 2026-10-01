@@ -198,7 +198,8 @@ fun LoginGateScreen(
                                 containerColor = config.primary,
                                 contentColor = config.onPrimary,
                             ),
-                            shape = RoundedCornerShape(12.dp),
+                            // iOS .borderedProminent + controlSize(.large) → capsule
+                            shape = RoundedCornerShape(percent = 50),
                         ) {
                             Text(
                                 config.gateButton,

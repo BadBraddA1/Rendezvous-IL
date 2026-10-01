@@ -1,9 +1,9 @@
 package com.rendezvousil.app.auth
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Chat
-import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.automirrored.outlined.Chat
+import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.People
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -47,9 +47,10 @@ fun rememberRenBrandAuth(): BrandAuthConfig {
             gateHelper = "Use the same email and password as rendezvousil.com. This app is for families registered for Rendezvous.",
             gateButton = "Sign in",
             features = listOf(
-                BrandFeature("Schedule & updates during retreat week", Icons.Default.CalendarMonth),
-                BrandFeature("Year group chat with other families", Icons.AutoMirrored.Filled.Chat),
-                BrandFeature("Family directory & your profile", Icons.Default.People),
+                // Outline icons match iOS SF Symbols style on WelcomeHub
+                BrandFeature("Schedule & updates during retreat week", Icons.Outlined.CalendarMonth),
+                BrandFeature("Year group chat with other families", Icons.AutoMirrored.Outlined.Chat),
+                BrandFeature("Family directory & your profile", Icons.Outlined.People),
             ),
             contactEmail = "Stephen@Bradd.us",
             passwordResetUrl = resetUrl,
