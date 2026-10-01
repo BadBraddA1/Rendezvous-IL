@@ -21,6 +21,23 @@ async function recipientClerkIds(channelId: string, senderClerkId: string): Prom
 
   let ids = await listChatChannelMemberIds(channelId)
 
+  // Anyone who has already posted in the channel should receive pushes even if
+  // they accessed it as admin without an explicit membership row.
+  try {
+    const participantRows = await sql`
+      SELECT DISTINCT sender_clerk_id AS clerk_user_id
+      FROM chat_messages
+      WHERE channel_id = ${channelId}
+        AND deleted_at IS NULL
+        AND sender_clerk_id IS NOT NULL
+    `
+    for (const row of participantRows) {
+      if (row.clerk_user_id) ids.push(String(row.clerk_user_id))
+    }
+  } catch {
+    // ignore
+  }
+
   // Year channels: include everyone on a registered family for that year
   // (primary clerk_user_id + family_account_members). Membership rows may be
   // incomplete until each user opens chat.

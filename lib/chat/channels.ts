@@ -108,6 +108,25 @@ export async function syncYearChannelMembership(
   }
 }
 
+/**
+ * Ensure a user who can access a channel is also a push recipient.
+ * Admins and year-registrants can open/post without a membership row; chat FCM
+ * filters on `chat_channel_members`, so we upsert on successful access.
+ */
+export async function ensureChatChannelMembership(
+  channelId: string,
+  clerkUserId: string,
+): Promise<void> {
+  const id = clerkUserId.trim()
+  if (!id || !channelId) return
+  await ensureChatSchema()
+  await sql`
+    INSERT INTO chat_channel_members (channel_id, clerk_user_id, role)
+    VALUES (${channelId}, ${id}, 'member')
+    ON CONFLICT (channel_id, clerk_user_id) DO NOTHING
+  `
+}
+
 export async function userCanAccessChannel(
   channelId: string,
   clerkUserId: string,

@@ -1,7 +1,11 @@
 import { randomUUID } from "crypto"
 import { sql, type SqlRow } from "@/lib/db"
 import { publishChatEvent } from "@/lib/ably"
-import { userCanAccessChannel, userCanModerateChannel } from "@/lib/chat/channels"
+import {
+  ensureChatChannelMembership,
+  userCanAccessChannel,
+  userCanModerateChannel,
+} from "@/lib/chat/channels"
 import {
   enrichMessages,
   enrichSingleMessage,
@@ -33,6 +37,8 @@ export async function listChannelMessages(
   if (!canAccess) {
     throw new Error("Forbidden")
   }
+
+  await ensureChatChannelMembership(channelId, options.clerkUserId)
 
   const limit = Math.min(Math.max(options.limit ?? 50, 1), 100)
 
@@ -134,6 +140,8 @@ export async function sendChannelMessage(input: {
   if (!canAccess) {
     throw new Error("Forbidden")
   }
+
+  await ensureChatChannelMembership(input.channelId, input.clerkUserId)
 
   if (input.isAnnouncement) {
     const canModerate = await userCanModerateChannel(
