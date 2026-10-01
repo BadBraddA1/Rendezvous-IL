@@ -75,7 +75,12 @@ class RendezvousApplication : Application() {
 
         notificationPreferences = NotificationPreferences(this)
         reminderService = ReminderService(this)
-        fcmRegistrationService = FcmRegistrationService(this, publicClient, notificationPreferences)
+        // Must use authenticated client so register stores clerk_user_id (chat FCM filter).
+        fcmRegistrationService = FcmRegistrationService(
+            this,
+            authenticatedClientProvider = { appSession.authenticatedApiClient },
+            notificationPreferences,
+        )
         NotificationHelper.ensureChannels(this)
     }
 

@@ -111,13 +111,25 @@ fun RendezvousApp(
     val clerkReady by Clerk.isInitialized.collectAsStateWithLifecycle()
     val brandAuth = rememberRenBrandAuth()
 
+    // Link FCM token → clerk_user_id once signed in (chat pushes filter on that).
+    LaunchedEffect(isSignedIn) {
+        if (isSignedIn) {
+            fcmRegistrationService.registerIfEnabled(force = true)
+        }
+    }
+
     AuthGate(
         isSignedIn = isSignedIn,
         isLoading = isLoading && !isSignedIn,
         clerkReady = clerkReady,
         clerkSetupError = clerkSetupError,
         config = brandAuth,
-        onAuthenticated = { scope.launch { appSession.refreshAuth() } },
+        onAuthenticated = {
+            scope.launch {
+                appSession.refreshAuth()
+                fcmRegistrationService.registerIfEnabled(force = true)
+            }
+        },
     ) {
         RendezvousSignedInApp(
             repository = repository,

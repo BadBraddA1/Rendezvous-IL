@@ -14,23 +14,35 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 
+/**
+ * Registers the FCM token with the backend. Must use the **authenticated** API client so
+ * `/api/push/register` stores `clerk_user_id` — chat pushes filter on that column.
+ */
 class FcmRegistrationService(
     private val context: Context,
-    private val apiClient: ApiClient,
+    /** Signed-in client, or null when logged out. */
+    private val authenticatedClientProvider: () -> ApiClient?,
     private val notificationPreferences: NotificationPreferences,
 ) {
     private var lastRegisteredToken: String? = null
 
-    suspend fun registerIfEnabled() {
+    suspend fun registerIfEnabled(force: Boolean = false) {
         if (!notificationPreferences.broadcastAlertsEnabled) return
         if (!NotificationHelper.areNotificationsEnabled(context)) return
         if (!FirebaseAppHolder.isInitialized) return
 
+        val apiClient = authenticatedClientProvider()
+        if (apiClient == null) {
+            Log.i(TAG, "Skip FCM register — not signed in (chat needs clerk_user_id)")
+            return
+        }
+
         runCatching {
             val token = FirebaseMessaging.getInstance().token.await()
-            if (token == lastRegisteredToken) return
-            registerToken(token)
+            if (!force && token == lastRegisteredToken) return
+            registerToken(apiClient, token)
             lastRegisteredToken = token
+            Log.i(TAG, "FCM token registered with auth")
         }.onFailure { error ->
             Log.w(TAG, "FCM token registration failed: ${error.message}")
         }
@@ -38,9 +50,10 @@ class FcmRegistrationService(
 
     suspend fun unregisterCurrentToken() {
         if (!FirebaseAppHolder.isInitialized) return
+        val apiClient = authenticatedClientProvider() ?: return
         runCatching {
             val token = FirebaseMessaging.getInstance().token.await()
-            unregisterToken(token)
+            unregisterToken(apiClient, token)
             lastRegisteredToken = null
         }.onFailure { error ->
             Log.w(TAG, "FCM token unregister failed: ${error.message}")
@@ -49,13 +62,13 @@ class FcmRegistrationService(
 
     suspend fun onBroadcastAlertsToggled(enabled: Boolean) {
         if (enabled) {
-            registerIfEnabled()
+            registerIfEnabled(force = true)
         } else {
             unregisterCurrentToken()
         }
     }
 
-    private suspend fun registerToken(token: String) = withContext(Dispatchers.IO) {
+    private suspend fun registerToken(apiClient: ApiClient, token: String) = withContext(Dispatchers.IO) {
         val body = RegisterBody(
             token = token,
             bundleId = BuildConfig.APPLICATION_ID,
@@ -68,10 +81,14 @@ class FcmRegistrationService(
                     .toRequestBody("application/json".toMediaType()),
             )
             .build()
-        apiClient.okHttpClient.newCall(request).execute().close()
+        apiClient.okHttpClient.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) {
+                Log.w(TAG, "FCM register HTTP ${response.code}")
+            }
+        }
     }
 
-    private suspend fun unregisterToken(token: String) = withContext(Dispatchers.IO) {
+    private suspend fun unregisterToken(apiClient: ApiClient, token: String) = withContext(Dispatchers.IO) {
         val body = UnregisterBody(token = token)
         val request = Request.Builder()
             .url(apiClient.urlFor("api/push/register"))

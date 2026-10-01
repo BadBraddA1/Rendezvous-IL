@@ -69,10 +69,11 @@ iOS clients omit `platform` (defaults to `"ios"`) — behavior unchanged.
 ## 5. Test broadcast
 
 1. Install the Android debug APK with `google-services.json` present; allow notifications
-2. Sign in → More → **Notifications & widgets** → enable broadcast alerts
-3. Confirm a row appears in `android_device_tokens`
-4. Admin → Messaging → **Send Push Notification** (or Announcements with push)
-5. Or curl:
+2. **Sign in** (required — chat / targeted FCM filters on `clerk_user_id`)
+3. More → **Notifications & widgets** → enable broadcast alerts
+4. Confirm a row appears in `android_device_tokens` **with** `clerk_user_id` set
+5. Admin → Messaging → **Send Push Notification** (or Announcements with push), or send a chat message to that user
+6. Or curl (broadcast — all active Android tokens):
 
 ```bash
 curl -X POST https://rendezvousil.com/api/push-notification \
@@ -81,6 +82,8 @@ curl -X POST https://rendezvousil.com/api/push-notification \
 ```
 
 Response `channel: "fcm"` (or `apns+fcm`) confirms the path.
+
+**Chat pushes** only go to tokens with a matching `clerk_user_id`. Registration must use the signed-in API client (fixed 2026-10).
 
 ## 6. What uses what
 
