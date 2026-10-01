@@ -4,7 +4,7 @@
  */
 
 import { sql } from "@/lib/db"
-import { defaultApnsEnvironment, isApnsConfigured, sendApnsAlerts } from "@/lib/apns"
+import { isApnsConfigured, sendApnsAlerts } from "@/lib/apns"
 import { isFcmConfigured, isPermanentFcmTokenFailure, sendFcmAlerts } from "@/lib/fcm"
 import { ensurePushSchema } from "@/lib/push-schema"
 
@@ -44,29 +44,42 @@ export async function sendBroadcastPush(input: {
 
   if (isApnsConfigured()) {
     const rows = await sql`
-      SELECT token FROM ios_device_tokens
+      SELECT token, environment FROM ios_device_tokens
       WHERE is_active = 1
-        AND environment = ${defaultApnsEnvironment()}
     `
-    const tokens = rows.map((r: { token: string }) => r.token)
-    if (tokens.length > 0) {
-      const results = await sendApnsAlerts(tokens, {
-        title,
-        body: message,
-        url: targetUrl,
-        threadId,
-      })
-      apnsSent = results.filter((r) => r.success).length
-      const failed = results.filter((r) => !r.success)
-      apnsFailed = failed.length
-      for (const f of failed) {
+    const byEnv = new Map<"sandbox" | "production", string[]>()
+    for (const row of rows) {
+      const env = String(row.environment) === "sandbox" ? "sandbox" : "production"
+      const list = byEnv.get(env) ?? []
+      list.push(String(row.token))
+      byEnv.set(env, list)
+    }
+
+    let sent = 0
+    let failed = 0
+    for (const [environment, tokens] of byEnv) {
+      if (tokens.length === 0) continue
+      const results = await sendApnsAlerts(
+        tokens,
+        {
+          title,
+          body: message,
+          url: targetUrl,
+          threadId,
+        },
+        { environment },
+      )
+      sent += results.filter((r) => r.success).length
+      const bad = results.filter((r) => !r.success)
+      failed += bad.length
+      for (const f of bad) {
         if (f.reason?.includes("BadDeviceToken") || f.reason?.includes("Unregistered")) {
           await sql`UPDATE ios_device_tokens SET is_active = 0 WHERE token = ${f.deviceToken}`
         }
       }
-    } else {
-      apnsSent = 0
     }
+    apnsSent = sent
+    apnsFailed = failed
   }
 
   if (isFcmConfigured()) {

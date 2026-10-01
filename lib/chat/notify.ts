@@ -1,5 +1,10 @@
 import { sql } from "@/lib/db"
-import { defaultApnsEnvironment, isApnsConfigured, sendApnsAlerts } from "@/lib/apns"
+import {
+  type ApnsAlertPayload,
+  type ApnsEnvironment,
+  isApnsConfigured,
+  sendApnsAlerts,
+} from "@/lib/apns"
 import { listChatChannelMemberIds } from "@/lib/chat/channels"
 import { ensureChatSchema, yearChannelId } from "@/lib/chat-schema"
 import { isFcmConfigured, isPermanentFcmTokenFailure, sendFcmAlerts } from "@/lib/fcm"
@@ -7,6 +12,46 @@ import { ensureFamilyMembershipSchema } from "@/lib/family-membership"
 import { ensurePushSchema } from "@/lib/push-schema"
 import type { RegistrationEventYear } from "@/lib/registration-event-years"
 import type { ChatMessagePayload } from "@/types/chat"
+
+/**
+ * Send to every active iOS token for the given Clerk users, routing each token
+ * to sandbox or production APNs based on how that install registered.
+ * DEBUG / Xcode builds register as sandbox; TestFlight / App Store as production.
+ * Filtering only on APNS_ENVIRONMENT drops the phone you're actually holding.
+ */
+async function sendApnsToClerkUsers(
+  clerkUserIds: string[],
+  payload: ApnsAlertPayload,
+): Promise<void> {
+  if (!isApnsConfigured() || clerkUserIds.length === 0) return
+
+  const placeholders = clerkUserIds.map(() => "?").join(", ")
+  const rows = await sql.query(
+    `SELECT token, environment FROM ios_device_tokens
+     WHERE is_active = 1
+       AND clerk_user_id IN (${placeholders})`,
+    clerkUserIds,
+  )
+
+  const byEnv = new Map<ApnsEnvironment, string[]>()
+  for (const row of rows) {
+    const env: ApnsEnvironment =
+      String(row.environment) === "sandbox" ? "sandbox" : "production"
+    const list = byEnv.get(env) ?? []
+    list.push(String(row.token))
+    byEnv.set(env, list)
+  }
+
+  for (const [environment, tokens] of byEnv) {
+    if (tokens.length === 0) continue
+    const results = await sendApnsAlerts(tokens, payload, { environment })
+    for (const f of results.filter((r) => !r.success)) {
+      if (f.reason?.includes("BadDeviceToken") || f.reason?.includes("Unregistered")) {
+        await sql`UPDATE ios_device_tokens SET is_active = 0 WHERE token = ${f.deviceToken}`
+      }
+    }
+  }
+}
 
 async function recipientClerkIds(channelId: string, senderClerkId: string): Promise<string[]> {
   await ensureChatSchema()
@@ -139,33 +184,16 @@ export async function notifyChatMessagePush(input: {
 
     const placeholders = recipients.map(() => "?").join(", ")
 
-    if (isApnsConfigured()) {
-      const rows = await sql.query(
-        `SELECT token FROM ios_device_tokens
-         WHERE is_active = 1
-           AND environment = ?
-           AND clerk_user_id IN (${placeholders})`,
-        [defaultApnsEnvironment(), ...recipients],
-      )
-      const tokens = rows.map((r) => String(r.token)).filter(Boolean)
-      if (tokens.length > 0) {
-        const results = await sendApnsAlerts(tokens, {
-          title,
-          body,
-          url: deepLink,
-          threadId: `chat-${input.channelId}`,
-          channelId: input.channelId,
-          contentAvailable: true,
-          sound: input.message.is_announcement ? "announce.caf" : "chat.caf",
-          imageUrl,
-        })
-        for (const f of results.filter((r) => !r.success)) {
-          if (f.reason?.includes("BadDeviceToken") || f.reason?.includes("Unregistered")) {
-            await sql`UPDATE ios_device_tokens SET is_active = 0 WHERE token = ${f.deviceToken}`
-          }
-        }
-      }
-    }
+    await sendApnsToClerkUsers(recipients, {
+      title,
+      body,
+      url: deepLink,
+      threadId: `chat-${input.channelId}`,
+      channelId: input.channelId,
+      contentAvailable: true,
+      sound: input.message.is_announcement ? "announce.caf" : "chat.caf",
+      imageUrl,
+    })
 
     if (isFcmConfigured()) {
       const rows = await sql.query(
@@ -213,31 +241,15 @@ export async function notifyChatReactionPush(input: {
     const deepLink = `rendezvousil://chat?channel=${encodeURIComponent(input.channelId)}`
     const webUrl = "https://rendezvousil.com/chat"
 
-    if (isApnsConfigured()) {
-      const rows = await sql`
-        SELECT token FROM ios_device_tokens
-        WHERE is_active = 1
-          AND environment = ${defaultApnsEnvironment()}
-          AND clerk_user_id = ${recipient}
-      `
-      const tokens = rows.map((r) => String(r.token)).filter(Boolean)
-      if (tokens.length > 0) {
-        const results = await sendApnsAlerts(tokens, {
-          title,
-          body,
-          url: deepLink,
-          threadId: `chat-${input.channelId}`,
-          channelId: input.channelId,
-          contentAvailable: true,
-          sound: "chat.caf",
-        })
-        for (const f of results.filter((r) => !r.success)) {
-          if (f.reason?.includes("BadDeviceToken") || f.reason?.includes("Unregistered")) {
-            await sql`UPDATE ios_device_tokens SET is_active = 0 WHERE token = ${f.deviceToken}`
-          }
-        }
-      }
-    }
+    await sendApnsToClerkUsers([recipient], {
+      title,
+      body,
+      url: deepLink,
+      threadId: `chat-${input.channelId}`,
+      channelId: input.channelId,
+      contentAvailable: true,
+      sound: "chat.caf",
+    })
 
     if (isFcmConfigured()) {
       const rows = await sql`
