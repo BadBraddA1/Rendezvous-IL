@@ -4,6 +4,8 @@ Native Kotlin + Jetpack Compose companion for [rendezvousil.com](https://rendezv
 
 **Phase 1** covered public features. The app is now **login-required** (same as iOS): you cannot use tabs until Clerk sign-in completes. Auth UI is the BraddCorp Android Clerk kit (`com.braddcorp.auth` — native email/password, no `AuthView` chrome).
 
+**UI lock (match iOS):** `BrandTheme` uses serif for display/headline titles, grouped backgrounds, and lake/coral tokens from `BrandColors.swift`. The welcome gate mirrors `WelcomeHubView` (inline “Rendezvous” bar, serif hero, glass sign-in card, Label-style feature rows, contact + “Reset password on web”). More uses the same Community / Retreat resources / Admin / Staff / Links / Sign out IA as `MoreView.swift`. Shared cards use `GlassCard` / hairline borders instead of Material elevation.
+
 ## Requirements
 
 - Android Studio Ladybug (2024.2+) or newer

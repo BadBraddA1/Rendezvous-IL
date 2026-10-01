@@ -353,7 +353,8 @@ Native **Jetpack Compose** app in `android/` (Phases 1–5). **Not on Google Pla
 - **Directory** — on-device cache first, background refresh; Father/Mother + **Kids (ages)** like the website; family photo manage stays under More; sync footer
 - **Volunteering** — `GET /api/family/volunteering`; Home card + More → Your volunteering (pending lesson-topic / song-set actions + confirmed worship/special jobs). **Leading singing** song pick stays in-app (`GET/PUT …/volunteers/[id]/songs`). Hidden when empty. Apps auto-schedule a **local push 30 minutes before** each worship/special assignment (`startsAt` from the API)
 - **Updates** — now/next (Central Time), weather, announcements when active (More → Live updates; not a bottom tab)
-- **More** — calculator, Bible Bowl, FAQ, About, **Clerk account**, directory manage, volunteering, **notifications & widgets**, **admin** (dashboard, Day-of ops, announcements, event pings, user management, staff check-in)
+- **More** — iOS-aligned sections: account header, **Community**, **Retreat resources**, **Admin** / **Staff**, **Links**, Sign out. Calculator, Bible Bowl, FAQ, About, Clerk account, directory photo, volunteering, notifications & widgets, admin tools
+- **UI chrome** — lake/coral theme, serif display type (iOS New York parity), glass-style cards (hairline border, no heavy elevation), WelcomeHub-parity login gate (nav title, icon feature rows, reset-password link)
 - **Admin** — mobile dashboard stats, **Day-of ops** (`GET /api/admin/mobile/day-of`), staff check-in with QR scan + directory photo upload/nudge, user CRUD (role-gated via Clerk session)
 - **Push** — FCM organizer broadcasts + chat + directory photo/nudge (`rendezvousil://directory-photo`); `POST /api/push/register` with `platform: "android"`
 - **Widgets** — Glance home screen: Next event + Now & next

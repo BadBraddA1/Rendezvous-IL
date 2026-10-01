@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -31,6 +32,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -47,6 +49,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.clerk.api.Clerk
 import com.rendezvousil.app.theme.BrandColors
 import com.rendezvousil.core.network.AppConfig
 import com.rendezvousil.core.network.YearFormatting
@@ -75,6 +79,14 @@ fun HomeScreen(
     val nowNext = viewModel.nowNext()
     var isRefreshing by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    val clerkUser by Clerk.userFlow.collectAsStateWithLifecycle()
+    val displayName = clerkUser?.let { user ->
+        listOfNotNull(user.firstName, user.lastName)
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .joinToString(" ")
+            .ifBlank { null }
+    }
 
     Scaffold(
         modifier = modifier,
@@ -87,8 +99,13 @@ fun HomeScreen(
                         } else {
                             "Today"
                         },
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
                     )
                 },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = BrandColors.GroupedBackground,
+                ),
             )
         },
         containerColor = BrandColors.GroupedBackground,
@@ -116,6 +133,7 @@ fun HomeScreen(
                 if (uiState.preferSeasonHub) {
                     SeasonHubContent(
                         yearHub = uiState.yearHub,
+                        displayName = displayName,
                         onNavigateToSchedule = onNavigateToSchedule,
                         onNavigateToChat = onNavigateToChat,
                         onNavigateToVolunteering = onNavigateToVolunteering,
@@ -142,18 +160,19 @@ fun HomeScreen(
 @Composable
 private fun SeasonHubContent(
     yearHub: YearHubResponse?,
+    displayName: String?,
     onNavigateToSchedule: () -> Unit,
     onNavigateToChat: () -> Unit,
     onNavigateToVolunteering: () -> Unit,
 ) {
     val context = LocalContext.current
     Text(
-        text = "Your ${AppConfig.eventYearLabel} year",
+        text = if (displayName != null) "Hi, $displayName" else "Your ${AppConfig.eventYearLabel} year",
         style = MaterialTheme.typography.titleLarge,
         fontWeight = FontWeight.SemiBold,
     )
     Text(
-        text = "${AppConfig.EVENT_DATES} · Lake Williamson",
+        text = "${AppConfig.EVENT_DATES} · ${AppConfig.LOCATION}",
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
@@ -379,7 +398,7 @@ private fun HeaderCard() {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(
             text = "Today at Rendezvous",
-            style = MaterialTheme.typography.titleLarge,
+            style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.SemiBold,
         )
         Text(
@@ -398,6 +417,9 @@ private fun CheckInCard(checkIn: FamilyCheckInResponse) {
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
             color = BrandColors.SecondaryGroupedBackground,
+            border = BorderStroke(0.5.dp, BrandColors.CardBorder),
+            tonalElevation = 0.dp,
+            shadowElevation = 0.dp,
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),
@@ -611,6 +633,9 @@ private fun ActionCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         color = BrandColors.SecondaryGroupedBackground,
+        border = BorderStroke(0.5.dp, BrandColors.CardBorder),
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp,
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -654,6 +679,9 @@ private fun VolunteeringCard(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
             color = BrandColors.SecondaryGroupedBackground,
+            border = BorderStroke(0.5.dp, BrandColors.CardBorder),
+            tonalElevation = 0.dp,
+            shadowElevation = 0.dp,
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),

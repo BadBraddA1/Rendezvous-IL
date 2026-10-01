@@ -1,23 +1,32 @@
 package com.rendezvousil.app.auth
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Chat
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.People
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import com.braddcorp.auth.BrandAuthConfig
-import com.rendezvousil.app.R
+import com.braddcorp.auth.BrandFeature
+import com.rendezvousil.app.BuildConfig
 import com.rendezvousil.app.theme.BrandColors
 import com.rendezvousil.core.network.AppConfig
 
-/** Rendezvous branding for the BraddCorp Android auth kit. */
+/** Rendezvous branding for the BraddCorp Android auth kit — mirrors iOS WelcomeHubView. */
 @Composable
 fun rememberRenBrandAuth(): BrandAuthConfig {
     val surface = BrandColors.GroupedBackground
     val card = BrandColors.SecondaryGroupedBackground
     val ink = MaterialTheme.colorScheme.onBackground
     val muted = MaterialTheme.colorScheme.onSurfaceVariant
+    val cardBorder = BrandColors.CardBorder
+    val warmSurface = BrandColors.WarmSurface
+    val badgeInk = BrandColors.CoralInk
     val year = AppConfig.eventYearLabel
-    return remember(surface, card, ink, muted, year) {
+    val resetUrl = "${BuildConfig.BASE_URL.trimEnd('/')}/sign-in/forgot-password"
+    return remember(surface, card, ink, muted, cardBorder, warmSurface, badgeInk, year, resetUrl) {
         BrandAuthConfig(
             appName = "Rendezvous",
             primary = BrandColors.Lake,
@@ -26,7 +35,10 @@ fun rememberRenBrandAuth(): BrandAuthConfig {
             card = card,
             ink = ink,
             muted = muted,
-            logoResId = R.drawable.rendezvous_logo,
+            cardBorder = cardBorder,
+            warmSurface = warmSurface,
+            badgeInk = badgeInk,
+            logoResId = null,
             heroTitle = "Rendezvous $year",
             heroSubtitle = "Your retreat community",
             heroMeta = "${AppConfig.EVENT_DATES} · ${AppConfig.LOCATION}",
@@ -35,13 +47,15 @@ fun rememberRenBrandAuth(): BrandAuthConfig {
             gateHelper = "Use the same email and password as rendezvousil.com. This app is for families registered for Rendezvous.",
             gateButton = "Sign in",
             features = listOf(
-                "Schedule & updates during retreat week",
-                "Year group chat with other families",
-                "Family directory & your profile",
+                BrandFeature("Schedule & updates during retreat week", Icons.Default.CalendarMonth),
+                BrandFeature("Year group chat with other families", Icons.AutoMirrored.Filled.Chat),
+                BrandFeature("Family directory & your profile", Icons.Default.People),
             ),
-            contactEmail = "info@rendezvousil.com",
+            contactEmail = "Stephen@Bradd.us",
+            passwordResetUrl = resetUrl,
             allowSignUp = true,
             sheetTitle = "Sign in",
+            showNavTitle = true,
         )
     }
 }
