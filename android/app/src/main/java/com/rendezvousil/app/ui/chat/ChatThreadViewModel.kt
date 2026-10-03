@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.UUID
 
 enum class ChatRealtimeStatus {
     Connecting,
@@ -34,6 +35,12 @@ data class PendingChatPhoto(
     val bytes: ByteArray,
     val mimeType: String,
 )
+
+enum class SystemSixSendStatus {
+    Sending,
+    Sent,
+    Failed,
+}
 
 data class ChatThreadUiState(
     val channelId: String = "",
@@ -51,6 +58,7 @@ data class ChatThreadUiState(
     val pollOptions: List<String> = listOf("", ""),
     val currentUserId: String = "",
     val enlargedPhotoUrl: String? = null,
+    val sendStatusById: Map<String, SystemSixSendStatus> = emptyMap(),
 )
 
 class ChatThreadViewModel(
@@ -156,7 +164,29 @@ class ChatThreadViewModel(
                 return@launch
             }
 
-            _uiState.update { it.copy(isSending = true, errorMessage = null) }
+            val localId = "local_${UUID.randomUUID()}"
+            val myName = state.messages.lastOrNull { it.sender_clerk_id == state.currentUserId }
+                ?.sender_display_name ?: "You"
+            val optimistic = ChatMessage(
+                id = localId,
+                channel_id = channelId,
+                body = body,
+                created_at = java.time.Instant.now().toString(),
+                sender_clerk_id = state.currentUserId,
+                sender_display_name = myName,
+                is_announcement = isAnnouncement,
+            )
+
+            _uiState.update {
+                it.copy(
+                    messages = it.messages + optimistic,
+                    sendStatusById = it.sendStatusById + (localId to SystemSixSendStatus.Sending),
+                    draft = "",
+                    pendingPhotos = emptyList(),
+                    errorMessage = null,
+                )
+            }
+
             try {
                 val response = if (photos.isEmpty()) {
                     client.sendChatMessage(channelId, body, isAnnouncement)
@@ -168,23 +198,34 @@ class ChatThreadViewModel(
                         photos = photos.map { it.bytes to it.mimeType },
                     )
                 }
-                upsertMessage(response.message)
-                _uiState.update {
-                    it.copy(
-                        draft = "",
-                        pendingPhotos = emptyList(),
-                        isSending = false,
-                        errorMessage = null,
+                _uiState.update { current ->
+                    current.copy(
+                        messages = current.messages.filterNot { it.id == localId },
+                        sendStatusById = current.sendStatusById - localId,
                     )
                 }
+                upsertMessage(response.message)
             } catch (error: Exception) {
                 _uiState.update {
                     it.copy(
-                        isSending = false,
+                        sendStatusById = it.sendStatusById + (localId to SystemSixSendStatus.Failed),
                         errorMessage = error.message ?: "Could not send message",
                     )
                 }
             }
+        }
+    }
+
+    fun retrySend(messageId: String) {
+        val state = _uiState.value
+        if (state.sendStatusById[messageId] != SystemSixSendStatus.Failed) return
+        val failed = state.messages.find { it.id == messageId } ?: return
+        _uiState.update {
+            it.copy(
+                messages = it.messages.filterNot { m -> m.id == messageId },
+                sendStatusById = it.sendStatusById - messageId,
+                draft = failed.body,
+            )
         }
     }
 
@@ -397,16 +438,22 @@ class ChatThreadViewModel(
 
     private fun upsertMessage(message: ChatMessage) {
         _uiState.update { state ->
-            val index = state.messages.indexOfFirst { it.id == message.id }
-            val messages = if (index >= 0) {
-                state.messages.toMutableList().also { it[index] = message }
-            } else {
-                state.messages + message
+            val withoutLocalEcho = state.messages.filterNot { local ->
+                local.id.startsWith("local_") &&
+                    local.sender_clerk_id == message.sender_clerk_id &&
+                    local.body == message.body
             }
+            val index = withoutLocalEcho.indexOfFirst { it.id == message.id }
+            val messages = if (index >= 0) {
+                withoutLocalEcho.toMutableList().also { it[index] = message }
+            } else {
+                withoutLocalEcho + message
+            }
+            val sendStatusById = state.sendStatusById - message.id
             viewModelScope.launch(Dispatchers.IO) {
                 cache.saveMessages(channelId, messages)
             }
-            state.copy(messages = messages)
+            state.copy(messages = messages, sendStatusById = sendStatusById)
         }
     }
 

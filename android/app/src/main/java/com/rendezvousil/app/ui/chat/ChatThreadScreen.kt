@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -62,6 +63,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -71,12 +73,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.rendezvousil.app.chat.systemsix.SystemSixChatScrollState
+import com.rendezvousil.app.chat.systemsix.SystemSixConfig
+import com.rendezvousil.app.chat.systemsix.SystemSixMessageGrouping
 import coil.compose.AsyncImage
-import com.rendezvousil.app.chat.ChatFormatting
 import com.rendezvousil.app.theme.BrandColors
 import com.rendezvousil.core.network.dto.ChatMessage
 import java.util.UUID
@@ -112,9 +118,36 @@ fun ChatThreadScreen(
         }
     }
 
-    LaunchedEffect(state.messages.size) {
-        if (state.messages.isNotEmpty()) {
-            listState.animateScrollToItem(state.messages.lastIndex)
+    val scrollState = remember { SystemSixChatScrollState() }
+    val flatItemCount = remember(state.messages) {
+        SystemSixMessageGrouping.group(
+            state.messages,
+            senderId = { it.sender_clerk_id },
+            createdAt = { SystemSixMessageGrouping.parseCreatedAt(it.created_at) },
+            id = { it.id },
+        ).sumOf { day -> day.groups.sumOf { g -> g.messages.size } }
+    }
+
+    LaunchedEffect(flatItemCount) {
+        scrollState.bind(flatItemCount)
+    }
+
+    val nearBottom by remember {
+        derivedStateOf {
+            val info = listState.layoutInfo
+            if (info.totalItemsCount == 0) return@derivedStateOf true
+            val last = info.visibleItemsInfo.lastOrNull() ?: return@derivedStateOf false
+            last.index >= info.totalItemsCount - 2
+        }
+    }
+
+    LaunchedEffect(nearBottom) {
+        scrollState.updateNearBottom(if (nearBottom) 0f else 200f)
+    }
+
+    LaunchedEffect(scrollState.scrollToBottomToken) {
+        if (state.messages.isNotEmpty() && listState.layoutInfo.totalItemsCount > 0) {
+            listState.animateScrollToItem(listState.layoutInfo.totalItemsCount - 1)
         }
     }
 
@@ -259,32 +292,150 @@ fun ChatThreadScreen(
                         }
                     }
                     else -> {
-                        LazyColumn(
-                            state = listState,
-                            contentPadding = PaddingValues(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                            modifier = Modifier.fillMaxSize(),
-                        ) {
-                            items(state.messages, key = { it.id }) { message ->
-                                MessageBubble(
-                                    message = message,
-                                    isMine = state.currentUserId.isNotEmpty() &&
-                                        message.sender_clerk_id == state.currentUserId,
-                                    canDelete = (state.currentUserId.isNotEmpty() &&
-                                        message.sender_clerk_id == state.currentUserId) ||
-                                        state.canModerate,
-                                    reactionEmojis = viewModel.reactionEmojis,
-                                    onVote = viewModel::vote,
-                                    onToggleReaction = viewModel::toggleReaction,
-                                    onDelete = viewModel::deleteMessage,
-                                    onPhotoClick = viewModel::enlargePhoto,
-                                )
+                        val days = SystemSixMessageGrouping.group(
+                            state.messages,
+                            senderId = { it.sender_clerk_id },
+                            createdAt = { SystemSixMessageGrouping.parseCreatedAt(it.created_at) },
+                            id = { it.id },
+                        )
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            LazyColumn(
+                                state = listState,
+                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                                modifier = Modifier.fillMaxSize(),
+                            ) {
+                                days.forEach { day ->
+                                    item(key = "day-${day.dayKey}") {
+                                        Text(
+                                            text = day.label,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 8.dp),
+                                            textAlign = TextAlign.Center,
+                                        )
+                                    }
+                                    day.groups.forEach { group ->
+                                        val isMine = state.currentUserId.isNotEmpty() &&
+                                            group.senderId == state.currentUserId
+                                        item(key = group.id) {
+                                            SystemSixMessageGroupRow(
+                                                groupMessages = group.messages,
+                                                isMine = isMine,
+                                                senderName = group.messages.firstOrNull()?.sender_display_name.orEmpty(),
+                                                currentUserId = state.currentUserId,
+                                                canModerate = state.canModerate,
+                                                sendStatusById = state.sendStatusById,
+                                                reactionEmojis = viewModel.reactionEmojis,
+                                                onVote = viewModel::vote,
+                                                onToggleReaction = viewModel::toggleReaction,
+                                                onDelete = viewModel::deleteMessage,
+                                                onPhotoClick = viewModel::enlargePhoto,
+                                                onRetry = viewModel::retrySend,
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                            if (scrollState.unseenCount > 0) {
+                                Surface(
+                                    onClick = { scrollState.onPillTap() },
+                                    shape = RoundedCornerShape(50),
+                                    color = MaterialTheme.colorScheme.primary,
+                                    shadowElevation = 4.dp,
+                                    modifier = Modifier
+                                        .align(Alignment.BottomCenter)
+                                        .padding(bottom = 12.dp),
+                                ) {
+                                    Text(
+                                        text = SystemSixConfig.newMessagesLabel(scrollState.unseenCount),
+                                        color = MaterialTheme.colorScheme.onPrimary,
+                                        style = MaterialTheme.typography.labelLarge,
+                                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
         }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun SystemSixMessageGroupRow(
+    groupMessages: List<ChatMessage>,
+    isMine: Boolean,
+    senderName: String,
+    currentUserId: String,
+    canModerate: Boolean,
+    sendStatusById: Map<String, SystemSixSendStatus>,
+    reactionEmojis: List<String>,
+    onVote: (String, Int) -> Unit,
+    onToggleReaction: (String, String) -> Unit,
+    onDelete: (String) -> Unit,
+    onPhotoClick: (String) -> Unit,
+    onRetry: (String) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 16.dp),
+        verticalAlignment = Alignment.Bottom,
+    ) {
+        if (isMine) Spacer(modifier = Modifier.weight(1f))
+
+        if (!isMine) {
+            Surface(
+                shape = CircleShape,
+                color = BrandColors.Lake.copy(alpha = 0.18f),
+                modifier = Modifier.size(32.dp),
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(
+                        text = senderName.take(1).uppercase(),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+        }
+
+        Column(
+            modifier = Modifier.widthIn(max = 320.dp),
+            horizontalAlignment = if (isMine) Alignment.End else Alignment.Start,
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            if (!isMine) {
+                Text(
+                    text = senderName,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+            groupMessages.forEach { message ->
+                MessageBubble(
+                    message = message,
+                    isMine = currentUserId.isNotEmpty() && message.sender_clerk_id == currentUserId,
+                    canDelete = (currentUserId.isNotEmpty() &&
+                        message.sender_clerk_id == currentUserId) ||
+                        canModerate,
+                    reactionEmojis = reactionEmojis,
+                    sendStatus = sendStatusById[message.id],
+                    onVote = onVote,
+                    onToggleReaction = onToggleReaction,
+                    onDelete = onDelete,
+                    onPhotoClick = onPhotoClick,
+                    onRetry = onRetry,
+                )
+            }
+        }
+
+        if (!isMine) Spacer(modifier = Modifier.weight(1f))
     }
 }
 
@@ -307,11 +458,17 @@ private fun MessageBubble(
     isMine: Boolean,
     canDelete: Boolean,
     reactionEmojis: List<String>,
+    sendStatus: SystemSixSendStatus? = null,
     onVote: (String, Int) -> Unit,
     onToggleReaction: (String, String) -> Unit,
     onDelete: (String) -> Unit,
     onPhotoClick: (String) -> Unit,
+    onRetry: (String) -> Unit,
 ) {
+    var showExactTime by remember { mutableStateOf(false) }
+    val created = remember(message.created_at) {
+        SystemSixMessageGrouping.parseCreatedAt(message.created_at)
+    }
     val background = when {
         message.is_announcement -> Color(0xFFFFE0B2).copy(alpha = 0.7f)
         message.isPoll -> BrandColors.Lake.copy(alpha = 0.12f)
@@ -319,51 +476,60 @@ private fun MessageBubble(
         else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
     }
 
-    Row(modifier = Modifier.fillMaxWidth()) {
-        if (isMine) Spacer(modifier = Modifier.weight(1f))
-        Column(
+    Column(
+        horizontalAlignment = if (isMine) Alignment.End else Alignment.Start,
+    ) {
+        Box(
             modifier = Modifier
                 .widthIn(max = 320.dp)
                 .clip(RoundedCornerShape(16.dp))
                 .background(background)
+                .pointerInput(message.id) {
+                    detectTapGestures(
+                        onLongPress = { showExactTime = true },
+                        onPress = {
+                            tryAwaitRelease()
+                            showExactTime = false
+                        },
+                    )
+                }
                 .padding(horizontal = 12.dp, vertical = 8.dp),
-            horizontalAlignment = if (isMine) Alignment.End else Alignment.Start,
-            verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            Column(
+                horizontalAlignment = if (isMine) Alignment.End else Alignment.Start,
+                verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                if (message.is_announcement) {
-                    Icon(Icons.Default.Campaign, null, tint = Color(0xFFE65100), modifier = Modifier.size(14.dp))
+                if (showExactTime) {
+                    Text(
+                        text = SystemSixMessageGrouping.formatExactTime(created),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
-                if (message.isPoll) {
-                    Icon(Icons.Default.BarChart, null, tint = BrandColors.Lake, modifier = Modifier.size(14.dp))
-                }
-                Text(
-                    text = message.sender_display_name,
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Text(
-                    text = ChatFormatting.relativeTime(message.created_at),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                if (canDelete) {
-                    IconButton(
-                        onClick = { onDelete(message.id) },
-                        modifier = Modifier.size(28.dp),
-                    ) {
-                        Icon(
-                            Icons.Default.Delete,
-                            contentDescription = "Delete",
-                            modifier = Modifier.size(14.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    if (message.is_announcement) {
+                        Icon(Icons.Default.Campaign, null, tint = Color(0xFFE65100), modifier = Modifier.size(14.dp))
+                    }
+                    if (message.isPoll) {
+                        Icon(Icons.Default.BarChart, null, tint = BrandColors.Lake, modifier = Modifier.size(14.dp))
+                    }
+                    if (canDelete) {
+                        IconButton(
+                            onClick = { onDelete(message.id) },
+                            modifier = Modifier.size(28.dp),
+                        ) {
+                            Icon(
+                                Icons.Default.Delete,
+                                contentDescription = "Delete",
+                                modifier = Modifier.size(14.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                 }
-            }
 
             val urls = message.photoUrls
             if (urls.isNotEmpty()) {
@@ -396,13 +562,29 @@ private fun MessageBubble(
                 )
             }
 
-            ReactionBar(
-                message = message,
-                reactionEmojis = reactionEmojis,
-                onToggleReaction = onToggleReaction,
-            )
+                ReactionBar(
+                    message = message,
+                    reactionEmojis = reactionEmojis,
+                    onToggleReaction = onToggleReaction,
+                )
+            }
         }
-        if (!isMine) Spacer(modifier = Modifier.weight(1f))
+        if (sendStatus == SystemSixSendStatus.Failed) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(top = 4.dp, start = 4.dp),
+            ) {
+                Text(
+                    text = SystemSixConfig.FAILED_LABEL,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+                TextButton(onClick = { onRetry(message.id) }) {
+                    Text(SystemSixConfig.RETRY_LABEL)
+                }
+            }
+        }
     }
 }
 
@@ -581,7 +763,7 @@ private fun ComposerBar(
                     onValueChange = onDraftChange,
                     modifier = Modifier.weight(1f),
                     placeholder = { Text("Message") },
-                    maxLines = 4,
+                    maxLines = SystemSixConfig.COMPOSER_MAX_LINES,
                 )
                 if (canModerate) {
                     IconButton(onClick = onPoll, enabled = !isSending) {
@@ -592,11 +774,7 @@ private fun ComposerBar(
                     }
                 }
                 IconButton(onClick = onSend, enabled = canSend && !isSending) {
-                    if (isSending) {
-                        CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                    } else {
-                        Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send")
-                    }
+                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send")
                 }
             }
         }
