@@ -23,6 +23,7 @@ struct ChatThreadView: View {
     @State private var pollOptions = ["", ""]
     @State private var enlargedPhotoURL: URL?
     @State private var reactionDetail: ReactionDetail?
+    @State private var sendStatuses: [String: SystemSixSendStatus] = [:]
 
     private let maxPhotos = 6
 
@@ -107,42 +108,9 @@ struct ChatThreadView: View {
                     .padding(.top, 8)
             }
 
-            // Inverted scroll: newest sits at the visual bottom on open (no scroll race with layout).
-            ScrollView {
-                LazyVStack(spacing: 0) {
-                    if isLoading && messages.isEmpty {
-                        ProgressView()
-                            .frame(maxWidth: .infinity)
-                            .padding(.top, 40)
-                            .scaleEffect(x: 1, y: -1)
-                    } else if messages.isEmpty {
-                        Text("Start the conversation in \(channel.displayTitle).")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
-                            .frame(maxWidth: .infinity)
-                            .padding(.top, 40)
-                            .scaleEffect(x: 1, y: -1)
-                    } else {
-                        // Newest first in the stack; scale flip puts them at the bottom of the screen.
-                        ForEach(Array(messages.reversed().enumerated()), id: \.element.id) { index, message in
-                            let older = index + 1 < messages.count
-                                ? messages.reversed()[index + 1]
-                                : nil
-                            let clustered = older?.sender_clerk_id == message.sender_clerk_id
-                            messageBubble(message, showSender: !clustered)
-                                .padding(.bottom, clustered ? 2 : 10)
-                                .scaleEffect(x: 1, y: -1)
-                        }
-                    }
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-            }
-            .scaleEffect(x: 1, y: -1)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .scrollDismissesKeyboard(.interactively)
-            .refreshable { await reloadMessages() }
+            systemSixThread
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .scrollDismissesKeyboard(.interactively)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -219,9 +187,97 @@ struct ChatThreadView: View {
         }
     }
 
+    private var systemSixThread: some View {
+        SystemSixChatThread(
+            messages: messages,
+            itemCount: messages.count,
+            senderId: { $0.sender_clerk_id },
+            createdAt: { SystemSixMessageGrouping.parseCreatedAt($0.created_at) },
+            messageId: { $0.id },
+            isMine: { !currentUserId.isEmpty && $0.sender_clerk_id == currentUserId },
+            onRefresh: { await reloadMessages() },
+            empty: {
+                if isLoading {
+                    ProgressView()
+                } else {
+                    Text("Start the conversation in \(channel.displayTitle).")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+            },
+            row: { message, mine in
+                messageRow(message, mine: mine)
+            },
+            typing: { EmptyView() },
+            avatar: { message in
+                chatAvatar(name: message.sender_display_name, urlString: message.sender_avatar_url)
+            },
+            senderName: { message in
+                HStack(spacing: 6) {
+                    if message.is_announcement {
+                        Image(systemName: "megaphone.fill")
+                            .font(.caption2)
+                            .foregroundStyle(.orange)
+                    }
+                    if message.isPoll {
+                        Image(systemName: "chart.bar.fill")
+                            .font(.caption2)
+                            .foregroundStyle(BrandColors.lake)
+                    }
+                    Text(message.sender_display_name)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                }
+            }
+        )
+    }
+
+    private func chatAvatar(name: String, urlString: String?) -> some View {
+        Group {
+            if let urlString, let url = URL(string: urlString) {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image.resizable().scaledToFill()
+                    default:
+                        chatAvatarFallback(name: name)
+                    }
+                }
+            } else {
+                chatAvatarFallback(name: name)
+            }
+        }
+        .frame(width: 32, height: 32)
+        .clipShape(Circle())
+    }
+
+    private func chatAvatarFallback(name: String) -> some View {
+        let initial = name.trimmingCharacters(in: .whitespacesAndNewlines).first.map(String.init) ?? "?"
+        return Circle()
+            .fill(Color(.systemGray4))
+            .overlay {
+                Text(initial)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+    }
+
     @ViewBuilder
-    private func messageBubble(_ message: ChatMessage, showSender: Bool) -> some View {
-        let mine = !currentUserId.isEmpty && message.sender_clerk_id == currentUserId
+    private func messageRow(_ message: ChatMessage, mine: Bool) -> some View {
+        let created = SystemSixMessageGrouping.parseCreatedAt(message.created_at)
+        let status = sendStatuses[message.id]
+        SystemSixBubbleChrome(
+            createdAt: created,
+            sendStatus: status,
+            onRetry: status == .failed ? { Task { await retrySend(messageId: message.id) } } : nil
+        ) {
+            messageBubbleBody(message, mine: mine)
+        }
+    }
+
+    @ViewBuilder
+    private func messageBubbleBody(_ message: ChatMessage, mine: Bool) -> some View {
         let canDelete = mine || canModerate
         let bubbleFill: Color = {
             if message.is_announcement { return Color.orange.opacity(0.18) }
@@ -233,29 +289,7 @@ struct ChatThreadView: View {
             return mine ? .white : .primary
         }()
 
-        HStack(alignment: .bottom, spacing: 6) {
-            if mine { Spacer(minLength: 52) }
-
-            VStack(alignment: mine ? .trailing : .leading, spacing: 4) {
-                if showSender && !mine {
-                    HStack(spacing: 6) {
-                        if message.is_announcement {
-                            Image(systemName: "megaphone.fill")
-                                .font(.caption2)
-                                .foregroundStyle(.orange)
-                        }
-                        if message.isPoll {
-                            Image(systemName: "chart.bar.fill")
-                                .font(.caption2)
-                                .foregroundStyle(BrandColors.lake)
-                        }
-                        Text(message.sender_display_name)
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding(.horizontal, 4)
-                }
-
+        VStack(alignment: mine ? .trailing : .leading, spacing: 4) {
                 let urls = message.photoURLs
                 if !urls.isEmpty {
                     let columns = urls.count == 1 ? 1 : 2
@@ -309,17 +343,9 @@ struct ChatThreadView: View {
                         }
                 }
 
-                HStack(spacing: 8) {
-                    reactionBar(for: message)
-                    Text(ChatMessageFormatting.relativeTime(message.created_at))
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
-                }
-                .padding(.horizontal, 4)
+                reactionBar(for: message)
+                    .padding(.horizontal, 4)
             }
-
-            if !mine { Spacer(minLength: 52) }
-        }
     }
 
     /// iMessage-style bubble: large radius on three corners, tighter on the “tail” side.
@@ -471,33 +497,18 @@ struct ChatThreadView: View {
     }
 
     private var composer: some View {
-        let multiline = draft.contains(where: \.isNewline) || draft.count > 40
-        return VStack(alignment: .leading, spacing: 8) {
-            if !pendingImages.isEmpty {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        ForEach(pendingImages) { image in
-                            ZStack(alignment: .topTrailing) {
-                                Image(uiImage: image.uiImage)
-                                    .resizable()
-                                    .scaledToFill()
-                                    .frame(width: 72, height: 72)
-                                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                                Button {
-                                    pendingImages.removeAll { $0.id == image.id }
-                                } label: {
-                                    Image(systemName: "xmark.circle.fill")
-                                        .symbolRenderingMode(.palette)
-                                        .foregroundStyle(.white, .black.opacity(0.7))
-                                }
-                                .offset(x: 4, y: -4)
-                            }
-                        }
-                    }
-                    .padding(.horizontal)
-                }
-            }
-            HStack(alignment: multiline ? .bottom : .center, spacing: 8) {
+        SystemSixChatComposer(
+            text: $draft,
+            placeholder: "Message",
+            canSend: canSend && !isSending,
+            onSend: { Task { await sendMessage(isAnnouncement: false) } },
+            pending: pendingImages.map { image in
+                SystemSixPendingAttachment(id: image.id.uuidString, preview: Image(uiImage: image.uiImage))
+            },
+            onRemovePending: { id in
+                pendingImages.removeAll { $0.id.uuidString == id }
+            },
+            leading: {
                 PhotosPicker(
                     selection: $pickerItems,
                     maxSelectionCount: max(1, maxPhotos - pendingImages.count),
@@ -509,22 +520,10 @@ struct ChatThreadView: View {
                         .frame(width: 36, height: 36)
                         .contentShape(Rectangle())
                 }
-                .disabled(pendingImages.count >= maxPhotos)
+                .disabled(pendingImages.count >= maxPhotos || isSending)
                 .accessibilityLabel("Attach photos")
-
-                TextField("Message", text: $draft, axis: .vertical)
-                    .lineLimit(1...5)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 8)
-                    .background(
-                        Capsule(style: .continuous)
-                            .fill(Color(.secondarySystemBackground))
-                    )
-                    .overlay {
-                        Capsule(style: .continuous)
-                            .strokeBorder(Color(.separator).opacity(0.45), lineWidth: 0.5)
-                    }
-
+            },
+            trailing: {
                 if canModerate {
                     Button {
                         showPollSheet = true
@@ -533,7 +532,6 @@ struct ChatThreadView: View {
                             .font(.body.weight(.semibold))
                             .foregroundStyle(BrandColors.lake)
                             .frame(width: 36, height: 36)
-                            .contentShape(Rectangle())
                     }
                     .disabled(isSending)
                     .accessibilityLabel("Create poll")
@@ -545,38 +543,12 @@ struct ChatThreadView: View {
                             .font(.body.weight(.semibold))
                             .foregroundStyle(.orange)
                             .frame(width: 36, height: 36)
-                            .contentShape(Rectangle())
                     }
                     .disabled(!canSend || isSending)
                     .accessibilityLabel("Send announcement")
                 }
-
-                Button {
-                    Task { await sendMessage(isAnnouncement: false) }
-                } label: {
-                    if isSending {
-                        ProgressView()
-                            .frame(width: 36, height: 36)
-                    } else {
-                        Image(systemName: "arrow.up.circle.fill")
-                            .font(.system(size: 32))
-                            .symbolRenderingMode(.palette)
-                            .foregroundStyle(
-                                canSend ? Color.white : Color(.tertiaryLabel),
-                                canSend ? BrandColors.lake : Color(.quaternaryLabel)
-                            )
-                            .frame(width: 36, height: 36)
-                            .contentShape(Rectangle())
-                    }
-                }
-                .disabled(!canSend || isSending)
-                .accessibilityLabel("Send")
             }
-            .padding(.horizontal, 12)
-            .padding(.bottom, 10)
-        }
-        .padding(.top, 8)
-        .background(.bar)
+        )
     }
 
     /// Paint disk cache immediately, then refresh + Ably off the critical path.
@@ -845,6 +817,34 @@ struct ChatThreadView: View {
 
         guard let client = session.apiClient else { return }
 
+        let imagesToSend = pendingImages
+        let optimisticId = "local-\(UUID().uuidString)"
+        let iso = ISO8601DateFormatter()
+        let optimistic = ChatMessage(
+            id: optimisticId,
+            channel_id: channel.id,
+            sender_clerk_id: currentUserId,
+            sender_display_name: session.userDisplayName ?? "You",
+            sender_avatar_url: nil,
+            body: body.isEmpty && !imagesToSend.isEmpty ? "(Photo)" : body,
+            image_url: nil,
+            image_urls: nil,
+            kind: "text",
+            is_announcement: isAnnouncement,
+            poll_question: nil,
+            poll_options: nil,
+            poll_counts: nil,
+            my_vote: nil,
+            reactions: [],
+            created_at: iso.string(from: Date())
+        )
+
+        messages.append(optimistic)
+        sendStatuses[optimisticId] = .sending
+        draft = ""
+        pendingImages = []
+        pickerItems = []
+        errorMessage = nil
         isSending = true
         defer { isSending = false }
 
@@ -854,22 +854,53 @@ struct ChatThreadView: View {
                     channelId: channel.id,
                     body: body,
                     isAnnouncement: isAnnouncement,
-                    imageDataList: pendingImages.map(\.data)
+                    imageDataList: imagesToSend.map(\.data)
                 )
             }
+            messages.removeAll { $0.id == optimisticId }
+            sendStatuses.removeValue(forKey: optimisticId)
             if let index = messages.firstIndex(where: { $0.id == response.message.id }) {
                 messages[index] = response.message
             } else {
                 messages.append(response.message)
             }
             persistMessages()
-            draft = ""
-            pendingImages = []
-            pickerItems = []
-            errorMessage = nil
         } catch {
             if APIError.isCancellation(error) { return }
-            errorMessage = error.localizedDescription
+            sendStatuses[optimisticId] = .failed
+        }
+    }
+
+    private func retrySend(messageId: String) async {
+        guard sendStatuses[messageId] == .failed,
+              let failed = messages.first(where: { $0.id == messageId }) else { return }
+        sendStatuses[messageId] = .sending
+        guard let client = session.apiClient else {
+            sendStatuses[messageId] = .failed
+            return
+        }
+        isSending = true
+        defer { isSending = false }
+        do {
+            let response = try await RepositoryFetch.withTimeout(seconds: 45) {
+                try await client.sendChatMessage(
+                    channelId: channel.id,
+                    body: failed.body == "(Photo)" ? "" : failed.body,
+                    isAnnouncement: failed.is_announcement,
+                    imageDataList: []
+                )
+            }
+            messages.removeAll { $0.id == messageId }
+            sendStatuses.removeValue(forKey: messageId)
+            if let index = messages.firstIndex(where: { $0.id == response.message.id }) {
+                messages[index] = response.message
+            } else {
+                messages.append(response.message)
+            }
+            persistMessages()
+        } catch {
+            if APIError.isCancellation(error) { return }
+            sendStatuses[messageId] = .failed
         }
     }
 

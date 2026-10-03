@@ -7,6 +7,15 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		6185CF031266162D61D94BBC /* SystemSixChatComposer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A7CF0BC90ADDC6F892AB23D /* SystemSixChatComposer.swift */; };
+		9ED9F6D07FCD5B92FB735C70 /* SystemSixChatConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D2A61384DB34AD31BABCBFB /* SystemSixChatConfig.swift */; };
+		F6C719FDC6958278E94A2D55 /* SystemSixChatScroll.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2AAEE57FD5FCCCF1EE91661 /* SystemSixChatScroll.swift */; };
+		CB79564DCD480D824A4F54EA /* SystemSixChatThread.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2E11EAE6D7FEC7A0FCAF212 /* SystemSixChatThread.swift */; };
+		C6FA30B13BEA45F9125ED117 /* SystemSixDayDivider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E9B1B9417FC6E0BECA3F689 /* SystemSixDayDivider.swift */; };
+		1A233ECD29C46A5164E4128B /* SystemSixMessageGroupChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D9AD7E27445FC925EA5FC17 /* SystemSixMessageGroupChrome.swift */; };
+		D75E5324A33993971649141C /* SystemSixMessageGrouping.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BE490BE5194E0642A4FC7AB /* SystemSixMessageGrouping.swift */; };
+		6A1882FC1179E1F1A05A24F3 /* SystemSixSendStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F190EB6D4097E3826EE052E /* SystemSixSendStatus.swift */; };
+		4BEA5F717C218AD0AE1AAD75 /* SystemSixTypingIndicator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41DBC017C179474206946352 /* SystemSixTypingIndicator.swift */; };
 		40ACCF9DDC02457C640262FF /* StaffDayOfView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D406968FCA72D43022BEF94F /* StaffDayOfView.swift */; };
 		B2C3D4E5F60718293A4B5C6D /* StaffDirectoryPhotoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B5C /* StaffDirectoryPhotoView.swift */; };
 		85FCC746124D0C1556A4BD68 /* SyncStampStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6135F91279EEE776462CD2B8 /* SyncStampStore.swift */; };
@@ -145,6 +154,15 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		3A7CF0BC90ADDC6F892AB23D /* SystemSixChatComposer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemSixChatComposer.swift; sourceTree = "<group>"; };
+		6D2A61384DB34AD31BABCBFB /* SystemSixChatConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemSixChatConfig.swift; sourceTree = "<group>"; };
+		A2AAEE57FD5FCCCF1EE91661 /* SystemSixChatScroll.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemSixChatScroll.swift; sourceTree = "<group>"; };
+		F2E11EAE6D7FEC7A0FCAF212 /* SystemSixChatThread.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemSixChatThread.swift; sourceTree = "<group>"; };
+		0E9B1B9417FC6E0BECA3F689 /* SystemSixDayDivider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemSixDayDivider.swift; sourceTree = "<group>"; };
+		6D9AD7E27445FC925EA5FC17 /* SystemSixMessageGroupChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemSixMessageGroupChrome.swift; sourceTree = "<group>"; };
+		8BE490BE5194E0642A4FC7AB /* SystemSixMessageGrouping.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemSixMessageGrouping.swift; sourceTree = "<group>"; };
+		7F190EB6D4097E3826EE052E /* SystemSixSendStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemSixSendStatus.swift; sourceTree = "<group>"; };
+		41DBC017C179474206946352 /* SystemSixTypingIndicator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemSixTypingIndicator.swift; sourceTree = "<group>"; };
 		D406968FCA72D43022BEF94F /* StaffDayOfView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StaffDayOfView.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F60718293A4B5C /* StaffDirectoryPhotoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StaffDirectoryPhotoView.swift; sourceTree = "<group>"; };
 		6135F91279EEE776462CD2B8 /* SyncStampStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncStampStore.swift; sourceTree = "<group>"; };
@@ -463,6 +481,7 @@
 		EE426048DF750BEBD0C020B0 /* RendezvousIL */ = {
 			isa = PBXGroup;
 			children = (
+				0452F05DB2B4CC6BAF805652 /* SystemSix */,
 				7C4A6901F985DC2D62D1A98D /* AppDelegate.swift */,
 				8EE33E00CE0327288EBBC1EF /* ContentView.swift */,
 				E7F9B13246D5236FF4963A58 /* Info.plist */,
@@ -489,6 +508,23 @@
 			path = ios;
 			sourceTree = "<group>";
 		};
+		0452F05DB2B4CC6BAF805652 /* SystemSix */ = {
+			isa = PBXGroup;
+			children = (
+				3A7CF0BC90ADDC6F892AB23D /* SystemSixChatComposer.swift */,
+				6D2A61384DB34AD31BABCBFB /* SystemSixChatConfig.swift */,
+				A2AAEE57FD5FCCCF1EE91661 /* SystemSixChatScroll.swift */,
+				F2E11EAE6D7FEC7A0FCAF212 /* SystemSixChatThread.swift */,
+				0E9B1B9417FC6E0BECA3F689 /* SystemSixDayDivider.swift */,
+				6D9AD7E27445FC925EA5FC17 /* SystemSixMessageGroupChrome.swift */,
+				8BE490BE5194E0642A4FC7AB /* SystemSixMessageGrouping.swift */,
+				7F190EB6D4097E3826EE052E /* SystemSixSendStatus.swift */,
+				41DBC017C179474206946352 /* SystemSixTypingIndicator.swift */,
+			);
+			path = SystemSix;
+			sourceTree = "<group>";
+		};
+
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -626,6 +662,15 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6185CF031266162D61D94BBC /* SystemSixChatComposer.swift in Sources */,
+				9ED9F6D07FCD5B92FB735C70 /* SystemSixChatConfig.swift in Sources */,
+				F6C719FDC6958278E94A2D55 /* SystemSixChatScroll.swift in Sources */,
+				CB79564DCD480D824A4F54EA /* SystemSixChatThread.swift in Sources */,
+				C6FA30B13BEA45F9125ED117 /* SystemSixDayDivider.swift in Sources */,
+				1A233ECD29C46A5164E4128B /* SystemSixMessageGroupChrome.swift in Sources */,
+				D75E5324A33993971649141C /* SystemSixMessageGrouping.swift in Sources */,
+				6A1882FC1179E1F1A05A24F3 /* SystemSixSendStatus.swift in Sources */,
+				4BEA5F717C218AD0AE1AAD75 /* SystemSixTypingIndicator.swift in Sources */,
 				66742AE51B59989BF039B477 /* APIClient.swift in Sources */,
 				A24919D11C464AEF4CC1FD46 /* AblyService.swift in Sources */,
 				A5C7F695E3ACBC367467F167 /* AboutView.swift in Sources */,
