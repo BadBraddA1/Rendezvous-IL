@@ -1,3 +1,4 @@
+import "@/styles/chat.css"
 import { SiteHeader } from "@/components/site-header"
 import { ChatPageClient } from "@/components/chat/chat-page-client"
 import { auth } from "@clerk/nextjs/server"

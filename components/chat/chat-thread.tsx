@@ -1,22 +1,8 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { formatDistanceToNow } from "date-fns"
-import { normalizeChatTimestamp } from "@/lib/chat/timestamps"
-import {
-  BarChart3,
-  ImagePlus,
-  Loader2,
-  Megaphone,
-  Send,
-  SmilePlus,
-  Trash2,
-  X,
-} from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
+import { BarChart3, Megaphone } from "lucide-react"
+import { ChatThreadShell } from "@/components/chat/chat-thread-shell"
 import {
   Dialog,
   DialogContent,
@@ -24,16 +10,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { chatChannelName } from "@/lib/ably-channels"
 import { compressChatPhotoForUpload } from "@/lib/chat/compress-photo-client"
-import { CHAT_REACTION_EMOJIS, MAX_CHAT_PHOTOS_PER_MESSAGE } from "@/lib/chat/reactions"
+import { MAX_CHAT_PHOTOS_PER_MESSAGE } from "@/lib/chat/reactions"
+import { normalizeMessagePayload, payloadToKitMessage } from "@/lib/chat/to-kit-message"
+import type { ChatSendStatus, ChatPendingAttachment } from "@/lib/chat-kit-types"
 import { useAblyChannel } from "@/lib/use-ably-channel"
+import { useChatTyping } from "@/lib/use-chat-typing"
 import type {
   ChatChannelSummary,
   ChatMessageDeletedPayload,
@@ -42,7 +27,6 @@ import type {
   ChatReactionSummary,
   ChatReactionUpdatedPayload,
 } from "@/types/chat"
-import { cn } from "@/lib/utils"
 
 async function fetchAblyToken(): Promise<unknown> {
   const response = await fetch("/api/ably/token", { method: "POST" })
@@ -55,36 +39,17 @@ async function fetchAblyToken(): Promise<unknown> {
 
 type PendingPhoto = { id: string; file: File; previewUrl: string }
 
+type FailedSend = {
+  body: string
+  photos: PendingPhoto[]
+  isAnnouncement: boolean
+}
+
 type ChatThreadProps = {
   channel: ChatChannelSummary
   currentUserId: string
   isAdmin?: boolean
   canModerate?: boolean
-}
-
-function normalizeMessage(raw: ChatMessagePayload): ChatMessagePayload {
-  const imageUrls =
-    Array.isArray(raw.image_urls) && raw.image_urls.length > 0
-      ? raw.image_urls
-      : raw.image_url
-        ? [raw.image_url]
-        : []
-  return {
-    ...raw,
-    image_urls: imageUrls,
-    image_url: imageUrls[0] ?? null,
-    kind: raw.kind === "poll" ? "poll" : "text",
-    poll_question: raw.poll_question ?? null,
-    poll_options: raw.poll_options ?? null,
-    poll_counts: raw.poll_counts ?? null,
-    my_vote: raw.my_vote ?? null,
-    reactions: Array.isArray(raw.reactions)
-      ? raw.reactions.map((r) => ({
-          ...r,
-          reactors: Array.isArray(r.reactors) ? r.reactors : [],
-        }))
-      : [],
-  }
 }
 
 export function ChatThread({
@@ -97,7 +62,7 @@ export function ChatThread({
   const [draft, setDraft] = useState("")
   const [pendingPhotos, setPendingPhotos] = useState<PendingPhoto[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [isSending, setIsSending] = useState(false)
+  const [sendStatusById, setSendStatusById] = useState<Record<string, ChatSendStatus>>({})
   const [error, setError] = useState<string | null>(null)
   const [threadCanModerate, setThreadCanModerate] = useState(canModerate || isAdmin)
   const [pollOpen, setPollOpen] = useState(false)
@@ -108,8 +73,8 @@ export function ChatThread({
     messageId: string
     emoji: string
   } | null>(null)
-  const bottomRef = useRef<HTMLDivElement | null>(null)
-  const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const failedSendsRef = useRef<Map<string, FailedSend>>(new Map())
+  const [isSending, setIsSending] = useState(false)
 
   const loadMessages = useCallback(async () => {
     setError(null)
@@ -120,7 +85,7 @@ export function ChatThread({
         throw new Error(data.error || "Failed to load messages")
       }
       const data = await response.json()
-      setMessages((data.messages ?? []).map((m: ChatMessagePayload) => normalizeMessage(m)))
+      setMessages((data.messages ?? []).map((m: ChatMessagePayload) => normalizeMessagePayload(m)))
       if (typeof data.can_moderate === "boolean") {
         setThreadCanModerate(data.can_moderate || isAdmin)
       }
@@ -138,23 +103,28 @@ export function ChatThread({
   }, [loadMessages, canModerate, isAdmin, channel.can_moderate])
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages])
-
-  useEffect(() => {
     return () => {
       for (const photo of pendingPhotos) URL.revokeObjectURL(photo.previewUrl)
+      for (const send of failedSendsRef.current.values()) {
+        for (const photo of send.photos) URL.revokeObjectURL(photo.previewUrl)
+      }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- cleanup on unmount only
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- unmount cleanup
   }, [])
 
   const upsertMessage = useCallback((payload: ChatMessagePayload) => {
-    const normalized = normalizeMessage(payload)
+    const normalized = normalizeMessagePayload(payload)
     setMessages((current) => {
       if (current.some((message) => message.id === normalized.id)) {
         return current.map((m) => (m.id === normalized.id ? { ...m, ...normalized } : m))
       }
       return [...current, normalized]
+    })
+    setSendStatusById((current) => {
+      if (!(normalized.id in current)) return current
+      const next = { ...current }
+      delete next[normalized.id]
+      return next
     })
   }, [])
 
@@ -181,7 +151,6 @@ export function ChatThread({
         setMessages((current) =>
           current.map((m) => {
             if (m.id !== payload.message_id) return m
-            // Recompute reacted_by_me for this viewer from actor + previous state
             const reactions = (payload.reactions ?? []).map((r) => {
               if (payload.actor_clerk_id === currentUserId) {
                 return r
@@ -224,7 +193,31 @@ export function ChatThread({
         return
       }
       const payload = message.data as ChatMessagePayload
-      if (payload?.id) upsertMessage(payload)
+      if (payload?.id) {
+        if (payload.sender_clerk_id === currentUserId) {
+          setMessages((current) => {
+            const withoutLocal = current.filter(
+              (m) => !(m.id.startsWith("local_") && m.sender_clerk_id === currentUserId),
+            )
+            const normalized = normalizeMessagePayload(payload)
+            if (withoutLocal.some((m) => m.id === normalized.id)) {
+              return withoutLocal.map((m) =>
+                m.id === normalized.id ? { ...m, ...normalized } : m,
+              )
+            }
+            return [...withoutLocal, normalized]
+          })
+          setSendStatusById((current) => {
+            const next = { ...current }
+            for (const key of Object.keys(next)) {
+              if (key.startsWith("local_")) delete next[key]
+            }
+            return next
+          })
+          return
+        }
+        upsertMessage(payload)
+      }
     },
   })
 
@@ -236,16 +229,53 @@ export function ChatThread({
     return () => window.clearInterval(id)
   }, [realtimeStatus, loadMessages])
 
+  const channelLabel = useMemo(() => {
+    if (channel.channel_type === "year" && channel.event_year) {
+      return `Rendezvous ${channel.event_year}`
+    }
+    return channel.name
+  }, [channel])
+
+  const typingPeers = useChatTyping({
+    channelName: chatChannelName(channel.id),
+    currentUserId,
+    displayName: "You",
+    draft,
+    enabled: realtimeStatus === "connected",
+  })
+
+  const kitMessages = useMemo(
+    () =>
+      messages.map((message) =>
+        payloadToKitMessage(message, currentUserId, {
+          canDelete: message.sender_clerk_id === currentUserId || threadCanModerate,
+          status:
+            sendStatusById[message.id] ??
+            (message.id.startsWith("local_") ? "sending" : "sent"),
+        }),
+      ),
+    [messages, currentUserId, threadCanModerate, sendStatusById],
+  )
+
+  const pendingAttachments: ChatPendingAttachment[] = useMemo(
+    () =>
+      pendingPhotos.map((photo) => ({
+        id: photo.id,
+        previewUrl: photo.previewUrl,
+        name: photo.file.name,
+        file: photo.file,
+      })),
+    [pendingPhotos],
+  )
+
   function clearPhotos() {
     setPendingPhotos((current) => {
       for (const photo of current) URL.revokeObjectURL(photo.previewUrl)
       return []
     })
-    if (fileInputRef.current) fileInputRef.current.value = ""
   }
 
-  function onPickPhotos(fileList: FileList | null) {
-    if (!fileList?.length) return
+  function onPickPhotos(fileList: FileList) {
     setPendingPhotos((current) => {
       const room = MAX_CHAT_PHOTOS_PER_MESSAGE - current.length
       if (room <= 0) return current
@@ -270,17 +300,17 @@ export function ChatThread({
     })
   }
 
-  async function sendMessage(isAnnouncement = false) {
-    const body = draft.trim()
-    if ((!body && pendingPhotos.length === 0) || isSending) return
-
-    setIsSending(true)
+  async function deliverSend(
+    optimisticId: string,
+    input: FailedSend,
+    options?: { replaceOptimistic?: boolean },
+  ) {
+    setSendStatusById((current) => ({ ...current, [optimisticId]: "sending" }))
     setError(null)
     try {
       let imageUrls: string[] = []
-      if (pendingPhotos.length > 0) {
-        // Upload one photo per request to stay under Vercel's ~4.5 MB body limit.
-        for (const photo of pendingPhotos) {
+      if (input.photos.length > 0) {
+        for (const photo of input.photos) {
           const compressed = await compressChatPhotoForUpload(photo.file)
           const form = new FormData()
           form.set(
@@ -312,8 +342,8 @@ export function ChatThread({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          body,
-          is_announcement: isAnnouncement,
+          body: input.body,
+          is_announcement: input.isAnnouncement,
           ...(imageUrls.length > 0 ? { image_urls: imageUrls } : {}),
         }),
       })
@@ -322,14 +352,90 @@ export function ChatThread({
         throw new Error(data.error || "Failed to send message")
       }
       const data = await response.json()
-      if (data.message) upsertMessage(data.message as ChatMessagePayload)
-      setDraft("")
-      clearPhotos()
+      failedSendsRef.current.delete(optimisticId)
+      if (data.message) {
+        const saved = normalizeMessagePayload(data.message as ChatMessagePayload)
+        setMessages((current) => {
+          if (options?.replaceOptimistic) {
+            return current
+              .filter((m) => m.id !== optimisticId)
+              .concat(saved)
+              .sort(
+                (a, b) =>
+                  new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+              )
+          }
+          return current.some((m) => m.id === saved.id)
+            ? current.map((m) => (m.id === saved.id ? saved : m))
+            : [...current, saved]
+        })
+        setSendStatusById((current) => {
+          const next = { ...current }
+          delete next[optimisticId]
+          return next
+        })
+      }
     } catch (err) {
+      failedSendsRef.current.set(optimisticId, input)
+      setSendStatusById((current) => ({ ...current, [optimisticId]: "failed" }))
       setError(err instanceof Error ? err.message : "Failed to send message")
+    }
+  }
+
+  async function sendMessage(isAnnouncement = false) {
+    const body = draft.trim()
+    if ((!body && pendingPhotos.length === 0) || isSending) return
+
+    const optimisticId = `local_${crypto.randomUUID()}`
+    const photosSnapshot = [...pendingPhotos]
+    const previewUrls = photosSnapshot.map((p) => p.previewUrl)
+
+    const optimistic: ChatMessagePayload = {
+      id: optimisticId,
+      channel_id: channel.id,
+      sender_clerk_id: currentUserId,
+      sender_display_name: "You",
+      sender_avatar_url: null,
+      body,
+      image_url: previewUrls[0] ?? null,
+      image_urls: previewUrls,
+      kind: "text",
+      is_announcement: isAnnouncement,
+      poll_question: null,
+      poll_options: null,
+      poll_counts: null,
+      my_vote: null,
+      reactions: [],
+      created_at: new Date().toISOString(),
+    }
+
+    failedSendsRef.current.set(optimisticId, {
+      body,
+      photos: photosSnapshot,
+      isAnnouncement,
+    })
+
+    setMessages((current) => [...current, optimistic])
+    setSendStatusById((current) => ({ ...current, [optimisticId]: "sending" }))
+    setDraft("")
+    setPendingPhotos([])
+
+    setIsSending(true)
+    try {
+      await deliverSend(optimisticId, {
+        body,
+        photos: photosSnapshot,
+        isAnnouncement,
+      }, { replaceOptimistic: true })
     } finally {
       setIsSending(false)
     }
+  }
+
+  function retrySend(messageId: string) {
+    const saved = failedSendsRef.current.get(messageId)
+    if (!saved) return
+    void deliverSend(messageId, saved, { replaceOptimistic: true })
   }
 
   async function createPoll() {
@@ -373,6 +479,7 @@ export function ChatThread({
       return
     }
     setMessages((current) => current.filter((message) => message.id !== messageId))
+    failedSendsRef.current.delete(messageId)
   }
 
   async function vote(messageId: string, optionIndex: number) {
@@ -421,9 +528,7 @@ export function ChatThread({
         if (existing?.reacted_by_me) {
           reactions = m.reactions
             .map((r) =>
-              r.emoji === emoji
-                ? { ...r, count: r.count - 1, reacted_by_me: false }
-                : r,
+              r.emoji === emoji ? { ...r, count: r.count - 1, reacted_by_me: false } : r,
             )
             .filter((r) => r.count > 0)
         } else if (existing) {
@@ -456,15 +561,6 @@ export function ChatThread({
     }
   }
 
-  const channelLabel = useMemo(() => {
-    if (channel.channel_type === "year" && channel.event_year) {
-      return `Rendezvous ${channel.event_year}`
-    }
-    return channel.name
-  }, [channel])
-
-  const canSend = Boolean(draft.trim() || pendingPhotos.length > 0)
-
   const selectedReaction = useMemo(() => {
     if (!reactionDetail) return null
     const message = messages.find((m) => m.id === reactionDetail.messageId)
@@ -474,327 +570,64 @@ export function ChatThread({
   }, [messages, reactionDetail])
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border bg-card">
-      <div className="shrink-0 border-b px-4 py-3">
-        <div className="flex items-center gap-2">
-          <h2 className="font-semibold">{channelLabel}</h2>
-          {channel.is_test ? <Badge variant="secondary">Test</Badge> : null}
-          {threadCanModerate ? <Badge variant="outline">Moderator</Badge> : null}
+    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border">
+      <div className="bc-chat__header">
+        <h2 className="bc-chat__header-title">{channelLabel}</h2>
+        <div className="bc-chat__header-meta">
+          {channel.is_test ? <span className="bc-chat__badge">Test</span> : null}
+          {threadCanModerate ? <span className="bc-chat__badge">Moderator</span> : null}
           {realtimeStatus === "connected" ? (
-            <Badge variant="outline" className="text-emerald-700">
-              Live
-            </Badge>
+            <span className="bc-chat__badge bc-chat__badge--live">Live</span>
           ) : realtimeStatus === "connecting" ? (
-            <Badge variant="outline">Connecting…</Badge>
+            <span className="bc-chat__badge">Connecting…</span>
           ) : realtimeStatus === "failed" ? (
-            <Badge variant="outline" className="text-amber-700">
-              Updating every few seconds
-            </Badge>
+            <span className="bc-chat__badge">Updating every few seconds</span>
           ) : null}
         </div>
-        {channel.description ? (
-          <p className="mt-1 text-sm text-muted-foreground">{channel.description}</p>
-        ) : null}
+        {channel.description ? <p className="mt-2 text-sm text-muted-foreground">{channel.description}</p> : null}
       </div>
 
-      <div className="min-h-0 flex-1 space-y-0.5 overflow-y-auto px-3 py-3">
-        {isLoading ? (
-          <div className="flex items-center justify-center py-12 text-muted-foreground">
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Loading messages…
-          </div>
-        ) : messages.length === 0 ? (
-          <p className="py-12 text-center text-sm text-muted-foreground">
-            No messages yet. Say hello to your Rendezvous family.
-          </p>
-        ) : (
-          messages.map((message, index) => {
-            const mine = message.sender_clerk_id === currentUserId
-            const canDelete = mine || threadCanModerate
-            const totalVotes = message.poll_counts?.reduce((a, b) => a + b, 0) ?? 0
-            const previous = index > 0 ? messages[index - 1] : null
-            const clustered = previous?.sender_clerk_id === message.sender_clerk_id
-            return (
-              <div
-                key={message.id}
-                className={cn(
-                  "group flex",
-                  mine ? "justify-end" : "justify-start",
-                  clustered ? "pt-0.5" : "pt-2.5",
-                )}
-              >
-                <div
-                  className={cn(
-                    "max-w-[78%] px-3.5 py-2 text-[15px] leading-snug shadow-none",
-                    message.is_announcement
-                      ? "rounded-2xl border border-amber-300/60 bg-amber-50 text-amber-950 dark:bg-amber-950/40 dark:text-amber-50"
-                      : message.kind === "poll"
-                        ? "rounded-2xl border border-primary/30 bg-muted"
-                        : mine
-                          ? "rounded-[18px] rounded-br-sm bg-primary text-primary-foreground"
-                          : "rounded-[18px] rounded-bl-sm bg-secondary text-foreground",
-                  )}
-                >
-                  {!clustered || !mine ? (
-                    <div
-                      className={cn(
-                        "mb-1 flex items-center gap-2 text-[11px]",
-                        mine ? "opacity-70" : "text-muted-foreground",
-                      )}
-                    >
-                      {message.is_announcement ? <Megaphone className="h-3.5 w-3.5" /> : null}
-                      {message.kind === "poll" ? <BarChart3 className="h-3.5 w-3.5" /> : null}
-                      {!mine ? (
-                        <span className="font-medium">{message.sender_display_name}</span>
-                      ) : null}
-                      <span>
-                        {formatDistanceToNow(new Date(normalizeChatTimestamp(message.created_at)), {
-                          addSuffix: true,
-                        })}
-                      </span>
-                      {canDelete ? (
-                        <button
-                          type="button"
-                          className="ml-auto opacity-0 transition group-hover:opacity-100"
-                          onClick={() => void deleteMessage(message.id)}
-                          aria-label="Delete message"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      ) : null}
-                    </div>
-                  ) : canDelete ? (
-                    <div className="mb-1 flex justify-end">
-                      <button
-                        type="button"
-                        className="opacity-0 transition group-hover:opacity-100"
-                        onClick={() => void deleteMessage(message.id)}
-                        aria-label="Delete message"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  ) : null}
-
-                  {message.image_urls.length > 0 ? (
-                    <div
-                      className={cn(
-                        "mb-2 grid gap-1",
-                        message.image_urls.length === 1 ? "grid-cols-1" : "grid-cols-2",
-                      )}
-                    >
-                      {message.image_urls.map((url) => (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          key={url}
-                          src={url}
-                          alt=""
-                          className="max-h-72 w-full rounded-xl object-cover"
-                        />
-                      ))}
-                    </div>
-                  ) : null}
-
-                  {message.kind === "poll" && message.poll_options ? (
-                    <div className="space-y-2">
-                      <p className="font-medium whitespace-pre-wrap break-words">
-                        {message.poll_question || message.body}
-                      </p>
-                      <div className="space-y-1.5">
-                        {message.poll_options.map((option, index) => {
-                          const count = message.poll_counts?.[index] ?? 0
-                          const pct = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0
-                          const selected = message.my_vote === index
-                          return (
-                            <button
-                              key={`${message.id}-${index}`}
-                              type="button"
-                              className={cn(
-                                "relative w-full overflow-hidden rounded-lg border px-3 py-2 text-left text-sm transition",
-                                selected
-                                  ? "border-primary bg-primary/10"
-                                  : "border-border/70 bg-background/60 hover:border-primary/40",
-                              )}
-                              onClick={() => void vote(message.id, index)}
-                            >
-                              <span
-                                className="absolute inset-y-0 left-0 bg-primary/15"
-                                style={{ width: `${pct}%` }}
-                              />
-                              <span className="relative flex items-center justify-between gap-2">
-                                <span>{option}</span>
-                                <span className="tabular-nums text-xs opacity-70">
-                                  {count}
-                                  {totalVotes > 0 ? ` · ${pct}%` : ""}
-                                </span>
-                              </span>
-                            </button>
-                          )
-                        })}
-                      </div>
-                      <p className="text-xs opacity-70">
-                        {totalVotes} vote{totalVotes === 1 ? "" : "s"}
-                      </p>
-                    </div>
-                  ) : message.body ? (
-                    <p className="whitespace-pre-wrap break-words">{message.body}</p>
-                  ) : null}
-
-                  <div className="mt-2 flex flex-wrap items-center gap-1">
-                    {message.reactions.length > 0
-                      ? message.reactions.map((reaction) => (
-                          <button
-                            key={`${message.id}-${reaction.emoji}`}
-                            type="button"
-                            className={cn(
-                              "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs",
-                              reaction.reacted_by_me
-                                ? "border-primary/50 bg-primary/15"
-                                : "border-border/60 bg-background/50",
-                            )}
-                            onClick={() =>
-                              setReactionDetail({
-                                messageId: message.id,
-                                emoji: reaction.emoji,
-                              })
-                            }
-                            aria-label={`${reaction.emoji} ${reaction.count} reactions`}
-                          >
-                            <span>{reaction.emoji}</span>
-                            <span className="tabular-nums">{reaction.count}</span>
-                          </button>
-                        ))
-                      : null}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <button
-                          type="button"
-                          className="inline-flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground/70 transition hover:bg-muted hover:text-foreground data-[state=open]:bg-muted data-[state=open]:text-foreground"
-                          aria-label="Add reaction"
-                        >
-                          <SmilePlus className="h-3.5 w-3.5" />
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align={mine ? "end" : "start"} className="min-w-0 p-1">
-                        <div className="flex gap-0.5">
-                          {CHAT_REACTION_EMOJIS.map((emoji) => (
-                            <DropdownMenuItem
-                              key={emoji}
-                              className="cursor-pointer px-2 py-1.5 text-base"
-                              onSelect={() => void toggleReaction(message.id, emoji)}
-                            >
-                              {emoji}
-                            </DropdownMenuItem>
-                          ))}
-                        </div>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
+      <div className="min-h-0 flex-1">
+        <ChatThreadShell
+          className="h-full"
+          messages={kitMessages}
+          typing={typingPeers}
+          draft={draft}
+          onDraftChange={setDraft}
+          onSend={() => void sendMessage()}
+          onRetry={retrySend}
+          pendingAttachments={pendingAttachments}
+          onRemovePending={removePendingPhoto}
+          onPickFiles={onPickFiles}
+          loading={isLoading}
+          messageActions={{
+            onVote: (id, index) => void vote(id, index),
+            onToggleReaction: (id, emoji) => void toggleReaction(id, emoji),
+            onReactionDetail: (messageId, emoji) => setReactionDetail({ messageId, emoji }),
+            onDelete: (id) => void deleteMessage(id),
+          }}
+          composerTop={
+            <>
+              {error ? <p className="bc-chat__error">{error}</p> : null}
+              {threadCanModerate ? (
+                <div className="bc-chat__mod-row">
+                  <button
+                    type="button"
+                    disabled={isSending || (!draft.trim() && pendingPhotos.length === 0)}
+                    onClick={() => void sendMessage(true)}
+                  >
+                    <Megaphone className="h-3.5 w-3.5" aria-hidden />
+                    Announcement
+                  </button>
+                  <button type="button" onClick={() => setPollOpen(true)}>
+                    <BarChart3 className="h-3.5 w-3.5" aria-hidden />
+                    Poll
+                  </button>
                 </div>
-              </div>
-            )
-          })
-        )}
-        <div ref={bottomRef} />
-      </div>
-
-      <div className="shrink-0 border-t bg-background/80 px-3 py-3 backdrop-blur-sm">
-        {error ? <p className="mb-2 text-sm text-destructive">{error}</p> : null}
-        {pendingPhotos.length > 0 ? (
-          <div className="mb-3 flex flex-wrap gap-2">
-            {pendingPhotos.map((photo) => (
-              <div key={photo.id} className="relative">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={photo.previewUrl}
-                  alt="Selected"
-                  className="h-24 w-24 rounded-lg border object-cover"
-                />
-                <button
-                  type="button"
-                  className="absolute -right-2 -top-2 rounded-full bg-background p-1 shadow"
-                  onClick={() => removePendingPhoto(photo.id)}
-                  aria-label="Remove photo"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-            ))}
-          </div>
-        ) : null}
-        <div className="flex items-end gap-2">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            multiple
-            className="hidden"
-            onChange={(event) => {
-              onPickPhotos(event.target.files)
-              if (fileInputRef.current) fileInputRef.current.value = ""
-            }}
-          />
-          <Button
-            type="button"
-            size="icon"
-            variant="ghost"
-            className="h-10 w-10 shrink-0 rounded-full text-primary"
-            disabled={isSending || pendingPhotos.length >= MAX_CHAT_PHOTOS_PER_MESSAGE}
-            onClick={() => fileInputRef.current?.click()}
-            aria-label="Attach photos"
-          >
-            <ImagePlus className="h-5 w-5" />
-          </Button>
-          <Textarea
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            placeholder={`Message ${channelLabel}…`}
-            rows={1}
-            className="min-h-10 max-h-32 resize-none rounded-full border-border/60 bg-secondary px-4 py-2.5 text-[15px] leading-snug shadow-none"
-            onKeyDown={(event) => {
-              if (event.key === "Enter" && !event.shiftKey) {
-                event.preventDefault()
-                void sendMessage()
-              }
-            }}
-          />
-          <div className="flex flex-col gap-2">
-            <Button
-              type="button"
-              size="icon"
-              className="h-10 w-10 shrink-0 rounded-full"
-              disabled={!canSend || isSending}
-              onClick={() => void sendMessage()}
-              aria-label="Send message"
-            >
-              {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-            </Button>
-            {threadCanModerate ? (
-              <>
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="secondary"
-                  disabled={!canSend || isSending}
-                  onClick={() => void sendMessage(true)}
-                  aria-label="Send announcement"
-                >
-                  <Megaphone className="h-4 w-4" />
-                </Button>
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="outline"
-                  disabled={isSending}
-                  onClick={() => setPollOpen(true)}
-                  aria-label="Create poll"
-                >
-                  <BarChart3 className="h-4 w-4" />
-                </Button>
-              </>
-            ) : null}
-          </div>
-        </div>
+              ) : null}
+            </>
+          }
+        />
       </div>
 
       <Dialog open={pollOpen} onOpenChange={setPollOpen}>
@@ -831,7 +664,7 @@ export function ChatThread({
                     }
                     aria-label="Remove option"
                   >
-                    <X className="h-4 w-4" />
+                    ×
                   </Button>
                 ) : null}
               </div>
@@ -860,7 +693,7 @@ export function ChatThread({
               }
               onClick={() => void createPoll()}
             >
-              {isCreatingPoll ? <Loader2 className="h-4 w-4 animate-spin" /> : "Post poll"}
+              {isCreatingPoll ? "Posting…" : "Post poll"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -908,7 +741,7 @@ export function ChatThread({
                 onClick={() => {
                   const messageId = selectedReaction.message.id
                   const emoji = selectedReaction.summary.emoji
-                  void toggleReaction(messageId, emoji)
+                  void toggleReaction(messageId, String(emoji))
                 }}
               >
                 {selectedReaction.summary.reacted_by_me ? "Remove my reaction" : "Add reaction"}
