@@ -6,6 +6,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 AAB="${AAB:-$ROOT/app/build/outputs/bundle/release/app-release.aab}"
 PACKAGE="${PACKAGE:-com.rendezvousil.braddcorp.app}"
 TRACK="${TRACK:-internal}"
+STATUS="${STATUS:-completed}" # draft | completed
 SA_JSON="${PLAY_SERVICE_ACCOUNT_JSON:-$HOME/.config/braddcorp-play/play-ci.json}"
 
 if [[ ! -f "$AAB" ]]; then
@@ -21,7 +22,7 @@ fi
 export JAVA_HOME="${JAVA_HOME:-/Applications/Android Studio.app/Contents/jbr/Contents/Home}"
 
 python3 - <<PY
-import json, mimetypes, sys, time, urllib.request, urllib.error
+import json, sys
 from pathlib import Path
 
 sys.path[:0] = [
@@ -30,9 +31,12 @@ sys.path[:0] = [
 ]
 from google.oauth2 import service_account
 import google.auth.transport.requests
+import urllib.request
+import urllib.error
 
 package = "$PACKAGE"
 track = "$TRACK"
+status = "$STATUS"
 aab_path = Path("$AAB")
 sa_path = Path("$SA_JSON")
 
@@ -47,16 +51,18 @@ def req(method, url, data=None, headers=None, raw=False):
     h = dict(auth)
     if headers:
         h.update(headers)
-    body = data if (raw or data is None or isinstance(data, (bytes, bytearray))) else json.dumps(data).encode()
-    if data is not None and not raw and not isinstance(data, (bytes, bytearray)):
-        h.setdefault("Content-Type", "application/json")
+    body = None
+    if data is not None:
+        if raw or isinstance(data, (bytes, bytearray)):
+            body = data
+        else:
+            body = json.dumps(data).encode()
+            h.setdefault("Content-Type", "application/json")
     r = urllib.request.Request(url, data=body, method=method, headers=h)
     try:
         with urllib.request.urlopen(r) as resp:
             raw_body = resp.read()
-            if not raw_body:
-                return {}
-            return json.loads(raw_body.decode())
+            return json.loads(raw_body.decode()) if raw_body else {}
     except urllib.error.HTTPError as e:
         err = e.read().decode()
         raise SystemExit(f"{method} {url} -> {e.code}\n{err}")
@@ -66,22 +72,22 @@ edit = req("POST", f"{base}/edits", {})
 edit_id = edit["id"]
 print(f"edit {edit_id}")
 
-# Upload AAB (media upload)
 upload_url = (
     f"https://androidpublisher.googleapis.com/upload/androidpublisher/v3/"
     f"applications/{package}/edits/{edit_id}/bundles?uploadType=media"
 )
-aab_bytes = aab_path.read_bytes()
 bundle = req(
     "POST",
     upload_url,
-    data=aab_bytes,
+    data=aab_path.read_bytes(),
     headers={"Content-Type": "application/octet-stream"},
     raw=True,
 )
-version_code = bundle.get("versionCode")
+version_code = int(bundle["versionCode"])
 print(f"uploaded versionCode={version_code}")
 
+# First-time / policy-sensitive commits: start as draft, then promote.
+# Integer versionCodes (not strings) — string lists can trigger bogus Play errors.
 req(
     "PUT",
     f"{base}/edits/{edit_id}/tracks/{track}",
@@ -90,13 +96,29 @@ req(
         "releases": [
             {
                 "name": f"{version_code}",
-                "status": "completed",
-                "versionCodes": [str(version_code)],
+                "status": "draft" if status == "completed" else status,
+                "versionCodes": [version_code],
             }
         ],
     },
 )
-commit = req("POST", f"{base}/edits/{edit_id}:commit", {})
-print("committed", json.dumps(commit)[:300])
-print(f"OK — {package} versionCode {version_code} on track '{track}'")
+req("POST", f"{base}/edits/{edit_id}:commit", {})
+print(f"committed draft on '{track}'")
+
+if status == "completed":
+    edit2 = req("POST", f"{base}/edits", {})
+    eid2 = edit2["id"]
+    cur = req("GET", f"{base}/edits/{eid2}/tracks/{track}")
+    releases = cur.get("releases") or []
+    for rel in releases:
+        if str(version_code) in [str(v) for v in rel.get("versionCodes", [])] or int(version_code) in [
+            int(v) for v in rel.get("versionCodes", [])
+        ]:
+            rel["status"] = "completed"
+            rel["versionCodes"] = [int(v) for v in rel["versionCodes"]]
+    req("PUT", f"{base}/edits/{eid2}/tracks/{track}", {"track": track, "releases": releases})
+    req("POST", f"{base}/edits/{eid2}:commit", {})
+    print(f"OK — {package} versionCode {version_code} completed on track '{track}'")
+else:
+    print(f"OK — {package} versionCode {version_code} draft on track '{track}'")
 PY

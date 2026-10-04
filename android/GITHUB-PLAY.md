@@ -10,10 +10,12 @@
 | Item | Status |
 |------|--------|
 | Play listing | Exists — `com.rendezvousil.braddcorp.app` |
-| Play CI service account | `braddcorp-play-ci@braddcorp-play.iam.gserviceaccount.com` |
+| Play CI service account | **Active** — `braddcorp-play-ci@braddcorp-play.iam.gserviceaccount.com` |
 | SA JSON (local) | `~/.config/braddcorp-play/play-ci.json` |
 | Upload keystore | `~/.config/rendezvous-il/ren-upload.jks` |
 | Firebase Android app | `rendezvous-il-app` + package above (`google-services.json` gitignored) |
+| First AAB | **Internal track draft** — versionCode **1** / 1.0.0 (2026-10-04) |
+| Rollout | Finish Play “Set up your app” (listing, content rating, etc.), then promote internal draft → testers |
 
 ## Service account invite (required for API upload)
 
