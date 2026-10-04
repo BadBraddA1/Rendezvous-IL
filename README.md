@@ -345,7 +345,7 @@ Native admin APIs: `GET /api/admin/me`, `GET /api/admin/mobile/dashboard` (Beare
 
 ## Android app
 
-Native **Jetpack Compose** app in `android/` (Phases 1–5). **Not on Google Play yet** — website footer and `/gettheapp` say “still in the works” until `ANDROID_APP_LIVE` is flipped in `lib/native-app-store.ts`.
+Native **Jetpack Compose** app in `android/` (Phases 1–5). Play package **`com.rendezvousil.braddcorp.app`** (same as iOS). AAB / Play CI notes: [android/GITHUB-PLAY.md](android/GITHUB-PLAY.md). Website footer and `/gettheapp` stay “coming soon” until `ANDROID_APP_LIVE` is flipped in `lib/native-app-store.ts`.
 
 - **Home / Chat / Schedule / Directory / More** — 5-tab shell aligned with iOS (CarPlay / campus map stay iOS-ahead). Outside retreat week, Home is the **season year hub** (`GET /api/family/year-hub`); during retreat week it is the **Live day board** (`GET /api/home-board`: check-in, now/next, weather, announcements, meal, chat, volunteering, banners)
 - **Chat** — year group chat parity with iOS/web: channel list (unread badges, activity sort), thread (text, up to 6 photos, polls, announcements for mods, reactions behind smile menu, delete), Ably Pub/Sub + 4s HTTP poll fallback (`ably-android`)

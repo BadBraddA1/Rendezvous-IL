@@ -18,32 +18,49 @@ if (localPropertiesFile.exists()) {
     localPropertiesFile.inputStream().use { localProperties.load(it) }
 }
 
+fun localProp(name: String, default: String = ""): String =
+    localProperties.getProperty(name, default)
+
 android {
     namespace = "com.rendezvousil.app"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.rendezvousil.app"
+        // Match Apple / Play Console: com.rendezvousil.braddcorp.app
+        // Kotlin namespace stays com.rendezvousil.app (source packages unchanged).
+        applicationId = "com.rendezvousil.braddcorp.app"
         minSdk = 26
         targetSdk = 35
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.0.0"
 
-        val baseUrl = localProperties.getProperty("BASE_URL", "https://rendezvousil.com")
+        val baseUrl = localProp("BASE_URL", "https://rendezvousil.com")
             .trimEnd('/') + "/"
         buildConfigField("String", "BASE_URL", "\"$baseUrl\"")
 
-        val clerkPublishableKey = localProperties.getProperty("CLERK_PUBLISHABLE_KEY", "")
+        val clerkPublishableKey = localProp("CLERK_PUBLISHABLE_KEY", "")
         buildConfigField("String", "CLERK_PUBLISHABLE_KEY", "\"$clerkPublishableKey\"")
 
-        val firebaseProjectId = localProperties.getProperty("FIREBASE_PROJECT_ID", "")
-        val firebaseAppId = localProperties.getProperty("FIREBASE_APP_ID", "")
-        val firebaseApiKey = localProperties.getProperty("FIREBASE_API_KEY", "")
-        val firebaseGcmSenderId = localProperties.getProperty("FIREBASE_GCM_SENDER_ID", "")
+        val firebaseProjectId = localProp("FIREBASE_PROJECT_ID", "")
+        val firebaseAppId = localProp("FIREBASE_APP_ID", "")
+        val firebaseApiKey = localProp("FIREBASE_API_KEY", "")
+        val firebaseGcmSenderId = localProp("FIREBASE_GCM_SENDER_ID", "")
         buildConfigField("String", "FIREBASE_PROJECT_ID", "\"$firebaseProjectId\"")
         buildConfigField("String", "FIREBASE_APP_ID", "\"$firebaseAppId\"")
         buildConfigField("String", "FIREBASE_API_KEY", "\"$firebaseApiKey\"")
         buildConfigField("String", "FIREBASE_GCM_SENDER_ID", "\"$firebaseGcmSenderId\"")
+    }
+
+    signingConfigs {
+        val uploadStore = localProp("UPLOAD_STORE_FILE")
+        if (uploadStore.isNotBlank()) {
+            create("upload") {
+                storeFile = file(uploadStore)
+                storePassword = localProp("UPLOAD_STORE_PASSWORD")
+                keyAlias = localProp("UPLOAD_KEY_ALIAS")
+                keyPassword = localProp("UPLOAD_KEY_PASSWORD")
+            }
+        }
     }
 
     buildTypes {
@@ -53,6 +70,11 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+            signingConfig = if (localProp("UPLOAD_STORE_FILE").isNotBlank()) {
+                signingConfigs.getByName("upload")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
     }
 

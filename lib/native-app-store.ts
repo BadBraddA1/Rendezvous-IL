@@ -12,7 +12,7 @@ export const IOS_APP_STORE_ID = "6786831744"
  */
 export const ANDROID_APP_LIVE = false
 
-export const ANDROID_PACKAGE = "com.rendezvousil.app"
+export const ANDROID_PACKAGE = "com.rendezvousil.braddcorp.app"
 
 export const ANDROID_PLAY_STORE_URL: string | null = ANDROID_APP_LIVE
   ? `https://play.google.com/store/apps/details?id=${ANDROID_PACKAGE}`

@@ -8,7 +8,7 @@ The native Android app registers device tokens at `POST /api/push/register` with
 | --- | --- |
 | Google account | `adin@braddcorp.com` |
 | Firebase project | **`rendezvous-il-app`** |
-| Android package | `com.rendezvousil.app` |
+| Android package | `com.rendezvousil.braddcorp.app` (matches Apple / Play) |
 | Local config | `android/app/google-services.json` (gitignored) |
 | Vercel (production) | `FCM_PROJECT_ID` + `FCM_SERVICE_ACCOUNT_JSON` (set; production redeployed) |
 | Service account key (local ops) | `~/.config/braddcorp-ops/rendezvous-il-fcm-sa.json` (never commit) |
@@ -18,7 +18,7 @@ The native Android app registers device tokens at `POST /api/push/register` with
 Already provisioned under BraddCorp. To recreate on another machine:
 
 1. [Firebase Console](https://console.firebase.google.com) → project **`rendezvous-il-app`**
-2. Android app package `com.rendezvousil.app`
+2. Android app package `com.rendezvousil.braddcorp.app`
 3. Download `google-services.json` → `android/app/google-services.json`
 4. Service account with `roles/firebase.admin` (or use existing `fcm-send@rendezvous-il-app.iam.gserviceaccount.com`)
 
@@ -56,7 +56,7 @@ pnpm db:verify   # confirm tables exist after migration
 # Register Android token (app does this after permission + FCM init)
 curl -X POST https://rendezvousil.com/api/push/register \
   -H 'Content-Type: application/json' \
-  -d '{"platform":"android","token":"YOUR_FCM_TOKEN","bundleId":"com.rendezvousil.app"}'
+  -d '{"platform":"android","token":"YOUR_FCM_TOKEN","bundleId":"com.rendezvousil.braddcorp.app"}'
 
 # Unregister
 curl -X DELETE https://rendezvousil.com/api/push/register \

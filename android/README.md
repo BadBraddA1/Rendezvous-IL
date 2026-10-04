@@ -54,6 +54,16 @@ cd android
 ./gradlew :app:assembleDebug
 ```
 
+Release AAB for Play (upload keystore via `UPLOAD_*` in `local.properties`):
+
+```bash
+export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
+./gradlew :app:bundleRelease
+bash scripts/upload-play-internal.sh   # BraddCorp Play internal track
+```
+
+Play package / credentials: **[GITHUB-PLAY.md](GITHUB-PLAY.md)**.
+
 CI assemble is **manual only** (`workflow_dispatch` on `.github/workflows/android-build.yml`) so failed Actions runs don’t spam GitHub notifications on every push.
 
 ## Refresh bundled schedule
@@ -123,7 +133,7 @@ Snapshot prefs: `com.rendezvousil.app.schedule` / key `schedule_snapshot` (app-p
 
 ### Firebase setup
 
-**BraddCorp (current):** Firebase project `rendezvous-il-app`, Android package `com.rendezvousil.app`.  
+**BraddCorp (current):** Firebase project `rendezvous-il-app`, Android package **`com.rendezvousil.braddcorp.app`** (same as iOS / Play Console). Kotlin namespace stays `com.rendezvousil.app`.  
 Local file: `android/app/google-services.json` (gitignored). Server send keys: Vercel `FCM_PROJECT_ID` + `FCM_SERVICE_ACCOUNT_JSON` — see [`docs/FCM_SETUP.md`](../docs/FCM_SETUP.md).
 
 1. Confirm `android/app/google-services.json` exists (agent/ops copy from Firebase; do not commit).
@@ -185,4 +195,4 @@ android/
 └── settings.gradle.kts     # :app, :core:network, :core:schedule, :widgets
 ```
 
-Package: `com.rendezvousil.app` · minSdk **26** · targetSdk **35** · compileSdk **36** · AGP **8.9.1** · Kotlin **2.4.10**
+Package / Play `applicationId`: `com.rendezvousil.braddcorp.app` · minSdk **26** · targetSdk **35** · compileSdk **36** · AGP **8.9.1** · Kotlin **2.4.10**
