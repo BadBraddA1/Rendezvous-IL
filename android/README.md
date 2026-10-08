@@ -195,4 +195,4 @@ android/
 └── settings.gradle.kts     # :app, :core:network, :core:schedule, :widgets
 ```
 
-Package / Play `applicationId`: `com.rendezvousil.braddcorp.app` · minSdk **26** · targetSdk **35** · compileSdk **36** · AGP **8.9.1** · Kotlin **2.4.10**
+Package / Play `applicationId`: `com.rendezvousil.braddcorp.app` · minSdk **26** · targetSdk **36** · compileSdk **36** · AGP **8.9.1** · Kotlin **2.4.10**

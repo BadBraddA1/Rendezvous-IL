@@ -14,8 +14,10 @@
 | SA JSON (local) | `~/.config/braddcorp-play/play-ci.json` |
 | Upload keystore | `~/.config/rendezvous-il/ren-upload.jks` |
 | Firebase Android app | `rendezvous-il-app` + package above (`google-services.json` gitignored) |
-| First AAB | **Internal track draft** — versionCode **1** / 1.0.0 (2026-10-04) |
-| Rollout | Finish Play “Set up your app” (listing, content rating, etc.), then promote internal draft → testers |
+| First AAB | versionCode **1** / 1.0.0 (2026-10-04) — Play rejected (targetSdk too low); superseded |
+| v2 | versionCode **2** / targetSdk **35** — draft only; new apps need API **36** (2026-08-31 policy) |
+| Current AAB | **Internal testing completed** — versionCode **3** / 1.0.1, targetSdk **36** (2026-10-07) |
+| Production | Blocked by Play “Set up your app” checklist (`FAILED_PRECONDITION` on production track) — finish content rating, privacy policy, screenshots, etc. in Console, then promote v3 → production for review |
 
 ## Service account invite (required for API upload)
 

@@ -30,9 +30,10 @@ android {
         // Kotlin namespace stays com.rendezvousil.app (source packages unchanged).
         applicationId = "com.rendezvousil.braddcorp.app"
         minSdk = 26
-        targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        // Play requires API 36 for new apps (as of 2026-08-31).
+        targetSdk = 36
+        versionCode = 3
+        versionName = "1.0.1"
 
         val baseUrl = localProp("BASE_URL", "https://rendezvousil.com")
             .trimEnd('/') + "/"
