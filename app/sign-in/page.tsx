@@ -16,7 +16,9 @@ export default async function SignInPage({
 }) {
   // Middleware deep-link return: land back where the user was headed.
   const { redirect_url } = await searchParams
-  const afterUrl = safeReturnPath(redirect_url) ?? authConfig.afterSignInUrl
+  const afterUrl =
+    safeReturnPath(redirect_url, authConfig.allowedReturnHosts) ??
+    authConfig.afterSignInUrl
 
   return (
     <AuthShell

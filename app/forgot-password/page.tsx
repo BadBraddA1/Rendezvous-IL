@@ -16,7 +16,9 @@ export default async function ForgotPasswordPage({
 }) {
   // Deep-link return + email prefill (admin-sent reset links carry ?email=).
   const { redirect_url, email } = await searchParams
-  const afterUrl = safeReturnPath(redirect_url) ?? authConfig.afterSignInUrl
+  const afterUrl =
+    safeReturnPath(redirect_url, authConfig.allowedReturnHosts) ??
+    authConfig.afterSignInUrl
 
   return (
     <AuthShell

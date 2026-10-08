@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation"
 import { useAuth, useClerk, useSignIn } from "@clerk/nextjs"
 import { AuthPending } from "@/components/auth/auth-pending"
 import { afterAuth, safeReturnPath } from "@/lib/after-auth"
+import { authConfig } from "@/lib/auth-config"
 
 /**
  * Redeems a Clerk sign-in token minted by POST /api/auth/web-handoff
@@ -13,7 +14,11 @@ import { afterAuth, safeReturnPath } from "@/lib/after-auth"
 function SsoHandoffInner() {
   const search = useSearchParams()
   const ticket = search.get("ticket") || search.get("__clerk_ticket")
-  const redirectUrl = safeReturnPath(search.get("redirect_url") || undefined) || "/account"
+  const redirectUrl =
+    safeReturnPath(
+      search.get("redirect_url") || undefined,
+      authConfig.allowedReturnHosts,
+    ) || "/account"
 
   const clerk = useClerk()
   const { isLoaded, isSignedIn } = useAuth()

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { clerkClient } from "@clerk/nextjs/server"
 import { authUserId } from "@/lib/clerk-auth"
 import { safeReturnPath } from "@/lib/after-auth"
+import { authConfig } from "@/lib/auth-config"
 
 /**
  * Site origin for the handoff deep link.
@@ -54,7 +55,9 @@ export async function POST(request: Request) {
   let redirectPath = "/account"
   try {
     const body = (await request.json()) as { redirect_url?: string }
-    redirectPath = safeReturnPath(body.redirect_url) || "/account"
+    redirectPath =
+      safeReturnPath(body.redirect_url, authConfig.allowedReturnHosts) ||
+      "/account"
   } catch {
     // empty body is fine
   }

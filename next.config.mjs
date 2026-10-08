@@ -50,6 +50,7 @@ const nextConfig = {
 
   // Keep native modules out of the Turbopack/webpack bundle.
   serverExternalPackages: ["@sentry/profiling-node", "ably", "sharp"],
+  transpilePackages: ["@braddcorp/auth"],
   typescript: {
     ignoreBuildErrors: true,
   },

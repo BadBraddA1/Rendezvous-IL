@@ -1,0 +1,18 @@
+/*
+  Rendezvous IL brand tokens for @braddcorp/auth.
+  Import AFTER @braddcorp/auth/styles.css.
+*/
+
+:root {
+  --auth-bg: #f9fffd;
+  --auth-card: #ffffff;
+  --auth-ink: #022020;
+  --auth-muted: #3a5252;
+  --auth-border: #c7d9d4;
+  --auth-primary: #009276;
+  --auth-primary-ink: #ffffff;
+  --auth-danger: #b42318;
+  --auth-radius: 12px;
+  /* Matches layout --font-franklin; literal fallbacks if that token is late. */
+  --auth-font: "Libre Franklin", ui-sans-serif, system-ui, sans-serif;
+}
