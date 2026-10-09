@@ -10,6 +10,12 @@ Handles public event pages, family registration (2027), admin dashboard (registr
 
 **About / OG:** Rendezvous 2026 group photo (`public/images/rendezvous-group-2026.jpg`) with caption headcount from `lib/attendance-history.ts`. Social OG image uses the cropped group photo (`rendezvous-group-2026-og.jpg`).
 
+## SEO
+
+- `app/sitemap.ts` → https://rendezvousil.com/sitemap.xml (public pages: home, about, schedule, biblebowl, faq, calculator, registration, gettheapp, map2026, privacy, scrabble)
+- `app/robots.ts` → https://rendezvousil.com/robots.txt (disallows admin/account/auth/api/chat/directory)
+- Google Search Console: domain property `sc-domain:rendezvousil.com` (adin@braddcorp.com)
+
 ## Tech stack
 
 - **Next.js 16** (App Router) + React 19 + TypeScript

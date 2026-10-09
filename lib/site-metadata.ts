@@ -1,4 +1,6 @@
 /** Shared meta copy — keep og:description under ~125 characters for social previews. */
+export const siteUrl = "https://rendezvousil.com"
+
 export const siteDescription =
   "Homeschool families gather May 3–7, 2027 at Lake Williamson Christian Center in Carlinville, IL. Registration opens January 1."
 
