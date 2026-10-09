@@ -42,3 +42,4 @@ testsprite_tests/tmp/
 xcuserdata/
 yarn-debug.log*
 yarn-error.log*
+ios/.spm-cache/

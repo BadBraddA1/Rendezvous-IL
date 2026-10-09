@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@braddcorp/auth':
-        specifier: git+https://github.com/BadBraddA1/braddcorp-auth.git#v1.0.1
-        version: git+https://github.com/BadBraddA1/braddcorp-auth.git#230aa921b65a6a3c113ee6d373652b7e6068e2a7(@clerk/nextjs@7.3.3(next@16.0.10(@babel/core@7.29.7(supports-color@8.1.1))(@opentelemetry/api@1.9.1)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(lucide-react@0.454.0(react@19.2.0))(next@16.0.10(@babel/core@7.29.7(supports-color@8.1.1))(@opentelemetry/api@1.9.1)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+        specifier: file:vendor/braddcorp-auth-1.0.1.tgz
+        version: file:vendor/braddcorp-auth-1.0.1.tgz(@clerk/nextjs@7.3.3(next@16.0.10(@babel/core@7.29.7(supports-color@8.1.1))(@opentelemetry/api@1.9.1)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(lucide-react@0.454.0(react@19.2.0))(next@16.0.10(@babel/core@7.29.7(supports-color@8.1.1))(@opentelemetry/api@1.9.1)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       '@clerk/nextjs':
         specifier: ^7.3.3
         version: 7.3.3(next@16.0.10(@babel/core@7.29.7(supports-color@8.1.1))(@opentelemetry/api@1.9.1)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
@@ -279,8 +279,8 @@ packages:
     resolution: {integrity: sha512-Vj1jF3cPfxg7OAfoI7QnVKLoILlm2JF9pnVHrX8qx7AHMiYWT+NDAA7jChlNgRS4WTLc/fD1lXLmPixluj+3Gg==}
     engines: {node: '>=6.9.0'}
 
-  '@braddcorp/auth@git+https://github.com/BadBraddA1/braddcorp-auth.git#230aa921b65a6a3c113ee6d373652b7e6068e2a7':
-    resolution: {commit: 230aa921b65a6a3c113ee6d373652b7e6068e2a7, repo: https://github.com/BadBraddA1/braddcorp-auth.git, type: git}
+  '@braddcorp/auth@file:vendor/braddcorp-auth-1.0.1.tgz':
+    resolution: {integrity: sha512-Fzi2k8m89M7n8YyDc7S2YDqIVqY2ZAi+zLkbZH1hHK3Fp1jGm+nSytATHIcMbHMRE64jz/S9mV9ic5W33ciO0g==, tarball: file:vendor/braddcorp-auth-1.0.1.tgz}
     version: 1.0.1
     peerDependencies:
       '@clerk/nextjs': ^7.0.0
@@ -3414,7 +3414,7 @@ snapshots:
       '@babel/helper-string-parser': 7.29.7
       '@babel/helper-validator-identifier': 7.29.7
 
-  '@braddcorp/auth@git+https://github.com/BadBraddA1/braddcorp-auth.git#230aa921b65a6a3c113ee6d373652b7e6068e2a7(@clerk/nextjs@7.3.3(next@16.0.10(@babel/core@7.29.7(supports-color@8.1.1))(@opentelemetry/api@1.9.1)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(lucide-react@0.454.0(react@19.2.0))(next@16.0.10(@babel/core@7.29.7(supports-color@8.1.1))(@opentelemetry/api@1.9.1)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
+  '@braddcorp/auth@file:vendor/braddcorp-auth-1.0.1.tgz(@clerk/nextjs@7.3.3(next@16.0.10(@babel/core@7.29.7(supports-color@8.1.1))(@opentelemetry/api@1.9.1)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(lucide-react@0.454.0(react@19.2.0))(next@16.0.10(@babel/core@7.29.7(supports-color@8.1.1))(@opentelemetry/api@1.9.1)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
     dependencies:
       '@clerk/nextjs': 7.3.3(next@16.0.10(@babel/core@7.29.7(supports-color@8.1.1))(@opentelemetry/api@1.9.1)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       lucide-react: 0.454.0(react@19.2.0)
