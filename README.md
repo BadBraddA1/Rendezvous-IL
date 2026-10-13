@@ -10,6 +10,10 @@ Handles public event pages, family registration (2027), admin dashboard (registr
 
 **About / OG:** Rendezvous 2026 group photo (`public/images/rendezvous-group-2026.jpg`) with caption headcount from `lib/attendance-history.ts`. Social OG image uses the cropped group photo (`rendezvous-group-2026-og.jpg`).
 
+## FAQ videos (Bunny Stream)
+
+FAQ interview clips live in a **dedicated** Bunny Stream library **Rendezvous IL** (`778739`, CDN `vz-784d2bf0-2ee.b-cdn.net`) — not the BraddCorp memorial library. IDs in `lib/ren-videos.ts`; player is `components/bunny-video-player.tsx` (iframe embed). Agent keys: `BUNNY_REN_*` in `~/.config/bunny/agent.env`. Migrated off Mux 2026-10-13.
+
 ## SEO
 
 - `app/sitemap.ts` → https://rendezvousil.com/sitemap.xml (public pages: home, about, schedule, biblebowl, faq, calculator, registration, gettheapp, map2026, privacy, scrabble)

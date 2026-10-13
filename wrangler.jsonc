@@ -34,6 +34,8 @@
     "NEXT_PUBLIC_CLERK_SIGN_UP_URL": "/sign-up",
     "NEXT_PUBLIC_APP_URL": "https://rendezvousil.com",
     "NEXT_PUBLIC_BASE_URL": "https://rendezvousil.com",
+    "NEXT_PUBLIC_BUNNY_LIBRARY_ID": "778739",
+    "NEXT_PUBLIC_BUNNY_CDN_HOST": "vz-784d2bf0-2ee.b-cdn.net",
     "R2_PUBLIC_BASE_URL": "https://cdn.rendezvousil.com",
     "R2_UPLOAD_WORKER_URL": "https://rendezvous-il-media.badbradda1.workers.dev",
     "EMAIL_USE_CLOUDFLARE": "1",

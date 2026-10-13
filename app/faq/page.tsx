@@ -8,7 +8,8 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { ExternalLink } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
-import { MuxVideoPlayer } from "@/components/mux-video-player"
+import { BunnyVideoPlayer } from "@/components/bunny-video-player"
+import { REN_FAQ_VIDEOS } from "@/lib/ren-videos"
 import { IOS_APP_STORE_URL } from "@/lib/native-app-store"
 
 type FaqItem = {
@@ -135,47 +136,20 @@ const faqItems: FaqItem[] = [
   },
 ]
 
-const faqVideos = [
-  {
-    id: "djuAc8QIk6pPNX1mGigB5MEAN02UeuydJQW01GhiCZlIU",
-    title: "Rendezvous history",
-  },
-  {
-    id: "O9702XLr9hbXUXZDlUvdiDym01nmI4200QDyaHNZN2voa4",
-    title: "What would you say to someone considering Rendezvous?",
-  },
-  {
-    id: "t5rSCgJyzdARvSHl6mg3dzOTlUEUPiU402IVnPE5Z01Lg",
-    title: "What was the first Rendezvous like?",
-  },
-  {
-    id: "t702glXRQfZPScT8634nxzupciWgx4gBBQYf95zDNLX00",
-    title: "What impact do you hope Rendezvous has on families?",
-  },
-  {
-    id: "52ijJu2b024JTBOBFjTFTyPGYl022Su9KbU8Axfis01UEU",
-    title: "What is your vision for the future?",
-  },
-  {
-    id: "cITgjTG4V01MOdvLpRNysTwnX7CTS4UHYG4qrFM2xnW8",
-    title: "What does Rendezvous mean to you?",
-  },
-]
-
 function VideoCard({
   video,
   isActive,
   onPlay,
 }: {
-  video: (typeof faqVideos)[0]
+  video: (typeof REN_FAQ_VIDEOS)[number]
   isActive: boolean
   onPlay: () => void
 }) {
   return (
     <article className="group">
       <div className="overflow-hidden rounded-xl border border-primary/15 bg-card transition-colors group-hover:border-primary/25 group-hover:bg-surface-tint/40">
-        <MuxVideoPlayer
-          playbackId={video.id}
+        <BunnyVideoPlayer
+          videoId={video.videoId}
           title={video.title}
           deferPlayer
           isActive={isActive}
@@ -241,7 +215,7 @@ export default function FAQPage() {
               </p>
             </header>
             <div className="faq-videos-campfire-grid grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {faqVideos.map((video) => (
+              {REN_FAQ_VIDEOS.map((video) => (
                 <VideoCard
                   key={video.id}
                   video={video}
