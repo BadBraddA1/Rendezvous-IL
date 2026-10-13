@@ -39,17 +39,9 @@ const nextConfig = {
     ];
   },
 
-  async headers() {
-    return [
-      {
-        source: "/:path*",
-        headers: [{ key: "Document-Policy", value: "js-profiling" }],
-      },
-    ];
-  },
-
-  // Keep native modules out of the Turbopack/webpack bundle.
-  serverExternalPackages: ["@sentry/profiling-node", "ably", "sharp"],
+  // Keep Ably out of the Turbopack/webpack bundle. Do NOT externalize sharp —
+  // we ship a Workers stub (`vendor/sharp-stub`) that must be inlined.
+  serverExternalPackages: ["ably"],
   transpilePackages: ["@braddcorp/auth"],
   typescript: {
     ignoreBuildErrors: true,

@@ -1,0 +1,13 @@
+{
+  "name": "sharp",
+  "version": "0.35.3",
+  "main": "index.js",
+  "module": "index.js",
+  "exports": {
+    ".": {
+      "import": "./index.js",
+      "require": "./index.js",
+      "default": "./index.js"
+    }
+  }
+}

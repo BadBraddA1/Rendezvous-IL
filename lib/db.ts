@@ -1,4 +1,5 @@
-import { createClient, type Client, type InValue } from "@libsql/client"
+// Workers disallow Wasm from the default Node client.
+import { createClient, type Client, type InValue } from "@libsql/client/web"
 import * as Sentry from "@sentry/nextjs"
 
 export type SqlRow = Record<string, unknown>
@@ -13,7 +14,7 @@ let _client: Client | null = null
 function getClient(): Client {
   if (_client) return _client
 
-  const url =
+  const rawUrl =
     process.env.TURSO_DATABASE_URL ||
     process.env.TURSO_URL ||
     process.env.LIBSQL_URL
@@ -22,11 +23,14 @@ function getClient(): Client {
     process.env.TURSO_AUTH_TOKEN ||
     process.env.LIBSQL_AUTH_TOKEN
 
-  if (!url) {
+  if (!rawUrl) {
     throw new Error(
       "Turso database URL is not set. Configure TURSO_DATABASE_URL in your environment.",
     )
   }
+
+  // Workers web client: prefer HTTPS Hrana over libsql/wss.
+  const url = rawUrl.replace(/^libsql:/i, "https:")
 
   _client = createClient({ url, authToken })
   return _client

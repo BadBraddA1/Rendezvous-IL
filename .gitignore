@@ -1,6 +1,11 @@
 
 .agents/
 .dev.vars
+.secrets-upload.env
+.secrets-upload.filtered.env
+.open-next/
+.wrangler/
+cloudflare-env.d.ts
 .DS_Store
 .env*
 .impeccable/

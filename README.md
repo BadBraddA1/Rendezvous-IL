@@ -20,15 +20,15 @@ Handles public event pages, family registration (2027), admin dashboard (registr
 
 - **Next.js 16** (App Router) + React 19 + TypeScript
 - **Turso** (libSQL / SQLite) — all app data via `lib/db.ts` and `@libsql/client`
-- **Auth package** — `@braddcorp/auth` vendored at `vendor/braddcorp-auth-1.0.1.tgz` (private git deps break Vercel installs)
+- **Auth package** — `@braddcorp/auth` vendored at `vendor/braddcorp-auth-1.0.1.tgz` (keeps installs offline-friendly)
 - **Clerk** — authentication (families + admin roles). Auth UI is **`@braddcorp/auth`** ([braddcorp-auth](https://github.com/BadBraddA1/braddcorp-auth) `v1.0.0` — Clerk Core 3, no widgets): `/sign-in`, `/sign-up`, `/forgot-password`, `/sso-callback`, thin re-exports in `components/auth/`, site settings in `lib/auth-config.ts`, lake-teal tokens in `styles/auth-tokens.css`, wrapped by `RenAuthKitProvider` inside `ClerkProvider`. Kit fixes: bump the github tag / `pnpm update @braddcorp/auth`. Route protection stays in `proxy.js`. **Site header** uses Ren’s richer `UserMenuButton` (family photo + admin link — not Clerk `<UserButton>`); client-mounted `useAuth()` so Server Action re-renders do not throw “Show can only be used within ClerkProvider” (RENDEZVOUS-IL-2).
 - **Cloudflare Email Sending** — transactional email via `lib/sendkit.ts` + `lib/cloudflare-email.ts` (see [Email](#email)); SendKit kept as fallback
-- **Vercel** — hosting on team **Adin's projects** (`adins-projects-d2644952`), **Pro** plan. Production project: `v0-ren` → `rendezvousil.com`. Sibling project `rendezvous-il` is also on the same Pro team (preview/alt URL). Git pushes auto-deploy the **website**; iOS TestFlight ships are **manual** (see `ios/ci_scripts/xcode-cloud.env`).
+- **Cloudflare Workers (OpenNext)** — production host. Worker `rendezvous-web` → `rendezvousil.com` + `www` + `rendezvous-web.badbradda1.workers.dev`. Deploy: `pnpm run cf:deploy` (Next build → link Turbopack hashed externals → OpenNext → wrangler). Secrets in Worker secrets / `.dev.vars` locally; non-secret config in `wrangler.jsonc` `vars`. iOS TestFlight ships stay **manual** (see `ios/ci_scripts/xcode-cloud.env`).
 - **Cloudflare R2** — media (`cdn.rendezvousil.com`, see [Media storage](#media-storage-cloudflare-r2))
 
 ## Environment variables
 
-Required on Vercel (`v0-ren`):
+Required on the Cloudflare Worker (`rendezvous-web` secrets + `wrangler.jsonc` vars):
 
 - `NEXT_PUBLIC_SENTRY_DSN` / `SENTRY_DSN` — Sentry project `rendezvous-il` (errors + tracing + session replay; OpenStatus degrade alerts). The floating **Report a Bug** User Feedback widget is off globally (`feedbackIntegration` removed from `instrumentation-client.ts`); re-add with `autoInject: false` if you want it only on some pages later.
 

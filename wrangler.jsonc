@@ -1,0 +1,47 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "rendezvous-web",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-10-11",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "account_id": "3b39955f13b1fc5364775d978622d3e1",
+  "workers_dev": true,
+  "alias": {
+    "sharp": "./lib/sharp-stub.js"
+  },
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "services": [
+    {
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "rendezvous-web"
+    }
+  ],
+  "images": {
+    "binding": "IMAGES"
+  },
+  "observability": {
+    "enabled": true
+  },
+  "routes": [
+    { "pattern": "rendezvousil.com", "custom_domain": true },
+    { "pattern": "www.rendezvousil.com", "custom_domain": true }
+  ],
+  "vars": {
+    "NEXT_PUBLIC_CLERK_SIGN_IN_URL": "/sign-in",
+    "NEXT_PUBLIC_CLERK_SIGN_UP_URL": "/sign-up",
+    "NEXT_PUBLIC_APP_URL": "https://rendezvousil.com",
+    "NEXT_PUBLIC_BASE_URL": "https://rendezvousil.com",
+    "R2_PUBLIC_BASE_URL": "https://cdn.rendezvousil.com",
+    "R2_UPLOAD_WORKER_URL": "https://rendezvous-il-media.badbradda1.workers.dev",
+    "EMAIL_USE_CLOUDFLARE": "1",
+    "EMAIL_PROVIDER": "auto",
+    "EMAIL_FROM": "Rendezvous IL <noreply@rendezvousil.com>",
+    "EMAIL_FROM_REGISTRATION": "Rendezvous Registration <Registration@rendezvousil.com>",
+    "CLOUDFLARE_ACCOUNT_ID": "3b39955f13b1fc5364775d978622d3e1",
+    "SENTRY_ORG": "braddcorp",
+    "SENTRY_PROJECT": "rendezvous-il"
+  }
+}

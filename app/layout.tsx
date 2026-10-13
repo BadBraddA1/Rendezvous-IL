@@ -1,7 +1,6 @@
 import type React from "react"
 import type { Metadata, Viewport } from "next"
 import { Libre_Baskerville, Libre_Franklin, Source_Code_Pro, Dancing_Script } from "next/font/google"
-import { Analytics } from "@vercel/analytics/react"
 import { ClerkProvider } from "@clerk/nextjs"
 import { RenAuthKitProvider } from "@/components/auth-kit-provider"
 import { ScrollToTop } from "@/components/scroll-to-top"
@@ -95,7 +94,6 @@ export default function RootLayout({
             <BackToTop />
             <PageTourRoot />
             <Toaster />
-            <Analytics />
           </RenAuthKitProvider>
         </ClerkProvider>
       </body>

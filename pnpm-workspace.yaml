@@ -1,5 +1,21 @@
+packages:
+  - "."
+overrides:
+  "@libsql/isomorphic-ws": "file:vendor/isomorphic-ws"
+  sharp: "file:vendor/sharp-stub"
 allowBuilds:
-  '@clerk/shared': true
-  '@parcel/watcher': true
+  "@clerk/shared": true
+  "@parcel/watcher": true
   core-js: true
   sharp: true
+supportedArchitectures:
+  os:
+    - current
+    - linux
+  cpu:
+    - current
+    - x64
+    - arm64
+  libc:
+    - current
+    - glibc
