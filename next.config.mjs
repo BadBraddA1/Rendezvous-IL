@@ -39,6 +39,8 @@ const nextConfig = {
     ];
   },
 
+  // Required for OpenNext `cf:build` (`--skipNextBuild` after hashed-externals link).
+  output: "standalone",
   // Keep Ably out of the Turbopack/webpack bundle. Do NOT externalize sharp —
   // we ship a Workers stub (`vendor/sharp-stub`) that must be inlined.
   serverExternalPackages: ["ably"],
