@@ -89,6 +89,8 @@ Canonical tokens live in `app/globals.css` (OKLCH). Frontmatter hex values are s
 
 **Color strategy:** Committed lake teal on neutrals and section washes; coral at ~10% for heritage moments. Surfaces: `surface-tint`, `surface-highlight`, `surface-lake`, `surface-warm` in `globals.css`.
 
+**Home dosage:** Mist canvas (`background`) for the guest first plane; one committed lake band (`surface-lake`) for registration urgency. Use `--primary` for large display year, filled CTAs, and countdown digits; `--accent` for small teal links/icons (AA on mist); `--brand-coral-ink` for the theme line only; `--on-surface` for copy on lake/highlight washes. Canvas QR modules use `--checkin-qr-ink` (sRGB stand-in for `--foreground`).
+
 Dark mode tokens exist (`.dark`) but no ThemeProvider is wired; treat light mode as production default until explicitly enabled.
 
 ## Typography

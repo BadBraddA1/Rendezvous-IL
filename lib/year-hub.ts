@@ -13,19 +13,18 @@ import {
   parseRegistrationEventYear,
   type RegistrationEventYear,
 } from "@/lib/registration-event-years"
+import {
+  REGISTRATION_OPEN_UTC_MS,
+  isRegistrationOpen,
+} from "@/lib/registration-open"
 
 const SITE_ORIGIN = process.env.NEXT_PUBLIC_SITE_URL || "https://rendezvousil.com"
 
-/** Registration opens Jan 1, 2027 midnight CST (06:00 UTC). */
-export const REGISTRATION_OPEN_UTC_MS = Date.UTC(2027, 0, 1, 6, 0, 0)
+export { REGISTRATION_OPEN_UTC_MS, isRegistrationOpen }
 
 /** Chicago-date bounds for retreat week (inclusive start, exclusive end). Matches iOS AppConfig. */
 export const RETREAT_WEEK_START_ISO = "2027-05-03"
 export const RETREAT_WEEK_END_ISO = "2027-05-08"
-
-export function isRegistrationOpen(now = Date.now()): boolean {
-  return now >= REGISTRATION_OPEN_UTC_MS
-}
 
 /** True when local Chicago calendar date is during the retreat week. */
 export function isRetreatWeek(now = new Date()): boolean {

@@ -5,8 +5,18 @@
  * Quiet lake-teal watermark on Home; double-tap to brighten for the desk scanner.
  */
 
-import { useEffect, useRef, useState } from "react"
-import QRCode from "qrcode"
+import { useEffect, useRef, useState, type KeyboardEvent } from "react"
+
+/** Matches `--checkin-qr-ink` / `--foreground` sRGB for the qrcode canvas API. */
+const QR_INK_FALLBACK = "#022020"
+
+function resolveQrInk(): string {
+  if (typeof window === "undefined") return QR_INK_FALLBACK
+  const raw = getComputedStyle(document.documentElement)
+    .getPropertyValue("--checkin-qr-ink")
+    .trim()
+  return raw || QR_INK_FALLBACK
+}
 
 export function StealthCheckInMark({
   code,
@@ -16,23 +26,36 @@ export function StealthCheckInMark({
   familyLastName?: string | null
 }) {
   const [dataUrl, setDataUrl] = useState<string | null>(null)
+  const [failed, setFailed] = useState(false)
   const [bright, setBright] = useState(false)
   const lastTap = useRef(0)
   const dimTimer = useRef<number | null>(null)
 
   useEffect(() => {
     let cancelled = false
-    void QRCode.toDataURL(code, {
-      errorCorrectionLevel: "H",
-      margin: 1,
-      width: 280,
-      color: {
-        dark: "#0B3D4A",
-        light: "#00000000",
-      },
-    }).then((url) => {
-      if (!cancelled) setDataUrl(url)
-    })
+    setFailed(false)
+    setDataUrl(null)
+
+    // Lazy-load qrcode so guest/home bundles never pay for it
+    void import("qrcode")
+      .then((QRCode) =>
+        QRCode.toDataURL(code, {
+          errorCorrectionLevel: "H",
+          margin: 1,
+          width: 280,
+          color: {
+            dark: resolveQrInk(),
+            light: "#00000000",
+          },
+        }),
+      )
+      .then((url) => {
+        if (!cancelled) setDataUrl(url)
+      })
+      .catch(() => {
+        if (!cancelled) setFailed(true)
+      })
+
     return () => {
       cancelled = true
       if (dimTimer.current != null) window.clearTimeout(dimTimer.current)
@@ -66,37 +89,74 @@ export function StealthCheckInMark({
     }
   }
 
-  if (!dataUrl) return null
+  const onPointerCancel = () => {
+    lastTap.current = 0
+  }
+
+  const title = familyLastName?.trim()
+    ? `${familyLastName.trim()} family`
+    : "Your check-in mark"
+
+  const shellProps = {
+    className:
+      "focus-ring relative overflow-hidden rounded-2xl border border-primary/20 bg-surface-highlight p-4 outline-none focus-visible:ring-ring/50 focus-visible:ring-[3px]",
+    onPointerUp,
+    onPointerCancel,
+    role: "button" as const,
+    tabIndex: 0,
+    onKeyDown: (e: KeyboardEvent) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault()
+        toggleBright()
+      }
+    },
+    "aria-label": bright
+      ? "Check-in mark bright — press Enter to dim"
+      : "Check-in watermark — double-tap or press Enter to brighten for staff scan",
+    "aria-pressed": bright,
+  }
+
+  if (failed) {
+    return (
+      <section
+        className="rounded-2xl border border-warning/40 bg-surface-warm p-4"
+        aria-label="Check-in code"
+      >
+        <p className="text-xs font-semibold uppercase tracking-wide text-on-surface">Desk scan</p>
+        <p className="mt-1 text-sm font-medium text-balance break-words text-foreground">{title}</p>
+        <p className="mt-2 font-mono text-sm tracking-wide break-all text-foreground">{code}</p>
+        <p className="mt-2 text-xs text-muted-foreground">
+          QR couldn’t load — show this code at the desk.
+        </p>
+      </section>
+    )
+  }
+
+  if (!dataUrl) {
+    return (
+      <section
+        className="rounded-2xl border border-primary/20 bg-surface-highlight p-4"
+        aria-busy="true"
+        aria-label="Loading check-in mark"
+      >
+        <div className="flex items-center gap-4">
+          <div className="size-28 shrink-0 animate-pulse rounded-xl bg-primary/10" />
+          <div className="min-w-0 flex-1 space-y-2">
+            <div className="h-3 w-16 animate-pulse rounded bg-primary/10" />
+            <div className="h-4 w-40 max-w-full animate-pulse rounded bg-primary/10" />
+            <div className="h-3 w-56 max-w-full animate-pulse rounded bg-primary/10" />
+          </div>
+        </div>
+      </section>
+    )
+  }
 
   return (
-    <section
-      className="relative overflow-hidden rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/[0.07] via-card to-surface-highlight p-4"
-      onPointerUp={onPointerUp}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault()
-          toggleBright()
-        }
-      }}
-      aria-label="Check-in watermark — double-tap to brighten for staff scan"
-      aria-pressed={bright}
-    >
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-[0.35]"
-        style={{
-          backgroundImage:
-            "radial-gradient(circle at 18% 22%, color-mix(in oklch, var(--primary) 28%, transparent) 0 1px, transparent 1.5px), radial-gradient(circle at 72% 68%, color-mix(in oklch, var(--primary) 22%, transparent) 0 1px, transparent 1.5px)",
-          backgroundSize: "14px 14px, 18px 18px",
-        }}
-      />
-
+    <section {...shellProps}>
       <div className="relative flex items-center gap-4">
         <div
           className={`relative shrink-0 overflow-hidden rounded-xl transition-[opacity,filter] duration-200 ${
-            bright ? "bg-white p-2 opacity-100" : "bg-transparent p-1 opacity-[0.28]"
+            bright ? "bg-card p-2 opacity-100" : "bg-transparent p-1 opacity-[0.28]"
           }`}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -110,13 +170,9 @@ export function StealthCheckInMark({
           />
         </div>
         <div className="min-w-0 space-y-1">
-          <p className="text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-primary">
-            Desk scan
-          </p>
-          <p className="text-sm font-medium text-balance">
-            {familyLastName ? `${familyLastName} family` : "Your check-in mark"}
-          </p>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs font-semibold uppercase tracking-wide text-on-surface">Desk scan</p>
+          <p className="text-sm font-medium text-balance break-words text-foreground">{title}</p>
+          <p className="text-xs text-muted-foreground text-pretty">
             Staff can scan this Home screen. Double-tap to brighten.
           </p>
         </div>

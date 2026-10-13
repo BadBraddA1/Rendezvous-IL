@@ -1,12 +1,9 @@
 import Link from "next/link"
 import {
   ArrowRight,
-  Calendar,
   CheckCircle,
   Clock,
   AlertCircle,
-  Users,
-  HandHeart,
   MessageSquare,
 } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
@@ -14,10 +11,23 @@ import { SiteFooter } from "@/components/site-footer"
 import { MainContent } from "@/components/main-content"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import type { YearHubPayload } from "@/lib/year-hub"
-import { isRegistrationOpen } from "@/lib/year-hub"
+import { isRegistrationOpen } from "@/lib/registration-open"
 import { StealthCheckInMark } from "@/components/year-hub/stealth-checkin-mark"
+
+function formatUsd(amount: number) {
+  try {
+    return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount)
+  } catch {
+    return `$${amount.toFixed(2)}`
+  }
+}
+
+function displayName(value: string | null | undefined, fallback = "") {
+  const trimmed = value?.trim()
+  if (!trimmed) return fallback
+  return trimmed.length > 80 ? `${trimmed.slice(0, 77)}…` : trimmed
+}
 
 function PaymentBadge({
   status,
@@ -27,7 +37,7 @@ function PaymentBadge({
   if (status === "paid_in_full") {
     return (
       <Badge className="border border-success/30 bg-surface-highlight text-success hover:bg-surface-highlight">
-        <CheckCircle className="mr-1 h-3 w-3" />
+        <CheckCircle className="me-1 h-3 w-3" aria-hidden />
         Paid in full
       </Badge>
     )
@@ -35,7 +45,7 @@ function PaymentBadge({
   if (status === "deposit_paid") {
     return (
       <Badge variant="secondary" className="border border-warning/30 bg-surface-warm text-warning">
-        <Clock className="mr-1 h-3 w-3" />
+        <Clock className="me-1 h-3 w-3" aria-hidden />
         Deposit paid
       </Badge>
     )
@@ -43,7 +53,7 @@ function PaymentBadge({
   if (status === "payment_due") {
     return (
       <Badge variant="destructive">
-        <AlertCircle className="mr-1 h-3 w-3" />
+        <AlertCircle className="me-1 h-3 w-3" aria-hidden />
         Payment due
       </Badge>
     )
@@ -51,7 +61,7 @@ function PaymentBadge({
   return null
 }
 
-/** Signed-in, no registration for this year — prompt to register, no year data. */
+/** Signed-in, no registration for this year — one register path. */
 export function YearHubUnregistered({
   hub,
   firstName,
@@ -66,75 +76,39 @@ export function YearHubUnregistered({
       <SiteHeader />
       <MainContent belowHeader className="pb-16">
         <div className="site-container mx-auto max-w-2xl space-y-8 pt-8">
-          <div className="space-y-2">
-            <p className="text-sm font-semibold uppercase tracking-wide text-primary">
-              Rendezvous {hub.eventYear}
-            </p>
-            <h1 className="text-section-title text-balance">
-              {firstName ? `Hi, ${firstName}` : "Welcome"}
+          <div className="space-y-3">
+            <h1 className="text-section-title break-words text-balance">
+              {firstName?.trim() ? `Hi, ${displayName(firstName)}` : "Welcome"}
             </h1>
-            <p className="text-lead text-muted-foreground">
-              You&apos;re signed in, but there&apos;s no {hub.eventYear} registration on this account
-              yet. Register on the site to unlock your family hub for this year.
+            <p className="text-lead text-muted-foreground text-pretty">
+              No {hub.eventYear} registration on this account yet.
             </p>
           </div>
 
-          <Card className="border-primary/20 bg-primary/5">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-widget-heading">
-                <Calendar className="h-5 w-5 text-primary" />
-                Register for {hub.eventYear}
-              </CardTitle>
-              <CardDescription>
-                {open
-                  ? "Registration is open — secure your family’s spot."
-                  : "Registration opens January 1, 2027. You can still review details on the registration page."}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button asChild className="w-full sm:w-auto">
-                <Link href="/registration">
-                  {open ? "Start registration" : "Registration info"}
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
+          <div className="rounded-xl border border-primary/25 bg-surface-lake p-6">
+            <p className="mb-4 text-sm text-on-surface text-pretty">
+              {open
+                ? "Registration is open — secure your family’s spot."
+                : "Registration opens January 1, 2027."}
+            </p>
+            <Button size="lg" asChild className="h-14 w-full sm:w-auto">
+              <Link href="/registration">
+                {open ? "Start registration" : "Registration info"}
+                <ArrowRight className="ms-2 h-4 w-4 shrink-0" aria-hidden />
+              </Link>
+            </Button>
+          </div>
 
           {hub.family ? (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-widget-heading">
-                  <Users className="h-5 w-5" />
-                  {hub.family.lastName} family profile
-                </CardTitle>
-                <CardDescription>
-                  Your account is linked, but year-specific registration data stays hidden until you
-                  register for {hub.eventYear}.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button variant="outline" asChild className="bg-transparent">
-                  <Link href="/account/profile">
-                    Manage family profile
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
+            <p className="text-sm text-muted-foreground">
+              <Link
+                href="/account/profile"
+                className="focus-ring rounded-sm font-medium text-accent underline-offset-2 hover:underline"
+              >
+                Manage {displayName(hub.family.lastName, "family")} family profile
+              </Link>
+            </p>
           ) : null}
-
-          <div className="flex flex-wrap gap-3">
-            <Button variant="ghost" asChild>
-              <Link href="/about">About</Link>
-            </Button>
-            <Button variant="ghost" asChild>
-              <Link href="/schedule">Schedule</Link>
-            </Button>
-            <Button variant="ghost" asChild>
-              <Link href="/account">Account</Link>
-            </Button>
-          </div>
         </div>
       </MainContent>
       <SiteFooter />
@@ -158,161 +132,148 @@ export function YearHubRegistered({
     <>
       <SiteHeader />
       <MainContent belowHeader className="pb-16">
-        <div className="site-container mx-auto max-w-3xl space-y-8 pt-8">
-          <div className="space-y-2">
-            <p className="text-sm font-semibold uppercase tracking-wide text-primary">
-              Rendezvous {hub.eventYear}
-            </p>
-            <h1 className="text-section-title text-balance">
-              {firstName ? `${firstName}, you’re registered` : "You’re registered"}
+        <div className="site-container mx-auto max-w-3xl pt-8">
+          <header className="mb-10">
+            <h1 className="text-section-title break-words text-balance">
+              {firstName?.trim()
+                ? `${displayName(firstName)}, you’re registered`
+                : "You’re registered"}
             </h1>
-            <p className="text-lead text-muted-foreground">
-              Your {hub.eventYear} registration, family, and volunteering — all in one place.
-            </p>
-          </div>
+          </header>
 
           {reg?.checkinQrCode ? (
-            <StealthCheckInMark code={reg.checkinQrCode} familyLastName={reg.familyLastName} />
+            <div className="mb-10">
+              <StealthCheckInMark code={reg.checkinQrCode} familyLastName={reg.familyLastName} />
+            </div>
           ) : null}
 
           {reg ? (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex flex-wrap items-center gap-2">
-                  <Calendar className="h-5 w-5" />
-                  {reg.familyLastName} family · {hub.eventYear}
+            <section
+              className="mb-10 flex flex-col gap-4 border-b border-border/60 pb-10 sm:flex-row sm:items-end sm:justify-between"
+              aria-labelledby="year-hub-registration-heading"
+            >
+              <div className="min-w-0 space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 id="year-hub-registration-heading" className="text-widget-heading break-words">
+                    {displayName(reg.familyLastName, "Your")} family · {hub.eventYear}
+                  </h2>
                   {reg.checkedIn ? (
                     <Badge variant="outline" className="border-success/30 text-success">
-                      <CheckCircle className="mr-1 h-3 w-3" />
+                      <CheckCircle className="me-1 h-3 w-3" aria-hidden />
                       Checked in
                     </Badge>
                   ) : null}
-                </CardTitle>
-                <CardDescription>
-                  {reg.attendeeCount != null ? `${reg.attendeeCount} attendees` : "Attendees"}
-                  {reg.lodgingType ? ` · ${reg.lodgingType} lodging` : null}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
+                </div>
+                {reg.attendeeCount != null || reg.lodgingType ? (
+                  <p className="break-words text-sm text-muted-foreground">
+                    {reg.attendeeCount != null ? `${reg.attendeeCount} attendees` : null}
+                    {reg.attendeeCount != null && reg.lodgingType ? " · " : null}
+                    {reg.lodgingType ? `${reg.lodgingType} lodging` : null}
+                  </p>
+                ) : null}
+                <div className="flex flex-wrap items-center gap-3 pt-1">
                   {reg.totalCost > 0 ? (
-                    <p className="text-lg font-semibold">${reg.totalCost.toFixed(2)}</p>
+                    <p className="text-lg font-semibold tabular-nums">{formatUsd(reg.totalCost)}</p>
                   ) : null}
                   <PaymentBadge status={reg.paymentStatus} />
                 </div>
-                <Button variant="outline" asChild className="bg-transparent">
-                  <Link href="/account">
-                    Full account
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
+              </div>
+              <Button variant="outline" asChild className="min-h-11 shrink-0 bg-transparent hover:bg-surface-highlight">
+                <Link href="/account">
+                  Account
+                  <ArrowRight className="ms-2 h-4 w-4 shrink-0" aria-hidden />
+                </Link>
+              </Button>
+            </section>
           ) : null}
 
           {family ? (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  Your family
-                </CardTitle>
-                <CardDescription>
-                  {[family.city, family.state].filter(Boolean).join(", ") ||
-                    family.homeCongregation ||
-                    "Family roster from your profile"}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {family.members.length > 0 ? (
-                  <ul className="grid gap-2 sm:grid-cols-2">
-                    {family.members.map((m) => (
-                      <li key={m.id} className="rounded-lg border border-border/60 px-3 py-2 text-sm">
-                        {m.firstName} {m.lastName}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-sm text-muted-foreground">
-                    Add family members on your profile.
-                  </p>
-                )}
-                <Button variant="outline" asChild className="bg-transparent">
-                  <Link href="/account/profile">
-                    Edit family profile
-                    <ArrowRight className="ml-2 h-4 w-4" />
+            <section className="mb-10 border-b border-border/60 pb-10" aria-labelledby="year-hub-family-heading">
+              <div className="mb-4 flex flex-wrap items-baseline justify-between gap-3">
+                <h2 id="year-hub-family-heading" className="text-widget-heading">
+                  Family
+                </h2>
+                <Link
+                  href="/account/profile"
+                  className="focus-ring min-h-11 rounded-lg px-1 py-2 text-sm font-medium text-accent underline-offset-2 hover:underline"
+                >
+                  Edit
+                </Link>
+              </div>
+              {family.members.length > 0 ? (
+                <ul className="grid gap-1 sm:grid-cols-2">
+                  {family.members.map((m) => (
+                    <li key={m.id} className="min-w-0 break-words py-1 text-sm">
+                      {displayName(`${m.firstName} ${m.lastName}`.trim(), "Family member")}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  <Link
+                    href="/account/profile"
+                    className="focus-ring rounded-sm font-medium text-accent underline-offset-2 hover:underline"
+                  >
+                    Add family members
                   </Link>
-                </Button>
-              </CardContent>
-            </Card>
+                </p>
+              )}
+            </section>
           ) : null}
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <HandHeart className="h-5 w-5" />
-                Volunteering
-              </CardTitle>
-              <CardDescription>
-                {volunteering?.hasContent
-                  ? "Your sign-ups and assignments for this year."
-                  : "You haven’t volunteered yet — we’ll recommend ways to help soon."}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
+          <section className="mb-10" aria-labelledby="year-hub-volunteering-heading">
+            <h2 id="year-hub-volunteering-heading" className="text-widget-heading mb-4">
+              Volunteering
+            </h2>
+            <div className="space-y-3">
               {volunteering?.nextUp ? (
-                <div className="relative overflow-hidden rounded-xl border border-primary/25 bg-gradient-to-br from-primary/10 via-card to-surface-highlight p-4">
-                  <p className="mb-1 text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-primary">
-                    Next up
-                  </p>
-                  <p className="text-base font-semibold text-balance">
-                    <span className="text-primary">{volunteering.nextUp.personName}</span>
+                <div className="rounded-xl border border-primary/25 bg-surface-lake p-4">
+                  <p className="text-base font-semibold text-balance break-words text-on-surface">
+                    <span className="text-accent">
+                      {displayName(volunteering.nextUp.personName, "Someone")}
+                    </span>
                     {" · "}
-                    {volunteering.nextUp.eventLabel}
+                    {displayName(volunteering.nextUp.eventLabel, "Assignment")}
                   </p>
-                  <p className="mt-1 text-sm text-muted-foreground">{volunteering.nextUp.whenLabel}</p>
+                  <p className="mt-1 break-words text-sm text-on-surface">
+                    {volunteering.nextUp.whenLabel}
+                  </p>
                 </div>
               ) : null}
               {volunteering?.hasContent ? (
-                <ul className="space-y-2">
+                <ul className="divide-y divide-border/50">
                   {volunteering.volunteers.map((v) => (
                     <li
                       key={v.id}
-                      className="flex flex-col rounded-lg border border-border/60 px-3 py-2 text-sm sm:flex-row sm:items-center sm:justify-between"
+                      className="flex min-w-0 flex-col gap-0.5 py-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-4"
                     >
-                      <span className="font-medium">{v.volunteerName}</span>
-                      <span className="text-muted-foreground">
-                        {v.roleLabel || v.volunteerType}
+                      <span className="min-w-0 break-words font-medium">
+                        {displayName(v.volunteerName, "Volunteer")}
+                      </span>
+                      <span className="min-w-0 break-words text-muted-foreground sm:text-end">
+                        {displayName(v.roleLabel || v.volunteerType, "Role")}
                       </span>
                     </li>
                   ))}
                   {volunteering.specialAssignmentCount > 0 ? (
-                    <li className="text-sm text-muted-foreground">
+                    <li className="py-3 text-sm text-muted-foreground">
                       + {volunteering.specialAssignmentCount} special assignment
                       {volunteering.specialAssignmentCount === 1 ? "" : "s"}
                     </li>
                   ) : null}
                 </ul>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  Leading a prayer, song leading, lessons, and more will show up here. Editing
-                  sign-ups from the hub is coming next.
-                </p>
-              )}
-            </CardContent>
-          </Card>
+              ) : !volunteering?.nextUp ? (
+                <p className="text-sm text-muted-foreground">No volunteer sign-ups yet.</p>
+              ) : null}
+            </div>
+          </section>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Button asChild>
-              <Link href="/chat">
-                <MessageSquare className="mr-2 h-4 w-4" />
-                Open chat
-              </Link>
-            </Button>
-            <Button variant="outline" asChild className="bg-transparent">
-              <Link href="/schedule">View schedule</Link>
-            </Button>
-          </div>
+          <Button asChild className="min-h-11 w-full sm:w-auto">
+            <Link href="/chat">
+              <MessageSquare className="me-2 h-4 w-4 shrink-0" aria-hidden />
+              Open chat
+            </Link>
+          </Button>
         </div>
       </MainContent>
       <SiteFooter />
