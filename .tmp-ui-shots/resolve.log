@@ -1,0 +1,3 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project RendezvousIL.xcodeproj -scheme RendezvousIL -resolvePackageDependencies
+

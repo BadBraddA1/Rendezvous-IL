@@ -51,23 +51,9 @@ fi
 nohup songbook-completion-watch >>"$HOME/Library/Logs/songbook-completion-watch.log" 2>&1 &
 
 ph_rerun_count() {
+  # Inline heredoc + TS `!` assertions broke under launchd/tsx eval (always 0).
   env -u TURSO_DATABASE_URL -u TURSO_AUTH_TOKEN NUMS_FILE="$NUMS" PH_PACK_ID="$PH_ID" \
-    npx tsx --env-file=.env.local <<'TS' 2>/dev/null | tail -1
-import { createClient } from "@libsql/client"
-import { readFileSync } from "fs"
-const nums = readFileSync(process.env.NUMS_FILE!, "utf8").split(/\s+/).map(Number).filter((n) => n > 0)
-const db = createClient({ url: process.env.TURSO_DATABASE_URL!, authToken: process.env.TURSO_AUTH_TOKEN! })
-let good = 0
-for (let i = 0; i < nums.length; i += 80) {
-  const chunk = nums.slice(i, i + 80)
-  const r = await db.execute({
-    sql: `SELECT count(*) AS n FROM song_pack_items WHERE pack_id=? AND sort_order IN (${chunk.map(() => "?").join(",")}) AND page_count > 2`,
-    args: [process.env.PH_PACK_ID!, ...chunk],
-  })
-  good += Number(r.rows[0].n)
-}
-console.log(good)
-TS
+    npx tsx --env-file=.env.local scripts/ph-rerun-count.ts 2>/dev/null | tail -1
 }
 
 ph_gemini_good() {
@@ -94,11 +80,14 @@ PH_TITLE_STARTED=0
 PH_TITLE_DONE=0
 
 # --- Monitor loop ---
+# Drive is only required for keep-PDF sync / local writes. CDN + Gemini + title
+# rebake must keep moving when PRO-G40 is unplugged.
 while true; do
-  if [[ ! -d "$DRIVE" ]]; then
-    log "ERROR drive unmounted — waiting"
-    sleep 120
-    continue
+  DRIVE_OK=0
+  if [[ -d "$DRIVE" ]]; then
+    DRIVE_OK=1
+  else
+    log "WARN drive unmounted — continuing CDN/Gemini; skip drive syncs"
   fi
 
   rerun="$(ph_rerun_count | tr -cd '0-9')"
@@ -110,7 +99,7 @@ while true; do
   good_g=${good_g:-0}
   good_n=${good_n:-0}
 
-  log "status ph_rerun=${rerun}/${EXPECTED} tph_rebake=${tphd}/963 ph_gemini=${good_g}/${good_n} title_started=${PH_TITLE_STARTED}"
+  log "status ph_rerun=${rerun}/${EXPECTED} tph_rebake=${tphd}/963 ph_gemini=${good_g}/${good_n} title_started=${PH_TITLE_STARTED} drive=${DRIVE_OK}"
 
   # Ensure import still alive if incomplete — never relaunch a full wipe if
   # the master script is still up or shards were active recently.
@@ -155,10 +144,14 @@ while true; do
 
   if (( TPH_REBAKE_DONE == 0 && tphd >= 963 )); then
     TPH_REBAKE_DONE=1
-    ping "TPH title rebake DONE — 963/963 Gemini verse counts on CDN + drive keep PDFs."
-    npx tsx --env-file=.env.local scripts/sync-pack-pdfs-to-drive.ts \
-      --pack=tph --stale-before=2026-09-26T21:00:00Z --concurrency=8 --apply \
-      >>"$LOG" 2>&1 || true
+    ping "TPH title rebake DONE — 963/963 Gemini verse counts on CDN (+ drive when mounted)."
+    if (( DRIVE_OK == 1 )); then
+      npx tsx --env-file=.env.local scripts/sync-pack-pdfs-to-drive.ts \
+        --pack=tph --stale-before=2026-09-26T21:00:00Z --concurrency=8 --apply \
+        >>"$LOG" 2>&1 || true
+    else
+      log "skip TPH drive sync — PRO-G40 not mounted"
+    fi
   fi
 
   # Start P&H title rebake once rerun done and Gemini ≥90% of good PDFs

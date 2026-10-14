@@ -1,5 +1,5 @@
 /**
- * Clean full-song OCR JSONL with OpenAI (gpt-4o-mini).
+ * Clean full-song OCR JSONL with OpenAI (gpt-6-luna).
  *
  *   npx tsx --env-file=.env.local scripts/clean-sfp-ocr-agent.ts \
  *     --from=/tmp/sfp-book-ocr-all.jsonl \
@@ -29,8 +29,8 @@ const DIRECT_BASE = "https://api.openai.com/v1"
 const API_BASE = USE_GATEWAY ? GATEWAY_BASE : DIRECT_BASE
 /** Gateway expects provider/model; direct OpenAI wants bare model id. */
 const DEFAULT_MODEL = USE_GATEWAY
-  ? process.env.OPENAI_MODEL || "openai/gpt-4o-mini"
-  : (process.env.OPENAI_MODEL || "gpt-4o-mini").replace(/^openai\//, "")
+  ? process.env.OPENAI_MODEL || "openai/gpt-6-luna"
+  : (process.env.OPENAI_MODEL || "gpt-6-luna").replace(/^openai\//, "")
 /** Comma-separated model pool — round-robin across providers for more throughput. */
 const MODEL_POOL: string[] = (
   modelsArg?.slice("--models=".length) ||

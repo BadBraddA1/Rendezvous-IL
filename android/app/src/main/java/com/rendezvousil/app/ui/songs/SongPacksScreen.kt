@@ -334,6 +334,10 @@ fun SongPackDetailScreen(
             else -> {
                 val pack = state.pack ?: return@Scaffold
                 val filtered = state.filteredItems
+                val searchFocus = remember { FocusRequester() }
+                LaunchedEffect(pack.id) {
+                    searchFocus.requestFocus()
+                }
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -344,7 +348,8 @@ fun SongPackDetailScreen(
                         onValueChange = viewModel::setSongSearchQuery,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                            .focusRequester(searchFocus),
                         singleLine = true,
                         label = { Text("Search songs") },
                     )
